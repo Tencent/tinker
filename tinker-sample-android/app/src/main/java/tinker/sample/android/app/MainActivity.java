@@ -33,13 +33,8 @@ import android.widget.TextView;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
-import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
-import java.io.File;
-import java.io.IOException;
-
-import dalvik.system.DexFile;
 import tinker.sample.android.R;
 import tinker.sample.android.util.Utils;
 
