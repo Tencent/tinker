@@ -1,0 +1,32 @@
+apply plugin: 'com.android.library'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile project(':tinker-commons')
+    compile project(':tinker-android:tinker-android-loader')
+}
+
+task sourceJar(type: Jar) {
+    from 'src/main/java'
+}
+
+apply from: rootProject.file('gradle/android-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
+
+
+
+

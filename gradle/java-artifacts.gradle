@@ -1,0 +1,34 @@
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+//    archives sourceJar // TODO: Under construction
+}
+
+
+//for local maven test
+afterEvaluate { project ->
+    tasks.all { Task task ->
+        if (task.name.equalsIgnoreCase('publishTinkerPatchPublicationToMavenLocal')) {
+            task.dependsOn tasks.getByName('assemble')
+        }
+    }
+}
+
+publishing {
+    publications {
+        TinkerPatch(MavenPublication) {
+            from components.java
+            groupId = group
+            artifactId = project.getName()
+            version = version
+        }
+    }
+}
+
+task buildAndPublishLocalMaven(dependsOn: 'publishTinkerPatchPublicationToMavenLocal') {}

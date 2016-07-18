@@ -1,0 +1,39 @@
+buildscript {
+    repositories {
+//        jcenter()
+        maven {
+            url "http://maven.oa.com/nexus/content/repositories/jcenter"
+        }
+
+//        mavenLocal()
+        maven {
+            url uri('http://maven.oa.com/nexus/content/repositories/thirdparty-snapshots')   // oa内网maven仓库
+        }
+        maven {
+            url uri('http://maven.oa.com/nexus/content/repositories/thirdparty/')   // oa内网maven仓库
+        }
+
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.1.0'
+        classpath('com.tencent.tinker:tinker-patch-gradle-plugin:1.2.0')
+    }
+}
+
+allprojects {
+    repositories {
+//        jcenter()
+        maven {
+            url "http://maven.oa.com/nexus/content/repositories/jcenter"
+        }
+
+//        mavenLocal()
+        maven {
+            url uri('http://maven.oa.com/nexus/content/repositories/thirdparty-snapshots')   // oa内网maven仓库
+        }
+        maven {
+            url uri('http://maven.oa.com/nexus/content/repositories/thirdparty/')   // oa内网maven仓库
+        }
+    }
+}
+

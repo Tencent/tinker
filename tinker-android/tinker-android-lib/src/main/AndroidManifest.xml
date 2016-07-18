@@ -1,0 +1,18 @@
+<manifest package="com.tencent.tinker.lib"
+          xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <service
+            android:name=".service.TinkerPatchService"
+            android:exported="false"
+            android:process=":patch"/>
+        <service
+            android:name=".service.TinkerPatchService$InnerService"
+            android:exported="false"
+            android:process=":patch"/>
+        <service
+            android:name=".service.DefaultTinkerResultService"
+            android:exported="false"/>
+    </application>
+
+</manifest>

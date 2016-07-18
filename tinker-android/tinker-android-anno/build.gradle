@@ -1,0 +1,30 @@
+apply plugin: 'java'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+
+        resources {
+            srcDir 'src/main/resources'
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+apply from: rootProject.file('gradle/java-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

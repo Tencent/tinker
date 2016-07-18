@@ -1,0 +1,13 @@
+apply plugin: 'java'
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+task sourceJar(type: Jar) {
+    from 'src/main/java'
+}
+
+apply from: rootProject.file('gradle/java-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

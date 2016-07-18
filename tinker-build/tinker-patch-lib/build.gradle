@@ -1,0 +1,20 @@
+apply plugin: 'java'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(':tinker-commons')
+    compile group: 'net.dongliu', name: 'apk-parser', version: '2.1.2'
+}
+
+task sourceJar(type: Jar) {
+    from 'src/main/java'
+}
+
+apply from: rootProject.file('gradle/java-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

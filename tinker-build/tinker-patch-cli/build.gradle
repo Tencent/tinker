@@ -1,0 +1,33 @@
+apply plugin: 'java'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(':tinker-build:tinker-patch-lib')
+}
+
+task sourceJar(type: Jar) {
+    from 'src/main/java'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.tencent.tinker.patch.CliMain'
+        attributes 'Manifest-Version': version
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+// copy the jar to work directory
+task buildJar(type: Copy, dependsOn: [build, jar]) {
+    from('build/libs') {
+        include '*.jar'
+    }
+    into('./tool_output')
+}
+
+defaultTasks 'buildJar'
