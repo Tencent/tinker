@@ -27,6 +27,7 @@ import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 
@@ -43,8 +44,8 @@ import tinker.sample.android.util.Utils;
 public class SamplePatchListener extends DefaultPatchListener {
     private static final String TAG = "SamplePatchListener";
 
-    protected static final long NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN = 50 * 1024 * 1024;
-    protected static final long OLD_PATCH_RESTRICTION_SPACE_SIZE_MIN = 25 * 1024 * 1024;
+    protected static final long NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN = ShareTinkerInternals.isVmArt() ? 80 * 1024 * 1024 : 50 * 1024 * 1024;
+    protected static final long OLD_PATCH_RESTRICTION_SPACE_SIZE_MIN = ShareTinkerInternals.isVmArt() ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
 
     private final int maxMemory;
 
