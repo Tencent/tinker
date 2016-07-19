@@ -1,5 +1,5 @@
 ## Tinker
-[![license](http://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](http://git.code.oa.com/wechat-android-dev/tinker/blob/master/LICENSE)
+[![license](http://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](http://git.code.oa.com/tinker/tinker/blob/master/LICENSE)
 
 Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstall apk.
 
@@ -37,7 +37,7 @@ If your app has a class that subclasses android.app.Application, then you need t
 +public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle 
 ```
 
-Now you should change your `Application` class, which will be a subclass of [TinkerApplication](http://git.code.oa.com/wechat-android-dev/tinker/blob/master/tinker-android/tinker-android-loader/src/main/java/com/tencent/tinker/loader/app/TinkerApplication.java). As you can see from its API, it is an abstract class that does not have a default constructor, so you must define a no-arg constructor as follows:
+Now you should change your `Application` class, which will be a subclass of [TinkerApplication](http://git.code.oa.com/tinker/tinker/blob/master/tinker-android/tinker-android-loader/src/main/java/com/tencent/tinker/loader/app/TinkerApplication.java). As you can see from its API, it is an abstract class that does not have a default constructor, so you must define a no-arg constructor as follows:
 
 ```java
 public class SampleApplication extends TinkerApplication {
@@ -53,7 +53,7 @@ public class SampleApplication extends TinkerApplication {
 }
 ```
 
-Use `tinker-android-anno` to generate your `Application` is more recommended, you can just add an annotation for your [ApplicationLifeCycle](http://git.code.oa.com/wechat-android-dev/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLifeCycle.java) class
+Use `tinker-android-anno` to generate your `Application` is more recommended, you can just add an annotation for your [ApplicationLifeCycle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLifeCycle.java) class
 
 ```java
 @DefaultLifeCycle(
@@ -62,17 +62,17 @@ flags = TinkerApplication.TINKER_ENABLE_ALL)              //tinkerFlags above
 public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle 
 ```
 
-How to install tinker? learn more at the sample [SampleApplicationLifeCycle](http://git.code.oa.com/wechat-android-dev/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLifeCycle.java).
+How to install tinker? learn more at the sample [SampleApplicationLifeCycle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLifeCycle.java).
 
 for proguard, we have already change the proguard config automatic, and also generate the multiDex keep proguard file for you.
 
-for more tinker plugin configurations, learn more at the sample [app/build.gradle](http://git.code.oa.com/wechat-android-dev/tinker/blob/master/tinker-sample-android/app/build.gradle).
+for more tinker plugin configurations, learn more at the sample [app/build.gradle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/build.gradle).
 ## Support
 Any problem?
 
-1. learn more from [tinker-sample-android](http://git.code.oa.com/wechat-android-dev/tinker/tree/master/tinker-sample-android).
-2. read the [source code](http://git.code.oa.com/wechat-android-dev/tinker/tree/master).
-3. read the [wiki](http://git.code.oa.com/wechat-android-dev/tinker/wikis/home) or [FAQ](http://git.code.oa.com/wechat-android-dev/tinker/wikis/faq) for help.
+1. learn more from [tinker-sample-android](http://git.code.oa.com/tinker/tinker/tree/master/tinker-sample-android).
+2. read the [source code](http://git.code.oa.com/tinker/tinker/tree/master).
+3. read the [wiki](http://git.code.oa.com/tinker/tinker/wikis/home) or [FAQ](http://git.code.oa.com/tinker/tinker/wikis/faq) for help.
 4. contact shwenzhang for help.
 
 ## License
