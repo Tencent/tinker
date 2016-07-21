@@ -73,8 +73,6 @@ public class SamplePatchListener extends DefaultPatchListener {
             Tinker.with(this.context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode, isUpgrade);
         }
 
-
-
         return returnCode;
     }
 
@@ -103,7 +101,7 @@ public class SamplePatchListener extends DefaultPatchListener {
             SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
             int fastCrashCount = sp.getInt(patchMd5, 0);
             if (fastCrashCount >= SampleUncaughtExceptionHandler.MAX_CRASH_COUNT) {
-                returnCode = Utils.ERROR_PATCH_CRARH_LIMIT;
+                returnCode = Utils.ERROR_PATCH_CRASH_LIMIT;
             } else {
                 //for upgrade patch, version must be not the same
                 //for repair patch, we won't has the tinker load flag

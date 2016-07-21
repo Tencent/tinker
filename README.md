@@ -66,7 +66,8 @@ How to install tinker? learn more at the sample [SampleApplicationLifeCycle](htt
 
 for proguard, we have already change the proguard config automatic, and also generate the multiDex keep proguard file for you.
 
-for more tinker plugin configurations, learn more at the sample [app/build.gradle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/build.gradle).
+for more tinker configurations, learn more at the sample [app/build.gradle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/build.gradle).
+
 ## Support
 Any problem?
 
@@ -74,6 +75,9 @@ Any problem?
 2. read the [source code](http://git.code.oa.com/tinker/tinker/tree/master).
 3. read the [wiki](http://git.code.oa.com/tinker/tinker/wikis/home) or [FAQ](http://git.code.oa.com/tinker/tinker/wikis/faq) for help.
 4. contact shwenzhang for help.
+
+## Contributing
+For more information about contributing issues or pull requsets, see our [Tinker Contributing Guide](http://git.code.oa.com/tinker/tinker/blob/master/CONTRIBUTING.md)
 
 ## License
     Copyright (C) 2016 Tencent Wechat, Inc.

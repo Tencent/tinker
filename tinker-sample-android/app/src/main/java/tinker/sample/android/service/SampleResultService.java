@@ -92,8 +92,12 @@ public class SampleResultService extends DefaultTinkerResultService {
         }
     }
 
+    /**
+     * you can restart your process through service or broadcast
+     */
     private void restartProcess() {
         TinkerLog.i(TAG, "app is background now, i can kill quietly");
+        //you can send service or broadcast intent to restart your process
         android.os.Process.killProcess(android.os.Process.myPid());
     }
 
