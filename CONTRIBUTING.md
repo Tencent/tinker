@@ -1,14 +1,14 @@
 # Contributing to Tinker
-Welcome to [report issues](http://git.code.oa.com/wechat-android-dev/tinker/issues) or [pull requests](http://git.code.oa.com/tinker/tinker/merge_requests). It's recommended to read the following Contributing Guild first to make contributing earlier. 
+Welcome to [report Issues](http://git.code.oa.com/tinker/tinker/issues) or [pull requests](http://git.code.oa.com/tinker/tinker/merge_requests). It's recommended to read the following Contributing Guild first to make contributing earlier. 
 
 ## issues
-We use Git Issues to track public bugs or feature requests.
+We use Git Issues to track public bugs and feature requests.
 
 ### Search Known Issues First
 Please search the exist issues to see if any similar issue or feature request has already been filed. You shold try to make sure your issue doesn't already exist.
 
 ### Reporting New Issues
-if you open an issue, the more information the better. Such as detailed description, screenshot or video of your problem, logcat or code blocks for your crash.
+If you open an issue, the more information the better. Such as detailed description, screenshot or video of your problem, logcat or code blocks for your crash.
 
 ## Pull Requests
 We strongly welcome your pull request to make tinker better. 
@@ -21,10 +21,10 @@ There are three main branch here:
 	2. **Don't submit any PR on `master` branch.**
 2. `dev` branch. 
 	1. It is our stable developing branch. After full testing, `dev` will publish to `master` branch for the next release.
-	2. ***You are recommended to submit bugfix or feature PR on `dev` branch.***
+	2. **You are recommended to submit bugfix or feature PR on `dev` branch.**
 3. `hotfix` branch. 
 	1. It is the latest tag version for hot fix. If we accept your pull request, we may just tag with version number `1.1.1`, `1.2.3`.
-	2. ***Only submit urgent PR on `hotfix` branch for next specific release.***
+	2. **Only submit urgent PR on `hotfix` branch for next specific release.**
 
 Normal bugfix or feature request should submit on `dev` branch. After full testing, we will merge them on `master` branch for the next release. 
 
