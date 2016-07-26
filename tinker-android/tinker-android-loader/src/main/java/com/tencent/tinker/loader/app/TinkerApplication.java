@@ -143,7 +143,8 @@ public abstract class TinkerApplication extends Application {
         tinkerResultIntent = new Intent();
         try {
             // Use reflection to create the delegate so it doesn't need to go into the primary dex.
-            Class<?> tinkerLoadClass = Class.forName(loaderClassName);
+            // And we can also patch it
+            Class<?> tinkerLoadClass = Class.forName(loaderClassName, false, getClassLoader());
 
             Method loadMethod = tinkerLoadClass.getMethod(TINKER_LOADER_METHOD, Application.class, int.class, boolean.class);
             Constructor<?> constructor = tinkerLoadClass.getConstructor();

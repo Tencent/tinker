@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.e(TAG, "i am on onCreate classloader:"+MainActivity.class.getClassLoader().toString());
+        Log.e(TAG, "i am on onCreate classloader:" + MainActivity.class.getClassLoader().toString());
 //        Log.e(TAG, "i am on patch onCreate");
 
         Button loadPatchButton = (Button) findViewById(R.id.loadPatch);
