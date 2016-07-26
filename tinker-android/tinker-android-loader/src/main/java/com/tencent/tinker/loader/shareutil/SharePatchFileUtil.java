@@ -122,22 +122,9 @@ public class SharePatchFileUtil {
         return totalSize;
     }
 
-    public static final boolean safeDeleteFile(String filePath) {
-        if (filePath == null) {
-            return true;
-        }
-
-        File file = new File(filePath);
-        return safeDeleteFile(file);
-    }
-
     public static final boolean safeDeleteFile(File file) {
         if (file == null) {
             return true;
-        }
-
-        if (!file.isFile()) {
-            return false;
         }
 
         Log.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());

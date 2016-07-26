@@ -88,5 +88,4 @@ public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle {
         application.registerActivityLifecycleCallbacks(callback);
     }
 
-
 }

@@ -19,6 +19,7 @@ package com.tencent.tinker.loader;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -45,7 +46,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
     private SharePatchInfo patchInfo;
 
     /**
-     * only main process can handle hotpatch version change or incomplete
+     * only main process can handle patch version change or incomplete
      */
     @Override
     public Intent tryLoad(Application app, int tinkerFlag, boolean tinkerLoadVerifyFlag) {
@@ -59,8 +60,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
     }
 
     private void tryLoadPatchFilesInternal(Context context, int tinkerFlag, boolean tinkerLoadVerifyFlag, Intent resultIntent) {
-        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
+        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag) || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 24) {
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_NOT_SUPPORTED);
             return;
         }
         //tinker

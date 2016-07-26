@@ -43,7 +43,7 @@ public class UpgradePatch extends AbstractPatch {
 
         final File patchFile = new File(tempPatchPath);
 
-        if (!manager.isEnabled()) {
+        if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:patch is disabled, just return");
             return false;
         }

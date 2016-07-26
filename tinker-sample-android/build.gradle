@@ -16,7 +16,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.1.0'
-        classpath('com.tencent.tinker:tinker-patch-gradle-plugin:1.2.0')
+        classpath('com.tencent.tinker:tinker-patch-gradle-plugin:1.2.1')
     }
 }
 

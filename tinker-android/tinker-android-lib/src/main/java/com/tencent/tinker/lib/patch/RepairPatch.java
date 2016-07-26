@@ -44,7 +44,7 @@ public class RepairPatch extends AbstractPatch {
 
         final File patchFile = new File(tempPatchPath);
 
-        if (!manager.isEnabled()) {
+        if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
             TinkerLog.e(TAG, "RepairPatch tryPatch:patch is disabled, just return");
             return false;
         }

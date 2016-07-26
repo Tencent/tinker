@@ -137,7 +137,7 @@ public class Tinker {
         AbstractResultService.setResultServiceClass(serviceClass);
         TinkerPatchService.setPatchProcessor(upgradePatch, repairPatch);
 
-        if (!isEnabled()) {
+        if (!isTinkerEnabled()) {
             TinkerLog.e(TAG, "tinker is disabled");
             return;
         }
@@ -198,7 +198,7 @@ public class Tinker {
         return patchReporter;
     }
 
-    public boolean isEnabled() {
+    public boolean isTinkerEnabled() {
         return (tinkerFlags != TinkerApplication.TINKER_DISABLE);
     }
 
@@ -367,7 +367,6 @@ public class Tinker {
             this.listener = listener;
             return this;
         }
-
 
         public Tinker build() {
             if (status == -1) {
