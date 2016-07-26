@@ -22,6 +22,7 @@ import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 
@@ -59,8 +60,8 @@ public class DefaultPatchListener implements PatchListener {
 
     protected int patchCheck(String path, boolean isUpgrade) {
         Tinker manager = Tinker.with(context);
-
-        if (!manager.isEnabled()) {
+        //check SharePrefenences also
+        if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
             return ShareConstants.ERROR_PATCH_DISABLE;
         }
         File file = new File(path);

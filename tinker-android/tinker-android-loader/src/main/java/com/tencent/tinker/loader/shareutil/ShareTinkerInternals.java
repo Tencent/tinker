@@ -18,6 +18,7 @@ package com.tencent.tinker.loader.shareutil;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
@@ -130,6 +131,25 @@ public class ShareTinkerInternals {
             default:
                 return "unknown";
         }
+    }
+
+    /**
+     * you can set Tinker disable in runtime at some times!
+     * @param context
+     */
+    public static void setTinkerDisableWithSharedPreferences(Context context) {
+        SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
+        sp.edit().putBoolean(ShareConstants.TINKER_ENABLE_CONFIG, false).commit();
+    }
+
+    /**
+     * can't load or receive any patch!
+     * @param context
+     * @return
+     */
+    public static boolean isTinkerEnableWithSharedPreferences(Context context) {
+        SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
+        return sp.getBoolean(ShareConstants.TINKER_ENABLE_CONFIG, true);
     }
 
     public static boolean isTinkerEnabled(int flag) {

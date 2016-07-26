@@ -19,6 +19,7 @@ package tinker.sample.android.reporter;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 
 import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.service.TinkerPatchService;
@@ -87,6 +88,11 @@ public class SamplePatchListener extends DefaultPatchListener {
     @Override
     public int patchCheck(String path, boolean isUpgrade) {
         int returnCode = super.patchCheck(path, isUpgrade);
+        if (returnCode == ShareConstants.ERROR_PATCH_OK) {
+            if (Build.VERSION.SDK_INT >= 24) {
+                returnCode = Utils.ERROR_PATCH_NOT_SUPPORT;
+            }
+        }
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             if (isUpgrade) {
@@ -99,6 +105,7 @@ public class SamplePatchListener extends DefaultPatchListener {
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             String patchMd5 = SharePatchFileUtil.getMD5(new File(path));
             SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
+            //optional, only disable this patch file with md5
             int fastCrashCount = sp.getInt(patchMd5, 0);
             if (fastCrashCount >= SampleUncaughtExceptionHandler.MAX_CRASH_COUNT) {
                 returnCode = Utils.ERROR_PATCH_CRASH_LIMIT;
