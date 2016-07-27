@@ -20,6 +20,17 @@ dependencies {
     compile project(':tinker-android:tinker-android-loader')
 }
 
+task buildSdk(type: Copy, dependsOn: [build]) {
+    from("$buildDir/outputs/aar/") {
+        include "${project.getName()}-release.aar"
+    }
+
+    into(rootProject.file("buildSdk/android/"))
+    rename { String fileName ->
+        fileName.replace("release", "${version}")
+    }
+}
+
 task sourceJar(type: Jar) {
     from 'src/main/java'
 }

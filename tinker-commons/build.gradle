@@ -15,5 +15,13 @@ task sourceJar(type: Jar) {
     from 'src/main/java'
 }
 
+task buildSdk(type: Copy, dependsOn: [build]) {
+    from('build/libs') {
+        include '*.jar'
+        exclude '*javadoc.jar'
+    }
+    into(rootProject.file("buildSdk/android"))
+}
+
 apply from: rootProject.file('gradle/java-artifacts.gradle')
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

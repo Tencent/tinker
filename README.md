@@ -21,9 +21,9 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 ```gradle
 dependencies {
 	//Optional, help to gen the final application 
-	compile('com.tencent.tinker:tinker-android-anno:1.2.0')
+	compile('com.tencent.tinker:tinker-android-anno:1.2.1')
     //tinker's main Android lib
-    compile('com.tencent.tinker:tinker-android-lib:1.2.0') 
+    compile('com.tencent.tinker:tinker-android-lib:1.2.1') 
 }
 ...
 ...

@@ -20,6 +20,17 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
+task buildSdk(type: Copy, dependsOn: [assembleRelease]) {
+    from("$buildDir/outputs/aar/") {
+        include "${project.getName()}-release.aar"
+    }
+
+    into(rootProject.file("buildSDK/android/"))
+    rename { String fileName ->
+        fileName.replace("release", "${version}")
+    }
+}
+
 task sourceJar(type: Jar) {
     from 'src/main/java'
 }
