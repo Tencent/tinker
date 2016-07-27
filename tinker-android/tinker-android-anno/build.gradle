@@ -21,6 +21,14 @@ sourceSets {
     }
 }
 
+task buildSdk(type: Copy, dependsOn: [build]) {
+    from('build/libs') {
+        include '*.jar'
+        exclude '*javadoc.jar'
+    }
+    into(rootProject.file("buildSdk/android"))
+}
+
 task sourcesJar(type: Jar) {
     from sourceSets.main.java.srcDirs
     classifier = 'sources'

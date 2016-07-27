@@ -44,4 +44,6 @@ proguard/
 
 /*/.idea
 
+/buildSdk
+
 

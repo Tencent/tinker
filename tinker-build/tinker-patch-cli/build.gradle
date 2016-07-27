@@ -3,6 +3,8 @@ apply plugin: 'java'
 version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
 
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':tinker-build:tinker-patch-lib')
@@ -23,11 +25,15 @@ jar {
 }
 
 // copy the jar to work directory
-task buildJar(type: Copy, dependsOn: [build, jar]) {
+task buildSdk(type: Copy, dependsOn: [build, jar]) {
     from('build/libs') {
         include '*.jar'
+        exclude '*javadoc.jar'
     }
-    into('./tool_output')
+    from('./tool_output') {
+        include '*.*'
+    }
+    into(rootProject.file("buildSdk/build"))
 }
 
-defaultTasks 'buildJar'
+defaultTasks 'buildSdk'

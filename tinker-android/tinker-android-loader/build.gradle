@@ -23,5 +23,16 @@ task sourceJar(type: Jar) {
     from 'src/main/java'
 }
 
+task buildSdk(type: Copy, dependsOn: [build]) {
+    from("$buildDir/outputs/aar/") {
+        include "${project.getName()}-release.aar"
+    }
+
+    into(rootProject.file("buildSdk/android/"))
+    rename { String fileName ->
+        fileName.replace("release", "${version}")
+    }
+}
+
 apply from: rootProject.file('gradle/android-artifacts.gradle')
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
