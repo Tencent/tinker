@@ -635,7 +635,7 @@ public class DexDiff {
                     } else {
                         ClassDef classDef = section.readClassDef();
                         while (classExcludingAlgorithm.isClassDefIndexExcluded(actualNewItemIndex)) {
-                            writeLogIfNeeded("[Exclude Class] %s was removed.", oldDex.typeNames().get(classDef.typeIndex));
+                            writeLogIfNeeded("[Exclude Class] %s was removed.", newDex.typeNames().get(classDef.typeIndex));
                             classDef = section.readClassDef();
                             ++actualNewItemIndex;
                         }
