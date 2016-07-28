@@ -20,6 +20,7 @@ package com.tencent.tinker.build.util;
  * Container for a dynamically typed data value. Primarily used with
  */
 public class TypedValue {
+    public static final int BUFFER_SIZE = 8192;
 
     public static final String FILE_TXT      = ".txt";
     public static final String FILE_XML      = ".xml";
