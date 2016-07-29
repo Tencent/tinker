@@ -94,5 +94,4 @@ public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle {
         getApplication().registerActivityLifecycleCallbacks(callback);
     }
 
-
 }

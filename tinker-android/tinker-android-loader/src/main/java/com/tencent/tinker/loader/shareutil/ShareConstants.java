@@ -56,6 +56,7 @@ public class ShareConstants {
     public static final String META_SUFFIX = "meta.txt";
 
     public static final String TINKER_PREFERENCE_CONFIG = "tinker_config";
+    public static final String TINKER_ENABLE_CONFIG     = "tinker_enable";
 
     /**
      * notification id, use to Increasing the patch process priority
@@ -100,6 +101,7 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_VERSION_LIB_FILE_NOT_EXIST      = -17;
     public static final int ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL         = -18;
     public static final int ERROR_LOAD_PATCH_EXCEPTION                       = -19;
+//    public static final int ERROR_LOAD_PATCH_NOT_SUPPORTED                   = -20;
     public static final int ERROR_LOAD_GET_INTENT_FAIL                       = -10000;
 
     //recover error code

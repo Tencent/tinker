@@ -115,7 +115,9 @@ public class TinkerLoadResult {
             case ShareConstants.ERROR_LOAD_DISABLE:
                 TinkerLog.w(TAG, "tinker is disable, just return");
                 break;
-
+//            case ShareConstants.ERROR_LOAD_PATCH_NOT_SUPPORTED:
+//                TinkerLog.w(TAG, "tinker is not supported, just return");
+//                break;
             case ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST:
             case ShareConstants.ERROR_LOAD_PATCH_INFO_NOT_EXIST:
                 TinkerLog.w(TAG, "can't find patch file, is ok, just return");

@@ -69,6 +69,17 @@ public class Utils {
         return ShareConstants.ERROR_PATCH_OK;
     }
 
+    public static boolean isXposedExists(Throwable thr) {
+        StackTraceElement[] stackTraces = thr.getStackTrace();
+        for (StackTraceElement stackTrace : stackTraces) {
+            final String clazzName = stackTrace.getClassName();
+            if (clazzName != null && clazzName.contains("de.robv.android.xposed.XposedBridge")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Deprecated
     public static boolean checkRomSpaceEnough(long limitSize) {
         long allSize;

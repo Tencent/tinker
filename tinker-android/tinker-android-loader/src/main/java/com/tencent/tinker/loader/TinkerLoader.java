@@ -44,7 +44,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
     private SharePatchInfo patchInfo;
 
     /**
-     * only main process can handle hotpatch version change or incomplete
+     * only main process can handle patch version change or incomplete
      */
     @Override
     public Intent tryLoad(Application app, int tinkerFlag, boolean tinkerLoadVerifyFlag) {

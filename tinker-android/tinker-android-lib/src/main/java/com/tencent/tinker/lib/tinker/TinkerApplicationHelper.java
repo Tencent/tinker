@@ -39,7 +39,7 @@ public class TinkerApplicationHelper {
 
     /**
      * they can use without Tinker is installed!
-     * same as {@code Tinker.isEnabled}
+     * same as {@code Tinker.isTinkerEnabled}
      *
      * @return
      */
