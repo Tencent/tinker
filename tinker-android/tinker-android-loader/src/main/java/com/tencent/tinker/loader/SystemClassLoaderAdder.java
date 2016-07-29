@@ -17,6 +17,7 @@
 
 package com.tencent.tinker.loader;
 
+import android.app.Application;
 import android.os.Build;
 import android.util.Log;
 
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.zip.ZipFile;
 
+import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
@@ -43,7 +45,7 @@ import dalvik.system.PathClassLoader;
 public class SystemClassLoaderAdder {
     private static final String TAG = "SystemClassLoaderAdder";
 
-    private static void setupClassLoaders(PathClassLoader classLoader, String codeCacheDir,
+    private static void setupClassLoaders(BaseDexClassLoader classLoader, String codeCacheDir,
                                           List<File> dexList) throws Exception {
         if (!dexList.isEmpty()) {
 //            String nativeLibraryPath = IncrementalClassLoader.getLdLibraryPath(classLoader);
@@ -57,29 +59,33 @@ public class SystemClassLoaderAdder {
         }
     }
 
-    public static void installDexes(PathClassLoader loader, File dexOptDir, List<File> files, boolean isPatch)
-        throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException,
-        InvocationTargetException, NoSuchMethodException, IOException {
+    public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files)
+        throws Exception {
 
         if (!files.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= 14) {
-                //try with IncrementalClassLoader first
-                try {
-                    //because some rom such as Samsung s6 502, insert dexes at front of dexPathlist isn't work.
-                    //try as InstantRun and bazel (https://github.com/bazelbuild/bazel/blob/master/src/tools/android/
-                    //java/com/google/devtools/build/android/incrementaldeployment/IncrementalClassLoader.java)
-                    setupClassLoaders(loader, dexOptDir.getAbsolutePath(), files);
-                } catch (Throwable t) {
-                    if (Build.VERSION.SDK_INT >= 23) {
-                        V23.install(loader, files, dexOptDir, isPatch);
-                    } else if (Build.VERSION.SDK_INT >= 19) {
-                        V19.install(loader, files, dexOptDir, isPatch);
-                    } else if (Build.VERSION.SDK_INT >= 14) {
-                        V14.install(loader, files, dexOptDir, isPatch);
-                    }
-                }
+            if (Build.VERSION.SDK_INT >= 24) {
+                AndroidNClassLoader androidNClassLoader = AndroidNClassLoader.inject(loader, application);
+                setupClassLoaders(androidNClassLoader, dexOptDir.getAbsolutePath(), files);
             } else {
-                V4.install(loader, files, dexOptDir, isPatch);
+                if (Build.VERSION.SDK_INT >= 14) {
+                    //try with IncrementalClassLoader first
+                    try {
+                        //because some rom such as Samsung s6 502, insert dexes at front of dexPathlist isn't work.
+                        //try as InstantRun and bazel (https://github.com/bazelbuild/bazel/blob/master/src/tools/android/
+                        //java/com/google/devtools/build/android/incrementaldeployment/IncrementalClassLoader.java)
+                        setupClassLoaders(loader, dexOptDir.getAbsolutePath(), files);
+                    } catch (Throwable t) {
+                        if (Build.VERSION.SDK_INT >= 23) {
+                            V23.install(loader, files, dexOptDir);
+                        } else if (Build.VERSION.SDK_INT >= 19) {
+                            V19.install(loader, files, dexOptDir);
+                        } else if (Build.VERSION.SDK_INT >= 14) {
+                            V14.install(loader, files, dexOptDir);
+                        }
+                    }
+                } else {
+                    V4.install(loader, files, dexOptDir);
+                }
             }
 
         }
@@ -151,7 +157,7 @@ public class SystemClassLoaderAdder {
      * @param fieldName     the field to modify.
      * @param extraElements elements to append at the end of the array.
      */
-    private static void expandFieldArray(Object instance, String fieldName, Object[] extraElements, boolean changeOrder)
+    private static void expandFieldArray(Object instance, String fieldName, Object[] extraElements)
         throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
         Field jlrField = findField(instance, fieldName);
 
@@ -159,13 +165,10 @@ public class SystemClassLoaderAdder {
         Object[] combined = (Object[]) Array.newInstance(original.getClass().getComponentType(), original.length + extraElements.length);
 
         // NOTE: changed to copy extraElements first, for patch load first
-        if (changeOrder) {
-            System.arraycopy(extraElements, 0, combined, 0, extraElements.length);
-            System.arraycopy(original, 0, combined, extraElements.length, original.length);
-        } else {
-            System.arraycopy(original, 0, combined, 0, original.length);
-            System.arraycopy(extraElements, 0, combined, original.length, extraElements.length);
-        }
+
+        System.arraycopy(extraElements, 0, combined, 0, extraElements.length);
+        System.arraycopy(original, 0, combined, extraElements.length, original.length);
+
         jlrField.set(instance, combined);
     }
 
@@ -175,7 +178,7 @@ public class SystemClassLoaderAdder {
     private static final class V23 {
 
         private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
-                                    File optimizedDirectory, boolean isPatch)
+                                    File optimizedDirectory)
             throws IllegalArgumentException, IllegalAccessException,
             NoSuchFieldException, InvocationTargetException, NoSuchMethodException, IOException {
             /* The patched class loader is expected to be a descendant of
@@ -188,7 +191,7 @@ public class SystemClassLoaderAdder {
             ArrayList<IOException> suppressedExceptions = new ArrayList<IOException>();
             expandFieldArray(dexPathList, "dexElements", makePathElements(dexPathList,
                 new ArrayList<File>(additionalClassPathEntries), optimizedDirectory,
-                suppressedExceptions), isPatch);
+                suppressedExceptions));
             if (suppressedExceptions.size() > 0) {
                 for (IOException e : suppressedExceptions) {
                     Log.w(TAG, "Exception in makePathElement", e);
@@ -237,7 +240,7 @@ public class SystemClassLoaderAdder {
     private static final class V19 {
 
         private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
-                                    File optimizedDirectory, boolean isPatch)
+                                    File optimizedDirectory)
             throws IllegalArgumentException, IllegalAccessException,
             NoSuchFieldException, InvocationTargetException, NoSuchMethodException, IOException {
             /* The patched class loader is expected to be a descendant of
@@ -250,7 +253,7 @@ public class SystemClassLoaderAdder {
             ArrayList<IOException> suppressedExceptions = new ArrayList<IOException>();
             expandFieldArray(dexPathList, "dexElements", makeDexElements(dexPathList,
                 new ArrayList<File>(additionalClassPathEntries), optimizedDirectory,
-                suppressedExceptions), isPatch);
+                suppressedExceptions));
             if (suppressedExceptions.size() > 0) {
                 for (IOException e : suppressedExceptions) {
                     Log.w(TAG, "Exception in makeDexElement", e);
@@ -293,7 +296,7 @@ public class SystemClassLoaderAdder {
     private static final class V14 {
 
         private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
-                                    File optimizedDirectory, boolean isPatch)
+                                    File optimizedDirectory)
             throws IllegalArgumentException, IllegalAccessException,
             NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
             /* The patched class loader is expected to be a descendant of
@@ -304,7 +307,7 @@ public class SystemClassLoaderAdder {
             Field pathListField = findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
             expandFieldArray(dexPathList, "dexElements", makeDexElements(dexPathList,
-                new ArrayList<File>(additionalClassPathEntries), optimizedDirectory), isPatch);
+                new ArrayList<File>(additionalClassPathEntries), optimizedDirectory));
         }
 
         /**
@@ -326,7 +329,7 @@ public class SystemClassLoaderAdder {
      * Installer for platform versions 4 to 13.
      */
     private static final class V4 {
-        private static void install(ClassLoader loader, List<File> additionalClassPathEntries, File optimizedDirectory, boolean isPatch)
+        private static void install(ClassLoader loader, List<File> additionalClassPathEntries, File optimizedDirectory)
             throws IllegalArgumentException, IllegalAccessException,
             NoSuchFieldException, IOException {
             /* The patched class loader is expected to be a descendant of
@@ -359,11 +362,11 @@ public class SystemClassLoaderAdder {
             }
 
             pathField.set(loader, path.toString());
-            expandFieldArray(loader, "mPaths", extraPaths, isPatch);
-            expandFieldArray(loader, "mFiles", extraFiles, isPatch);
-            expandFieldArray(loader, "mZips", extraZips, isPatch);
+            expandFieldArray(loader, "mPaths", extraPaths);
+            expandFieldArray(loader, "mFiles", extraFiles);
+            expandFieldArray(loader, "mZips", extraZips);
             try {
-                expandFieldArray(loader, "mDexs", extraDexs, isPatch);
+                expandFieldArray(loader, "mDexs", extraDexs);
             } catch (Exception e) {
 
             }

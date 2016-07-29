@@ -24,7 +24,6 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 import dalvik.system.BaseDexClassLoader;
-import dalvik.system.PathClassLoader;
 
 /**
  * Created by shwenzhang on 16/6/30.
@@ -45,7 +44,7 @@ public class IncrementalClassLoader extends ClassLoader {
 
     private final DelegateClassLoader delegateClassLoader;
 
-    public IncrementalClassLoader(PathClassLoader original,
+    public IncrementalClassLoader(BaseDexClassLoader original,
                                   String nativeLibraryPath, String optimizedDirectory, List<String> dexes) {
         super(original.getParent());
 
@@ -71,10 +70,10 @@ public class IncrementalClassLoader extends ClassLoader {
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     private static class DelegateClassLoader extends BaseDexClassLoader {
-        PathClassLoader originClassLoader;
+        BaseDexClassLoader originClassLoader;
 
         private DelegateClassLoader(String dexPath, File optimizedDirectory,
-                                    String libraryPath, PathClassLoader parent) {
+                                    String libraryPath, BaseDexClassLoader parent) {
             super(dexPath, optimizedDirectory, libraryPath, parent);
             originClassLoader = parent;
         }
@@ -97,7 +96,7 @@ public class IncrementalClassLoader extends ClassLoader {
 
     private static DelegateClassLoader createDelegateClassLoader(
         String nativeLibraryPath, String optimizedDirectory, List<String> dexes,
-        PathClassLoader original) {
+        BaseDexClassLoader original) {
         String pathBuilder = createDexPath(dexes);
         return new DelegateClassLoader(pathBuilder, new File(optimizedDirectory),
             nativeLibraryPath, original);
@@ -124,7 +123,8 @@ public class IncrementalClassLoader extends ClassLoader {
         parent.set(classLoader, newParent);
     }
 
-    public static ClassLoader inject(PathClassLoader classLoader,
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    public static ClassLoader inject(BaseDexClassLoader classLoader,
                                      String nativeLibraryPath, String optimizedDirectory, List<String> dexes) throws Exception {
         IncrementalClassLoader incrementalClassLoader = new IncrementalClassLoader(
             classLoader, nativeLibraryPath, optimizedDirectory, dexes);
@@ -132,35 +132,4 @@ public class IncrementalClassLoader extends ClassLoader {
         setParent(classLoader, incrementalClassLoader);
         return incrementalClassLoader;
     }
-
-//    public static String getLdLibraryPath(ClassLoader loader) throws NoSuchFieldException, IllegalAccessException {
-//        String nativeLibraryPath;
-//
-//        try {
-//            nativeLibraryPath = (String) loader.getClass()
-//                .getMethod("getLdLibraryPath", new Class[0])
-//                .invoke(loader, new Object[0]);
-//        } catch (Throwable t) {
-//            Log.e(TAG, "getLdLibraryPath failed:" + t.getMessage());
-//            try {
-//                Field pathListField = SystemClassLoaderAdder.findField(loader, "pathList");
-//                Object dexPathList = pathListField.get(loader);
-//                Field nativeLibraryFiled = SystemClassLoaderAdder.findField(dexPathList, "nativeLibraryDirectories");
-//                File[] nativeLibraryDirectories = (File[]) nativeLibraryFiled.get(dexPathList);
-//                StringBuilder result = new StringBuilder();
-//
-//                for (File directory : nativeLibraryDirectories) {
-//                    if (result.length() > 0) {
-//                        result.append(':');
-//                    }
-//                    result.append(directory);
-//                }
-//                nativeLibraryPath = result.toString();
-//            } catch (Throwable t1) {
-//                Log.e(TAG, "get nativeLibraryDirectories field failed:" + t.getMessage());
-//                throw t1;
-//            }
-//        }
-//        return nativeLibraryPath;
-//    }
 }

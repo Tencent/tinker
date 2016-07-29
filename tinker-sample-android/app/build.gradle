@@ -5,10 +5,10 @@ apply plugin: 'com.android.application'
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.1.1'
-    compile('com.tencent.tinker:tinker-android-lib:1.2.0')
-    compile('com.tencent.tinker:tinker-android-anno:1.2.0')
-    compile 'com.android.support:multidex:1.0.1'
+    compile "com.android.support:appcompat-v7:23.1.1"
+    compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}")
+    compile("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}")
+    compile "com.android.support:multidex:1.0.1"
 
     //use to test multiDex
 //    compile group: 'com.google.guava', name: 'guava', version: '19.0'
@@ -231,7 +231,7 @@ tinkerPatch {
          * optional，default '7za'
          * the 7zip artifact path, it will use the right 7za with your platform
          */
-        zipArtifact = "com.tencent.tinker:seven-zip:1.2.0"
+        zipArtifact = "com.tencent.tinker:seven-zip:${TINKER_VERSION}"
         /**
          * optional，default '7za'
          * you can specify the 7za path yourself, it will overwrite the zipArtifact value

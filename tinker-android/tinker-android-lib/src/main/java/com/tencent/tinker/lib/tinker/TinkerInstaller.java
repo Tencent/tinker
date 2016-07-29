@@ -25,7 +25,7 @@ import com.tencent.tinker.lib.reporter.PatchReporter;
 import com.tencent.tinker.lib.service.AbstractResultService;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
-import com.tencent.tinker.loader.app.TinkerApplication;
+import com.tencent.tinker.loader.app.ApplicationLike;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
@@ -39,20 +39,20 @@ public class TinkerInstaller {
 
     /**
      * install tinker with default config, you must install tinker before you use their api
-     * or you can just use {@link TinkerApplication}'s api
+     * or you can just use {@link TinkerApplicationHelper}'s api
      *
-     * @param tinkerApplication
+     * @param applicationLike
      */
-    public static void install(TinkerApplication tinkerApplication) {
-        Tinker tinker = new Tinker.Builder(tinkerApplication).build();
-        tinker.install(tinkerApplication.getTinkerResultIntent());
+    public static void install(ApplicationLike applicationLike) {
+        Tinker tinker = new Tinker.Builder(applicationLike.getApplication()).build();
+        tinker.install(applicationLike.getTinkerResultIntent());
     }
 
     /**
      * install tinker with custom config, you must install tinker before you use their api
-     * or you can just use {@link TinkerApplication}'s api
+     * or you can just use {@link TinkerApplicationHelper}'s api
      *
-     * @param tinkerApplication
+     * @param applicationLike
      * @param loadReporter
      * @param patchReporter
      * @param listener
@@ -60,19 +60,19 @@ public class TinkerInstaller {
      * @param upgradePatchProcessor
      * @param repairPatchProcessor
      */
-    public static void install(TinkerApplication tinkerApplication, LoadReporter loadReporter, PatchReporter patchReporter,
+    public static void install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter,
                                PatchListener listener, Class<? extends AbstractResultService> resultServiceClass,
                                AbstractPatch upgradePatchProcessor, AbstractPatch repairPatchProcessor) {
 
-        Tinker tinker = new Tinker.Builder(tinkerApplication)
-            .tinkerFlags(tinkerApplication.getTinkerFlags())
+        Tinker tinker = new Tinker.Builder(applicationLike.getApplication())
+            .tinkerFlags(applicationLike.getTinkerFlags())
             .loadReport(loadReporter)
             .listener(listener)
             .patchReporter(patchReporter)
-            .tinkerLoadVerifyFlag(tinkerApplication.getTinkerLoadVerifyFlag()).build();
+            .tinkerLoadVerifyFlag(applicationLike.getTinkerLoadVerifyFlag()).build();
 
         Tinker.create(tinker);
-        tinker.install(tinkerApplication.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor, repairPatchProcessor);
+        tinker.install(applicationLike.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor, repairPatchProcessor);
 
 
     }

@@ -1,11 +1,13 @@
 package tinker.sample.android.crash;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.app.ApplicationLike;
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -39,29 +41,28 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
     /**
      * if tinker is load, and it crash more than MAX_CRASH_COUNT, then we just clean patch.
      */
-    public boolean tinkerFastCrashProtect() {
-        TinkerApplication tinkerApplication = TinkerManager.getTinkerApplication();
+        public boolean tinkerFastCrashProtect() {
+            ApplicationLike applicationLike = TinkerManager.getTinkerApplicationLike();
+            if (applicationLike == null || applicationLike.getApplication() == null) {
+                return false;
+        }
 
-        if (tinkerApplication == null) {
+        if (!TinkerApplicationHelper.isTinkerLoadSuccess(applicationLike)) {
             return false;
         }
 
-        if (!TinkerApplicationHelper.isTinkerLoadSuccess(tinkerApplication)) {
-            return false;
-        }
-
-        final long elapsedTime = SystemClock.elapsedRealtime() - tinkerApplication.getApplicationStartElapsedTime();
+        final long elapsedTime = SystemClock.elapsedRealtime() - applicationLike.getApplicationStartElapsedTime();
         //this process may not install tinker, so we use TinkerApplicationHelper api
         if (elapsedTime < QUICK_CRASH_ELAPSE) {
-            String currentVersion = TinkerApplicationHelper.getCurrentVersion(tinkerApplication);
+            String currentVersion = TinkerApplicationHelper.getCurrentVersion(applicationLike);
             if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
                 return false;
             }
 
-            SharedPreferences sp = tinkerApplication.getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
+            SharedPreferences sp = applicationLike.getApplication().getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
             int fastCrashCount = sp.getInt(currentVersion, 0);
             if (fastCrashCount >= MAX_CRASH_COUNT) {
-                TinkerApplicationHelper.cleanPatch(tinkerApplication);
+                TinkerApplicationHelper.cleanPatch(applicationLike);
                 TinkerLog.e(TAG, "tinker has fast crash more than %d, we just clean patch!", fastCrashCount);
                 return true;
             } else {
