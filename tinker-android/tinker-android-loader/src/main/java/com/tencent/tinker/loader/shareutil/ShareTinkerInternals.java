@@ -156,6 +156,10 @@ public class ShareTinkerInternals {
         return (flag != ShareConstants.TINKER_DISABLE);
     }
 
+    public static boolean isTinkerEnabledAll(int flag) {
+        return (flag == ShareConstants.TINKER_ENABLE_ALL);
+    }
+
     public static boolean isInMainProcess(Context context) {
         String pkgName = context.getPackageName();
         String processName = getProcessName(context);

@@ -17,7 +17,7 @@
 package com.tencent.tinker.loader;
 
 import android.annotation.TargetApi;
-import android.content.Context;
+import android.app.Application;
 import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
@@ -56,10 +56,10 @@ public class TinkerDexLoader {
      * Load tinker JARs and add them to
      * the Application ClassLoader.
      *
-     * @param context The application context.
+     * @param application The application.
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    public static boolean loadTinkerJars(Context context, boolean tinkerLoadVerifyFlag, String directory, Intent intentResult) {
+    public static boolean loadTinkerJars(Application application, boolean tinkerLoadVerifyFlag, String directory, Intent intentResult) {
         if (dexList.isEmpty()) {
             Log.w(TAG, "there is no dex to load");
             return true;
@@ -101,7 +101,7 @@ public class TinkerDexLoader {
 
         }
         try {
-            SystemClassLoaderAdder.installDexes(classLoader, optimizeDir, legalFiles, true);
+            SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles);
         } catch (Throwable e) {
             Log.e(TAG, "install dexes failed");
 //            e.printStackTrace();
@@ -109,7 +109,7 @@ public class TinkerDexLoader {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_FAIL);
             return false;
         }
-        Log.i(TAG, "after loaded classloader: " + context.getClassLoader().toString());
+        Log.i(TAG, "after loaded classloader: " + application.getClassLoader().toString());
 
         return true;
     }

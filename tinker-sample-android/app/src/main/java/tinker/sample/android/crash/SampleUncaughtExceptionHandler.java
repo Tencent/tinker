@@ -7,7 +7,7 @@ import android.widget.Toast;
 
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.lib.util.TinkerLog;
-import com.tencent.tinker.loader.app.TinkerApplication;
+import com.tencent.tinker.loader.app.ApplicationLike;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
@@ -25,8 +25,9 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
     private static final String TAG = "SampleUncaughtExceptionHandler";
 
     private final Thread.UncaughtExceptionHandler ueh;
-    private static final long QUICK_CRASH_ELAPSE = 10 * 1000;
-    public static final  int  MAX_CRASH_COUNT    = 3;
+    private static final long   QUICK_CRASH_ELAPSE  = 10 * 1000;
+    public static final  int    MAX_CRASH_COUNT     = 3;
+    private static final String DALVIK_XPOSED_CRASH = "Class ref in pre-verified class resolved to unexpected implementation";
 
     public SampleUncaughtExceptionHandler() {
         ueh = Thread.getDefaultUncaughtExceptionHandler();
@@ -49,20 +50,31 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
     private void tinkerPreVerifiedCrashHandler(Throwable ex) {
         if (Utils.isXposedExists(ex)) {
             //method 1
-            TinkerApplication tinkerApplication = TinkerManager.getTinkerApplication();
-            if (tinkerApplication == null) {
+            ApplicationLike applicationLike = TinkerManager.getTinkerApplicationLike();
+            if (applicationLike == null || applicationLike.getApplication() == null) {
                 return;
             }
 
-            if (!TinkerApplicationHelper.isTinkerLoadSuccess(tinkerApplication)) {
+            if (!TinkerApplicationHelper.isTinkerLoadSuccess(applicationLike)) {
                 return;
             }
-            TinkerLog.e(TAG, "have xposed: just clean tinker");
-            TinkerApplicationHelper.cleanPatch(tinkerApplication);
-            ShareTinkerInternals.setTinkerDisableWithSharedPreferences(tinkerApplication);
-            //method 2
-            //or you can mention user to uninstall Xposed!
-            Toast.makeText(tinkerApplication, "please uninstall Xposed, illegal modify the app", Toast.LENGTH_LONG).show();
+            boolean isCausedByXposed = false;
+            //for art, we can't know the actually crash type
+            if (ShareTinkerInternals.isVmArt()) {
+                isCausedByXposed = true;
+            } else if (ex instanceof IllegalAccessError && ex.getMessage().contains(DALVIK_XPOSED_CRASH)) {
+                //for dalvik, we know the actual crash type
+                isCausedByXposed = true;
+            }
+
+            if (isCausedByXposed) {
+                TinkerLog.e(TAG, "have xposed: just clean tinker");
+                TinkerApplicationHelper.cleanPatch(applicationLike);
+                ShareTinkerInternals.setTinkerDisableWithSharedPreferences(applicationLike.getApplication());
+                //method 2
+                //or you can mention user to uninstall Xposed!
+                Toast.makeText(applicationLike.getApplication(), "please uninstall Xposed, illegal modify the app", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -70,28 +82,27 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
      * if tinker is load, and it crash more than MAX_CRASH_COUNT, then we just clean patch.
      */
     private boolean tinkerFastCrashProtect() {
-        TinkerApplication tinkerApplication = TinkerManager.getTinkerApplication();
+        ApplicationLike applicationLike = TinkerManager.getTinkerApplicationLike();
 
-        if (tinkerApplication == null) {
+        if (applicationLike == null || applicationLike.getApplication() == null) {
+            return false;
+        }
+        if (!TinkerApplicationHelper.isTinkerLoadSuccess(applicationLike)) {
             return false;
         }
 
-        if (!TinkerApplicationHelper.isTinkerLoadSuccess(tinkerApplication)) {
-            return false;
-        }
-
-        final long elapsedTime = SystemClock.elapsedRealtime() - tinkerApplication.getApplicationStartElapsedTime();
+        final long elapsedTime = SystemClock.elapsedRealtime() - applicationLike.getApplicationStartElapsedTime();
         //this process may not install tinker, so we use TinkerApplicationHelper api
         if (elapsedTime < QUICK_CRASH_ELAPSE) {
-            String currentVersion = TinkerApplicationHelper.getCurrentVersion(tinkerApplication);
+            String currentVersion = TinkerApplicationHelper.getCurrentVersion(applicationLike);
             if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
                 return false;
             }
 
-            SharedPreferences sp = tinkerApplication.getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
+            SharedPreferences sp = applicationLike.getApplication().getSharedPreferences(ShareConstants.TINKER_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
             int fastCrashCount = sp.getInt(currentVersion, 0);
             if (fastCrashCount >= MAX_CRASH_COUNT) {
-                TinkerApplicationHelper.cleanPatch(tinkerApplication);
+                TinkerApplicationHelper.cleanPatch(applicationLike);
                 TinkerLog.e(TAG, "tinker has fast crash more than %d, we just clean patch!", fastCrashCount);
                 return true;
             } else {

@@ -34,8 +34,9 @@ import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.TinkerRuntimeException;
-import com.tencent.tinker.loader.app.TinkerApplication;
+import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 
@@ -187,7 +188,7 @@ public class Tinker {
     }
 
     public void setTinkerDisable() {
-        tinkerFlags = TinkerApplication.TINKER_DISABLE;
+        tinkerFlags = ShareConstants.TINKER_DISABLE;
     }
 
     public LoadReporter getLoadReporter() {
@@ -198,8 +199,9 @@ public class Tinker {
         return patchReporter;
     }
 
+
     public boolean isTinkerEnabled() {
-        return (tinkerFlags != TinkerApplication.TINKER_DISABLE);
+        return ShareTinkerInternals.isTinkerEnabled(tinkerFlags);
     }
 
     public boolean isTinkerLoaded() {
@@ -219,11 +221,11 @@ public class Tinker {
     }
 
     public boolean isEnabledForDex() {
-        return tinkerFlags == TinkerApplication.TINKER_DEX_ONLY || tinkerFlags == TinkerApplication.TINKER_ENABLE_ALL;
+        return ShareTinkerInternals.isTinkerEnabledForDex(tinkerFlags);
     }
 
     public boolean isEnabledForNativeLib() {
-        return tinkerFlags == TinkerApplication.TINKER_LIBRARY_ONLY || tinkerFlags == TinkerApplication.TINKER_ENABLE_ALL;
+        return ShareTinkerInternals.isTinkerEnabledForNativeLib(tinkerFlags);
     }
 
     public File getPatchDirectory() {
@@ -370,7 +372,7 @@ public class Tinker {
 
         public Tinker build() {
             if (status == -1) {
-                status = TinkerApplication.TINKER_ENABLE_ALL;
+                status = ShareConstants.TINKER_ENABLE_ALL;
             }
 
             if (loadReporter == null) {

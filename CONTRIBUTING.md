@@ -16,7 +16,7 @@ We strongly welcome your pull request to make tinker better.
 ### Branch Management
 There are three main branch here:
 
-1. `master` branch.  
+1. `master` branch.
 	1. It is the latest (pre-)release branch. We use `master` for tag, with version number `1.1.0`, `1.2.0`, `1.3.0`...
 	2. **Don't submit any PR on `master` branch.**
 2. `dev` branch. 

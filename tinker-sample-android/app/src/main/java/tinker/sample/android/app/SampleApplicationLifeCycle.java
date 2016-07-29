@@ -19,6 +19,9 @@ package tinker.sample.android.app;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.AssetManager;
+import android.content.res.Resources;
 import android.os.Build;
 import android.support.multidex.MultiDex;
 
@@ -26,7 +29,7 @@ import com.tencent.tinker.anno.DefaultLifeCycle;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.app.ApplicationLifeCycle;
 import com.tencent.tinker.loader.app.DefaultApplicationLifeCycle;
-import com.tencent.tinker.loader.app.TinkerApplication;
+import com.tencent.tinker.loader.shareutil.ShareConstants;
 
 import tinker.sample.android.Log.MyLogImp;
 import tinker.sample.android.util.TinkerManager;
@@ -51,12 +54,14 @@ import tinker.sample.android.util.TinkerManager;
  * Created by shwenzhang on 16/3/17.
  */
 @SuppressWarnings("unused")
-@DefaultLifeCycle(application = ".SampleApplication", flags = TinkerApplication.TINKER_ENABLE_ALL)
+@DefaultLifeCycle(application = ".SampleApplication", flags = ShareConstants.TINKER_ENABLE_ALL)
 public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle {
     private static final String TAG = "SampleApplicationLifeCycle";
 
-    public SampleApplicationLifeCycle(TinkerApplication application) {
-        super(application);
+    public SampleApplicationLifeCycle(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
+                                      long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
+                                      Resources[] resources, ClassLoader[] classLoader, AssetManager[] assetManager) {
+        super(application, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent, resources, classLoader, assetManager);
     }
 
     /**
@@ -65,10 +70,11 @@ public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle {
      *
      * @param base
      */
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     @Override
     public void onBaseContextAttached(Context base) {
         super.onBaseContextAttached(base);
-        TinkerManager.setTinkerApplication(application);
+        TinkerManager.setTinkerApplicationLike(this);
         TinkerManager.initFastCrashProtect();
         //should set before tinker is installed
         TinkerManager.setUpgradeRetryEnable(true);
@@ -80,12 +86,12 @@ public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle {
 
         //installTinker after load multiDex
         //or you can put com.tencent.tinker.** to main dex
-        TinkerManager.installTinker(application);
+        TinkerManager.installTinker(this);
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public void registerActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
-        application.registerActivityLifecycleCallbacks(callback);
+        getApplication().registerActivityLifecycleCallbacks(callback);
     }
 
 }

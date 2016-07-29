@@ -17,9 +17,7 @@
 package com.tencent.tinker.loader;
 
 import android.app.Application;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -59,17 +57,13 @@ public class TinkerLoader extends AbstractTinkerLoader {
         return resultIntent;
     }
 
-    private void tryLoadPatchFilesInternal(Context context, int tinkerFlag, boolean tinkerLoadVerifyFlag, Intent resultIntent) {
-        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag) || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
+    private void tryLoadPatchFilesInternal(Application app, int tinkerFlag, boolean tinkerLoadVerifyFlag, Intent resultIntent) {
+        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
             return;
         }
-        if (Build.VERSION.SDK_INT >= 24) {
-            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_NOT_SUPPORTED);
-            return;
-        }
         //tinker
-        File patchDirectoryFile = SharePatchFileUtil.getPatchDirectory(context);
+        File patchDirectoryFile = SharePatchFileUtil.getPatchDirectory(app);
         if (patchDirectoryFile == null) {
             Log.w(TAG, "tryLoadPatchFiles:getPatchDirectory == null");
             //treat as not exist
@@ -117,7 +111,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OLD_VERSION, oldVersion);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_NEW_VERSION, newVersion);
 
-        boolean mainProcess = ShareTinkerInternals.isInMainProcess(context);
+        boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
         boolean versionChanged = !(oldVersion.equals(newVersion));
 
         String version = oldVersion;
@@ -154,9 +148,9 @@ public class TinkerLoader extends AbstractTinkerLoader {
             return;
         }
 
-        ShareSecurityCheck securityCheck = new ShareSecurityCheck(context);
+        ShareSecurityCheck securityCheck = new ShareSecurityCheck(app);
 
-        int returnCode = ShareTinkerInternals.checkSignatureAndTinkerID(context, patchVersionFile, securityCheck);
+        int returnCode = ShareTinkerInternals.checkSignatureAndTinkerID(app, patchVersionFile, securityCheck);
         if (returnCode != 0) {
             Log.w(TAG, "tryLoadPatchFiles:checkSignatureAndTinkerID");
             resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_PACKAGE_PATCH_CHECK, returnCode);
@@ -203,7 +197,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //now we can load patch jar
         if (isEnabledForDex) {
-            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(context, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent);
+            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent);
             if (!loadTinkerJars) {
                 Log.w(TAG, "tryLoadPatchFiles:onPatchLoadDexesFail");
                 return;

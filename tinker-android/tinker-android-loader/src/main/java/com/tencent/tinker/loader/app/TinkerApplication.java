@@ -35,7 +35,7 @@ import java.lang.reflect.Method;
 
 /**
  * Created by shwenzhang on 16/3/8.
- *
+ * <p/>
  * A base class for implementing an Application that delegates to an {@link ApplicationLifeCycle}
  * instance. This is used in conjunction with secondary dex files so that the logic that would
  * normally live in the Application class is loaded after the secondary dexes are loaded.
@@ -43,12 +43,9 @@ import java.lang.reflect.Method;
 public abstract class TinkerApplication extends Application {
 
     //oh, we can use ShareConstants, because they are loader class and static final!
-    public static final int    TINKER_DISABLE         = ShareConstants.TINKER_DISABLE;
-    public static final int    TINKER_DEX_ONLY        = ShareConstants.TINKER_DEX_MASK;
-    public static final int    TINKER_LIBRARY_ONLY    = ShareConstants.TINKER_NATIVE_LIBRARY_MASK;
-    public static final int    TINKER_ENABLE_ALL      = ShareConstants.TINKER_ENABLE_ALL;
-    public static final String INTENT_PATCH_EXCEPTION = ShareIntentUtil.INTENT_PATCH_EXCEPTION;
-    private static final String TINKER_LOADER_METHOD = "tryLoad";
+    private static final int    TINKER_DISABLE         = ShareConstants.TINKER_DISABLE;
+    private static final String INTENT_PATCH_EXCEPTION = ShareIntentUtil.INTENT_PATCH_EXCEPTION;
+    private static final String TINKER_LOADER_METHOD   = "tryLoad";
     /**
      * tinkerFlags, which types is supported
      * dex only, library only, all support
@@ -63,14 +60,15 @@ public abstract class TinkerApplication extends Application {
      * default:false
      */
     private final boolean tinkerLoadVerifyFlag;
-    private final String delegateClassName;
-    private final String loaderClassName;
-    private Intent tinkerResultIntent;
-    private ApplicationLifeCycle delegate;
+    private final String  delegateClassName;
+    private final String  loaderClassName;
+    private       Intent  tinkerResultIntent;
 
-    private Resources    resources;
-    private ClassLoader  classLoader;
-    private AssetManager assetManager;
+    private Object         delegate      = null;
+    private Class<?>       delegateClass = null;
+    private Resources[]    resources     = new Resources[1];
+    private ClassLoader[]  classLoader   = new ClassLoader[1];
+    private AssetManager[] assetManager  = new AssetManager[1];
 
     private long applicationStartElapsedTime;
     private long applicationStartMillisTime;
@@ -79,7 +77,7 @@ public abstract class TinkerApplication extends Application {
      * current build.
      */
     protected TinkerApplication(int tinkerFlags) {
-        this(tinkerFlags, DefaultApplicationLifeCycle.class.getName(), TinkerLoader.class.getName(), false);
+        this(tinkerFlags, "com.tencent.tinker.loader.app.DefaultApplicationLifeCycle", TinkerLoader.class.getName(), false);
     }
 
     /**
@@ -99,11 +97,16 @@ public abstract class TinkerApplication extends Application {
         this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
     }
 
-    private ApplicationLifeCycle createDelegate() {
+    private Object createDelegate() {
         try {
-            Class<ApplicationLifeCycle> implClass = (Class<ApplicationLifeCycle>) Class.forName(delegateClassName);
-            Constructor<ApplicationLifeCycle> constructor = implClass.getConstructor(TinkerApplication.class);
-            return constructor.newInstance(this);
+            // Use reflection to create the delegate so it doesn't need to go into the primary dex.
+            // And we can also patch it
+            delegateClass = Class.forName(delegateClassName, false, getClassLoader());
+            Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class, long.class, long.class,
+                Intent.class, Resources[].class, ClassLoader[].class, AssetManager[].class);
+            return constructor.newInstance(this, tinkerFlags, tinkerLoadVerifyFlag,
+                applicationStartElapsedTime, applicationStartMillisTime,
+                tinkerResultIntent, resources, classLoader, assetManager);
         } catch (Exception e) {
             throw new TinkerRuntimeException("createDelegate failed", e);
         }
@@ -125,7 +128,12 @@ public abstract class TinkerApplication extends Application {
         applicationStartMillisTime = System.currentTimeMillis();
         loadTinker();
         ensureDelegate();
-        delegate.onBaseContextAttached(base);
+        try {
+            Method method = delegateClass.getMethod("onBaseContextAttached", Context.class);
+            method.invoke(delegate, base);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     @Override
@@ -139,11 +147,10 @@ public abstract class TinkerApplication extends Application {
         if (tinkerFlags == TINKER_DISABLE) {
             return;
         }
-
         tinkerResultIntent = new Intent();
         try {
-            // Use reflection to create the delegate so it doesn't need to go into the primary dex.
-            Class<?> tinkerLoadClass = Class.forName(loaderClassName);
+            //reflect tinker loader, because loaderClass may be define by user!
+            Class<?> tinkerLoadClass = Class.forName(loaderClassName, false, getClassLoader());
 
             Method loadMethod = tinkerLoadClass.getMethod(TINKER_LOADER_METHOD, Application.class, int.class, boolean.class);
             Constructor<?> constructor = tinkerLoadClass.getConstructor();
@@ -156,26 +163,44 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
+    private void delegateMethod(String methodName) {
+        if (delegate != null && delegateClass != null) {
+            try {
+                Method method = delegateClass.getMethod(methodName, new Class[0]);
+                method.invoke(delegate, new Object[0]);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    }
+
     @Override
     public final void onCreate() {
         super.onCreate();
         ensureDelegate();
-        delegate.onCreate();
+        delegateMethod("onCreate");
     }
 
     @Override
     public final void onTerminate() {
         super.onTerminate();
-        if (delegate != null) {
-            delegate.onTerminate();
-        }
+        delegateMethod("onTerminate");
     }
 
     @Override
     public final void onLowMemory() {
         super.onLowMemory();
-        if (delegate != null) {
-            delegate.onLowMemory();
+        delegateMethod("onLowMemory");
+    }
+
+    private void delegateTrimMemory(int level) {
+        if (delegate != null && delegateClass != null) {
+            try {
+                Method method = delegateClass.getMethod("onTrimMemory", int.class);
+                method.invoke(delegate, level);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
         }
     }
 
@@ -183,104 +208,47 @@ public abstract class TinkerApplication extends Application {
     @Override
     public final void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        if (delegate != null) {
-            delegate.onTrimMemory(level);
+        delegateTrimMemory(level);
+    }
+
+    private void delegateConfigurationChanged(Configuration newConfig) {
+        if (delegate != null && delegateClass != null) {
+            try {
+                Method method = delegateClass.getMethod("onConfigurationChanged", Configuration.class);
+                method.invoke(delegate, newConfig);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
         }
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        if (delegate != null) {
-            delegate.onConfigurationChanged(newConfig);
-        }
+        delegateConfigurationChanged(newConfig);
     }
 
     @Override
     public Resources getResources() {
-        if (resources != null) {
-            return resources;
+        if (resources[0] != null) {
+            return resources[0];
         }
         return super.getResources();
     }
 
     @Override
     public ClassLoader getClassLoader() {
-        if (classLoader != null) {
-            return classLoader;
+        if (classLoader[0] != null) {
+            return classLoader[0];
         }
         return super.getClassLoader();
     }
 
     @Override
     public AssetManager getAssets() {
-        if (assetManager != null) {
-            return assetManager;
+        if (assetManager[0] != null) {
+            return assetManager[0];
         }
         return super.getAssets();
     }
-
-    public final Intent getTinkerResultIntent() {
-        return tinkerResultIntent;
-    }
-
-    public final int getTinkerFlags() {
-        return tinkerFlags;
-    }
-
-    public final boolean getTinkerLoadVerifyFlag() {
-        return tinkerLoadVerifyFlag;
-    }
-
-    /**
-     * @return the delegate, or {@code null} if not set up.
-     */
-    // @Nullable  - Don't want to force a reference to that annotation in the primary dex.
-    public final ApplicationLifeCycle getDelegateIfPresent() {
-        return delegate;
-    }
-
-    /**
-     * sometimes, we may need to set our own resource for application
-     *
-     * @param res
-     */
-    public void setTinkerResources(Resources res) {
-        this.resources = res;
-    }
-
-    /**
-     * sometimes, we may need to set our own resource for application
-     *
-     * @param assets
-     */
-    public void setTinkerAssets(AssetManager assets) {
-        this.assetManager = assets;
-    }
-
-    /**
-     * sometimes, we may need to set our own classloader for application
-     *
-     * @param loader
-     */
-    public void setTinkerClassLoader(ClassLoader loader) {
-        this.classLoader = loader;
-    }
-
-    /**
-     * start time {@code SystemClock.elapsedRealtime()}
-     * @return
-     */
-    public long getApplicationStartElapsedTime() {
-        return applicationStartElapsedTime;
-    }
-
-    /**
-     * start time {@code  System.currentTimeMillis()}
-     * @return
-     */
-    public long getApplicationStartMillisTime() {
-        return applicationStartMillisTime;
-    }
-
 }

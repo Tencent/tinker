@@ -37,7 +37,6 @@ public class Utils {
     public static final int ERROR_PATCH_MEMORY_LIMIT       = -7;
     public static final int ERROR_PATCH_ALREADY_APPLY      = -8;
     public static final int ERROR_PATCH_CRASH_LIMIT        = -9;
-    public static final int ERROR_PATCH_NOT_SUPPORT        = -10;
 
     public static final int MIN_MEMORY_HEAP_SIZE           = 45;
 

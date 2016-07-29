@@ -20,22 +20,26 @@ package com.tencent.tinker.loader.app;
  * Created by shwenzhang on 16/3/8.
  */
 
+import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.util.Log;
 
 /**
- * Empty implementation of {@link ApplicationLifeCycle}.
+ * Empty implementation of {@link ApplicationLike}.
  */
-public class DefaultApplicationLifeCycle implements ApplicationLifeCycle {
+public class DefaultApplicationLifeCycle extends ApplicationLike {
     private static final String TAG = "DefaultLifeCycle";
 
-    protected TinkerApplication application;
-
-    @SuppressWarnings("unused")
-    public DefaultApplicationLifeCycle(TinkerApplication application) {
-        this.application = application;
+    public DefaultApplicationLifeCycle(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
+                                       long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
+                                       Resources[] resources, ClassLoader[] classLoader, AssetManager[] assetManager) {
+        super(application, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent, resources, classLoader, assetManager);
     }
+
 
     @Override
     public void onCreate() {

@@ -88,11 +88,6 @@ public class SamplePatchListener extends DefaultPatchListener {
     @Override
     public int patchCheck(String path, boolean isUpgrade) {
         int returnCode = super.patchCheck(path, isUpgrade);
-        if (returnCode == ShareConstants.ERROR_PATCH_OK) {
-            if (Build.VERSION.SDK_INT >= 24) {
-                returnCode = Utils.ERROR_PATCH_NOT_SUPPORT;
-            }
-        }
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             if (isUpgrade) {
