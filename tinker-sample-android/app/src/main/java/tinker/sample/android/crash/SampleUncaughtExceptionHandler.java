@@ -25,8 +25,9 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
     private static final String TAG = "SampleUncaughtExceptionHandler";
 
     private final Thread.UncaughtExceptionHandler ueh;
-    private static final long QUICK_CRASH_ELAPSE = 10 * 1000;
-    public static final  int  MAX_CRASH_COUNT    = 3;
+    private static final long   QUICK_CRASH_ELAPSE  = 10 * 1000;
+    public static final  int    MAX_CRASH_COUNT     = 3;
+    private static final String DALVIK_XPOSED_CRASH = "Class ref in pre-verified class resolved to unexpected implementation";
 
     public SampleUncaughtExceptionHandler() {
         ueh = Thread.getDefaultUncaughtExceptionHandler();
@@ -57,12 +58,23 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
             if (!TinkerApplicationHelper.isTinkerLoadSuccess(applicationLike)) {
                 return;
             }
-            TinkerLog.e(TAG, "have xposed: just clean tinker");
-            TinkerApplicationHelper.cleanPatch(applicationLike);
-            ShareTinkerInternals.setTinkerDisableWithSharedPreferences(applicationLike.getApplication());
-            //method 2
-            //or you can mention user to uninstall Xposed!
-            Toast.makeText(applicationLike.getApplication(), "please uninstall Xposed, illegal modify the app", Toast.LENGTH_LONG).show();
+            boolean isCausedByXposed = false;
+            //for art, we can't know the actually crash type
+            if (ShareTinkerInternals.isVmArt()) {
+                isCausedByXposed = true;
+            } else if (ex instanceof IllegalAccessError && ex.getMessage().contains(DALVIK_XPOSED_CRASH)) {
+                //for dalvik, we know the actual crash type
+                isCausedByXposed = true;
+            }
+
+            if (isCausedByXposed) {
+                TinkerLog.e(TAG, "have xposed: just clean tinker");
+                TinkerApplicationHelper.cleanPatch(applicationLike);
+                ShareTinkerInternals.setTinkerDisableWithSharedPreferences(applicationLike.getApplication());
+                //method 2
+                //or you can mention user to uninstall Xposed!
+                Toast.makeText(applicationLike.getApplication(), "please uninstall Xposed, illegal modify the app", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
