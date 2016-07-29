@@ -11,7 +11,7 @@ Add tinker-gradle-plugin as a dependency in your main `build.gradle` in the root
 ```gradle
 buildscript {
     dependencies {
-        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.2.0')
+        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.3.0')
     }
 }
 ```
@@ -21,9 +21,9 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 ```gradle
 dependencies {
 	//Optional, help to gen the final application 
-	compile('com.tencent.tinker:tinker-android-anno:1.2.0')
+	compile('com.tencent.tinker:tinker-android-anno:1.3.0')
     //tinker's main Android lib
-    compile('com.tencent.tinker:tinker-android-lib:1.2.0') 
+    compile('com.tencent.tinker:tinker-android-lib:1.3.0') 
 }
 ...
 ...
@@ -45,7 +45,7 @@ public class SampleApplication extends TinkerApplication {
       super(
         //tinkerFlags, which types is supported
         //dex only, library only, all support
-        TinkerApplication.TINKER_ENABLE_ALL,
+        ShareConstants.TINKER_ENABLE_ALL,
         // This is passed as a string so the shell application does not
         // have a binary dependency on your ApplicationLifeCycle class. 
         "tinker.sample.android.SampleApplicationLifeCycle");
@@ -58,7 +58,7 @@ Use `tinker-android-anno` to generate your `Application` is more recommended, yo
 ```java
 @DefaultLifeCycle(
 application = ".SampleApplication",                       //application name to generate
-flags = TinkerApplication.TINKER_ENABLE_ALL)              //tinkerFlags above
+flags = ShareConstants.TINKER_ENABLE_ALL)                 //tinkerFlags above
 public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle 
 ```
 
