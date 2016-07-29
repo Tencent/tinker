@@ -17,6 +17,7 @@
 
 package com.tencent.tinker.loader;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.os.Build;
 import android.util.Log;
@@ -59,6 +60,7 @@ public class SystemClassLoaderAdder {
         }
     }
 
+    @SuppressLint("NewApi")
     public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files)
         throws Exception {
 

@@ -39,6 +39,8 @@ import dalvik.system.BaseDexClassLoader;
  * try as InstantRun and bazel (https://github.com/bazelbuild/bazel/blob/master/src/tools/android/
  * java/com/google/devtools/build/android/incrementaldeployment/IncrementalClassLoader.java)
  */
+@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+@SuppressWarnings("unchecked")
 public class IncrementalClassLoader extends ClassLoader {
     private static final String TAG = "IncrementalClassLoader";
 
@@ -62,7 +64,6 @@ public class IncrementalClassLoader extends ClassLoader {
         return this.delegateClassLoader.findClass(className);
     }
 
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     @Override
     protected String findLibrary(String libName) {
         return this.delegateClassLoader.findLibrary(libName);
@@ -123,7 +124,6 @@ public class IncrementalClassLoader extends ClassLoader {
         parent.set(classLoader, newParent);
     }
 
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public static ClassLoader inject(BaseDexClassLoader classLoader,
                                      String nativeLibraryPath, String optimizedDirectory, List<String> dexes) throws Exception {
         IncrementalClassLoader incrementalClassLoader = new IncrementalClassLoader(
