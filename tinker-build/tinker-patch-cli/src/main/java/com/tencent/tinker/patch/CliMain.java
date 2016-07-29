@@ -74,74 +74,7 @@ public class CliMain extends Runner {
         out.println();
         out.println();
         out.println("Usage: java -jar " + command + " " + ARG_OLD + " old.apk " + ARG_NEW + " new.apk " + ARG_CONFIG + " tinker_config.xml " + ARG_OUT + " output_path");
-        out.println("others please contact shwenzhang");
-    }
-
-    private static void printUsage(PrintStream out, String[] args) {
-        int argWidth = 0;
-        for (int i = 0; i < args.length; i += 2) {
-            String arg = args[i];
-            argWidth = Math.max(argWidth, arg.length());
-        }
-        argWidth += 2;
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < argWidth; i++) {
-            sb.append(' ');
-        }
-        String indent = sb.toString();
-        String formatString = "%1$-" + argWidth + "s%2$s"; //$NON-NLS-1$
-
-        for (int i = 0; i < args.length; i += 2) {
-            String arg = args[i];
-            String description = args[i + 1];
-            if (arg.length() == 0) {
-                out.println(description);
-            } else {
-                out.print(wrap(String.format(formatString, arg, description), 300, indent));
-            }
-        }
-    }
-
-    private static String wrap(String explanation, int lineWidth, String hangingIndent) {
-        int explanationLength = explanation.length();
-        StringBuilder sb = new StringBuilder(explanationLength * 2);
-        int index = 0;
-
-        while (index < explanationLength) {
-            int lineEnd = explanation.indexOf('\n', index);
-            int next;
-
-            if (lineEnd != -1 && (lineEnd - index) < lineWidth) {
-                next = lineEnd + 1;
-            } else {
-                // Line is longer than available width; grab as much as we can
-                lineEnd = Math.min(index + lineWidth, explanationLength);
-                if (lineEnd - index < lineWidth) {
-                    next = explanationLength;
-                } else {
-                    // then back up to the last space
-                    int lastSpace = explanation.lastIndexOf(' ', lineEnd);
-                    if (lastSpace > index) {
-                        lineEnd = lastSpace;
-                        next = lastSpace + 1;
-                    } else {
-                        // No space anywhere on the line: it contains something wider than
-                        // can fit (like a long URL) so just hard break it
-                        next = lineEnd + 1;
-                    }
-                }
-            }
-            if (sb.length() > 0) {
-                sb.append(hangingIndent);
-            } else {
-                lineWidth -= hangingIndent.length();
-            }
-            sb.append(explanation.substring(index, lineEnd));
-            sb.append('\n');
-            index = next;
-        }
-
-        return sb.toString();
+        out.println("others please contact us");
     }
 
     private void run(String[] args) {

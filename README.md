@@ -74,7 +74,7 @@ Any problem?
 1. Learn more from [tinker-sample-android](http://git.code.oa.com/tinker/tinker/tree/master/tinker-sample-android).
 2. Read the [source code](http://git.code.oa.com/tinker/tinker/tree/master).
 3. Read the [wiki](http://git.code.oa.com/tinker/tinker/wikis/home) or [FAQ](http://git.code.oa.com/tinker/tinker/wikis/faq) for help.
-4. Contact shwenzhang for help.
+4. Contact us for help.
 
 ## Contributing
 For more information about contributing issues or pull requsets, see our [Tinker Contributing Guide](http://git.code.oa.com/tinker/tinker/blob/master/CONTRIBUTING.md)

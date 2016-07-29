@@ -165,7 +165,6 @@ public class DefaultPatchReporter implements PatchReporter {
     /**
      * recover patch occur unknown exception that we have wrap try catch for you!
      * you may need to report this exception and contact me
-     * shwenzhang@tencent.com or shaowenzhang1986@gmail.com
      *
      * @param patchFile      the input file to patch
      * @param e

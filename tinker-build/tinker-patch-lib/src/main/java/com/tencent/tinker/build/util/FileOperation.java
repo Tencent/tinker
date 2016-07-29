@@ -30,8 +30,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class FileOperation {
-    private static final int BUFFER = 8192;
-
     public static final boolean fileExists(String filePath) {
         if (filePath == null) {
             return false;
@@ -108,7 +106,7 @@ public class FileOperation {
             is = new FileInputStream(source);
             os = new FileOutputStream(dest, false);
 
-            byte[] buffer = new byte[BUFFER];
+            byte[] buffer = new byte[TypedValue.BUFFER_SIZE];
             int length;
             while ((length = is.read(buffer)) > 0) {
                 os.write(buffer, 0, length);
@@ -136,35 +134,50 @@ public class FileOperation {
     @SuppressWarnings("rawtypes")
     public static void unZipAPk(String fileName, String filePath) throws IOException {
         checkDirectory(filePath);
+
         ZipFile zipFile = new ZipFile(fileName);
-        Enumeration emu = zipFile.entries();
-        while (emu.hasMoreElements()) {
-            ZipEntry entry = (ZipEntry) emu.nextElement();
-            if (entry.isDirectory()) {
-                new File(filePath, entry.getName()).mkdirs();
-                continue;
-            }
-            BufferedInputStream bis = new BufferedInputStream(zipFile.getInputStream(entry));
+        Enumeration enumeration = zipFile.entries();
+        try {
+            while (enumeration.hasMoreElements()) {
+                ZipEntry entry = (ZipEntry) enumeration.nextElement();
+                if (entry.isDirectory()) {
+                    new File(filePath, entry.getName()).mkdirs();
+                    continue;
+                }
+                BufferedInputStream bis = new BufferedInputStream(zipFile.getInputStream(entry));
 
-            File file = new File(filePath + File.separator + entry.getName());
+                File file = new File(filePath + File.separator + entry.getName());
 
-            File parent = file.getParentFile();
-            if (parent != null && (!parent.exists())) {
-                parent.mkdirs();
-            }
-            FileOutputStream fos = new FileOutputStream(file);
-            BufferedOutputStream bos = new BufferedOutputStream(fos, BUFFER);
+                File parentFile = file.getParentFile();
+                if (parentFile != null && (!parentFile.exists())) {
+                    parentFile.mkdirs();
+                }
+                FileOutputStream fos = null;
+                BufferedOutputStream bos = null;
+                try {
+                    fos = new FileOutputStream(file);
+                    bos = new BufferedOutputStream(fos, TypedValue.BUFFER_SIZE);
 
-            byte[] buf = new byte[BUFFER];
-            int len = 0;
-            while ((len = bis.read(buf, 0, BUFFER)) != -1) {
-                fos.write(buf, 0, len);
+                    byte[] buf = new byte[TypedValue.BUFFER_SIZE];
+                    int len;
+                    while ((len = bis.read(buf, 0, TypedValue.BUFFER_SIZE)) != -1) {
+                        fos.write(buf, 0, len);
+                    }
+                } finally {
+                    if (bos != null) {
+                        bos.flush();
+                        bos.close();
+                    }
+                    if (bis != null) {
+                        bis.close();
+                    }
+                }
             }
-            bos.flush();
-            bos.close();
-            bis.close();
+        } finally {
+            if (zipFile != null) {
+                zipFile.close();
+            }
         }
-        zipFile.close();
     }
 
     /**
@@ -175,7 +188,7 @@ public class FileOperation {
      * @throws IOException
      */
     public static void zipFiles(Collection<File> resFileList, File zipFile) throws IOException {
-        ZipOutputStream zipout = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile), BUFFER));
+        ZipOutputStream zipout = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile), TypedValue.BUFFER_SIZE));
         for (File resFile : resFileList) {
             if (resFile.exists()) {
                 zipFile(resFile, zipout, "");

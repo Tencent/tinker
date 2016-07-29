@@ -189,7 +189,6 @@ public class DefaultLoadReporter implements LoadReporter {
     /**
      * load patch occur unknown exception that we have wrap try catch for you!
      * you may need to report this exception and contact me
-     * shwenzhang@tencent.com or shaowenzhang1986@gmail.com
      * you can disable patch as {@link DefaultLoadReporter#onLoadException(Throwable)}
      *
      * @param e
@@ -207,7 +206,6 @@ public class DefaultLoadReporter implements LoadReporter {
      * reflect system classLoader occur exception
      * but we will catch this error, so it will not go to onLoadException
      * you may need to report this exception and contact me
-     * shwenzhang@tencent.com or shaowenzhang1986@gmail.com
      * you can disable patch as {@link DefaultLoadReporter#onLoadDexException(Throwable)}
      *
      * @param e
