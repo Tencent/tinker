@@ -19,8 +19,9 @@ package com.tencent.tinker.build.decoder;
 
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
-import com.tencent.tinker.build.dexdifflib.DexDiff;
-import com.tencent.tinker.build.dexdifflib.util.PatternUtils;
+import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
+import com.tencent.tinker.build.dexpatcher.util.DexPatcherLogManager;
+import com.tencent.tinker.build.dexpatcher.util.PatternUtils;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.DexClassesComparator;
@@ -31,7 +32,7 @@ import com.tencent.tinker.build.util.MD5;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
-import com.tencent.tinker.commons.dexdifflib.DexPatch;
+import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -74,6 +75,16 @@ public class DexDiffDecoder extends BaseDecoder {
         } else {
             logWriter = null;
         }
+
+        DexPatcherLogManager.setLogWritter(
+                DexPatchGenerator.class.getName(),
+                new DexPatcherLogManager.LogWritter() {
+                    @Override
+                    public void write(String message) {
+                        logWriter.writeLineToInfoFile(message);
+                    }
+                }
+        );
 
         excludedClassModifiedChecker = new ExcludedClassModifiedChecker(config);
         addedOrDeletedClassesCmptor = new DexClassesComparator("*");
@@ -153,13 +164,8 @@ public class DexDiffDecoder extends BaseDecoder {
         try {
             List<String> excludeClassPatternList = new ArrayList<>();
             excludeClassPatternList.addAll(config.mDexLoaderPattern);
-            DexDiff dexDiff = new DexDiff(oldFile, newFile);
-            dexDiff.setLogWriter(new DexDiff.LogWriter() {
-                @Override
-                public void write(String message) {
-                    logWriter.writeLineToInfoFile(message);
-                }
-            });
+            DexPatchGenerator dexPatchGen = new DexPatchGenerator(oldFile, newFile);
+            dexPatchGen.setAdditionalRemovingClassPatterns(excludeClassPatternList);
 
             logWriter.writeLineToInfoFile(
                 String.format(
@@ -169,7 +175,7 @@ public class DexDiffDecoder extends BaseDecoder {
                 )
             );
 
-            dexDiff.doDiffAndSaveTo(dexDiffOut, excludeClassPatternList);
+            dexPatchGen.executeAndSaveTo(dexDiffOut);
         } catch (Exception e) {
             throw new TinkerPatchException(e);
         }
@@ -180,7 +186,7 @@ public class DexDiffDecoder extends BaseDecoder {
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream((int) newFile.length());
-            new DexPatch(dexDiffOut).applyPatchAndSave(oldFile, baos);
+            new DexPatchApplier(oldFile, dexDiffOut).executeAndSaveTo(baos);
             byte[] patchedDexData = baos.toByteArray();
 
             Logger.d(

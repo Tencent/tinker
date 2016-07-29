@@ -132,7 +132,7 @@ public final class EncodedValueCodec {
     /**
      * Read an unsigned integer.
      *
-     * @param zwidth      byte count minus one
+     * @param zwidth byte count minus one
      * @param fillOnRight true to zero fill on the right; false on the left
      */
     public static int readUnsignedInt(ByteInput in, int zwidth, boolean fillOnRight) {
@@ -167,7 +167,7 @@ public final class EncodedValueCodec {
     /**
      * Read an unsigned long.
      *
-     * @param zwidth      byte count minus one
+     * @param zwidth byte count minus one
      * @param fillOnRight true to zero fill on the right; false on the left
      */
     public static long readUnsignedLong(ByteInput in, int zwidth, boolean fillOnRight) {

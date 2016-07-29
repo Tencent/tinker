@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Tencent WeChat, Inc.
+ * Copyright (C) 2011 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,42 +17,33 @@
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
-import com.tencent.tinker.android.dex.util.Unsigned;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
 /**
  * *** This file is NOT a part of AOSP. ***
  *
  * Structure of AnnotationSet element in Dex file.
  */
-public class AnnotationSet extends SectionItem<AnnotationSet> {
-    @SuppressWarnings("unused")
-    private final Dex   dex;
-    public        int[] annotationOffsets;
+public class AnnotationSet extends Section.Item<AnnotationSet> {
+    public int[] annotationOffsets;
 
-    public AnnotationSet(Section owner, int offset, int[] annotationOffsets) {
-        super(owner, offset);
-        this.dex = (owner != null ? owner.owner : null);
+    public AnnotationSet(int off, int[] annotationOffsets) {
+        super(off);
         this.annotationOffsets = annotationOffsets;
     }
 
     @Override
-    public AnnotationSet clone(Section newOwner, int newOffset) {
-        return new AnnotationSet(newOwner, newOffset, annotationOffsets);
-    }
-
-    @Override
-    public int compareTo(AnnotationSet o) {
+    public int compareTo(AnnotationSet other) {
         int size = annotationOffsets.length;
-        int oSize = o.annotationOffsets.length;
+        int oSize = other.annotationOffsets.length;
 
         if (size != oSize) {
-            return Unsigned.compare(size, oSize);
+            return CompareUtils.uCompare(size, oSize);
         }
 
         for (int i = 0; i < size; ++i) {
-            if (annotationOffsets[i] != o.annotationOffsets[i]) {
-                return Unsigned.compare(annotationOffsets[i], o.annotationOffsets[i]);
+            if (annotationOffsets[i] != other.annotationOffsets[i]) {
+                return CompareUtils.uCompare(annotationOffsets[i], other.annotationOffsets[i]);
             }
         }
 
@@ -60,15 +51,7 @@ public class AnnotationSet extends SectionItem<AnnotationSet> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((AnnotationSet) obj) == 0;
-    }
-
-    @Override
-    public int getByteCountInDex() {
+    public int byteCountInDex() {
         return SizeOf.UINT * (1 + annotationOffsets.length);
     }
 }

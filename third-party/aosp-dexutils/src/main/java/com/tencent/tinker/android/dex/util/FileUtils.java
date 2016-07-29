@@ -16,11 +16,15 @@
 
 package com.tencent.tinker.android.dex.util;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
+ * *** This file is NOT a part of AOSP. ***
  * File I/O utilities.
  */
 public final class FileUtils {
@@ -34,7 +38,7 @@ public final class FileUtils {
      * @param fileName {@code non-null;} name of the file to read
      * @return {@code non-null;} contents of the file
      */
-    public static byte[] readFile(String fileName) {
+    public static byte[] readFile(String fileName) throws IOException {
         File file = new File(fileName);
         return readFile(file);
     }
@@ -45,8 +49,9 @@ public final class FileUtils {
      *
      * @param file {@code non-null;} the file to read
      * @return {@code non-null;} contents of the file
+     * @throws {@code IOException}
      */
-    public static byte[] readFile(File file) {
+    public static byte[] readFile(File file) throws IOException {
         if (!file.exists()) {
             throw new RuntimeException(file + ": file not found");
         }
@@ -67,26 +72,24 @@ public final class FileUtils {
 
         byte[] result = new byte[length];
 
-        FileInputStream in = null;
+        InputStream in = null;
         try {
-            in = new FileInputStream(file);
+            in = new BufferedInputStream(new FileInputStream(file));
             int at = 0;
             while (length > 0) {
                 int amt = in.read(result, at, length);
-                if (amt == -1) {
+                if (amt < 0) {
                     throw new RuntimeException(file + ": unexpected EOF");
                 }
                 at += amt;
                 length -= amt;
             }
-        } catch (IOException ex) {
-            throw new RuntimeException(file + ": trouble reading", ex);
         } finally {
             if (in != null) {
                 try {
                     in.close();
                 } catch (Exception e) {
-                    // Do nothing.
+                    // ignored.
                 }
             }
         }
@@ -94,12 +97,22 @@ public final class FileUtils {
         return result;
     }
 
+    public static byte[] readStream(InputStream is) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(15 * 1024 * 1024);
+        byte[] buffer = new byte[8192];
+        int bytesRead = 0;
+        while ((bytesRead = is.read(buffer)) > 0) {
+            baos.write(buffer, 0, bytesRead);
+        }
+        return baos.toByteArray();
+    }
+
     /**
      * Returns true if {@code fileName} names a .zip, .jar, or .apk.
      */
     public static boolean hasArchiveSuffix(String fileName) {
         return fileName.endsWith(".zip")
-            || fileName.endsWith(".jar")
-            || fileName.endsWith(".apk");
+                || fileName.endsWith(".jar")
+                || fileName.endsWith(".apk");
     }
 }

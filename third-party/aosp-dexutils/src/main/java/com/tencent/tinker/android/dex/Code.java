@@ -16,27 +16,21 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
-import com.tencent.tinker.android.dex.util.ArrayUtils;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
-/**
- * Modifications by tomystang:
- * Make this class derived from {@code SectionItem} so that
- * we can trace dex section this element belongs to easily.
- */
-public final class Code extends SectionItem<Code> {
-    public int            registersSize;
-    public int            insSize;
-    public int            outsSize;
-    public int            debugInfoOffset;
-    public short[]        instructions;
-    public Try[]          tries;
+public final class Code extends Item<Code> {
+    public int registersSize;
+    public int insSize;
+    public int outsSize;
+    public int debugInfoOffset;
+    public short[] instructions;
+    public Try[] tries;
     public CatchHandler[] catchHandlers;
 
-    public Code(Section owner, int offset, int registersSize, int insSize, int outsSize, int debugInfoOffset,
-                short[] instructions, Try[] tries, CatchHandler[] catchHandlers) {
-        super(owner, offset);
+    public Code(int off, int registersSize, int insSize, int outsSize, int debugInfoOffset,
+            short[] instructions, Try[] tries, CatchHandler[] catchHandlers) {
+        super(off);
         this.registersSize = registersSize;
         this.insSize = insSize;
         this.outsSize = outsSize;
@@ -47,70 +41,68 @@ public final class Code extends SectionItem<Code> {
     }
 
     @Override
-    public Code clone(Section newOwner, int newOffset) {
-        return new Code(newOwner, newOffset, registersSize, insSize, outsSize, debugInfoOffset, instructions, tries,
-            catchHandlers);
+    public int compareTo(Code other) {
+        int res = CompareUtils.sCompare(registersSize, other.registersSize);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.sCompare(insSize, other.insSize);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.sCompare(outsSize, other.outsSize);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.sCompare(debugInfoOffset, other.debugInfoOffset);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.uArrCompare(instructions, other.instructions);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.aArrCompare(tries, other.tries);
+        if (res != 0) {
+            return res;
+        }
+        return CompareUtils.aArrCompare(catchHandlers, other.catchHandlers);
     }
 
     @Override
-    public int compareTo(Code o) {
-        if (registersSize != o.registersSize) {
-            return registersSize - o.registersSize;
-        }
-        if (insSize != o.insSize) {
-            return insSize - o.insSize;
-        }
-        if (outsSize != o.outsSize) {
-            return outsSize - o.outsSize;
-        }
-        if (debugInfoOffset != o.debugInfoOffset) {
-            return debugInfoOffset - o.debugInfoOffset;
-        }
-        int cmpRes = ArrayUtils.compareArray(instructions, o.instructions);
-        if (cmpRes != 0) {
-            return cmpRes;
-        }
-        cmpRes = ArrayUtils.compareArray(tries, o.tries);
-        if (cmpRes != 0) {
-            return cmpRes;
-        }
-        cmpRes = ArrayUtils.compareArray(catchHandlers, o.catchHandlers);
-        if (cmpRes != 0) {
-            return cmpRes;
-        }
-        return 0;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((Code) obj) == 0;
-    }
-
-    @Override
-    public int getByteCountInDex() {
-        int byteCount = 4 * SizeOf.USHORT + 2 * SizeOf.UINT + SizeOf.USHORT * instructions.length;
+    public int byteCountInDex() {
+        int insnsSize = instructions.length;
+        int res = 4 * SizeOf.USHORT + 2 * SizeOf.UINT + insnsSize * SizeOf.USHORT;
         if (tries.length > 0) {
-            byteCount += SizeOf.TRY_ITEM * tries.length;
-            if ((instructions.length & 1) == 1) {
-                byteCount += SizeOf.USHORT; /* padding */
+            if ((insnsSize & 1) == 1) {
+                res += SizeOf.USHORT;
+            }
+            res += tries.length * SizeOf.TRY_ITEM;
+
+            int catchHandlerSize = catchHandlers.length;
+            res += Leb128.unsignedLeb128Size(catchHandlerSize);
+
+            for (CatchHandler catchHandler : catchHandlers) {
+                int typeIdxAddrPairCount = catchHandler.typeIndexes.length;
+                if (catchHandler.catchAllAddress != -1) {
+                    res += Leb128.signedLeb128Size(-typeIdxAddrPairCount)
+                         + Leb128.unsignedLeb128Size(catchHandler.catchAllAddress);
+                } else {
+                    res += Leb128.signedLeb128Size(typeIdxAddrPairCount);
+                }
+                for (int i = 0; i < typeIdxAddrPairCount; ++i) {
+                    res += Leb128.unsignedLeb128Size(catchHandler.typeIndexes[i])
+                         + Leb128.unsignedLeb128Size(catchHandler.addresses[i]);
+                }
             }
         }
-        for (CatchHandler catchHandler : catchHandlers) {
-            byteCount += catchHandler.getByteCountInDex();
-        }
-        return byteCount;
+
+        return res;
     }
 
-    public static class Try extends Item<Try> {
+    public static class Try implements Comparable<Try> {
         public int startAddress;
         public int instructionCount;
-
-        /**
-         * Note that this is distinct from the its catch handler <strong>offset</strong>.
-         */
         public int catchHandlerIndex;
 
         public Try(int startAddress, int instructionCount, int catchHandlerIndex) {
@@ -120,37 +112,26 @@ public final class Code extends SectionItem<Code> {
         }
 
         @Override
-        public int compareTo(Try o) {
-            if (startAddress != o.startAddress) {
-                return startAddress - o.startAddress;
+        public int compareTo(Try other) {
+            int res = CompareUtils.sCompare(startAddress, other.startAddress);
+            if (res != 0) {
+                return res;
             }
-            if (instructionCount != o.instructionCount) {
-                return instructionCount - o.instructionCount;
+            res = CompareUtils.sCompare(instructionCount, other.instructionCount);
+            if (res != 0) {
+                return res;
             }
-            if (catchHandlerIndex != o.catchHandlerIndex) {
-                return catchHandlerIndex - o.catchHandlerIndex;
-            }
-            return 0;
-        }
-
-        @Override
-        public int getByteCountInDex() {
-            return SizeOf.TRY_ITEM;
+            return CompareUtils.sCompare(catchHandlerIndex, other.catchHandlerIndex);
         }
     }
 
-    public static class CatchHandler extends Item<CatchHandler> {
+    public static class CatchHandler implements Comparable<CatchHandler> {
         public int[] typeIndexes;
         public int[] addresses;
-        public int   catchAllAddress;
-        public int   offset;
+        public int catchAllAddress;
+        public int offset;
 
         public CatchHandler(int[] typeIndexes, int[] addresses, int catchAllAddress, int offset) {
-            int typeCount = typeIndexes.length;
-            int addrCount = addresses.length;
-            if (typeCount != addrCount) {
-                throw new IllegalArgumentException("Length of typeIndexes and addresses are not match.");
-            }
             this.typeIndexes = typeIndexes;
             this.addresses = addresses;
             this.catchAllAddress = catchAllAddress;
@@ -158,44 +139,16 @@ public final class Code extends SectionItem<Code> {
         }
 
         @Override
-        public int compareTo(CatchHandler o) {
-            int cmpRes = ArrayUtils.compareArray(typeIndexes, o.typeIndexes);
-            if (cmpRes != 0) {
-                return cmpRes;
+        public int compareTo(CatchHandler other) {
+            int res = CompareUtils.sArrCompare(typeIndexes, other.typeIndexes);
+            if (res != 0) {
+                return res;
             }
-            cmpRes = ArrayUtils.compareArray(addresses, o.addresses);
-            if (cmpRes != 0) {
-                return cmpRes;
+            res = CompareUtils.sArrCompare(addresses, other.addresses);
+            if (res != 0) {
+                return res;
             }
-            if (catchAllAddress != o.catchAllAddress) {
-                return catchAllAddress - o.catchAllAddress;
-            }
-            if (offset != o.offset) {
-                return offset - o.offset;
-            }
-            return 0;
-        }
-
-        @Override
-        public int getByteCountInDex() {
-            int byteCount = 0;
-            if (catchAllAddress != -1) {
-                byteCount += Leb128.signedLeb128Size(-typeIndexes.length);
-            } else {
-                byteCount += Leb128.signedLeb128Size(typeIndexes.length);
-            }
-
-            int typeIndexesLen = typeIndexes.length;
-            for (int i = 0; i < typeIndexesLen; i++) {
-                byteCount += Leb128.unsignedLeb128Size(typeIndexes[i])
-                    + Leb128.unsignedLeb128Size(addresses[i]);
-            }
-
-            if (catchAllAddress != -1) {
-                byteCount += Leb128.unsignedLeb128Size(catchAllAddress);
-            }
-
-            return byteCount;
+            return CompareUtils.sCompare(catchAllAddress, other.catchAllAddress);
         }
     }
 }

@@ -16,7 +16,6 @@
 
 package com.tencent.tinker.build.util;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.regex.Pattern;
@@ -55,13 +54,6 @@ public class Utils {
             input = input.replace("*", ".*");
         }
         return input;
-    }
-
-    public static void cleanDir(File dir) {
-        if (dir.exists()) {
-            FileOperation.deleteDir(dir);
-            dir.mkdirs();
-        }
     }
 
     public static boolean isStringMatchesPatterns(String str, Collection<Pattern> patterns) {

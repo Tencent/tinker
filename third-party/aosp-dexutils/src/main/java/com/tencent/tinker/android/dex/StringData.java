@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Tencent WeChat, Inc.
+ * Copyright (C) 2011 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,42 +16,34 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+
+import java.io.UTFDataFormatException;
 
 /**
  * *** This file is NOT a part of AOSP. ***
  *
  * Structure of StringData element in Dex file.
  */
-public class StringData extends SectionItem<StringData> {
+public class StringData extends Item<StringData> {
     public String value;
 
-    public StringData(Section owner, int offset, String value) {
-        super(owner, offset);
+    public StringData(int offset, String value) {
+        super(offset);
         this.value = value;
     }
 
     @Override
-    public StringData clone(Section newOwner, int newOffset) {
-        return new StringData(newOwner, newOffset, value);
+    public int compareTo(StringData other) {
+        return value.compareTo(other.value);
     }
 
     @Override
-    public int compareTo(StringData o) {
-        return value.compareTo(o.value);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
+    public int byteCountInDex() {
+        try {
+            return Leb128.unsignedLeb128Size(value.length()) + (int) Mutf8.countBytes(value, true) + SizeOf.UBYTE;
+        } catch (UTFDataFormatException e) {
+            throw new DexException(e);
         }
-        return compareTo((StringData) obj) == 0;
-    }
-
-    @Override
-    public int getByteCountInDex() {
-        return Leb128.unsignedLeb128Size(value.length()) + (int) Mutf8.countBytes(value, true) + SizeOf.UBYTE;
     }
 }
