@@ -49,7 +49,7 @@ public final class FileUtils {
      *
      * @param file {@code non-null;} the file to read
      * @return {@code non-null;} contents of the file
-     * @throws {@code IOException}
+     * @throws IOException
      */
     public static byte[] readFile(File file) throws IOException {
         if (!file.exists()) {
@@ -98,9 +98,9 @@ public final class FileUtils {
     }
 
     public static byte[] readStream(InputStream is) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(15 * 1024 * 1024);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(2 * 1024 * 1024);
         byte[] buffer = new byte[8192];
-        int bytesRead = 0;
+        int bytesRead;
         while ((bytesRead = is.read(buffer)) > 0) {
             baos.write(buffer, 0, bytesRead);
         }

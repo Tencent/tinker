@@ -21,6 +21,8 @@ package com.tencent.tinker.android.dex;
  * processing a dex file.
  */
 public class DexException extends RuntimeException {
+    static final long serialVersionUID = 1L;
+
     public DexException(String message) {
         super(message);
     }
