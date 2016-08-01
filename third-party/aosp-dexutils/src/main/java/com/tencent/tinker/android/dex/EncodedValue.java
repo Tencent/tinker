@@ -16,63 +16,40 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
 import com.tencent.tinker.android.dex.util.ByteInput;
+import com.tencent.tinker.android.dex.util.CompareUtils;
+
+import static com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 
 /**
  * An encoded value or array.
  */
-public final class EncodedValue extends SectionItem<EncodedValue> {
+public final class EncodedValue extends Item<EncodedValue> {
     public byte[] data;
 
-    public EncodedValue(Section owner, int offset, byte[] data) {
-        super(owner, offset);
+    public EncodedValue(int off, byte[] data) {
+        super(off);
         this.data = data;
     }
 
     public ByteInput asByteInput() {
         return new ByteInput() {
-            private int pos = 0;
+            private int position = 0;
 
             @Override
             public byte readByte() {
-                return data[pos++];
+                return data[position++];
             }
         };
     }
 
-    @Override
-    public EncodedValue clone(Section newOwner, int newOffset) {
-        return new EncodedValue(newOwner, newOffset, data);
+    @Override public int compareTo(EncodedValue other) {
+        return CompareUtils.uArrCompare(data, other.data);
     }
 
     @Override
-    public int compareTo(EncodedValue other) {
-        int size = Math.min(data.length, other.data.length);
-        for (int i = 0; i < size; i++) {
-            if (data[i] != other.data[i]) {
-                return (data[i] & 0xff) - (other.data[i] & 0xff);
-            }
-        }
-        return data.length - other.data.length;
-    }
+    public int byteCountInDex() {
+        return SizeOf.UBYTE * data.length;
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((EncodedValue) obj) == 0;
-    }
-
-    @Override
-    public String toString() {
-        return Integer.toHexString(data[0] & 0xff) + "...(" + data.length + ")";
-    }
-
-    @Override
-    public int getByteCountInDex() {
-        return data.length;
     }
 }

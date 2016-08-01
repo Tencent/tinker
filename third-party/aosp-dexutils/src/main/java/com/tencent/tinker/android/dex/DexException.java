@@ -16,14 +16,12 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.util.ExceptionWithContext;
-
 /**
  * Thrown when there's a format problem reading, writing, or generally
  * processing a dex file.
  */
-public final class DexException extends ExceptionWithContext {
-    private static final long serialVersionUID = 1L;
+public class DexException extends RuntimeException {
+    static final long serialVersionUID = 1L;
 
     public DexException(String message) {
         super(message);

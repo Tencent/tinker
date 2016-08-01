@@ -16,67 +16,33 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
-import com.tencent.tinker.android.dex.util.Unsigned;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
-/**
- * Modifications by tomystang:
- * Make this class derived from {@code SectionItem} so that
- * we can trace dex section this element belongs to easily.
- */
-public final class FieldId extends SectionItem<FieldId> {
-    private final Dex dex;
-    public        int declaringClassIndex;
-    public        int typeIndex;
-    public        int nameIndex;
+public final class FieldId extends Item<FieldId> {
+    public int declaringClassIndex;
+    public int typeIndex;
+    public int nameIndex;
 
-    public FieldId(Section owner, int offset, int declaringClassIndex, int typeIndex, int nameIndex) {
-        super(owner, offset);
-        this.dex = (owner != null ? owner.owner : null);
+    public FieldId(int off, int declaringClassIndex, int typeIndex, int nameIndex) {
+        super(off);
         this.declaringClassIndex = declaringClassIndex;
         this.typeIndex = typeIndex;
         this.nameIndex = nameIndex;
     }
 
-    @Override
-    public FieldId clone(Section newOwner, int newOffset) {
-        return new FieldId(newOwner, newOffset, declaringClassIndex, typeIndex, nameIndex);
-    }
-
     public int compareTo(FieldId other) {
         if (declaringClassIndex != other.declaringClassIndex) {
-            return Unsigned.compare(declaringClassIndex, other.declaringClassIndex);
+            return CompareUtils.uCompare(declaringClassIndex, other.declaringClassIndex);
         }
         if (nameIndex != other.nameIndex) {
-            return Unsigned.compare(nameIndex, other.nameIndex);
+            return CompareUtils.uCompare(nameIndex, other.nameIndex);
         }
-        return Unsigned.compare(typeIndex, other.typeIndex); // should always be 0
+        return CompareUtils.uCompare(typeIndex, other.typeIndex); // should always be 0
     }
 
     @Override
-    public int hashCode() {
-        return (declaringClassIndex << 28) | (typeIndex << 20) | (nameIndex << 16);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((FieldId) obj) == 0;
-    }
-
-    @Override
-    public String toString() {
-        if (dex == null) {
-            return "type_index:" + typeIndex + " declaring_class_index:" + declaringClassIndex + "->name_index:" + nameIndex;
-        }
-        return dex.typeNames().get(typeIndex) + " " + dex.typeNames().get(declaringClassIndex) + "->" + dex.strings().get(nameIndex);
-    }
-
-    @Override
-    public int getByteCountInDex() {
+    public int byteCountInDex() {
         return SizeOf.MEMBER_ID_ITEM;
     }
 }

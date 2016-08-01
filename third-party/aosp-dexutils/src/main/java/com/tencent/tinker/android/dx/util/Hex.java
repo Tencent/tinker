@@ -237,13 +237,13 @@ public final class Hex {
      * is always newline-terminated, unless the passed-in length was zero,
      * in which case the result is always the empty string ({@code ""}).
      *
-     * @param arr           {@code non-null;} array to format
-     * @param offset        {@code >= 0;} offset to the part to dump
-     * @param length        {@code >= 0;} number of bytes to dump
-     * @param outOffset     {@code >= 0;} first output offset to print
-     * @param bpl           {@code >= 0;} number of bytes of output per line
+     * @param arr {@code non-null;} array to format
+     * @param offset {@code >= 0;} offset to the part to dump
+     * @param length {@code >= 0;} number of bytes to dump
+     * @param outOffset {@code >= 0;} first output offset to print
+     * @param bpl {@code >= 0;} number of bytes of output per line
      * @param addressLength {@code {2,4,6,8};} number of characters for each address
-     *                      header
+     * header
      * @return {@code non-null;} a string of the dump
      */
     public static String dump(byte[] arr, int offset, int length,
@@ -253,10 +253,8 @@ public final class Hex {
         // twos-complement math trick: ((x < 0) || (y < 0)) <=> ((x|y) < 0)
         if (((offset | length | end) < 0) || (end > arr.length)) {
             throw new IndexOutOfBoundsException("arr.length "
-                + arr.length
-                + "; "
-                + offset
-                + "..!" + end);
+                                                + arr.length + "; "
+                                                + offset + "..!" + end);
         }
 
         if (outOffset < 0) {
@@ -274,18 +272,10 @@ public final class Hex {
             if (col == 0) {
                 String astr;
                 switch (addressLength) {
-                    case 2:
-                        astr = Hex.u1(outOffset);
-                        break;
-                    case 4:
-                        astr = Hex.u2(outOffset);
-                        break;
-                    case 6:
-                        astr = Hex.u3(outOffset);
-                        break;
-                    default:
-                        astr = Hex.u4(outOffset);
-                        break;
+                    case 2:  astr = Hex.u1(outOffset); break;
+                    case 4:  astr = Hex.u2(outOffset); break;
+                    case 6:  astr = Hex.u3(outOffset); break;
+                    default: astr = Hex.u4(outOffset); break;
                 }
                 sb.append(astr);
                 sb.append(": ");

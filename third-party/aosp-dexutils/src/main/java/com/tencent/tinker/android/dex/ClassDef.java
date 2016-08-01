@@ -16,31 +16,25 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
 /**
  * A type definition.
  */
-public final class ClassDef extends SectionItem<ClassDef> {
-    public static final int NO_INDEX = -1;
-    public final  int offset;
-    private final Dex buffer;
-    public        int typeIndex;
-    public        int accessFlags;
-    public        int supertypeIndex;
-    public        int interfacesOffset;
-    public        int sourceFileIndex;
-    public        int annotationsOffset;
-    public        int classDataOffset;
-    public        int staticValuesOffset;
+public final class ClassDef extends TableOfContents.Section.Item<ClassDef> {
+    public int typeIndex;
+    public int accessFlags;
+    public int supertypeIndex;
+    public int interfacesOffset;
+    public int sourceFileIndex;
+    public int annotationsOffset;
+    public int classDataOffset;
+    public int staticValuesOffset;
 
-    public ClassDef(Section owner, int offset, int typeIndex, int accessFlags,
-                    int supertypeIndex, int interfacesOffset, int sourceFileIndex,
-                    int annotationsOffset, int classDataOffset, int staticValuesOffset) {
-        super(owner, offset);
-        this.buffer = (owner != null ? owner.owner : null);
-        this.offset = offset;
+    public ClassDef(int off, int typeIndex, int accessFlags,
+            int supertypeIndex, int interfacesOffset, int sourceFileIndex,
+            int annotationsOffset, int classDataOffset, int staticValuesOffset) {
+        super(off);
         this.typeIndex = typeIndex;
         this.accessFlags = accessFlags;
         this.supertypeIndex = supertypeIndex;
@@ -51,69 +45,41 @@ public final class ClassDef extends SectionItem<ClassDef> {
         this.staticValuesOffset = staticValuesOffset;
     }
 
-    public short[] getInterfaces() {
-        return buffer.readTypeList(interfacesOffset).types;
+    @Override
+    public int compareTo(ClassDef other) {
+        int res = CompareUtils.uCompare(typeIndex, other.typeIndex);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.sCompare(accessFlags, other.accessFlags);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.uCompare(supertypeIndex, other.supertypeIndex);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.sCompare(interfacesOffset, other.interfacesOffset);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.uCompare(sourceFileIndex, other.sourceFileIndex);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.sCompare(annotationsOffset, other.annotationsOffset);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.sCompare(classDataOffset, other.classDataOffset);
+        if (res != 0) {
+            return res;
+        }
+        return CompareUtils.sCompare(staticValuesOffset, other.staticValuesOffset);
     }
 
     @Override
-    public ClassDef clone(Section newOwner, int newOffset) {
-        return new ClassDef(newOwner, newOffset, typeIndex, accessFlags, supertypeIndex, interfacesOffset,
-            sourceFileIndex, annotationsOffset, classDataOffset, staticValuesOffset);
-    }
-
-    @Override
-    public String toString() {
-        if (buffer == null) {
-            return typeIndex + " " + supertypeIndex;
-        }
-
-        StringBuilder result = new StringBuilder();
-        result.append(buffer.typeNames().get(typeIndex));
-        if (supertypeIndex != NO_INDEX) {
-            result.append(" extends ").append(buffer.typeNames().get(supertypeIndex));
-        }
-        return result.toString();
-    }
-
-    @Override
-    public int compareTo(ClassDef o) {
-        if (typeIndex != o.typeIndex) {
-            return typeIndex - o.typeIndex;
-        }
-        if (accessFlags != o.accessFlags) {
-            return accessFlags - o.accessFlags;
-        }
-        if (supertypeIndex != o.supertypeIndex) {
-            return supertypeIndex - o.supertypeIndex;
-        }
-        if (interfacesOffset != o.interfacesOffset) {
-            return interfacesOffset - o.interfacesOffset;
-        }
-        if (sourceFileIndex != o.sourceFileIndex) {
-            return sourceFileIndex - o.sourceFileIndex;
-        }
-        if (annotationsOffset != o.annotationsOffset) {
-            return annotationsOffset - o.annotationsOffset;
-        }
-        if (classDataOffset != o.classDataOffset) {
-            return classDataOffset - o.classDataOffset;
-        }
-        if (staticValuesOffset != o.staticValuesOffset) {
-            return staticValuesOffset - o.staticValuesOffset;
-        }
-        return 0;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((ClassDef) obj) == 0;
-    }
-
-    @Override
-    public int getByteCountInDex() {
+    public int byteCountInDex() {
         return SizeOf.CLASS_DEF_ITEM;
     }
 }

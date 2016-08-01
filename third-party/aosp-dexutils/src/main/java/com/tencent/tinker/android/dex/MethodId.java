@@ -16,69 +16,33 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
-import com.tencent.tinker.android.dex.util.Unsigned;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
-/**
- * Modifications by tomystang:
- * Make this class derived from {@code SectionItem} so that
- * we can trace dex section this element belongs to easily.
- */
-public final class MethodId extends SectionItem<MethodId> {
-    private final Dex dex;
-    public        int declaringClassIndex;
-    public        int protoIndex;
-    public        int nameIndex;
+public final class MethodId extends Item<MethodId> {
+    public int declaringClassIndex;
+    public int protoIndex;
+    public int nameIndex;
 
-    public MethodId(Section owner, int offset, int declaringClassIndex, int protoIndex, int nameIndex) {
-        super(owner, offset);
-        this.dex = (owner != null ? owner.owner : null);
+    public MethodId(int off, int declaringClassIndex, int protoIndex, int nameIndex) {
+        super(off);
         this.declaringClassIndex = declaringClassIndex;
         this.protoIndex = protoIndex;
         this.nameIndex = nameIndex;
     }
 
-    @Override
-    public MethodId clone(Section newOwner, int newOffset) {
-        return new MethodId(newOwner, newOffset, declaringClassIndex, protoIndex, nameIndex);
-    }
-
     public int compareTo(MethodId other) {
         if (declaringClassIndex != other.declaringClassIndex) {
-            return Unsigned.compare(declaringClassIndex, other.declaringClassIndex);
+            return CompareUtils.uCompare(declaringClassIndex, other.declaringClassIndex);
         }
         if (nameIndex != other.nameIndex) {
-            return Unsigned.compare(nameIndex, other.nameIndex);
+            return CompareUtils.uCompare(nameIndex, other.nameIndex);
         }
-        return Unsigned.compare(protoIndex, other.protoIndex);
+        return CompareUtils.uCompare(protoIndex, other.protoIndex);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((MethodId) obj) == 0;
-    }
-
-    @Override
-    public String toString() {
-        if (dex == null) {
-            return "declaring_class_index:" + declaringClassIndex + "->name_index:" + nameIndex + "(proto_index:" + protoIndex + ")";
-        }
-
-        ProtoId protoId = dex.protoIds().get(protoIndex);
-        return dex.typeNames().get(protoId.returnTypeIndex)
-            + " "
-            + dex.typeNames().get(declaringClassIndex)
-            + "->"
-            + dex.strings().get(nameIndex)
-            + dex.readTypeList(protoId.parametersOffset);
-    }
-
-    @Override
-    public int getByteCountInDex() {
+    public int byteCountInDex() {
         return SizeOf.MEMBER_ID_ITEM;
     }
 }

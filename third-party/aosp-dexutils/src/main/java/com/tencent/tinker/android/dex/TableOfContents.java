@@ -22,98 +22,132 @@ import java.util.Arrays;
 
 /**
  * The file header and map.
- *
- * Modifications by tomystang:
- * 1. Define section type ID as constants.
- * 2. Add owner field so that we can trace the dex file that holds it easily.
- * 3. If a section is not exists, we write 0 as its offset into map section instead of -1.
- * 4. Add defination of {@code SectionItem}
- * 5. Fix {@method Section.exists} so that it wouldn't return false when pass header section in.
  */
 public final class TableOfContents {
-    public static final short SECTION_TYPE_HEADER                 = 0x0000;
-    public static final short SECTION_TYPE_STRINGIDS              = 0x0001;
-    public static final short SECTION_TYPE_TYPEIDS                = 0x0002;
-    public static final short SECTION_TYPE_PROTOIDS               = 0x0003;
-    public static final short SECTION_TYPE_FIELDIDS               = 0x0004;
-    public static final short SECTION_TYPE_METHODIDS              = 0x0005;
-    public static final short SECTION_TYPE_CLASSDEFS              = 0x0006;
-    public static final short SECTION_TYPE_MAPLIST                = 0x1000;
-    public static final short SECTION_TYPE_TYPELISTS              = 0x1001;
-    public static final short SECTION_TYPE_ANNOTATIONSETREFLISTS  = 0x1002;
-    public static final short SECTION_TYPE_ANNOTATIONSETS         = 0x1003;
-    public static final short SECTION_TYPE_CLASSDATA              = 0x2000;
-    public static final short SECTION_TYPE_CODES                  = 0x2001;
-    public static final short SECTION_TYPE_STRINGDATAS            = 0x2002;
-    public static final short SECTION_TYPE_DEBUGINFOS             = 0x2003;
-    public static final short SECTION_TYPE_ANNOTATIONS            = 0x2004;
-    public static final short SECTION_TYPE_ENCODEDARRAYS          = 0x2005;
+    public static final short SECTION_TYPE_HEADER = 0x0000;
+    public static final short SECTION_TYPE_STRINGIDS = 0x0001;
+    public static final short SECTION_TYPE_TYPEIDS = 0x0002;
+    public static final short SECTION_TYPE_PROTOIDS = 0x0003;
+    public static final short SECTION_TYPE_FIELDIDS = 0x0004;
+    public static final short SECTION_TYPE_METHODIDS = 0x0005;
+    public static final short SECTION_TYPE_CLASSDEFS = 0x0006;
+    public static final short SECTION_TYPE_MAPLIST = 0x1000;
+    public static final short SECTION_TYPE_TYPELISTS = 0x1001;
+    public static final short SECTION_TYPE_ANNOTATIONSETREFLISTS = 0x1002;
+    public static final short SECTION_TYPE_ANNOTATIONSETS = 0x1003;
+    public static final short SECTION_TYPE_CLASSDATA = 0x2000;
+    public static final short SECTION_TYPE_CODES = 0x2001;
+    public static final short SECTION_TYPE_STRINGDATAS = 0x2002;
+    public static final short SECTION_TYPE_DEBUGINFOS = 0x2003;
+    public static final short SECTION_TYPE_ANNOTATIONS = 0x2004;
+    public static final short SECTION_TYPE_ENCODEDARRAYS = 0x2005;
     public static final short SECTION_TYPE_ANNOTATIONSDIRECTORIES = 0x2006;
 
-    public final Dex       owner;
-    public final Section   header;
-    public final Section   stringIds;
-    public final Section   typeIds;
-    public final Section   protoIds;
-    public final Section   fieldIds;
-    public final Section   methodIds;
-    public final Section   classDefs;
-    public final Section   mapList;
-    public final Section   typeLists;
-    public final Section   annotationSetRefLists;
-    public final Section   annotationSets;
-    public final Section   classDatas;
-    public final Section   codes;
-    public final Section   stringDatas;
-    public final Section   debugInfos;
-    public final Section   annotations;
-    public final Section   encodedArrays;
-    public final Section   annotationsDirectories;
-    public final Section[] sections;
-
-    public int    checksum;
-    public byte[] signature;
-    public int fileSize = 0;
-    public int linkSize = 0;
-    public int linkOff  = Section.INT_VALUE_UNSET;
-    public int dataSize = 0;
-    public int dataOff  = Section.INT_VALUE_UNSET;
-
-    public TableOfContents(Dex owner) {
-        this.owner = owner;
-        this.signature = new byte[20];
-
-        this.header = new Section(this.owner, SECTION_TYPE_HEADER, true);
-        this.stringIds = new Section(this.owner, SECTION_TYPE_STRINGIDS, true);
-        this.typeIds = new Section(this.owner, SECTION_TYPE_TYPEIDS, true);
-        this.protoIds = new Section(this.owner, SECTION_TYPE_PROTOIDS, true);
-        this.fieldIds = new Section(this.owner, SECTION_TYPE_FIELDIDS, true);
-        this.methodIds = new Section(this.owner, SECTION_TYPE_METHODIDS, true);
-        this.classDefs = new Section(this.owner, SECTION_TYPE_CLASSDEFS, true);
-        this.mapList = new Section(this.owner, SECTION_TYPE_MAPLIST, true);
-        this.typeLists = new Section(this.owner, SECTION_TYPE_TYPELISTS, true);
-        this.annotationSetRefLists = new Section(this.owner, SECTION_TYPE_ANNOTATIONSETREFLISTS, true);
-        this.annotationSets = new Section(this.owner, SECTION_TYPE_ANNOTATIONSETS, true);
-        this.classDatas = new Section(this.owner, SECTION_TYPE_CLASSDATA, false);
-        this.codes = new Section(this.owner, SECTION_TYPE_CODES, true);
-        this.stringDatas = new Section(this.owner, SECTION_TYPE_STRINGDATAS, false);
-        this.debugInfos = new Section(this.owner, SECTION_TYPE_DEBUGINFOS, false);
-        this.annotations = new Section(this.owner, SECTION_TYPE_ANNOTATIONS, false);
-        this.encodedArrays = new Section(this.owner, SECTION_TYPE_ENCODEDARRAYS, false);
-        this.annotationsDirectories = new Section(this.owner, SECTION_TYPE_ANNOTATIONSDIRECTORIES, true);
-        this.sections = new Section[]{
+    public final Section header = new Section(SECTION_TYPE_HEADER, true);
+    public final Section stringIds = new Section(SECTION_TYPE_STRINGIDS, true);
+    public final Section typeIds = new Section(SECTION_TYPE_TYPEIDS, true);
+    public final Section protoIds = new Section(SECTION_TYPE_PROTOIDS, true);
+    public final Section fieldIds = new Section(SECTION_TYPE_FIELDIDS, true);
+    public final Section methodIds = new Section(SECTION_TYPE_METHODIDS, true);
+    public final Section classDefs = new Section(SECTION_TYPE_CLASSDEFS, true);
+    public final Section mapList = new Section(SECTION_TYPE_MAPLIST, true);
+    public final Section typeLists = new Section(SECTION_TYPE_TYPELISTS, true);
+    public final Section annotationSetRefLists = new Section(SECTION_TYPE_ANNOTATIONSETREFLISTS, true);
+    public final Section annotationSets = new Section(SECTION_TYPE_ANNOTATIONSETS, true);
+    public final Section classDatas = new Section(SECTION_TYPE_CLASSDATA, false);
+    public final Section codes = new Section(SECTION_TYPE_CODES, true);
+    public final Section stringDatas = new Section(SECTION_TYPE_STRINGDATAS, false);
+    public final Section debugInfos = new Section(SECTION_TYPE_DEBUGINFOS, false);
+    public final Section annotations = new Section(SECTION_TYPE_ANNOTATIONS, false);
+    public final Section encodedArrays = new Section(SECTION_TYPE_ENCODEDARRAYS, false);
+    public final Section annotationsDirectories = new Section(SECTION_TYPE_ANNOTATIONSDIRECTORIES, true);
+    public final Section[] sections = {
             header, stringIds, typeIds, protoIds, fieldIds, methodIds, classDefs, mapList,
             typeLists, annotationSetRefLists, annotationSets, classDatas, codes, stringDatas,
             debugInfos, annotations, encodedArrays, annotationsDirectories
-        };
+    };
+
+    public int checksum;
+    public byte[] signature;
+    public int fileSize;
+    public int linkSize;
+    public int linkOff;
+    public int dataSize;
+    public int dataOff;
+
+    public TableOfContents() {
+        signature = new byte[20];
+    }
+
+    public Section getSectionByType(int type) {
+        switch (type) {
+            case SECTION_TYPE_HEADER: {
+                return header;
+            }
+            case SECTION_TYPE_STRINGIDS: {
+                return stringIds;
+            }
+            case SECTION_TYPE_TYPEIDS: {
+                return typeIds;
+            }
+            case SECTION_TYPE_PROTOIDS: {
+                return protoIds;
+            }
+            case SECTION_TYPE_FIELDIDS: {
+                return fieldIds;
+            }
+            case SECTION_TYPE_METHODIDS: {
+                return methodIds;
+            }
+            case SECTION_TYPE_CLASSDEFS: {
+                return classDefs;
+            }
+            case SECTION_TYPE_MAPLIST: {
+                return mapList;
+            }
+            case SECTION_TYPE_TYPELISTS: {
+                return typeLists;
+            }
+            case SECTION_TYPE_ANNOTATIONSETREFLISTS: {
+                return annotationSetRefLists;
+            }
+            case SECTION_TYPE_ANNOTATIONSETS: {
+                return annotationSets;
+            }
+            case SECTION_TYPE_CLASSDATA: {
+                return classDatas;
+            }
+            case SECTION_TYPE_CODES: {
+                return codes;
+            }
+            case SECTION_TYPE_STRINGDATAS: {
+                return stringDatas;
+            }
+            case SECTION_TYPE_DEBUGINFOS: {
+                return debugInfos;
+            }
+            case SECTION_TYPE_ANNOTATIONS: {
+                return annotations;
+            }
+            case SECTION_TYPE_ENCODEDARRAYS: {
+                return encodedArrays;
+            }
+            case SECTION_TYPE_ANNOTATIONSDIRECTORIES: {
+                return annotationsDirectories;
+            }
+            default: {
+                throw new IllegalArgumentException("unknown section type: " + type);
+            }
+        }
     }
 
     public void readFrom(Dex dex) throws IOException {
-        readHeader(dex.open(null));
-        // Just for preventing exception when invoking dex.open below.
-        // And mapList.size here will be updated after readMap was called.
-        mapList.size = 1;
-        readMap(dex.open(mapList));
+        readHeader(dex.openSection(header));
+        // special case, since mapList.byteCount is available only after
+        // computeSizesFromOffsets() was invoked, so here we can't use
+        // dex.openSection(mapList) to get dex section. Or
+        // an {@code java.nio.BufferUnderflowException} will be thrown.
+        readMap(dex.openSection(mapList.off));
         computeSizesFromOffsets();
     }
 
@@ -169,7 +203,7 @@ public final class TableOfContents {
             int offset = in.readInt();
 
             if ((section.size != 0 && section.size != size)
-                || (section.off != Section.INT_VALUE_UNSET && section.off != offset)) {
+                    || (section.off != Section.UNDEF_OFFSET && section.off != offset)) {
                 throw new DexException("Unexpected map value for 0x" + Integer.toHexString(type));
             }
 
@@ -189,7 +223,7 @@ public final class TableOfContents {
         int end = fileSize;
         for (int i = sections.length - 1; i >= 0; i--) {
             Section section = sections[i];
-            if (!section.exists()) {
+            if (section.off == Section.UNDEF_OFFSET) {
                 continue;
             }
             if (section.off > end) {
@@ -198,9 +232,19 @@ public final class TableOfContents {
             section.byteCount = end - section.off;
             end = section.off;
         }
+
+        dataOff = header.byteCount
+                + stringIds.byteCount
+                + typeIds.byteCount
+                + protoIds.byteCount
+                + fieldIds.byteCount
+                + methodIds.byteCount
+                + classDefs.byteCount;
+
+        dataSize = fileSize - dataOff;
     }
 
-    public Section getSection(short type) {
+    private Section getSection(short type) {
         for (Section section : sections) {
             if (section.type == type) {
                 return section;
@@ -217,22 +261,22 @@ public final class TableOfContents {
         out.writeInt(SizeOf.HEADER_ITEM);
         out.writeInt(DexFormat.ENDIAN_TAG);
         out.writeInt(linkSize);
-        out.writeInt((linkOff == Section.INT_VALUE_UNSET ? 0 : linkOff));
-        out.writeInt((mapList.off == Section.INT_VALUE_UNSET ? 0 : mapList.off));
+        out.writeInt(linkOff);
+        out.writeInt(mapList.off);
         out.writeInt(stringIds.size);
-        out.writeInt((stringIds.off == Section.INT_VALUE_UNSET ? 0 : stringIds.off));
+        out.writeInt(stringIds.off);
         out.writeInt(typeIds.size);
-        out.writeInt((typeIds.off == Section.INT_VALUE_UNSET ? 0 : typeIds.off));
+        out.writeInt(typeIds.off);
         out.writeInt(protoIds.size);
-        out.writeInt((protoIds.off == Section.INT_VALUE_UNSET ? 0 : protoIds.off));
+        out.writeInt(protoIds.off);
         out.writeInt(fieldIds.size);
-        out.writeInt((fieldIds.off == Section.INT_VALUE_UNSET ? 0 : fieldIds.off));
+        out.writeInt(fieldIds.off);
         out.writeInt(methodIds.size);
-        out.writeInt((methodIds.off == Section.INT_VALUE_UNSET ? 0 : methodIds.off));
+        out.writeInt(methodIds.off);
         out.writeInt(classDefs.size);
-        out.writeInt((classDefs.off == Section.INT_VALUE_UNSET ? 0 : classDefs.off));
+        out.writeInt(classDefs.off);
         out.writeInt(dataSize);
-        out.writeInt((dataOff == Section.INT_VALUE_UNSET ? 0 : dataOff));
+        out.writeInt(dataOff);
     }
 
     public void writeMap(Dex.Section out) throws IOException {
@@ -255,41 +299,105 @@ public final class TableOfContents {
     }
 
     public static class Section implements Comparable<Section> {
-        public static final int INT_VALUE_UNSET = 0;
-
-        public final Dex     owner;
-        public final String  name;
-        public final short   type;
-        public final boolean isFourByteAlign;
-        public int size      = 0;
-        public int off       = INT_VALUE_UNSET;
+        public static final int UNDEF_INDEX = -1;
+        public static final int UNDEF_OFFSET = -1;
+        public final short type;
+        public boolean isElementFourByteAligned;
+        public int size = 0;
+        public int off = UNDEF_OFFSET;
         public int byteCount = 0;
 
-        public Section(Dex owner, int type, boolean isFourByteAlign) {
-            this.owner = owner;
-            this.isFourByteAlign = isFourByteAlign;
-            this.name = "";
+        public Section(int type, boolean isElementFourByteAligned) {
             this.type = (short) type;
-        }
-
-        public Section(Dex owner, String name, int type, boolean isFourByteAlign) {
-            this.owner = owner;
-            this.isFourByteAlign = isFourByteAlign;
-            this.name = name;
-            this.type = (short) type;
+            this.isElementFourByteAligned = isElementFourByteAligned;
+            if (type == SECTION_TYPE_HEADER) {
+                off = 0;
+                size = 1;
+                byteCount = SizeOf.HEADER_ITEM;
+            } else
+            if (type == SECTION_TYPE_MAPLIST) {
+                size = 1;
+            }
         }
 
         public boolean exists() {
-            return off > 0 || type == SECTION_TYPE_HEADER;
+            return size > 0;
+        }
+
+        private int remapTypeOrderId(int type) {
+            switch (type) {
+                case SECTION_TYPE_HEADER: {
+                    return 0;
+                }
+                case SECTION_TYPE_STRINGIDS: {
+                    return 1;
+                }
+                case SECTION_TYPE_TYPEIDS: {
+                    return 2;
+                }
+                case SECTION_TYPE_PROTOIDS: {
+                    return 3;
+                }
+                case SECTION_TYPE_FIELDIDS: {
+                    return 4;
+                }
+                case SECTION_TYPE_METHODIDS: {
+                    return 5;
+                }
+                case SECTION_TYPE_CLASSDEFS: {
+                    return 6;
+                }
+                case SECTION_TYPE_STRINGDATAS: {
+                    return 7;
+                }
+                case SECTION_TYPE_TYPELISTS: {
+                    return 8;
+                }
+                case SECTION_TYPE_ANNOTATIONS: {
+                    return 9;
+                }
+                case SECTION_TYPE_ANNOTATIONSETS: {
+                    return 10;
+                }
+                case SECTION_TYPE_ANNOTATIONSETREFLISTS: {
+                    return 11;
+                }
+                case SECTION_TYPE_ANNOTATIONSDIRECTORIES: {
+                    return 12;
+                }
+                case SECTION_TYPE_DEBUGINFOS: {
+                    return 13;
+                }
+                case SECTION_TYPE_CODES: {
+                    return 14;
+                }
+                case SECTION_TYPE_CLASSDATA: {
+                    return 15;
+                }
+                case SECTION_TYPE_ENCODEDARRAYS: {
+                    return 16;
+                }
+                case SECTION_TYPE_MAPLIST: {
+                    return 17;
+                }
+                default: {
+                    throw new IllegalArgumentException("unknown section type: " + type);
+                }
+            }
         }
 
         public int compareTo(Section section) {
             if (off != section.off) {
-                return Integer.compare(off, section.off);
+                return off < section.off ? -1 : 1;
             }
-            if (type != section.type) {
-                return Integer.compare(type, section.type);
+
+            int remappedType = remapTypeOrderId(type);
+            int otherRemappedType = remapTypeOrderId(section.type);
+
+            if (remappedType != otherRemappedType) {
+                return (remappedType < otherRemappedType ? -1 : 1);
             }
+
             return 0;
         }
 
@@ -298,23 +406,20 @@ public final class TableOfContents {
             return String.format("Section[type=%#x,off=%#x,size=%#x]", type, off, size);
         }
 
-        public abstract static class SectionItem<T> extends Item<T> {
-            public final int off;
-            public Section owner = null;
+        public static abstract class Item<T> implements Comparable<T> {
+            public int off;
 
-            public SectionItem(Section owner, int offset) {
-                this.owner = owner;
-                this.off = offset;
+            public Item(int off) {
+                this.off = off;
             }
 
-            public abstract T clone(Section newOwner, int newOffset);
-
-            public int getRelativeOffset() {
-                if (owner == null || owner.off == TableOfContents.Section.INT_VALUE_UNSET) {
-                    throw new DexException("Try to get relative offset before setting owner section.");
-                }
-                return this.off - owner.off;
+            @Override
+            @SuppressWarnings("unchecked")
+            public boolean equals(Object obj) {
+                return compareTo((T) obj) == 0;
             }
+
+            public abstract int byteCountInDex();
         }
     }
 }

@@ -95,6 +95,13 @@ public class FileOperation {
         return true;
     }
 
+    public static void cleanDir(File dir) {
+        if (dir.exists()) {
+            FileOperation.deleteDir(dir);
+            dir.mkdirs();
+        }
+    }
+
     public static void copyFileUsingStream(File source, File dest) throws IOException {
         FileInputStream is = null;
         FileOutputStream os = null;

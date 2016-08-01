@@ -22,26 +22,24 @@ import com.tencent.tinker.android.dex.util.ByteInput;
  * Pull parser for encoded values.
  */
 public final class EncodedValueReader {
-    public static final int ENCODED_BYTE       = 0x00;
-    public static final int ENCODED_SHORT      = 0x02;
-    public static final int ENCODED_CHAR       = 0x03;
-    public static final int ENCODED_INT        = 0x04;
-    public static final int ENCODED_LONG       = 0x06;
-    public static final int ENCODED_FLOAT      = 0x10;
-    public static final int ENCODED_DOUBLE     = 0x11;
-    public static final int ENCODED_STRING     = 0x17;
-    public static final int ENCODED_TYPE       = 0x18;
-    public static final int ENCODED_FIELD      = 0x19;
-    public static final int ENCODED_ENUM       = 0x1b;
-    public static final int ENCODED_METHOD     = 0x1a;
-    public static final int ENCODED_ARRAY      = 0x1c;
+    public static final int ENCODED_BYTE = 0x00;
+    public static final int ENCODED_SHORT = 0x02;
+    public static final int ENCODED_CHAR = 0x03;
+    public static final int ENCODED_INT = 0x04;
+    public static final int ENCODED_LONG = 0x06;
+    public static final int ENCODED_FLOAT = 0x10;
+    public static final int ENCODED_DOUBLE = 0x11;
+    public static final int ENCODED_STRING = 0x17;
+    public static final int ENCODED_TYPE = 0x18;
+    public static final int ENCODED_FIELD = 0x19;
+    public static final int ENCODED_ENUM = 0x1b;
+    public static final int ENCODED_METHOD = 0x1a;
+    public static final int ENCODED_ARRAY = 0x1c;
     public static final int ENCODED_ANNOTATION = 0x1d;
-    public static final int ENCODED_NULL       = 0x1e;
-    public static final int ENCODED_BOOLEAN    = 0x1f;
+    public static final int ENCODED_NULL = 0x1e;
+    public static final int ENCODED_BOOLEAN = 0x1f;
 
-    /**
-     * placeholder type if the type is not yet known
-     */
+    /** placeholder type if the type is not yet known */
     private static final int MUST_READ = -1;
 
     protected final ByteInput in;
@@ -222,68 +220,68 @@ public final class EncodedValueReader {
      */
     public void skipValue() {
         switch (peek()) {
-            case ENCODED_BYTE:
-                readByte();
-                break;
-            case ENCODED_SHORT:
-                readShort();
-                break;
-            case ENCODED_CHAR:
-                readChar();
-                break;
-            case ENCODED_INT:
-                readInt();
-                break;
-            case ENCODED_LONG:
-                readLong();
-                break;
-            case ENCODED_FLOAT:
-                readFloat();
-                break;
-            case ENCODED_DOUBLE:
-                readDouble();
-                break;
-            case ENCODED_STRING:
-                readString();
-                break;
-            case ENCODED_TYPE:
-                readType();
-                break;
-            case ENCODED_FIELD:
-                readField();
-                break;
-            case ENCODED_ENUM:
-                readEnum();
-                break;
-            case ENCODED_METHOD:
-                readMethod();
-                break;
-            case ENCODED_ARRAY:
-                for (int i = 0, size = readArray(); i < size; i++) {
-                    skipValue();
-                }
-                break;
-            case ENCODED_ANNOTATION:
-                for (int i = 0, size = readAnnotation(); i < size; i++) {
-                    readAnnotationName();
-                    skipValue();
-                }
-                break;
-            case ENCODED_NULL:
-                readNull();
-                break;
-            case ENCODED_BOOLEAN:
-                readBoolean();
-                break;
-            default:
-                throw new DexException("Unexpected type: " + Integer.toHexString(type));
+        case ENCODED_BYTE:
+            readByte();
+            break;
+        case ENCODED_SHORT:
+            readShort();
+            break;
+        case ENCODED_CHAR:
+            readChar();
+            break;
+        case ENCODED_INT:
+            readInt();
+            break;
+        case ENCODED_LONG:
+            readLong();
+            break;
+        case ENCODED_FLOAT:
+            readFloat();
+            break;
+        case ENCODED_DOUBLE:
+            readDouble();
+            break;
+        case ENCODED_STRING:
+            readString();
+            break;
+        case ENCODED_TYPE:
+            readType();
+            break;
+        case ENCODED_FIELD:
+            readField();
+            break;
+        case ENCODED_ENUM:
+            readEnum();
+            break;
+        case ENCODED_METHOD:
+            readMethod();
+            break;
+        case ENCODED_ARRAY:
+            for (int i = 0, size = readArray(); i < size; i++) {
+                skipValue();
+            }
+            break;
+        case ENCODED_ANNOTATION:
+            for (int i = 0, size = readAnnotation(); i < size; i++) {
+                readAnnotationName();
+                skipValue();
+            }
+            break;
+        case ENCODED_NULL:
+            readNull();
+            break;
+        case ENCODED_BOOLEAN:
+            readBoolean();
+            break;
+        default:
+            throw new DexException("Unexpected type: " + Integer.toHexString(type));
         }
     }
 
     private void checkType(int expected) {
         if (peek() != expected) {
             throw new IllegalStateException(
-                String.format("Expected %x but was %x", expected, peek()));
+                    String.format("Expected %x but was %x", expected, peek()));
         }
     }
 }

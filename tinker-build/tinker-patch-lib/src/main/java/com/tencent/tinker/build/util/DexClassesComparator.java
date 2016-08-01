@@ -1,5 +1,3 @@
-package com.tencent.tinker.build.util;
-
 /*
  * Copyright (C) 2016 Tencent WeChat, Inc.
  *
@@ -16,10 +14,12 @@ package com.tencent.tinker.build.util;
  * limitations under the License.
  */
 
+package com.tencent.tinker.build.util;
+
 import com.tencent.tinker.android.dex.Annotation;
-import com.tencent.tinker.android.dex.AnnotationDirectory;
 import com.tencent.tinker.android.dex.AnnotationSet;
 import com.tencent.tinker.android.dex.AnnotationSetRefList;
+import com.tencent.tinker.android.dex.AnnotationsDirectory;
 import com.tencent.tinker.android.dex.ClassData;
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Code;
@@ -30,17 +30,16 @@ import com.tencent.tinker.android.dex.EncodedValueReader;
 import com.tencent.tinker.android.dex.FieldId;
 import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.ProtoId;
+import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.TypeList;
-import com.tencent.tinker.android.dx.io.IndexType;
-import com.tencent.tinker.android.dx.io.OpcodeInfo;
-import com.tencent.tinker.android.dx.io.instructions.DecodedInstruction;
-import com.tencent.tinker.build.dexdifflib.util.PatternUtils;
-import com.tencent.tinker.commons.dexdifflib.io.DexDataInputStream;
-import com.tencent.tinker.commons.dexdifflib.struct.IndexedItem;
+import com.tencent.tinker.android.dex.io.DexDataBuffer;
+import com.tencent.tinker.android.dx.instruction.InstructionComparator;
+import com.tencent.tinker.android.dx.instruction.ShortArrayCodeInput;
+import com.tencent.tinker.build.dexpatcher.util.PatternUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -215,8 +214,8 @@ public final class DexClassesComparator {
             return false;
         }
 
-        EncodedValue oldStaticValue = oldDex.open(oldDex.getTableOfContents().encodedArrays, oldStaticValueOffset).readEncodedArray();
-        EncodedValue newStaticValue = newDex.open(newDex.getTableOfContents().encodedArrays, newStaticValueOffset).readEncodedArray();
+        EncodedValue oldStaticValue = oldDex.openSection(oldStaticValueOffset).readEncodedArray();
+        EncodedValue newStaticValue = newDex.openSection(newStaticValueOffset).readEncodedArray();
         EncodedValueReader oldReader = new EncodedValueReader(oldStaticValue, EncodedValueReader.ENCODED_ARRAY);
         EncodedValueReader newReader = new EncodedValueReader(newStaticValue, EncodedValueReader.ENCODED_ARRAY);
 
@@ -230,10 +229,10 @@ public final class DexClassesComparator {
     }
 
     private boolean isSameName(int oldStringId, int newStringId) {
-        if (oldStringId == IndexedItem.INDEX_UNSET && newStringId == IndexedItem.INDEX_UNSET) {
+        if (oldStringId == TableOfContents.Section.UNDEF_INDEX && newStringId == TableOfContents.Section.UNDEF_INDEX) {
             return true;
         }
-        if (oldStringId == IndexedItem.INDEX_UNSET || newStringId == IndexedItem.INDEX_UNSET) {
+        if (oldStringId == TableOfContents.Section.UNDEF_INDEX || newStringId == TableOfContents.Section.UNDEF_INDEX) {
             return false;
         }
 
@@ -279,18 +278,18 @@ public final class DexClassesComparator {
             return false;
         }
 
-        AnnotationDirectory oldAnnotationDirectory = oldDex.open(oldDex.getTableOfContents().annotationsDirectories, oldAnnotationDirectoryOffset).readAnnotationDirectory();
-        AnnotationDirectory newAnnotationDirectory = newDex.open(newDex.getTableOfContents().annotationsDirectories, newAnnotationDirectoryOffset).readAnnotationDirectory();
+        AnnotationsDirectory oldAnnotationsDirectory = oldDex.openSection(oldAnnotationDirectoryOffset).readAnnotationsDirectory();
+        AnnotationsDirectory newAnnotationsDirectory = newDex.openSection(newAnnotationDirectoryOffset).readAnnotationsDirectory();
 
         if (!isSameAnnotationSet(
-            oldAnnotationDirectory.classAnnotationsOffset,
-            newAnnotationDirectory.classAnnotationsOffset
+            oldAnnotationsDirectory.classAnnotationsOffset,
+            newAnnotationsDirectory.classAnnotationsOffset
         )) {
             return false;
         }
 
-        int[][] oldFieldAnnotations = oldAnnotationDirectory.fieldAnnotations;
-        int[][] newFieldAnnotations = newAnnotationDirectory.fieldAnnotations;
+        int[][] oldFieldAnnotations = oldAnnotationsDirectory.fieldAnnotations;
+        int[][] newFieldAnnotations = newAnnotationsDirectory.fieldAnnotations;
         if (oldFieldAnnotations.length != newFieldAnnotations.length) {
             return false;
         }
@@ -303,8 +302,8 @@ public final class DexClassesComparator {
             }
         }
 
-        int[][] oldMethodAnnotations = oldAnnotationDirectory.methodAnnotations;
-        int[][] newMethodAnnotations = newAnnotationDirectory.methodAnnotations;
+        int[][] oldMethodAnnotations = oldAnnotationsDirectory.methodAnnotations;
+        int[][] newMethodAnnotations = newAnnotationsDirectory.methodAnnotations;
         if (oldMethodAnnotations.length != newMethodAnnotations.length) {
             return false;
         }
@@ -317,8 +316,8 @@ public final class DexClassesComparator {
             }
         }
 
-        int[][] oldParameterAnnotations = oldAnnotationDirectory.parameterAnnotations;
-        int[][] newParameterAnnotations = newAnnotationDirectory.parameterAnnotations;
+        int[][] oldParameterAnnotations = oldAnnotationsDirectory.parameterAnnotations;
+        int[][] newParameterAnnotations = newAnnotationsDirectory.parameterAnnotations;
         if (oldParameterAnnotations.length != newParameterAnnotations.length) {
             return false;
         }
@@ -395,8 +394,8 @@ public final class DexClassesComparator {
             return false;
         }
 
-        TypeList oldParameters = oldDex.open(oldDex.getTableOfContents().typeLists, oldParametersOffset).readTypeList();
-        TypeList newParameters = newDex.open(newDex.getTableOfContents().typeLists, newParametersOffset).readTypeList();
+        TypeList oldParameters = oldDex.openSection(oldParametersOffset).readTypeList();
+        TypeList newParameters = newDex.openSection(newParametersOffset).readTypeList();
 
         if (oldParameters.types.length != newParameters.types.length) {
             return false;
@@ -420,14 +419,12 @@ public final class DexClassesComparator {
             return false;
         }
 
-        AnnotationSetRefList oldAnnotationSetRefList = oldDex.open(
-            oldDex.getTableOfContents().annotationSetRefLists,
-            oldAnnotationSetRefListOffset
+        AnnotationSetRefList oldAnnotationSetRefList = oldDex.openSection(
+                oldAnnotationSetRefListOffset
         ).readAnnotationSetRefList();
 
-        AnnotationSetRefList newAnnotationSetRefList = newDex.open(
-            newDex.getTableOfContents().annotationSetRefLists,
-            newAnnotationSetRefListOffset
+        AnnotationSetRefList newAnnotationSetRefList = newDex.openSection(
+                newAnnotationSetRefListOffset
         ).readAnnotationSetRefList();
 
         int oldAnnotationSetRefListCount = oldAnnotationSetRefList.annotationSetRefItems.length;
@@ -457,8 +454,8 @@ public final class DexClassesComparator {
             return false;
         }
 
-        AnnotationSet oldClassAnnotationSet = oldDex.open(oldDex.getTableOfContents().annotationSets, oldAnnotationSetOffset).readAnnotationSet();
-        AnnotationSet newClassAnnotationSet = newDex.open(newDex.getTableOfContents().annotationSets, newAnnotationSetOffset).readAnnotationSet();
+        AnnotationSet oldClassAnnotationSet = oldDex.openSection(oldAnnotationSetOffset).readAnnotationSet();
+        AnnotationSet newClassAnnotationSet = newDex.openSection(newAnnotationSetOffset).readAnnotationSet();
 
         int oldAnnotationOffsetCount = oldClassAnnotationSet.annotationOffsets.length;
         int newAnnotationOffsetCount = newClassAnnotationSet.annotationOffsets.length;
@@ -476,8 +473,8 @@ public final class DexClassesComparator {
     }
 
     private boolean isSameAnnotation(int oldAnnotationOffset, int newAnnotationOffset) {
-        Annotation oldAnnotation = oldDex.open(oldDex.getTableOfContents().annotations, oldAnnotationOffset).readAnnotation();
-        Annotation newAnnotation = newDex.open(newDex.getTableOfContents().annotations, newAnnotationOffset).readAnnotation();
+        Annotation oldAnnotation = oldDex.openSection(oldAnnotationOffset).readAnnotation();
+        Annotation newAnnotation = newDex.openSection(newAnnotationOffset).readAnnotation();
 
         if (oldAnnotation.visibility != newAnnotation.visibility) {
             return false;
@@ -626,8 +623,8 @@ public final class DexClassesComparator {
             return false;
         }
 
-        ClassData oldClassData = oldDex.open(oldDex.getTableOfContents().classDatas, oldClassDataOffset).readClassData();
-        ClassData newClassData = newDex.open(newDex.getTableOfContents().classDatas, newClassDataOffset).readClassData();
+        ClassData oldClassData = oldDex.openSection(oldClassDataOffset).readClassData();
+        ClassData newClassData = newDex.openSection(newClassDataOffset).readClassData();
 
         ClassData.Field[] oldInstanceFields = oldClassData.instanceFields;
         ClassData.Field[] newInstanceFields = newClassData.instanceFields;
@@ -704,8 +701,8 @@ public final class DexClassesComparator {
             return false;
         }
 
-        Code oldCode = oldDex.open(oldDex.getTableOfContents().codes, oldCodeOffset).readCode();
-        Code newCode = newDex.open(newDex.getTableOfContents().codes, newCodeOffset).readCode();
+        Code oldCode = oldDex.openSection(oldCodeOffset).readCode();
+        Code newCode = newDex.openSection(newCodeOffset).readCode();
 
         if (oldCode.registersSize != newCode.registersSize) {
             return false;
@@ -738,98 +735,32 @@ public final class DexClassesComparator {
             return false;
         }
 
-        DecodedInstruction[] oldDecodedIns = DecodedInstruction.decodeAll(oldInstructions);
-        DecodedInstruction[] newDecodedIns = DecodedInstruction.decodeAll(newInstructions);
+        return new InstructionComparator(
+                new ShortArrayCodeInput(oldInstructions),
+                new ShortArrayCodeInput(newInstructions)
+        ) {
 
-        if (oldDecodedIns.length != newDecodedIns.length) {
-            return false;
-        }
-
-        for (int i = 0; i < oldDecodedIns.length; ++i) {
-            DecodedInstruction oldIns = oldDecodedIns[i];
-            DecodedInstruction newIns = newDecodedIns[i];
-            if (oldIns == null && newIns == null) {
-                continue;
+            @Override
+            protected boolean compareString(int stringIndex1, int stringIndex2) {
+                return isSameName(stringIndex1, stringIndex2);
             }
-            if (oldIns == null || newIns == null) {
-                return false;
+
+            @Override
+            protected boolean compareType(int typeIndex1, int typeIndex2) {
+                return isSameClassDesc(typeIndex1, typeIndex2);
             }
-            if (oldIns.getOpcode() != newIns.getOpcode()) {
-                return false;
+
+            @Override
+            protected boolean compareField(int fieldIndex1, int fieldIndex2) {
+                return isSameFieldId(fieldIndex1, fieldIndex2);
             }
-            int currOpCode = oldIns.getOpcode();
-            switch (OpcodeInfo.getIndexType(currOpCode)) {
-                case STRING_REF: {
-                    int oldStringIdx = oldIns.getIndex();
-                    int newStringIdx = newIns.getIndex();
-                    if (!isSameName(oldStringIdx, newStringIdx)) {
-                        return false;
-                    }
-                    break;
-                }
-                case TYPE_REF: {
-                    int oldTypeId = oldIns.getIndex();
-                    int newTypeIdx = newIns.getIndex();
-                    if (!isSameClassDesc(oldTypeId, newTypeIdx)) {
-                        return false;
-                    }
-                    break;
-                }
-                case FIELD_REF: {
-                    int oldFieldIdx = oldIns.getIndex();
-                    int newFieldIdx = newIns.getIndex();
-                    if (!isSameFieldId(oldFieldIdx, newFieldIdx)) {
-                        return false;
-                    }
-                    break;
-                }
-                case METHOD_REF: {
-                    int oldMethodIdx = oldIns.getIndex();
-                    int newMethodIdx = newIns.getIndex();
-                    if (!isSameMethodId(oldMethodIdx, newMethodIdx)) {
-                        return false;
-                    }
-                    break;
-                }
-                default: {
-                    if (!oldIns.getFormat().equals(newIns.getFormat())) {
-                        return false;
-                    }
 
-                    if (oldIns.getOpcode() != newIns.getOpcode()) {
-                        return false;
-                    }
-
-                    if (oldIns.getIndex() != newIns.getIndex()) {
-                        return false;
-                    }
-
-                    IndexType oldIdxType = oldIns.getIndexType();
-                    IndexType newIdxType = newIns.getIndexType();
-                    if (oldIdxType != null || newIdxType != null) {
-                        if (oldIdxType == null || newIdxType == null) {
-                            // one of them is null.
-                            return false;
-                        } else {
-                            // none of them is null.
-                            if (!oldIdxType.equals(newIdxType)) {
-                                return false;
-                            }
-                        }
-                    }
-
-                    if (oldIns.getTarget() != newIns.getTarget()) {
-                        return false;
-                    }
-
-                    if (oldIns.getLiteral() != newIns.getLiteral()) {
-                        return false;
-                    }
-                }
+            @Override
+            protected boolean compareMethod(int methodIndex1, int methodIndex2) {
+                return isSameMethodId(methodIndex1, methodIndex2);
             }
-        }
 
-        return true;
+        }.compare();
     }
 
     private boolean isSameDebugInfo(int oldDebugInfoOffset, int newDebugInfoOffset) {
@@ -841,8 +772,8 @@ public final class DexClassesComparator {
             return false;
         }
 
-        DebugInfoItem oldDebugInfoItem = oldDex.open(oldDex.getTableOfContents().debugInfos, oldDebugInfoOffset).readDebugInfoItem();
-        DebugInfoItem newDebugInfoItem = newDex.open(newDex.getTableOfContents().debugInfos, newDebugInfoOffset).readDebugInfoItem();
+        DebugInfoItem oldDebugInfoItem = oldDex.openSection(oldDebugInfoOffset).readDebugInfoItem();
+        DebugInfoItem newDebugInfoItem = newDex.openSection(newDebugInfoOffset).readDebugInfoItem();
 
         if (oldDebugInfoItem.lineStart != newDebugInfoItem.lineStart) {
             return false;
@@ -859,104 +790,96 @@ public final class DexClassesComparator {
             }
         }
 
-        DexDataInputStream oldDbgInfoIS = new DexDataInputStream(new ByteArrayInputStream(oldDebugInfoItem.infoSTM));
-        DexDataInputStream newDbgInfoIS = new DexDataInputStream(new ByteArrayInputStream(newDebugInfoItem.infoSTM));
+        DexDataBuffer oldDbgInfoBuffer = new DexDataBuffer(ByteBuffer.wrap(oldDebugInfoItem.infoSTM));
+        DexDataBuffer newDbgInfoBuffer = new DexDataBuffer(ByteBuffer.wrap(newDebugInfoItem.infoSTM));
 
-        try {
-            while (oldDbgInfoIS.available() > 0 && newDbgInfoIS.available() > 0) {
-                int oldOpCode = oldDbgInfoIS.read();
-                int newOpCode = newDbgInfoIS.read();
-                if (oldOpCode != newOpCode) {
-                    return false;
-                }
-
-                int currOpCode = oldOpCode;
-
-                switch (currOpCode) {
-                    case DebugInfoItem.DBG_END_SEQUENCE: {
-                        break;
-                    }
-                    case DebugInfoItem.DBG_ADVANCE_PC: {
-                        int oldAddrDiff = oldDbgInfoIS.readUleb128();
-                        int newAddrDiff = newDbgInfoIS.readUleb128();
-                        if (oldAddrDiff != newAddrDiff) {
-                            return false;
-                        }
-                        break;
-                    }
-                    case DebugInfoItem.DBG_ADVANCE_LINE: {
-                        int oldLineDiff = oldDbgInfoIS.readSleb128();
-                        int newLineDiff = newDbgInfoIS.readSleb128();
-                        if (oldLineDiff != newLineDiff) {
-                            return false;
-                        }
-                        break;
-                    }
-                    case DebugInfoItem.DBG_START_LOCAL:
-                    case DebugInfoItem.DBG_START_LOCAL_EXTENDED: {
-                        int oldRegisterNum = oldDbgInfoIS.readUleb128();
-                        int newRegisterNum = newDbgInfoIS.readUleb128();
-                        if (oldRegisterNum != newRegisterNum) {
-                            return false;
-                        }
-
-                        int oldNameIndex = oldDbgInfoIS.readUleb128p1();
-                        int newNameIndex = newDbgInfoIS.readUleb128p1();
-                        if (!isSameName(oldNameIndex, newNameIndex)) {
-                            return false;
-                        }
-
-                        int oldTypeIndex = oldDbgInfoIS.readUleb128p1();
-                        int newTypeIndex = newDbgInfoIS.readUleb128p1();
-                        if (!isSameClassDesc(oldTypeIndex, newTypeIndex)) {
-                            return false;
-                        }
-
-                        if (currOpCode == DebugInfoItem.DBG_START_LOCAL_EXTENDED) {
-                            int oldSigIndex = oldDbgInfoIS.readUleb128p1();
-                            int newSigIndex = newDbgInfoIS.readUleb128p1();
-                            if (!isSameName(oldSigIndex, newSigIndex)) {
-                                return false;
-                            }
-                        }
-                        break;
-                    }
-                    case DebugInfoItem.DBG_END_LOCAL:
-                    case DebugInfoItem.DBG_RESTART_LOCAL: {
-                        int oldRegisterNum = oldDbgInfoIS.readUleb128();
-                        int newRegisterNum = newDbgInfoIS.readUleb128();
-                        if (oldRegisterNum != newRegisterNum) {
-                            return false;
-                        }
-
-                        break;
-                    }
-                    case DebugInfoItem.DBG_SET_FILE: {
-                        int oldNameIndex = oldDbgInfoIS.readUleb128p1();
-                        int newNameIndex = newDbgInfoIS.readUleb128p1();
-                        if (!isSameName(oldNameIndex, newNameIndex)) {
-                            return false;
-                        }
-
-                        break;
-                    }
-                    case DebugInfoItem.DBG_SET_PROLOGUE_END:
-                    case DebugInfoItem.DBG_SET_EPILOGUE_BEGIN:
-                    default: {
-                        break;
-                    }
-                }
-            }
-        } catch (IOException e) {
-            // Do nothing.
-        }
-
-        try {
-            if (oldDbgInfoIS.available() > 0 || newDbgInfoIS.available() > 0) {
+        while (oldDbgInfoBuffer.available() > 0 && newDbgInfoBuffer.available() > 0) {
+            int oldOpCode = oldDbgInfoBuffer.readByte();
+            int newOpCode = newDbgInfoBuffer.readByte();
+            if (oldOpCode != newOpCode) {
                 return false;
             }
-        } catch (IOException e) {
-            // Do nothing.
+
+            int currOpCode = oldOpCode;
+
+            switch (currOpCode) {
+                case DebugInfoItem.DBG_END_SEQUENCE: {
+                    break;
+                }
+                case DebugInfoItem.DBG_ADVANCE_PC: {
+                    int oldAddrDiff = oldDbgInfoBuffer.readUleb128();
+                    int newAddrDiff = newDbgInfoBuffer.readUleb128();
+                    if (oldAddrDiff != newAddrDiff) {
+                        return false;
+                    }
+                    break;
+                }
+                case DebugInfoItem.DBG_ADVANCE_LINE: {
+                    int oldLineDiff = oldDbgInfoBuffer.readSleb128();
+                    int newLineDiff = newDbgInfoBuffer.readSleb128();
+                    if (oldLineDiff != newLineDiff) {
+                        return false;
+                    }
+                    break;
+                }
+                case DebugInfoItem.DBG_START_LOCAL:
+                case DebugInfoItem.DBG_START_LOCAL_EXTENDED: {
+                    int oldRegisterNum = oldDbgInfoBuffer.readUleb128();
+                    int newRegisterNum = newDbgInfoBuffer.readUleb128();
+                    if (oldRegisterNum != newRegisterNum) {
+                        return false;
+                    }
+
+                    int oldNameIndex = oldDbgInfoBuffer.readUleb128p1();
+                    int newNameIndex = newDbgInfoBuffer.readUleb128p1();
+                    if (!isSameName(oldNameIndex, newNameIndex)) {
+                        return false;
+                    }
+
+                    int oldTypeIndex = oldDbgInfoBuffer.readUleb128p1();
+                    int newTypeIndex = newDbgInfoBuffer.readUleb128p1();
+                    if (!isSameClassDesc(oldTypeIndex, newTypeIndex)) {
+                        return false;
+                    }
+
+                    if (currOpCode == DebugInfoItem.DBG_START_LOCAL_EXTENDED) {
+                        int oldSigIndex = oldDbgInfoBuffer.readUleb128p1();
+                        int newSigIndex = newDbgInfoBuffer.readUleb128p1();
+                        if (!isSameName(oldSigIndex, newSigIndex)) {
+                            return false;
+                        }
+                    }
+                    break;
+                }
+                case DebugInfoItem.DBG_END_LOCAL:
+                case DebugInfoItem.DBG_RESTART_LOCAL: {
+                    int oldRegisterNum = oldDbgInfoBuffer.readUleb128();
+                    int newRegisterNum = newDbgInfoBuffer.readUleb128();
+                    if (oldRegisterNum != newRegisterNum) {
+                        return false;
+                    }
+
+                    break;
+                }
+                case DebugInfoItem.DBG_SET_FILE: {
+                    int oldNameIndex = oldDbgInfoBuffer.readUleb128p1();
+                    int newNameIndex = newDbgInfoBuffer.readUleb128p1();
+                    if (!isSameName(oldNameIndex, newNameIndex)) {
+                        return false;
+                    }
+
+                    break;
+                }
+                case DebugInfoItem.DBG_SET_PROLOGUE_END:
+                case DebugInfoItem.DBG_SET_EPILOGUE_BEGIN:
+                default: {
+                    break;
+                }
+            }
+        }
+
+        if (oldDbgInfoBuffer.available() > 0 || newDbgInfoBuffer.available() > 0) {
+            return false;
         }
 
         return true;
