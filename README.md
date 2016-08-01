@@ -30,11 +30,11 @@ dependencies {
 apply plugin: 'com.tencent.tinker.patch'
 ```
 
-If your app has a class that subclasses android.app.Application, then you need to modify that class, and move all its implements to DefaultApplicationLifeCycle rather than Application:
+If your app has a class that subclasses android.app.Application, then you need to modify that class, and move all its implements to DefaultApplicationLike rather than Application:
 
 ```java
 -public class YourApplication extends Application {
-+public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle 
++public class SampleApplicationLifeCycle extends DefaultApplicationLike
 ```
 
 Now you should change your `Application` class, which will be a subclass of [TinkerApplication](http://git.code.oa.com/tinker/tinker/blob/master/tinker-android/tinker-android-loader/src/main/java/com/tencent/tinker/loader/app/TinkerApplication.java). As you can see from its API, it is an abstract class that does not have a default constructor, so you must define a no-arg constructor as follows:
@@ -59,7 +59,7 @@ Use `tinker-android-anno` to generate your `Application` is more recommended, yo
 @DefaultLifeCycle(
 application = ".SampleApplication",                       //application name to generate
 flags = ShareConstants.TINKER_ENABLE_ALL)                 //tinkerFlags above
-public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle 
+public class SampleApplicationLike extends DefaultApplicationLike 
 ```
 
 How to install tinker? learn more at the sample [SampleApplicationLifeCycle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLifeCycle.java).

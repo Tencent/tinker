@@ -31,15 +31,14 @@ import android.util.Log;
 /**
  * Empty implementation of {@link ApplicationLike}.
  */
-public class DefaultApplicationLifeCycle extends ApplicationLike {
+public class DefaultApplicationLike extends ApplicationLike {
     private static final String TAG = "DefaultLifeCycle";
 
-    public DefaultApplicationLifeCycle(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
-                                       long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
-                                       Resources[] resources, ClassLoader[] classLoader, AssetManager[] assetManager) {
+    public DefaultApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
+                                  long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
+                                  Resources[] resources, ClassLoader[] classLoader, AssetManager[] assetManager) {
         super(application, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent, resources, classLoader, assetManager);
     }
-
 
     @Override
     public void onCreate() {

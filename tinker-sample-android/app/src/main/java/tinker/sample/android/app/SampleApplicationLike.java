@@ -28,7 +28,7 @@ import android.support.multidex.MultiDex;
 import com.tencent.tinker.anno.DefaultLifeCycle;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.app.ApplicationLifeCycle;
-import com.tencent.tinker.loader.app.DefaultApplicationLifeCycle;
+import com.tencent.tinker.loader.app.DefaultApplicationLike;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 
 import tinker.sample.android.Log.MyLogImp;
@@ -55,12 +55,12 @@ import tinker.sample.android.util.TinkerManager;
  */
 @SuppressWarnings("unused")
 @DefaultLifeCycle(application = ".SampleApplication", flags = ShareConstants.TINKER_ENABLE_ALL)
-public class SampleApplicationLifeCycle extends DefaultApplicationLifeCycle {
+public class SampleApplicationLike extends DefaultApplicationLike {
     private static final String TAG = "SampleApplicationLifeCycle";
 
-    public SampleApplicationLifeCycle(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
-                                      long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
-                                      Resources[] resources, ClassLoader[] classLoader, AssetManager[] assetManager) {
+    public SampleApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
+                                 long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
+                                 Resources[] resources, ClassLoader[] classLoader, AssetManager[] assetManager) {
         super(application, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent, resources, classLoader, assetManager);
     }
 

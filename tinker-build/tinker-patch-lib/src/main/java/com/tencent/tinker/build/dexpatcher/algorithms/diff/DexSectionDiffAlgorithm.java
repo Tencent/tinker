@@ -312,9 +312,9 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
         PatchOperation<T> prevPatchOperation = null;
         while (patchOperationIt.hasNext()) {
             PatchOperation<T> patchOperation = patchOperationIt.next();
-            if (prevPatchOperation != null &&
-                prevPatchOperation.op == PatchOperation.OP_DEL &&
-                patchOperation.op == PatchOperation.OP_ADD
+            if (prevPatchOperation != null
+                && prevPatchOperation.op == PatchOperation.OP_DEL
+                && patchOperation.op == PatchOperation.OP_ADD
             ) {
                 if (prevPatchOperation.index == patchOperation.index) {
                     prevPatchOperation.op = PatchOperation.OP_REPLACE;
