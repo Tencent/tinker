@@ -20,7 +20,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.SystemClock;
 
-import com.tencent.tinker.commons.dexdifflib.DexPatch;
+import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -255,14 +255,14 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                                 }
                                 inputStream = zis;
                             }
-                            new DexPatch(patch.getInputStream(patchFileEntry)).applyPatchAndSave(inputStream, zos);
+                            new DexPatchApplier(inputStream, patch.getInputStream(patchFileEntry)).executeAndSaveTo(zos);
                             zos.closeEntry();
                         } finally {
                             SharePatchFileUtil.closeQuietly(zos);
                         }
 
                     } else {
-                        new DexPatch(patch.getInputStream(patchFileEntry)).applyPatchAndSave(apk.getInputStream(rawApkFileEntry), extractedFile);
+                        new DexPatchApplier(apk.getInputStream(rawApkFileEntry), patch.getInputStream(patchFileEntry)).executeAndSaveTo(extractedFile);
                     }
 
                     if (!SharePatchFileUtil.verifyDexFileMd5(extractedFile, fileMd5)) {

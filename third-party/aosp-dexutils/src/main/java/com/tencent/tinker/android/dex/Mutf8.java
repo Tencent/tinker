@@ -17,7 +17,6 @@
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.ByteInput;
-
 import java.io.UTFDataFormatException;
 
 /**
@@ -26,8 +25,7 @@ import java.io.UTFDataFormatException;
  * <p>Derived from libcore's MUTF-8 encoder at java.nio.charset.ModifiedUtf8.
  */
 public final class Mutf8 {
-    private Mutf8() {
-    }
+    private Mutf8() { }
 
     /**
      * Decodes bytes from {@code in} into {@code out} until a delimiter 0x00 is
@@ -65,7 +63,7 @@ public final class Mutf8 {
     /**
      * Returns the number of bytes the modified UTF8 representation of 's' would take.
      */
-    public static long countBytes(String s, boolean shortLength) {
+    public static long countBytes(String s, boolean shortLength) throws UTFDataFormatException {
         long result = 0;
         final int length = s.length();
         for (int i = 0; i < length; ++i) {
@@ -78,7 +76,7 @@ public final class Mutf8 {
                 result += 3;
             }
             if (shortLength && result > 65535) {
-                throw new IllegalArgumentException("String more than 65535 UTF bytes long");
+                throw new UTFDataFormatException("String more than 65535 UTF bytes long");
             }
         }
         return result;

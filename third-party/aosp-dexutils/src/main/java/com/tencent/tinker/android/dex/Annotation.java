@@ -16,30 +16,25 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+
+import static com.tencent.tinker.android.dex.EncodedValueReader.ENCODED_ANNOTATION;
 
 /**
  * An annotation.
- *
- * Modifications by tomystang:
- * Make this class derived from {@code SectionItem} so that
- * we can trace dex section this element belongs to easily.
  */
-public final class Annotation extends SectionItem<Annotation> {
-    private final Dex          dex;
-    public        byte         visibility;
-    public        EncodedValue encodedAnnotation;
+public final class Annotation extends Item<Annotation> {
+    public byte visibility;
+    public EncodedValue encodedAnnotation;
 
-    public Annotation(Section owner, int offset, byte visibility, EncodedValue encodedAnnotation) {
-        super(owner, offset);
-        this.dex = (owner != null ? owner.owner : null);
+    public Annotation(int off, byte visibility, EncodedValue encodedAnnotation) {
+        super(off);
         this.visibility = visibility;
         this.encodedAnnotation = encodedAnnotation;
     }
 
     public EncodedValueReader getReader() {
-        return new EncodedValueReader(encodedAnnotation, EncodedValueReader.ENCODED_ANNOTATION);
+        return new EncodedValueReader(encodedAnnotation, ENCODED_ANNOTATION);
     }
 
     public int getTypeIndex() {
@@ -48,33 +43,12 @@ public final class Annotation extends SectionItem<Annotation> {
         return reader.getAnnotationType();
     }
 
-    @Override
-    public Annotation clone(Section newOwner, int newOffset) {
-        return new Annotation(newOwner, newOffset, visibility, encodedAnnotation);
-    }
-
-    @Override
-    public int compareTo(Annotation other) {
+    @Override public int compareTo(Annotation other) {
         return encodedAnnotation.compareTo(other.encodedAnnotation);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((Annotation) obj) == 0;
-    }
-
-    @Override
-    public String toString() {
-        return dex == null
-            ? visibility + " " + getTypeIndex()
-            : visibility + " " + dex.typeNames().get(getTypeIndex());
-    }
-
-    @Override
-    public int getByteCountInDex() {
-        return SizeOf.UBYTE + encodedAnnotation.getByteCountInDex();
+    public int byteCountInDex() {
+        return SizeOf.UBYTE + encodedAnnotation.byteCountInDex();
     }
 }

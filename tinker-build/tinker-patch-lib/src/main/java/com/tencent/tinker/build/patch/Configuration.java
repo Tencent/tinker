@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.build.patch;
 
+import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
@@ -123,7 +124,7 @@ public class Configuration {
         mPackageFileds = new HashMap<>();
 
         mOutFolder = outputFile.getAbsolutePath();
-        Utils.cleanDir(outputFile);
+        FileOperation.cleanDir(outputFile);
 
         mOldApkFile = oldApkFile;
         mOldApkPath = oldApkFile.getAbsolutePath();
@@ -177,7 +178,7 @@ public class Configuration {
         mUseSignAPk = param.useSign;
         setSignData(param.signFile, param.keypass, param.storealias, param.storepass);
 
-        Utils.cleanDir(new File(mOutFolder));
+        FileOperation.cleanDir(new File(mOutFolder));
 
         createTempDirectory();
         checkInputDexAndSo();

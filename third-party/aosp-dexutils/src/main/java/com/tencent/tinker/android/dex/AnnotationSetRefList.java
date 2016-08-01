@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Tencent WeChat, Inc.
+ * Copyright (C) 2011 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,42 +17,33 @@
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
-import com.tencent.tinker.android.dex.util.Unsigned;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
 /**
  * *** This file is NOT a part of AOSP. ***
  *
  * Structure of AnnotationSetRefList element in Dex file.
  */
-public class AnnotationSetRefList extends SectionItem<AnnotationSetRefList> {
-    @SuppressWarnings("unused")
-    private final Dex   dex;
-    public        int[] annotationSetRefItems;
+public class AnnotationSetRefList extends Section.Item<AnnotationSetRefList> {
+    public int[] annotationSetRefItems;
 
-    public AnnotationSetRefList(Section owner, int offset, int[] annotationSetRefItems) {
-        super(owner, offset);
-        this.dex = (owner != null ? owner.owner : null);
+    public AnnotationSetRefList(int off, int[] annotationSetRefItems) {
+        super(off);
         this.annotationSetRefItems = annotationSetRefItems;
     }
 
     @Override
-    public AnnotationSetRefList clone(Section newOwner, int newOffset) {
-        return new AnnotationSetRefList(newOwner, newOffset, annotationSetRefItems);
-    }
-
-    @Override
-    public int compareTo(AnnotationSetRefList o) {
+    public int compareTo(AnnotationSetRefList other) {
         int size = annotationSetRefItems.length;
-        int oSize = o.annotationSetRefItems.length;
+        int oSize = other.annotationSetRefItems.length;
 
         if (size != oSize) {
-            return Unsigned.compare(size, oSize);
+            return CompareUtils.uCompare(size, oSize);
         }
 
         for (int i = 0; i < size; ++i) {
-            if (annotationSetRefItems[i] != o.annotationSetRefItems[i]) {
-                return Unsigned.compare(annotationSetRefItems[i], o.annotationSetRefItems[i]);
+            if (annotationSetRefItems[i] != other.annotationSetRefItems[i]) {
+                return CompareUtils.uCompare(annotationSetRefItems[i], other.annotationSetRefItems[i]);
             }
         }
 
@@ -60,15 +51,7 @@ public class AnnotationSetRefList extends SectionItem<AnnotationSetRefList> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((AnnotationSetRefList) obj) == 0;
-    }
-
-    @Override
-    public int getByteCountInDex() {
+    public int byteCountInDex() {
         return SizeOf.UINT * (1 + annotationSetRefItems.length);
     }
 }

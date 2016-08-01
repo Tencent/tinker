@@ -16,136 +16,23 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
-/**
- * Modifications by tomystang:
- * Make this class derived from {@code SectionItem} so that
- * we can trace dex section this element belongs to easily.
- */
-public final class ClassData extends SectionItem<ClassData> {
-    public Field[]  staticFields;
-    public Field[]  instanceFields;
+public final class ClassData extends Item<ClassData> {
+    public Field[] staticFields;
+    public Field[] instanceFields;
     public Method[] directMethods;
     public Method[] virtualMethods;
 
-    public ClassData(Section owner, int offset, Field[] staticFields, Field[] instanceFields,
-                     Method[] directMethods, Method[] virtualMethods) {
-        super(owner, offset);
+    public ClassData(int off, Field[] staticFields, Field[] instanceFields,
+            Method[] directMethods, Method[] virtualMethods) {
+        super(off);
+
         this.staticFields = staticFields;
         this.instanceFields = instanceFields;
         this.directMethods = directMethods;
         this.virtualMethods = virtualMethods;
-    }
-
-    public Field[] allFields() {
-        Field[] result = new Field[staticFields.length + instanceFields.length];
-        System.arraycopy(staticFields, 0, result, 0, staticFields.length);
-        System.arraycopy(instanceFields, 0, result, staticFields.length, instanceFields.length);
-        return result;
-    }
-
-    public Method[] allMethods() {
-        Method[] result = new Method[directMethods.length + virtualMethods.length];
-        System.arraycopy(directMethods, 0, result, 0, directMethods.length);
-        System.arraycopy(virtualMethods, 0, result, directMethods.length, virtualMethods.length);
-        return result;
-    }
-
-    @Override
-    public ClassData clone(Section newOwner, int newOffset) {
-        return new ClassData(newOwner, newOffset, staticFields, instanceFields, directMethods, virtualMethods);
-    }
-
-    @Override
-    public int compareTo(ClassData o) {
-        int staticFieldCount = staticFields.length;
-        int othStaticFieldCount = o.staticFields.length;
-        if (staticFieldCount != othStaticFieldCount) return staticFieldCount - othStaticFieldCount;
-        for (int i = 0; i < staticFieldCount; ++i) {
-            int cmpRes = staticFields[i].compareTo(o.staticFields[i]);
-            if (cmpRes != 0) return cmpRes;
-        }
-
-        int instanceFieldCount = instanceFields.length;
-        int othInstanceFieldCount = o.instanceFields.length;
-        if (instanceFieldCount != othInstanceFieldCount) return instanceFieldCount - othInstanceFieldCount;
-        for (int i = 0; i < instanceFieldCount; ++i) {
-            int cmpRes = instanceFields[i].compareTo(o.instanceFields[i]);
-            if (cmpRes != 0) return cmpRes;
-        }
-
-        int directMethodCount = directMethods.length;
-        int othDirectMethodCount = o.directMethods.length;
-        if (directMethodCount != othDirectMethodCount) return directMethodCount - othDirectMethodCount;
-        for (int i = 0; i < directMethodCount; ++i) {
-            int cmpRes = directMethods[i].compareTo(o.directMethods[i]);
-            if (cmpRes != 0) return cmpRes;
-        }
-
-
-        int virtualMethodCount = virtualMethods.length;
-        int othVirtualMethodCount = o.virtualMethods.length;
-        if (virtualMethodCount != othVirtualMethodCount) return virtualMethodCount - othVirtualMethodCount;
-        for (int i = 0; i < virtualMethodCount; ++i) {
-            int cmpRes = virtualMethods[i].compareTo(o.virtualMethods[i]);
-            if (cmpRes != 0) return cmpRes;
-        }
-
-        return 0;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((ClassData) obj) == 0;
-    }
-
-    @Override
-    public int getByteCountInDex() {
-        int staticFieldsSize = staticFields.length;
-        int instanceFieldsSize = instanceFields.length;
-        int directMethodsSize = directMethods.length;
-        int virtualMethodsSize = virtualMethods.length;
-        int byteCount = Leb128.unsignedLeb128Size(staticFieldsSize)
-            + Leb128.unsignedLeb128Size(instanceFieldsSize)
-            + Leb128.unsignedLeb128Size(directMethodsSize)
-            + Leb128.unsignedLeb128Size(virtualMethodsSize);
-
-        byteCount += calculateFieldsSize(staticFields);
-        byteCount += calculateFieldsSize(instanceFields);
-        byteCount += calculateMethodsSize(directMethods);
-        byteCount += calculateMethodsSize(virtualMethods);
-
-        return byteCount;
-    }
-
-    private int calculateFieldsSize(Field[] fields) {
-        int result = 0;
-        int lastFieldIndex = 0;
-        for (Field field : fields) {
-            int deltaFieldIndex = field.fieldIndex - lastFieldIndex;
-            lastFieldIndex = field.fieldIndex;
-            result += Leb128.unsignedLeb128Size(deltaFieldIndex);
-            result += Leb128.unsignedLeb128Size(field.accessFlags);
-        }
-        return result;
-    }
-
-    private int calculateMethodsSize(Method[] methods) {
-        int result = 0;
-        int lastMethodIndex = 0;
-        for (Method method : methods) {
-            int deltaMethodIndex = method.methodIndex - lastMethodIndex;
-            lastMethodIndex = method.methodIndex;
-            result += Leb128.unsignedLeb128Size(deltaMethodIndex);
-            result += Leb128.unsignedLeb128Size(method.accessFlags);
-            result += Leb128.unsignedLeb128Size(method.codeOffset);
-        }
-        return result;
     }
 
     public static class Field implements Comparable<Field> {
@@ -158,10 +45,12 @@ public final class ClassData extends SectionItem<ClassData> {
         }
 
         @Override
-        public int compareTo(Field o) {
-            if (fieldIndex != o.fieldIndex) return fieldIndex - o.fieldIndex;
-            if (accessFlags != o.accessFlags) return accessFlags - o.accessFlags;
-            return 0;
+        public int compareTo(Field other) {
+            int res = CompareUtils.uCompare(fieldIndex, other.fieldIndex);
+            if (res != 0) {
+                return res;
+            }
+            return CompareUtils.sCompare(accessFlags, other.accessFlags);
         }
     }
 
@@ -177,12 +66,70 @@ public final class ClassData extends SectionItem<ClassData> {
         }
 
         @Override
-        public int compareTo(Method o) {
-            if (methodIndex != o.methodIndex) return methodIndex - o.methodIndex;
-            if (accessFlags != o.accessFlags) return accessFlags - o.accessFlags;
-            if (codeOffset != o.codeOffset) return codeOffset - o.codeOffset;
-            return 0;
+        public int compareTo(Method other) {
+            int res = CompareUtils.uCompare(methodIndex, other.methodIndex);
+            if (res != 0) {
+                return res;
+            }
+            res = CompareUtils.sCompare(accessFlags, other.accessFlags);
+            if (res != 0) {
+                return res;
+            }
+            return CompareUtils.sCompare(codeOffset, other.codeOffset);
         }
     }
 
+    @Override
+    public int compareTo(ClassData other) {
+        int res = CompareUtils.aArrCompare(staticFields, other.staticFields);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.aArrCompare(instanceFields, other.instanceFields);
+        if (res != 0) {
+            return res;
+        }
+        res = CompareUtils.aArrCompare(directMethods, other.directMethods);
+        if (res != 0) {
+            return res;
+        }
+        return CompareUtils.aArrCompare(virtualMethods, other.virtualMethods);
+    }
+
+    @Override
+    public int byteCountInDex() {
+        int res = Leb128.unsignedLeb128Size(staticFields.length);
+        res += Leb128.unsignedLeb128Size(instanceFields.length);
+        res += Leb128.unsignedLeb128Size(directMethods.length);
+        res += Leb128.unsignedLeb128Size(virtualMethods.length);
+        res += calcFieldsSize(staticFields);
+        res += calcFieldsSize(instanceFields);
+        res += calcMethodsSize(directMethods);
+        res += calcMethodsSize(virtualMethods);
+        return res;
+    }
+
+    private int calcFieldsSize(Field[] fields) {
+        int res = 0;
+        int prevFieldIndex = 0;
+        for (Field field : fields) {
+            int fieldIndexDelta = field.fieldIndex - prevFieldIndex;
+            prevFieldIndex = field.fieldIndex;
+            res += Leb128.unsignedLeb128Size(fieldIndexDelta) + Leb128.unsignedLeb128Size(field.accessFlags);
+        }
+        return res;
+    }
+
+    private int calcMethodsSize(Method[] methods) {
+        int res = 0;
+        int prevMethodIndex = 0;
+        for (Method method : methods) {
+            int methodIndexDelta = method.methodIndex - prevMethodIndex;
+            prevMethodIndex = method.methodIndex;
+            res += Leb128.unsignedLeb128Size(methodIndexDelta)
+                 + Leb128.unsignedLeb128Size(method.accessFlags)
+                 + Leb128.unsignedLeb128Size(method.codeOffset);
+        }
+        return res;
+    }
 }

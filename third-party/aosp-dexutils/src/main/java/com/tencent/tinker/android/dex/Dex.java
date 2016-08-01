@@ -16,19 +16,17 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.util.ByteInput;
-import com.tencent.tinker.android.dex.util.ByteOutput;
+import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dex.util.FileUtils;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UTFDataFormatException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
@@ -46,29 +44,25 @@ import java.util.zip.ZipFile;
 /**
  * The bytes of a dex file in memory for reading and writing. All int offsets
  * are unsigned.
- *
- * Modifications by tomystang:
- * 1. add method {@method interfaceTypeIndicesFromClassDef}
- * 2. add some helper methods for custom structures I/O
  */
 public final class Dex {
+    private static final int CHECKSUM_OFFSET = 8;
+    private static final int SIGNATURE_OFFSET = CHECKSUM_OFFSET + SizeOf.CHECKSUM;
+
     // Provided as a convenience to avoid a memory allocation to benefit Dalvik.
     // Note: libcore.util.EmptyArray cannot be accessed when this code isn't run on Dalvik.
-    static final         short[] EMPTY_SHORT_ARRAY = new short[0];
-    private static final int     CHECKSUM_OFFSET   = 8;
-    private static final int     CHECKSUM_SIZE     = 4;
-    private static final int     SIGNATURE_OFFSET  = CHECKSUM_OFFSET + CHECKSUM_SIZE;
-    private static final int     SIGNATURE_SIZE    = 20;
-    private final TableOfContents tableOfContents;
-    private final StringTable                     strings          = new StringTable();
-    private final TypeIndexToDescriptorIndexTable typeIds          = new TypeIndexToDescriptorIndexTable();
-    private final TypeIndexToDescriptorTable      typeNames        = new TypeIndexToDescriptorTable();
-    private final ProtoIdTable                    protoIds         = new ProtoIdTable();
-    private final FieldIdTable                    fieldIds         = new FieldIdTable();
-    private final MethodIdTable                   methodIds        = new MethodIdTable();
-    private final ClassDefTable                   classDefList     = new ClassDefTable();
-    private       ByteBuffer      data;
-    private       int                             nextSectionStart = 0;
+    static final short[] EMPTY_SHORT_ARRAY = new short[0];
+
+    private ByteBuffer data;
+    private final TableOfContents tableOfContents = new TableOfContents();
+    private int nextSectionStart = 0;
+    private final StringTable strings = new StringTable();
+    private final TypeIndexToDescriptorIndexTable typeIds = new TypeIndexToDescriptorIndexTable();
+    private final TypeIndexToDescriptorTable typeNames = new TypeIndexToDescriptorTable();
+    private final ProtoIdTable protoIds = new ProtoIdTable();
+    private final FieldIdTable fieldIds = new FieldIdTable();
+    private final MethodIdTable methodIds = new MethodIdTable();
+    private final ClassDefTable classDefs = new ClassDefTable();
 
     /**
      * Creates a new dex that reads from {@code data}. It is an error to modify
@@ -79,7 +73,6 @@ public final class Dex {
     }
 
     private Dex(ByteBuffer data) throws IOException {
-        this.tableOfContents = new TableOfContents(this);
         this.data = data;
         this.data.order(ByteOrder.LITTLE_ENDIAN);
         this.tableOfContents.readFrom(this);
@@ -88,17 +81,16 @@ public final class Dex {
     /**
      * Creates a new empty dex of the specified size.
      */
-    public Dex(int byteCount) throws IOException {
-        this.tableOfContents = new TableOfContents(this);
+    public Dex(int byteCount) {
         this.data = ByteBuffer.wrap(new byte[byteCount]);
         this.data.order(ByteOrder.LITTLE_ENDIAN);
+        this.tableOfContents.fileSize = byteCount;
     }
 
     /**
      * Creates a new dex buffer of the dex in {@code in}, and closes {@code in}.
      */
     public Dex(InputStream in) throws IOException {
-        this.tableOfContents = new TableOfContents(this);
         loadFrom(in);
     }
 
@@ -106,8 +98,6 @@ public final class Dex {
      * Creates a new dex buffer from the dex file {@code file}.
      */
     public Dex(File file) throws IOException {
-        this.tableOfContents = new TableOfContents(this);
-
         if (FileUtils.hasArchiveSuffix(file.getName())) {
             ZipFile zipFile = null;
             try {
@@ -123,21 +113,23 @@ public final class Dex {
                     try {
                         zipFile.close();
                     } catch (Exception e) {
-                        // Do nothing.
+                        // ignored.
                     }
                 }
             }
         } else if (file.getName().endsWith(".dex")) {
-            InputStream is = null;
+            InputStream in = null;
             try {
-                is = new BufferedInputStream(new FileInputStream(file));
-                loadFrom(is);
+                in = new BufferedInputStream(new FileInputStream(file));
+                loadFrom(in);
+            } catch (Exception e) {
+                throw new DexException(e);
             } finally {
-                if (is != null) {
+                if (in != null) {
                     try {
-                        is.close();
+                        in.close();
                     } catch (Exception e) {
-                        // Do nothing.
+                        // ignored.
                     }
                 }
             }
@@ -146,29 +138,11 @@ public final class Dex {
         }
     }
 
-    /**
-     * Creates a new dex from the contents of {@code bytes}. This API supports
-     * both {@code .dex} and {@code .odex} input. Calling this constructor
-     * transfers ownership of {@code bytes} to the returned Dex: it is an error
-     * to access the buffer after calling this method.
-     */
-    public static Dex create(ByteBuffer data) throws IOException {
-        data.order(ByteOrder.LITTLE_ENDIAN);
-
-        // if it's an .odex file, set position and limit to the .dex section
-        if (data.get(0) == 'd'
-            && data.get(1) == 'e'
-            && data.get(2) == 'y'
-            && data.get(3) == '\n') {
-            data.position(8);
-            int offset = data.getInt();
-            int length = data.getInt();
-            data.position(offset);
-            data.limit(offset + length);
-            data = data.slice();
-        }
-
-        return new Dex(data);
+    private void loadFrom(InputStream in) throws IOException {
+        byte[] rawData = FileUtils.readStream(in);
+        this.data = ByteBuffer.wrap(rawData);
+        this.data.order(ByteOrder.LITTLE_ENDIAN);
+        this.tableOfContents.readFrom(this);
     }
 
     private static void checkBounds(int index, int length) {
@@ -177,49 +151,25 @@ public final class Dex {
         }
     }
 
-    private void loadFrom(InputStream in) throws IOException {
-        int preAllocSize = in.available();
-        if (preAllocSize <= 0) {
-            // 12M
-            preAllocSize = 12 * 1024 * 1024;
-        }
-        ByteArrayOutputStream bytesOut = new ByteArrayOutputStream(preAllocSize);
-        byte[] buffer = new byte[8192];
-
-        int count;
-        while ((count = in.read(buffer)) > 0) {
-            bytesOut.write(buffer, 0, count);
-        }
-
-        bytesOut.flush();
-
-        this.data = ByteBuffer.wrap(bytesOut.toByteArray());
-        this.data.order(ByteOrder.LITTLE_ENDIAN);
-        this.tableOfContents.readFrom(this);
-    }
-
     public void writeTo(OutputStream out) throws IOException {
-        byte[] buffer = data.array();
-        try {
-            out.write(buffer);
-            out.flush();
-        } catch (IOException e) {
-            IOException ex = new IOException(e.getMessage() + " newDexSize: " + buffer.length);
-            throw ex;
-        }
+        byte[] rawData = data.array();
+        out.write(rawData);
+        out.flush();
     }
 
     public void writeTo(File dexOut) throws IOException {
         OutputStream out = null;
         try {
-            out = new FileOutputStream(dexOut);
+            out = new BufferedOutputStream(new FileOutputStream(dexOut));
             writeTo(out);
+        } catch (Exception e) {
+            throw new DexException(e);
         } finally {
             if (out != null) {
                 try {
                     out.close();
                 } catch (Exception e) {
-                    // Do nothing.
+                    // ignored.
                 }
             }
         }
@@ -229,40 +179,48 @@ public final class Dex {
         return tableOfContents;
     }
 
-    public Section open(TableOfContents.Section tocSection, int position) {
-        if (tocSection != null && !tocSection.exists()) {
-            throw new IllegalArgumentException("Try to open an section which is not exists. " + tocSection.toString());
-        }
-
+    /**
+     *  <b>IMPORTANT</b> To open a dex section by {@code TableOfContents.Section},
+     *  please use {@code openSection(TableOfContents.Section tocSec)} instead of
+     *  passing tocSec.off to this method.
+     *
+     *  <b>Because dex section returned by this method never checks
+     *  tocSec's bound when reading or writing data.</b>
+     */
+    public Section openSection(int position) {
         if (position < 0 || position >= data.capacity()) {
-            throw new IllegalArgumentException("position=" + position
-                + " length=" + data.capacity());
+            throw new IllegalArgumentException(
+                    "position=" + position + " length=" + data.capacity()
+            );
         }
         ByteBuffer sectionData = data.duplicate();
         sectionData.order(ByteOrder.LITTLE_ENDIAN); // necessary?
         sectionData.position(position);
         sectionData.limit(data.capacity());
-        return new Section("section", tocSection, sectionData);
+        return new Section("temp-section", sectionData);
     }
 
-    public Section open(TableOfContents.Section tocSection) {
-        if (tocSection != null && !tocSection.exists()) {
-            throw new IllegalArgumentException("Try to open an section which is not exists. " + tocSection.toString());
+    public Section openSection(TableOfContents.Section tocSec) {
+        int position = tocSec.off;
+        if (position < 0 || position >= data.capacity()) {
+            throw new IllegalArgumentException(
+                    "position=" + position + " length=" + data.capacity()
+            );
         }
         ByteBuffer sectionData = data.duplicate();
         sectionData.order(ByteOrder.LITTLE_ENDIAN); // necessary?
-        sectionData.position((tocSection != null ? tocSection.off : 0));
-        sectionData.limit(data.capacity());
-        return new Section("section", tocSection, sectionData);
+        sectionData.position(position);
+        sectionData.limit(position + tocSec.byteCount);
+        return new Section("section", sectionData);
     }
 
-    public Section appendSection(int maxByteCount, TableOfContents.Section tocSection) {
+    public Section appendSection(int maxByteCount, String name) {
         int limit = nextSectionStart + maxByteCount;
         ByteBuffer sectionData = data.duplicate();
         sectionData.order(ByteOrder.LITTLE_ENDIAN); // necessary?
         sectionData.position(nextSectionStart);
         sectionData.limit(limit);
-        Section result = new Section(tocSection.name, tocSection, sectionData);
+        Section result = new Section(name, sectionData);
         nextSectionStart = limit;
         return result;
     }
@@ -310,19 +268,12 @@ public final class Dex {
         return methodIds;
     }
 
-    public List<ClassDef> classDefsList() {
-        return classDefList;
+    public List<ClassDef> classDefs() {
+        return classDefs;
     }
 
-    public Iterable<ClassDef> classDefs() {
+    public Iterable<ClassDef> classDefIterable() {
         return new ClassDefIterable();
-    }
-
-    public TypeList readTypeList(int offset) {
-        if (offset == 0) {
-            return TypeList.EMPTY;
-        }
-        return open(tableOfContents.typeLists, offset).readTypeList();
     }
 
     public ClassData readClassData(ClassDef classDef) {
@@ -330,7 +281,7 @@ public final class Dex {
         if (offset == 0) {
             throw new IllegalArgumentException("offset == 0");
         }
-        return open(tableOfContents.classDatas, offset).readClassData();
+        return openSection(offset).readClassData();
     }
 
     public Code readCode(ClassData.Method method) {
@@ -338,7 +289,7 @@ public final class Dex {
         if (offset == 0) {
             throw new IllegalArgumentException("offset == 0");
         }
-        return open(tableOfContents.codes, offset).readCode();
+        return openSection(offset).readCode();
     }
 
     /**
@@ -356,7 +307,7 @@ public final class Dex {
         byte[] buffer = new byte[8192];
         ByteBuffer data = this.data.duplicate(); // positioned ByteBuffers aren't thread safe
         data.limit(data.capacity());
-        data.position(SIGNATURE_OFFSET + SIGNATURE_SIZE);
+        data.position(SIGNATURE_OFFSET + SizeOf.SIGNATURE);
         while (data.hasRemaining()) {
             int count = Math.min(buffer.length, data.remaining());
             data.get(buffer, 0, count);
@@ -373,7 +324,7 @@ public final class Dex {
         byte[] buffer = new byte[8192];
         ByteBuffer data = this.data.duplicate(); // positioned ByteBuffers aren't thread safe
         data.limit(data.capacity());
-        data.position(CHECKSUM_OFFSET + CHECKSUM_SIZE);
+        data.position(CHECKSUM_OFFSET + SizeOf.CHECKSUM);
         while (data.hasRemaining()) {
             int count = Math.min(buffer.length, data.remaining());
             data.get(buffer, 0, count);
@@ -387,8 +338,8 @@ public final class Dex {
      * writes them to the file.
      */
     public void writeHashes() throws IOException {
-        open(tableOfContents.header, SIGNATURE_OFFSET).write(computeSignature());
-        open(tableOfContents.header, CHECKSUM_OFFSET).writeInt(computeChecksum());
+        openSection(SIGNATURE_OFFSET).write(computeSignature());
+        openSection(CHECKSUM_OFFSET).writeInt(computeChecksum());
     }
 
     /**
@@ -513,16 +464,16 @@ public final class Dex {
 
     /**
      * Look up a descriptor index from a type index. Cheaper than:
-     * {@code open(tableOfContents.typeIds.off + (index * SizeOf.TYPE_ID_ITEM)).readInt();}
+     * {@code openSection(tableOfContents.typeIds.off + (index * SizeOf.TYPE_ID_ITEM)).readInt();}
      */
     public int descriptorIndexFromTypeIndex(int typeIndex) {
-        checkBounds(typeIndex, tableOfContents.typeIds.size);
-        int position = tableOfContents.typeIds.off + (SizeOf.TYPE_ID_ITEM * typeIndex);
-        return data.getInt(position);
+       checkBounds(typeIndex, tableOfContents.typeIds.size);
+       int position = tableOfContents.typeIds.off + (SizeOf.TYPE_ID_ITEM * typeIndex);
+       return data.getInt(position);
     }
 
     /**
-     * Look up a type index from a class def index.
+     * Look up a type index index from a class def index.
      */
     public int typeIndexFromClassDefIndex(int classDefIndex) {
         checkBounds(classDefIndex, tableOfContents.classDefs.size);
@@ -531,22 +482,7 @@ public final class Dex {
     }
 
     /**
-     * Look up a classdef from type index.
-     */
-    public ClassDef getClassDefByTypeIndex(int typeIndex) {
-        checkBounds(typeIndex, tableOfContents.typeIds.size);
-        for (int classDefIndex = 0; classDefIndex < tableOfContents.classDefs.size; ++classDefIndex) {
-            int position = tableOfContents.classDefs.off + (SizeOf.CLASS_DEF_ITEM * classDefIndex);
-            int typeIndexInClassDef = data.getInt(position);
-            if (typeIndexInClassDef == typeIndex) {
-                return open(tableOfContents.classDefs, position).readClassDef();
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Look up a annotation directory offset from a class def index.
+     * Look up an annotation directory offset from a class def index.
      */
     public int annotationDirectoryOffsetFromClassDefIndex(int classDefIndex) {
         checkBounds(classDefIndex, tableOfContents.classDefs.size);
@@ -610,809 +546,337 @@ public final class Dex {
         return types;
     }
 
-    public final class Section implements ByteInput, ByteOutput {
-        private final String                  name;
-        private final TableOfContents.Section tocSection;
-        private final ByteBuffer              data;
-        private final int                     initialPosition;
+    public final class Section extends DexDataBuffer {
+        private final String name;
 
-        public Section(String name, TableOfContents.Section tocSection, ByteBuffer data) {
+        private Section(String name, ByteBuffer data) {
+            super(data);
             this.name = name;
-            this.tocSection = tocSection;
-            this.data = data;
-            this.initialPosition = data.position();
         }
 
-        public Dex getOwnerDex() {
-            return tocSection.owner;
-        }
-
-        public int getPosition() {
-            return data.position();
-        }
-
-        public int readInt() {
-            return data.getInt();
-        }
-
-        public short readShort() {
-            return data.getShort();
-        }
-
-        public int readUnsignedShort() {
-            return readShort() & 0xffff;
-        }
-
-        public byte readByte() {
-            return data.get();
-        }
-
-        public byte[] readByteArray(int length) {
-            byte[] result = new byte[length];
-            data.get(result);
-            return result;
-        }
-
-        public short[] readShortArray(int length) {
-            if (length == 0) {
-                return EMPTY_SHORT_ARRAY;
-            }
-            short[] result = new short[length];
-            for (int i = 0; i < length; ++i) {
-                result[i] = readShort();
-            }
-            return result;
-        }
-
-        public int readUleb128() {
-            return Leb128.readUnsignedLeb128(this);
-        }
-
-        public int readUleb128p1() {
-            return Leb128.readUnsignedLeb128(this) - 1;
-        }
-
-        public int readSleb128() {
-            return Leb128.readSignedLeb128(this);
-        }
-
-        public TypeId readTypeId() {
-            int offset = data.position();
-            int descriptorIndex = data.getInt();
-            return new TypeId(this.tocSection, offset, descriptorIndex);
-        }
-
-        public TypeList readTypeList() {
-            int offset = data.position();
-            int size = readInt();
-            short[] types = readShortArray(size);
-            return new TypeList(this.tocSection, offset, types);
-        }
-
+        /**
+         * @inheritDoc
+         */
+        @Override
         public StringData readStringData() {
-            int offset = data.position();
-            try {
-                int expectedLength = readUleb128();
-                String result = Mutf8.decode(this, new char[expectedLength]);
-                if (result.length() != expectedLength) {
-                    throw new DexException("Declared length " + expectedLength
-                        + " doesn't match decoded length of " + result.length());
-                }
-                return new StringData(this.tocSection, offset, result);
-            } catch (UTFDataFormatException e) {
-                throw new DexException(e);
-            }
+            ensureFourBytesAligned(tableOfContents.stringDatas, false);
+            return super.readStringData();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public TypeList readTypeList() {
+            ensureFourBytesAligned(tableOfContents.typeLists, false);
+            return super.readTypeList();
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
         public FieldId readFieldId() {
-            int offset = data.position();
-            int declaringClassIndex = readUnsignedShort();
-            int typeIndex = readUnsignedShort();
-            int nameIndex = readInt();
-            return new FieldId(this.tocSection, offset, declaringClassIndex, typeIndex, nameIndex);
+            ensureFourBytesAligned(tableOfContents.fieldIds, false);
+            return super.readFieldId();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public MethodId readMethodId() {
-            int offset = data.position();
-            int declaringClassIndex = readUnsignedShort();
-            int protoIndex = readUnsignedShort();
-            int nameIndex = readInt();
-            return new MethodId(this.tocSection, offset, declaringClassIndex, protoIndex, nameIndex);
+            ensureFourBytesAligned(tableOfContents.methodIds, false);
+            return super.readMethodId();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public ProtoId readProtoId() {
-            int offset = data.position();
-            int shortyIndex = readInt();
-            int returnTypeIndex = readInt();
-            int parametersOffset = readInt();
-            return new ProtoId(this.tocSection, offset, shortyIndex, returnTypeIndex, parametersOffset);
+            ensureFourBytesAligned(tableOfContents.protoIds, false);
+            return super.readProtoId();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public ClassDef readClassDef() {
-            int offset = data.position();
-            int type = readInt();
-            int accessFlags = readInt();
-            int supertype = readInt();
-            int interfacesOffset = readInt();
-            int sourceFileIndex = readInt();
-            int annotationsOffset = readInt();
-            int classDataOffset = readInt();
-            int staticValuesOffset = readInt();
-            return new ClassDef(this.tocSection, offset, type, accessFlags, supertype,
-                interfacesOffset, sourceFileIndex, annotationsOffset, classDataOffset,
-                staticValuesOffset);
+            ensureFourBytesAligned(tableOfContents.classDefs, false);
+            return super.readClassDef();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public Code readCode() {
-            int offset = data.position();
-            int registersSize = readUnsignedShort();
-            int insSize = readUnsignedShort();
-            int outsSize = readUnsignedShort();
-            int triesSize = readUnsignedShort();
-            int debugInfoOffset = readInt();
-            int instructionsSize = readInt();
-            short[] instructions = readShortArray(instructionsSize);
-            Code.Try[] tries = null;
-            Code.CatchHandler[] catchHandlers = null;
-            if (triesSize > 0) {
-                if ((instructions.length & 1) == 1) {
-                    skip(2); // padding 2 bytes.
-                }
-
-                /*
-                 * We can't read the tries until we've read the catch handlers.
-                 * Unfortunately they're in the opposite order in the dex file
-                 * so we need to read them out-of-order.
-                 */
-                Section triesSection = open(tableOfContents.codes, data.position());
-                skip(triesSize * SizeOf.TRY_ITEM);
-                catchHandlers = readCatchHandlers();
-                tries = triesSection.readTries(triesSize, catchHandlers);
-            } else {
-                tries = new Code.Try[0];
-                catchHandlers = new Code.CatchHandler[0];
-            }
-
-            return new Code(this.tocSection, offset, registersSize, insSize, outsSize, debugInfoOffset, instructions,
-                tries, catchHandlers);
+            ensureFourBytesAligned(tableOfContents.codes, false);
+            return super.readCode();
         }
 
-        private Code.CatchHandler[] readCatchHandlers() {
-            int baseOffset = data.position();
-            int catchHandlersSize = readUleb128();
-            Code.CatchHandler[] result = new Code.CatchHandler[catchHandlersSize];
-            for (int i = 0; i < catchHandlersSize; i++) {
-                int offset = data.position() - baseOffset;
-                result[i] = readCatchHandler(offset);
-            }
-            return result;
-        }
-
-        private Code.Try[] readTries(int triesSize, Code.CatchHandler[] catchHandlers) {
-            Code.Try[] result = new Code.Try[triesSize];
-            for (int i = 0; i < triesSize; i++) {
-                int startAddress = readInt();
-                int instructionCount = readUnsignedShort();
-                int handlerOffset = readUnsignedShort();
-                int catchHandlerIndex = findCatchHandlerIndex(catchHandlers, handlerOffset);
-                result[i] = new Code.Try(startAddress, instructionCount, catchHandlerIndex);
-            }
-            return result;
-        }
-
-        private int findCatchHandlerIndex(Code.CatchHandler[] catchHandlers, int offset) {
-            for (int i = 0; i < catchHandlers.length; i++) {
-                Code.CatchHandler catchHandler = catchHandlers[i];
-                if (catchHandler.offset == offset) {
-                    return i;
-                }
-            }
-            throw new IllegalArgumentException();
-        }
-
-        private Code.CatchHandler readCatchHandler(int offset) {
-            int size = readSleb128();
-            int handlersCount = Math.abs(size);
-            int[] typeIndexes = new int[handlersCount];
-            int[] addresses = new int[handlersCount];
-            for (int i = 0; i < handlersCount; i++) {
-                typeIndexes[i] = readUleb128();
-                addresses[i] = readUleb128();
-            }
-            int catchAllAddress = size <= 0 ? readUleb128() : -1;
-            return new Code.CatchHandler(typeIndexes, addresses, catchAllAddress, offset);
-        }
-
+        /**
+         * @inheritDoc
+         */
+        @Override
         public DebugInfoItem readDebugInfoItem() {
-            int offset = data.position();
-
-            int lineStart = readUleb128();
-            int parametersSize = readUleb128();
-            int[] parameterNames = new int[parametersSize];
-            for (int i = 0; i < parametersSize; ++i) {
-                parameterNames[i] = readUleb128p1();
-            }
-
-            ByteArrayOutputStream baos = null;
-
-            try {
-                baos = new ByteArrayOutputStream(64);
-
-                final ByteArrayOutputStream baosRef = baos;
-
-                ByteOutput outAdapter = new ByteOutput() {
-                    @Override
-                    public void writeByte(int i) {
-                        baosRef.write(i);
-                    }
-                };
-
-                outside_whileloop:
-                while (true) {
-                    int opcode = readByte();
-                    baos.write(opcode);
-                    switch (opcode) {
-                        case DebugInfoItem.DBG_END_SEQUENCE: {
-                            break outside_whileloop;
-                        }
-                        case DebugInfoItem.DBG_ADVANCE_PC: {
-                            int addrDiff = readUleb128();
-                            Leb128.writeUnsignedLeb128(outAdapter, addrDiff);
-                            break;
-                        }
-                        case DebugInfoItem.DBG_ADVANCE_LINE: {
-                            int lineDiff = readSleb128();
-                            Leb128.writeSignedLeb128(outAdapter, lineDiff);
-                            break;
-                        }
-                        case DebugInfoItem.DBG_START_LOCAL:
-                        case DebugInfoItem.DBG_START_LOCAL_EXTENDED: {
-                            int registerNum = readUleb128();
-                            Leb128.writeUnsignedLeb128(outAdapter, registerNum);
-                            int nameIndex = readUleb128p1();
-                            Leb128.writeUnsignedLeb128p1(outAdapter, nameIndex);
-                            int typeIndex = readUleb128p1();
-                            Leb128.writeUnsignedLeb128p1(outAdapter, typeIndex);
-                            if (opcode == DebugInfoItem.DBG_START_LOCAL_EXTENDED) {
-                                int sigIndex = readUleb128p1();
-                                Leb128.writeUnsignedLeb128p1(outAdapter, sigIndex);
-                            }
-                            break;
-                        }
-                        case DebugInfoItem.DBG_END_LOCAL:
-                        case DebugInfoItem.DBG_RESTART_LOCAL: {
-                            int registerNum = readUleb128();
-                            Leb128.writeUnsignedLeb128(outAdapter, registerNum);
-                            break;
-                        }
-                        case DebugInfoItem.DBG_SET_FILE: {
-                            int nameIndex = readUleb128p1();
-                            Leb128.writeUnsignedLeb128p1(outAdapter, nameIndex);
-                            break;
-                        }
-                        case DebugInfoItem.DBG_SET_PROLOGUE_END:
-                        case DebugInfoItem.DBG_SET_EPILOGUE_BEGIN:
-                        default: {
-                            break;
-                        }
-                    }
-                }
-
-                byte[] infoSTM = baos.toByteArray();
-                return new DebugInfoItem(this.tocSection, offset, lineStart, parameterNames, infoSTM);
-            } finally {
-                if (baos != null) {
-                    try {
-                        baos.close();
-                    } catch (Exception e) {
-                        // Do nothing.
-                    }
-                }
-            }
+            ensureFourBytesAligned(tableOfContents.debugInfos, false);
+            return super.readDebugInfoItem();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public ClassData readClassData() {
-            int offset = data.position();
-            int staticFieldsSize = readUleb128();
-            int instanceFieldsSize = readUleb128();
-            int directMethodsSize = readUleb128();
-            int virtualMethodsSize = readUleb128();
-            ClassData.Field[] staticFields = readFields(staticFieldsSize);
-            ClassData.Field[] instanceFields = readFields(instanceFieldsSize);
-            ClassData.Method[] directMethods = readMethods(directMethodsSize);
-            ClassData.Method[] virtualMethods = readMethods(virtualMethodsSize);
-            return new ClassData(this.tocSection, offset, staticFields, instanceFields, directMethods, virtualMethods);
-        }
-
-        private ClassData.Field[] readFields(int count) {
-            ClassData.Field[] result = new ClassData.Field[count];
-            int fieldIndex = 0;
-            for (int i = 0; i < count; i++) {
-                fieldIndex += readUleb128(); // field index diff
-                int accessFlags = readUleb128();
-                result[i] = new ClassData.Field(fieldIndex, accessFlags);
-            }
-            return result;
-        }
-
-        private ClassData.Method[] readMethods(int count) {
-            ClassData.Method[] result = new ClassData.Method[count];
-            int methodIndex = 0;
-            for (int i = 0; i < count; i++) {
-                methodIndex += readUleb128(); // method index diff
-                int accessFlags = readUleb128();
-                int codeOff = readUleb128();
-                result[i] = new ClassData.Method(methodIndex, accessFlags, codeOff);
-            }
-            return result;
+            ensureFourBytesAligned(tableOfContents.classDatas, false);
+            return super.readClassData();
         }
 
         /**
-         * Returns a byte array containing the bytes from {@code start} to this
-         * section's current position.
+         * @inheritDoc
          */
-        private byte[] getBytesFrom(int start) {
-            int end = data.position();
-            byte[] result = new byte[end - start];
-            data.position(start);
-            data.get(result);
-            return result;
-        }
-
+        @Override
         public Annotation readAnnotation() {
-            int offset = data.position();
-            byte visibility = readByte();
-            int start = data.position();
-            new EncodedValueReader(this, EncodedValueReader.ENCODED_ANNOTATION).skipValue();
-            return new Annotation(this.tocSection, offset, visibility, new EncodedValue(this.tocSection, start, getBytesFrom(start)));
+            ensureFourBytesAligned(tableOfContents.annotations, false);
+            return super.readAnnotation();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public AnnotationSet readAnnotationSet() {
-            int offset = data.position();
-            int size = readInt();
-            int[] annotationOffsets = new int[size];
-            for (int i = 0; i < size; ++i) {
-                annotationOffsets[i] = readInt();
-            }
-            return new AnnotationSet(this.tocSection, offset, annotationOffsets);
+            ensureFourBytesAligned(tableOfContents.annotationSets, false);
+            return super.readAnnotationSet();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public AnnotationSetRefList readAnnotationSetRefList() {
-            int offset = data.position();
-            int size = readInt();
-            int[] annotationSetRefItems = new int[size];
-            for (int i = 0; i < size; ++i) {
-                annotationSetRefItems[i] = readInt();
-            }
-            return new AnnotationSetRefList(this.tocSection, offset, annotationSetRefItems);
+            ensureFourBytesAligned(tableOfContents.annotationSetRefLists, false);
+            return super.readAnnotationSetRefList();
         }
 
-        public AnnotationDirectory readAnnotationDirectory() {
-            int offset = data.position();
-            int classAnnotationsOffset = readInt();
-            int fieldsSize = readInt();
-            int methodsSize = readInt();
-            int parameterListSize = readInt();
-
-            int[][] fieldAnnotations = new int[fieldsSize][2];
-            for (int i = 0; i < fieldsSize; ++i) {
-                // field index
-                fieldAnnotations[i][0] = readInt();
-                // annotations offset
-                fieldAnnotations[i][1] = readInt();
-            }
-
-            int[][] methodAnnotations = new int[methodsSize][2];
-            for (int i = 0; i < methodsSize; ++i) {
-                // method index
-                methodAnnotations[i][0] = readInt();
-                // annotation set offset
-                methodAnnotations[i][1] = readInt();
-            }
-
-            int[][] parameterAnnotations = new int[parameterListSize][2];
-            for (int i = 0; i < parameterListSize; ++i) {
-                // method index
-                parameterAnnotations[i][0] = readInt();
-                // annotations offset
-                parameterAnnotations[i][1] = readInt();
-            }
-
-            return new AnnotationDirectory(this.tocSection, offset, classAnnotationsOffset, fieldAnnotations, methodAnnotations, parameterAnnotations);
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public AnnotationsDirectory readAnnotationsDirectory() {
+            ensureFourBytesAligned(tableOfContents.annotationsDirectories, false);
+            return super.readAnnotationsDirectory();
         }
 
+        /**
+         * @inheritDoc
+         */
+        @Override
         public EncodedValue readEncodedArray() {
-            int start = data.position();
-            new EncodedValueReader(this, EncodedValueReader.ENCODED_ARRAY).skipValue();
-            return new EncodedValue(this.tocSection, start, getBytesFrom(start));
+            ensureFourBytesAligned(tableOfContents.encodedArrays, false);
+            return super.readEncodedArray();
         }
 
-        public void skip(int count) {
-            if (count < 0) {
-                throw new IllegalArgumentException();
-            }
-            data.position(data.position() + count);
-        }
-
-        /**
-         * Skips bytes until the position is aligned to a multiple of 4.
-         */
-        public void alignToFourBytes() {
-            int targetPos = (data.position() + 3) & (~3);
-            if (targetPos < data.limit()) {
-                data.position((data.position() + 3) & (~3));
-            }
-        }
-
-        /**
-         * Writes 0x00 until the position is aligned to a multiple of 4.
-         */
-        public void alignToFourBytesWithZeroFill() {
-            int targetPos = (data.position() + 3) & (~3);
-            if (targetPos < data.limit()) {
-                while ((data.position() & 3) != 0) {
-                    data.put((byte) 0);
+        private void ensureFourBytesAligned(TableOfContents.Section tocSec, boolean isFillWithZero) {
+            if (tocSec.isElementFourByteAligned) {
+                if (isFillWithZero) {
+                    alignToFourBytesWithZeroFill();
+                } else {
+                    alignToFourBytes();
                 }
             }
         }
 
-        public void assertFourByteAligned() {
-            if ((data.position() & 3) != 0) {
-                throw new IllegalStateException("Not four byte aligned!");
-            }
-        }
-
-        public void write(byte[] bytes) {
-            this.data.put(bytes);
-        }
-
-        public void writeByte(int b) {
-            data.put((byte) b);
-        }
-
-        public void writeShort(short i) {
-            data.putShort(i);
-        }
-
-        public void writeUnsignedShort(int i) {
-            short s = (short) i;
-            if (i != (s & 0xffff)) {
-                throw new IllegalArgumentException("Expected an unsigned short: " + i);
-            }
-            writeShort(s);
-        }
-
-        public void write(short[] shorts) {
-            for (short s : shorts) {
-                writeShort(s);
-            }
-        }
-
-        public void writeInt(int i) {
-            data.putInt(i);
-        }
-
-        public void writeUleb128(int i) {
-            try {
-                Leb128.writeUnsignedLeb128(this, i);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                throw new DexException("Section limit " + data.limit() + " exceeded by " + name);
-            }
-        }
-
-        public void writeUleb128p1(int i) {
-            writeUleb128(i + 1);
-        }
-
-        public void writeSleb128(int i) {
-            try {
-                Leb128.writeSignedLeb128(this, i);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                throw new DexException("Section limit " + data.limit() + " exceeded by " + name);
-            }
-        }
-
-        public void writeStringData(StringData value) {
-            try {
-                int length = value.value.length();
-                writeUleb128(length);
-                write(Mutf8.encode(value.value));
-                writeByte(0);
-            } catch (UTFDataFormatException e) {
-                throw new AssertionError();
-            }
-        }
-
-        public void writeTypeId(TypeId value) {
-            writeInt(value.descriptorIndex);
-        }
-
-        public void writeTypeList(TypeList value) {
-            writeInt(value.types.length);
-            for (short type : value.types) {
-                writeShort(type);
-            }
-        }
-
-        public void writeFieldId(FieldId value) {
-            writeUnsignedShort(value.declaringClassIndex);
-            writeUnsignedShort(value.typeIndex);
-            writeInt(value.nameIndex);
-        }
-
-        public void writeMethodId(MethodId value) {
-            writeUnsignedShort(value.declaringClassIndex);
-            writeUnsignedShort(value.protoIndex);
-            writeInt(value.nameIndex);
-        }
-
-        public void writeProtoId(ProtoId value) {
-            writeInt(value.shortyIndex);
-            writeInt(value.returnTypeIndex);
-            writeInt(value.parametersOffset);
-        }
-
-        public void writeClassDef(ClassDef value) {
-            assertFourByteAligned();
-            writeInt(value.typeIndex);
-            writeInt(value.accessFlags);
-            writeInt(value.supertypeIndex);
-            writeInt(value.interfacesOffset);
-            writeInt(value.sourceFileIndex);
-            writeInt(value.annotationsOffset);
-            writeInt(value.classDataOffset);
-            writeInt(value.staticValuesOffset);
-        }
-
-        public void writeCode(Code value) {
-            writeUnsignedShort(value.registersSize);
-            writeUnsignedShort(value.insSize);
-            writeUnsignedShort(value.outsSize);
-            writeUnsignedShort(value.tries.length);
-            writeInt(value.debugInfoOffset);
-            writeInt(value.instructions.length);
-            write(value.instructions);
-
-            if (value.tries.length > 0) {
-                if ((value.instructions.length & 1) == 1) {
-                    writeShort((short) 0); // padding
-                }
-                /*
-                 * We can't write the tries until we've written the catch handlers.
-                 * Unfortunately they're in the opposite order in the dex file so we
-                 * need to transform them out-of-order.
-                 */
-                Dex.Section triesSection = open(tableOfContents.codes, data.position());
-                skip(value.tries.length * SizeOf.TRY_ITEM);
-                int[] offsets = writeCatchHandlers(value.catchHandlers);
-                triesSection.writeTries(value.tries, offsets);
-            }
-        }
-
-        private int[] writeCatchHandlers(Code.CatchHandler[] catchHandlers) {
-            int baseOffset = data.position();
-            writeUleb128(catchHandlers.length);
-            int[] offsets = new int[catchHandlers.length];
-            for (int i = 0; i < catchHandlers.length; i++) {
-                offsets[i] = data.position() - baseOffset;
-                writeCatchHandler(catchHandlers[i]);
-            }
-            return offsets;
-        }
-
-        private void writeCatchHandler(Code.CatchHandler catchHandler) {
-            int catchAllAddress = catchHandler.catchAllAddress;
-            int[] typeIndexes = catchHandler.typeIndexes;
-            int[] addresses = catchHandler.addresses;
-
-            if (catchAllAddress != -1) {
-                writeSleb128(-typeIndexes.length);
-            } else {
-                writeSleb128(typeIndexes.length);
-            }
-
-            for (int i = 0; i < typeIndexes.length; i++) {
-                writeUleb128(typeIndexes[i]);
-                writeUleb128(addresses[i]);
-            }
-
-            if (catchAllAddress != -1) {
-                writeUleb128(catchAllAddress);
-            }
-        }
-
-        private void writeTries(Code.Try[] tries, int[] catchHandlerOffsets) {
-            for (Code.Try tryItem : tries) {
-                writeInt(tryItem.startAddress);
-                writeUnsignedShort(tryItem.instructionCount);
-                writeUnsignedShort(catchHandlerOffsets[tryItem.catchHandlerIndex]);
-            }
-        }
-
-        public void writeDebugInfoItem(DebugInfoItem value) {
-            writeUleb128(value.lineStart);
-
-            int parametersSize = value.parameterNames.length;
-
-            writeUleb128(parametersSize);
-
-            for (int i = 0; i < parametersSize; ++i) {
-                int parameterName = value.parameterNames[i];
-                writeUleb128p1(parameterName);
-            }
-
-            write(value.infoSTM);
-        }
-
-        public void writeClassData(ClassData value) {
-            writeUleb128(value.staticFields.length);
-            writeUleb128(value.instanceFields.length);
-            writeUleb128(value.directMethods.length);
-            writeUleb128(value.virtualMethods.length);
-            writeFields(value.staticFields);
-            writeFields(value.instanceFields);
-            writeMethods(value.directMethods);
-            writeMethods(value.virtualMethods);
-        }
-
-        private void writeFields(ClassData.Field[] fields) {
-            int lastOutFieldIndex = 0;
-            for (ClassData.Field field : fields) {
-                writeUleb128(field.fieldIndex - lastOutFieldIndex);
-                lastOutFieldIndex = field.fieldIndex;
-                writeUleb128(field.accessFlags);
-            }
-        }
-
-        private void writeMethods(ClassData.Method[] methods) {
-            int lastOutMethodIndex = 0;
-            for (ClassData.Method method : methods) {
-                writeUleb128(method.methodIndex - lastOutMethodIndex);
-                lastOutMethodIndex = method.methodIndex;
-                writeUleb128(method.accessFlags);
-                writeUleb128(method.codeOffset);
-            }
-        }
-
-        public void writeAnnotation(Annotation value) {
-            writeByte(value.visibility);
-            writeEncodedArray(value.encodedAnnotation);
-        }
-
-        public void writeAnnotationSet(AnnotationSet value) {
-            writeInt(value.annotationOffsets.length);
-            for (int annotationOffset : value.annotationOffsets) {
-                writeInt(annotationOffset);
-            }
-        }
-
-        public void writeAnnotationSetRefList(AnnotationSetRefList value) {
-            writeInt(value.annotationSetRefItems.length);
-            for (int annotationSetRefItem : value.annotationSetRefItems) {
-                writeInt(annotationSetRefItem);
-            }
-        }
-
-        public void writeAnnotationDirectory(AnnotationDirectory value) {
-            writeInt(value.classAnnotationsOffset);
-            writeInt(value.fieldAnnotations.length);
-            writeInt(value.methodAnnotations.length);
-            writeInt(value.parameterAnnotations.length);
-
-            for (int[] fieldAnnotation : value.fieldAnnotations) {
-                writeInt(fieldAnnotation[0]);
-                writeInt(fieldAnnotation[1]);
-            }
-
-            for (int[] methodAnnotation : value.methodAnnotations) {
-                writeInt(methodAnnotation[0]);
-                writeInt(methodAnnotation[1]);
-            }
-
-            for (int[] parameterAnnotation : value.parameterAnnotations) {
-                writeInt(parameterAnnotation[0]);
-                writeInt(parameterAnnotation[1]);
-            }
-        }
-
-        public void writeEncodedArray(EncodedValue value) {
-            write(value.data);
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeStringData(StringData stringData) {
+            ensureFourBytesAligned(tableOfContents.stringDatas, true);
+            return super.writeStringData(stringData);
         }
 
         /**
-         * Returns the number of bytes remaining in this section.
+         * @inheritDoc
          */
-        public int remaining() {
-            return data.remaining();
+        @Override
+        public int writeTypeList(TypeList typeList) {
+            ensureFourBytesAligned(tableOfContents.typeLists, true);
+            return super.writeTypeList(typeList);
         }
 
         /**
-         * Returns the number of bytes used by this section.
+         * @inheritDoc
          */
-        public int used() {
-            return data.position() - initialPosition;
+        @Override
+        public int writeFieldId(FieldId fieldId) {
+            ensureFourBytesAligned(tableOfContents.fieldIds, true);
+            return super.writeFieldId(fieldId);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeMethodId(MethodId methodId) {
+            ensureFourBytesAligned(tableOfContents.methodIds, true);
+            return super.writeMethodId(methodId);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeProtoId(ProtoId protoId) {
+            ensureFourBytesAligned(tableOfContents.protoIds, true);
+            return super.writeProtoId(protoId);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeClassDef(ClassDef classDef) {
+            ensureFourBytesAligned(tableOfContents.classDefs, true);
+            return super.writeClassDef(classDef);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeCode(Code code) {
+            ensureFourBytesAligned(tableOfContents.codes, true);
+            return super.writeCode(code);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeDebugInfoItem(DebugInfoItem debugInfoItem) {
+            ensureFourBytesAligned(tableOfContents.debugInfos, true);
+            return super.writeDebugInfoItem(debugInfoItem);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeClassData(ClassData classData) {
+            ensureFourBytesAligned(tableOfContents.classDatas, true);
+            return super.writeClassData(classData);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeAnnotation(Annotation annotation) {
+            ensureFourBytesAligned(tableOfContents.annotations, true);
+            return super.writeAnnotation(annotation);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeAnnotationSet(AnnotationSet annotationSet) {
+            ensureFourBytesAligned(tableOfContents.annotationSets, true);
+            return super.writeAnnotationSet(annotationSet);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeAnnotationSetRefList(AnnotationSetRefList annotationSetRefList) {
+            ensureFourBytesAligned(tableOfContents.annotationSetRefLists, true);
+            return super.writeAnnotationSetRefList(annotationSetRefList);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeAnnotationsDirectory(AnnotationsDirectory annotationsDirectory) {
+            ensureFourBytesAligned(tableOfContents.annotationsDirectories, true);
+            return super.writeAnnotationsDirectory(annotationsDirectory);
+        }
+
+        /**
+         * @inheritDoc
+         */
+        @Override
+        public int writeEncodedArray(EncodedValue encodedValue) {
+            ensureFourBytesAligned(tableOfContents.encodedArrays, true);
+            return super.writeEncodedArray(encodedValue);
         }
     }
 
     private final class StringTable extends AbstractList<String> implements RandomAccess {
-        @Override
-        public String get(int index) {
+        @Override public String get(int index) {
             checkBounds(index, tableOfContents.stringIds.size);
-            data.position(tableOfContents.stringIds.off + (index * SizeOf.STRING_ID_ITEM));
-            int dataOffset = data.getInt();
-            return open(tableOfContents.stringDatas, dataOffset).readStringData().value;
+            int stringOff = openSection(tableOfContents.stringIds.off + (index * SizeOf.STRING_ID_ITEM)).readInt();
+            return openSection(stringOff).readStringData().value;
         }
-
-        @Override
-        public int size() {
+        @Override public int size() {
             return tableOfContents.stringIds.size;
         }
     }
 
     private final class TypeIndexToDescriptorIndexTable extends AbstractList<Integer>
-        implements RandomAccess {
-        @Override
-        public Integer get(int index) {
+            implements RandomAccess {
+        @Override public Integer get(int index) {
             return descriptorIndexFromTypeIndex(index);
         }
-
-        @Override
-        public int size() {
+        @Override public int size() {
             return tableOfContents.typeIds.size;
         }
     }
 
     private final class TypeIndexToDescriptorTable extends AbstractList<String>
-        implements RandomAccess {
-        @Override
-        public String get(int index) {
+            implements RandomAccess {
+        @Override public String get(int index) {
             return strings.get(descriptorIndexFromTypeIndex(index));
         }
-
-        @Override
-        public int size() {
+        @Override public int size() {
             return tableOfContents.typeIds.size;
         }
     }
 
     private final class ProtoIdTable extends AbstractList<ProtoId> implements RandomAccess {
-        @Override
-        public ProtoId get(int index) {
+        @Override public ProtoId get(int index) {
             checkBounds(index, tableOfContents.protoIds.size);
-            return open(tableOfContents.protoIds, tableOfContents.protoIds.off + (SizeOf.PROTO_ID_ITEM * index))
-                .readProtoId();
+            return openSection(tableOfContents.protoIds.off + (SizeOf.PROTO_ID_ITEM * index))
+                    .readProtoId();
         }
-
-        @Override
-        public int size() {
+        @Override public int size() {
             return tableOfContents.protoIds.size;
         }
     }
 
     private final class FieldIdTable extends AbstractList<FieldId> implements RandomAccess {
-        @Override
-        public FieldId get(int index) {
+        @Override public FieldId get(int index) {
             checkBounds(index, tableOfContents.fieldIds.size);
-            return open(tableOfContents.fieldIds, tableOfContents.fieldIds.off + (SizeOf.MEMBER_ID_ITEM * index))
-                .readFieldId();
+            return openSection(tableOfContents.fieldIds.off + (SizeOf.MEMBER_ID_ITEM * index))
+                    .readFieldId();
         }
-
-        @Override
-        public int size() {
+        @Override public int size() {
             return tableOfContents.fieldIds.size;
         }
     }
 
     private final class MethodIdTable extends AbstractList<MethodId> implements RandomAccess {
-        @Override
-        public MethodId get(int index) {
+        @Override public MethodId get(int index) {
             checkBounds(index, tableOfContents.methodIds.size);
-            return open(tableOfContents.methodIds, tableOfContents.methodIds.off + (SizeOf.MEMBER_ID_ITEM * index))
-                .readMethodId();
+            return openSection(tableOfContents.methodIds.off + (SizeOf.MEMBER_ID_ITEM * index))
+                    .readMethodId();
         }
-
-        @Override
-        public int size() {
+        @Override public int size() {
             return tableOfContents.methodIds.size;
         }
     }
@@ -1420,8 +884,9 @@ public final class Dex {
     private final class ClassDefTable extends AbstractList<ClassDef> implements RandomAccess {
         @Override
         public ClassDef get(int index) {
-            Dex.Section sec = open(tableOfContents.classDefs, tableOfContents.classDefs.off + SizeOf.CLASS_DEF_ITEM * index);
-            return sec.readClassDef();
+            checkBounds(index, tableOfContents.classDefs.size);
+            return openSection(tableOfContents.classDefs.off + (SizeOf.CLASS_DEF_ITEM * index))
+                    .readClassDef();
         }
 
         @Override
@@ -1431,14 +896,13 @@ public final class Dex {
     }
 
     private final class ClassDefIterator implements Iterator<ClassDef> {
-        private final Dex.Section in    = open(tableOfContents.classDefs, tableOfContents.classDefs.off);
-        private       int         count = 0;
+        private final Section in = openSection(tableOfContents.classDefs);
+        private int count = 0;
 
         @Override
         public boolean hasNext() {
             return count < tableOfContents.classDefs.size;
         }
-
         @Override
         public ClassDef next() {
             if (!hasNext()) {
@@ -1447,9 +911,8 @@ public final class Dex {
             count++;
             return in.readClassDef();
         }
-
         @Override
-        public void remove() {
+            public void remove() {
             throw new UnsupportedOperationException();
         }
     }
@@ -1457,8 +920,8 @@ public final class Dex {
     private final class ClassDefIterable implements Iterable<ClassDef> {
         public Iterator<ClassDef> iterator() {
             return !tableOfContents.classDefs.exists()
-                ? Collections.<ClassDef>emptySet().iterator()
-                : new ClassDefIterator();
+               ? Collections.<ClassDef>emptySet().iterator()
+               : new ClassDefIterator();
         }
     }
 }

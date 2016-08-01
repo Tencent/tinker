@@ -16,65 +16,35 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
-import com.tencent.tinker.android.dex.util.Unsigned;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
-/**
- * Modifications by tomystang:
- * Make this class derived from {@code SectionItem} so that
- * we can trace dex section this element belongs to easily.
- */
-public final class ProtoId extends SectionItem<ProtoId> {
-    private final Dex dex;
-    public        int shortyIndex;
-    public        int returnTypeIndex;
-    public        int parametersOffset;
+public final class ProtoId extends TableOfContents.Section.Item<ProtoId> {
+    public int shortyIndex;
+    public int returnTypeIndex;
+    public int parametersOffset;
 
-    public ProtoId(Section owner, int offset, int shortyIndex, int returnTypeIndex, int parametersOffset) {
-        super(owner, offset);
-        this.dex = (owner != null ? owner.owner : null);
+    public ProtoId(int off, int shortyIndex, int returnTypeIndex, int parametersOffset) {
+        super(off);
         this.shortyIndex = shortyIndex;
         this.returnTypeIndex = returnTypeIndex;
         this.parametersOffset = parametersOffset;
     }
 
-    @Override
-    public ProtoId clone(Section newOwner, int newOffset) {
-        return new ProtoId(newOwner, newOffset, shortyIndex, returnTypeIndex, parametersOffset);
-    }
-
     public int compareTo(ProtoId other) {
-        if (shortyIndex != other.shortyIndex) {
-            return Unsigned.compare(shortyIndex, other.shortyIndex);
+        int res = CompareUtils.uCompare(shortyIndex, other.shortyIndex);
+        if (res != 0) {
+            return res;
         }
-        if (returnTypeIndex != other.returnTypeIndex) {
-            return Unsigned.compare(returnTypeIndex, other.returnTypeIndex);
+        res = CompareUtils.uCompare(returnTypeIndex, other.returnTypeIndex);
+        if (res != 0) {
+            return res;
         }
-        return Unsigned.compare(parametersOffset, other.parametersOffset);
+        return CompareUtils.sCompare(parametersOffset, other.parametersOffset);
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((ProtoId) obj) == 0;
-    }
 
     @Override
-    public String toString() {
-        if (dex == null) {
-            return shortyIndex + " " + returnTypeIndex + " " + parametersOffset;
-        }
-
-        return dex.strings().get(shortyIndex)
-            + ": " + dex.typeNames().get(returnTypeIndex)
-            + " " + dex.readTypeList(parametersOffset);
-    }
-
-    @Override
-    public int getByteCountInDex() {
+    public int byteCountInDex() {
         return SizeOf.PROTO_ID_ITEM;
     }
 }

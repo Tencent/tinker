@@ -16,64 +16,25 @@
 
 package com.tencent.tinker.android.dex;
 
-import com.tencent.tinker.android.dex.TableOfContents.Section;
-import com.tencent.tinker.android.dex.TableOfContents.Section.SectionItem;
-import com.tencent.tinker.android.dex.util.Unsigned;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
-/**
- * Modifications by tomystang:
- * Make this class derived from {@code SectionItem} so that
- * we can trace dex section this element belongs to easily.
- */
-public final class TypeList extends SectionItem<TypeList> {
+public final class TypeList extends Item<TypeList> {
+    public static final TypeList EMPTY = new TypeList(0, Dex.EMPTY_SHORT_ARRAY);
 
-    public static final TypeList EMPTY = new TypeList(null, 0, Dex.EMPTY_SHORT_ARRAY);
+    public short[] types;
 
-    private final Dex     dex;
-    public        short[] types;
-
-    public TypeList(Section owner, int offset, short[] types) {
-        super(owner, offset);
-        this.dex = (owner != null ? owner.owner : null);
+    public TypeList(int off, short[] types) {
+        super(off);
         this.types = types;
     }
 
-    @Override
-    public TypeList clone(Section newOwner, int newOffset) {
-        return new TypeList(newOwner, newOffset, types);
+    @Override public int compareTo(TypeList other) {
+        return CompareUtils.uArrCompare(types, other.types);
     }
 
     @Override
-    public int compareTo(TypeList other) {
-        for (int i = 0; i < types.length && i < other.types.length; i++) {
-            if (types[i] != other.types[i]) {
-                return Unsigned.compare(types[i], other.types[i]);
-            }
-        }
-        return Unsigned.compare(types.length, other.types.length);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        return compareTo((TypeList) obj) == 0;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder result = new StringBuilder();
-        result.append("(");
-        for (int i = 0, typesLength = types.length; i < typesLength; i++) {
-            result.append(dex != null ? dex.typeNames().get(types[i]) : types[i]);
-        }
-        result.append(")");
-        return result.toString();
-    }
-
-    @Override
-    public int getByteCountInDex() {
-        return SizeOf.TYPE_ITEM;
+    public int byteCountInDex() {
+        return SizeOf.UINT + types.length * SizeOf.USHORT;
     }
 }
