@@ -98,7 +98,7 @@ public final class FileUtils {
     }
 
     public static byte[] readStream(InputStream is) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(2 * 1024 * 1024);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(4 * 1024 * 1024);
         byte[] buffer = new byte[8192];
         int bytesRead;
         while ((bytesRead = is.read(buffer)) > 0) {
