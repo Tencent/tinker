@@ -646,7 +646,7 @@ public class DexPatchGenerator {
     private abstract class PatchOperationsWriter<T> {
         private final List<PatchOperation<T>> patchOperationList;
 
-        public PatchOperationsWriter(List<PatchOperation<T>> patchOperationList) {
+        PatchOperationsWriter(List<PatchOperation<T>> patchOperationList) {
             this.patchOperationList = patchOperationList;
         }
 

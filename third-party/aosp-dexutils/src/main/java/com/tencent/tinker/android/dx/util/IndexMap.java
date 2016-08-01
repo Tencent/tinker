@@ -503,7 +503,7 @@ public class IndexMap {
     private final class EncodedValueTransformer {
         private final ByteOutput out;
 
-        public EncodedValueTransformer(ByteOutput out) {
+        EncodedValueTransformer(ByteOutput out) {
             this.out = out;
         }
 

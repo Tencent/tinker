@@ -568,7 +568,7 @@ public abstract class InstructionComparator {
                             case 1: {
                                 int value1;
                                 int value2;
-                                for (int i = 0; i < size1; i+= 2) {
+                                for (int i = 0; i < size1; i += 2) {
                                     value1 = codeIn1.read();
                                     value2 = codeIn2.read();
                                     if (value1 != value2) {
