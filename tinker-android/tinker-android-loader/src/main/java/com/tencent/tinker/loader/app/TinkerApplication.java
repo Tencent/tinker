@@ -77,7 +77,7 @@ public abstract class TinkerApplication extends Application {
      * current build.
      */
     protected TinkerApplication(int tinkerFlags) {
-        this(tinkerFlags, "com.tencent.tinker.loader.app.DefaultApplicationLifeCycle", TinkerLoader.class.getName(), false);
+        this(tinkerFlags, "com.tencent.tinker.loader.app.DefaultApplicationLike", TinkerLoader.class.getName(), false);
     }
 
     /**
