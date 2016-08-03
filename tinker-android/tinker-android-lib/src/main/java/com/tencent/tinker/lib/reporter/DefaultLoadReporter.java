@@ -30,7 +30,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/10.
+ * Created by zhangshaowen on 16/3/10.
  * the default implement for LoadReporter
  * you can extent it for your own work
  * all is running in the process which loading the patch

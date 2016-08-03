@@ -21,7 +21,7 @@ import com.tencent.tinker.lib.service.TinkerPatchService;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/10.
+ * Created by zhangshaowen on 16/3/10.
  */
 public interface LoadReporter {
 

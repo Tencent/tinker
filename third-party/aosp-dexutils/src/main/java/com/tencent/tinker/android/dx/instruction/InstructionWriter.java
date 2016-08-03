@@ -20,7 +20,7 @@ import com.tencent.tinker.android.dex.DexException;
 import com.tencent.tinker.android.dx.util.Hex;
 
 /**
- * Created by tomystang on 2016/5/27.
+ * Created by tangyinsheng on 2016/5/27.
  */
 public final class InstructionWriter extends InstructionVisitor {
     private final ShortArrayCodeOutput codeOut;

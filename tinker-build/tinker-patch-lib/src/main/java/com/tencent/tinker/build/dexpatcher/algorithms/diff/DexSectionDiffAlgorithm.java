@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by tomystang on 2016/6/29.
+ * Created by tangyinsheng on 2016/6/29.
  */
 public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
     protected final Dex oldDex;

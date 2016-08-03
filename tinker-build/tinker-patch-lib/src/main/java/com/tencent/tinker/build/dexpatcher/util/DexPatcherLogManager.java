@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by tomystang on 2016/7/29.
+ * Created by tangyinsheng on 2016/7/29.
  */
 public final class DexPatcherLogManager {
     private static Map<String, LogWritter> logWrittersMap = new HashMap<>();

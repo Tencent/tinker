@@ -45,7 +45,7 @@ import java.nio.ByteOrder;
 
 /**
  * *** This file is NOT a part of AOSP. ***
- * Created by tomystang on 2016/6/30.
+ * Created by tangyinsheng on 2016/6/30.
  */
 public class DexDataBuffer implements ByteInput, ByteOutput {
     public static final int DEFAULT_BUFFER_SIZE = 512;

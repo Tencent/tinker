@@ -21,7 +21,7 @@ package com.tencent.tinker.anno.test;
 ///**
 // * Test LifeCycle
 // *
-// * Created by kirozhao on 16/4/1.
+// * Created by zhaoyuan on 16/4/1.
 // */
 //@DefaultLifeCycle(application = ".TestApplication", flags = 0x10, loaderClass="com.tencent.tinker.loader.TinkerLoader")
 //public class TestLifeCycle {

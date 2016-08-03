@@ -31,7 +31,7 @@ import java.io.File;
 import java.util.HashMap;
 
 /**
- * Created by shwenzhang on 16/3/25.
+ * Created by zhangshaowen on 16/3/25.
  */
 public class TinkerLoadResult {
     private static final String TAG = "TinkerLoadResult";

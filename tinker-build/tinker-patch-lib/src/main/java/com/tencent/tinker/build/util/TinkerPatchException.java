@@ -18,7 +18,7 @@ package com.tencent.tinker.build.util;
 
 
 /**
- * @author shwenzhang
+ * @author zhangshaowen
  */
 public class TinkerPatchException extends RuntimeException {
     private static final long serialVersionUID = 1L;

@@ -23,7 +23,7 @@ import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dx.util.IndexMap;
 
 /**
- * Created by tomystang on 2016/6/30.
+ * Created by tangyinsheng on 2016/6/30.
  */
 public class AnnotationsDirectorySectionDiffAlgorithm extends DexSectionDiffAlgorithm<AnnotationsDirectory> {
     public AnnotationsDirectorySectionDiffAlgorithm(Dex oldDex, Dex newDex, IndexMap oldToNewIndexMap, IndexMap oldToPatchedIndexMap, IndexMap selfIndexMapForSkip) {

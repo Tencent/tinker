@@ -41,7 +41,7 @@ import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
 /**
- * Created by shwenzhang on 16/3/18.
+ * Created by zhangshaowen on 16/3/18.
  */
 public class SystemClassLoaderAdder {
     private static final String TAG = "SystemClassLoaderAdder";
@@ -357,7 +357,7 @@ public class SystemClassLoaderAdder {
                 extraPaths[index] = entryPath;
                 extraFiles[index] = additionalEntry;
                 extraZips[index] = new ZipFile(additionalEntry);
-                //edit by shwenzhang
+                //edit by zhangshaowen
                 String outputPathName = SharePatchFileUtil.optimizedPathFor(additionalEntry, optimizedDirectory);
                 //for below 4.0, we must input jar or zip
                 extraDexs[index] = DexFile.loadDex(entryPath, outputPathName, 0);

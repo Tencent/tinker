@@ -19,7 +19,7 @@ package com.tencent.tinker.build.info;
 import com.tencent.tinker.build.patch.Configuration;
 
 /**
- * Created by shwenzhang on 16/3/8.
+ * Created by zhangshaowen on 16/3/8.
  */
 public class PatchInfo {
 

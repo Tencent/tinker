@@ -26,7 +26,7 @@ import java.util.List;
 import dalvik.system.BaseDexClassLoader;
 
 /**
- * Created by shwenzhang on 16/6/30.
+ * Created by zhangshaowen on 16/6/30.
  *
  * I think it is very amazing code here!
  * because delegateClassLoader's parent is PathClassLoader, and PathClassLoader's parent is IncrementalClassLoader.

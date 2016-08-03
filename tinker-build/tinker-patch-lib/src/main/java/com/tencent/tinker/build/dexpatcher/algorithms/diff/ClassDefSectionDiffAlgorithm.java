@@ -28,7 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Created by tomystang on 2016/6/30.
+ * Created by tangyinsheng on 2016/6/30.
  */
 public class ClassDefSectionDiffAlgorithm extends DexSectionDiffAlgorithm<ClassDef> {
     private Set<Integer> typeIdOfClassDefToRemoveSet = new HashSet<>();

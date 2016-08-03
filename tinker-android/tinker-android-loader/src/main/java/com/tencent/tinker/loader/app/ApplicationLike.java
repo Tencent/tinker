@@ -24,7 +24,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 
 /**
- * Created by shwenzhang on 16/7/28.
+ * Created by zhangshaowen on 16/7/28.
  */
 public abstract class ApplicationLike implements ApplicationLifeCycle {
     private Resources[]    resources;

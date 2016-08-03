@@ -18,7 +18,7 @@ package com.tencent.tinker.build.gradle
 /**
  * The configuration properties.
  *
- * @author shwenzhang
+ * @author zhangshaowen
  */
 
 public class TinkerLibExtension {

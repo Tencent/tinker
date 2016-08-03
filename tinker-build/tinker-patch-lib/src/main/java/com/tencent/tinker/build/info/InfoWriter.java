@@ -26,7 +26,7 @@ import java.io.Writer;
 import java.util.List;
 
 /**
- * Created by shwenzhang on 16/3/8.
+ * Created by zhangshaowen on 16/3/8.
  */
 public class InfoWriter {
     protected final Configuration config;

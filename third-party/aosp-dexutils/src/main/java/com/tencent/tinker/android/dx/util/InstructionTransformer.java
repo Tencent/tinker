@@ -28,7 +28,7 @@ import com.tencent.tinker.android.dx.instruction.Opcodes;
 import java.io.EOFException;
 
 /**
- * Created by tomystang on 2016/6/29.
+ * Created by tangyinsheng on 2016/6/29.
  */
 public final class InstructionTransformer {
     private final com.tencent.tinker.android.dx.util.IndexMap indexMap;

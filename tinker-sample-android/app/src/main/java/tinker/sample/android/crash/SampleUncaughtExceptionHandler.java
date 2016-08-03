@@ -17,7 +17,7 @@ import tinker.sample.android.util.Utils;
 /**
  * optional, use dynamic configuration is better way
  * <p/>
- * Created by shwenzhang on 16/7/3.
+ * Created by zhangshaowen on 16/7/3.
  * tinker's crash is caught by {@code LoadReporter.onLoadException}
  * use {@code TinkerApplicationHelper} api, no need to install tinker!
  */

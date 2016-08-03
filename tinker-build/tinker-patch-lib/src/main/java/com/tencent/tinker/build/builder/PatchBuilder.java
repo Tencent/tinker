@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author shwenzhang
+ * @author zhangshaowen
  */
 public class PatchBuilder {
     private static final String PATCH_NAME = "patch";

@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * Created by shwenzhang on 16/3/16.
+ * Created by zhangshaowen on 16/3/16.
  */
 public class SharePatchInfo {
     private static final String TAG = "PatchInfo";

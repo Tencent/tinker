@@ -24,7 +24,7 @@ import org.gradle.api.tasks.TaskAction
 /**
  * The configuration properties.
  *
- * @author shwenzhang
+ * @author zhangshaowen
  */
 public class TinkerManifestTask extends DefaultTask {
     static final String TINKER_ID = "TINKER_ID"

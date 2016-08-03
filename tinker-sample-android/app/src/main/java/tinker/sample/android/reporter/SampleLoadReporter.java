@@ -33,7 +33,7 @@ import tinker.sample.android.util.Utils;
 
 /**
  * optional, you can just use DefaultLoadReproter
- * Created by shwenzhang on 16/4/13.
+ * Created by zhangshaowen on 16/4/13.
  */
 public class SampleLoadReporter extends DefaultLoadReporter {
     private Handler handler = new Handler();

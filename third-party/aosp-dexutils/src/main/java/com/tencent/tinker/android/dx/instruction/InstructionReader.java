@@ -22,7 +22,7 @@ import com.tencent.tinker.android.dx.util.Hex;
 import java.io.EOFException;
 
 /**
- * Created by tomystang on 2016/5/26.
+ * Created by tangyinsheng on 2016/5/26.
  */
 public final class InstructionReader {
     private final ShortArrayCodeInput codeIn;

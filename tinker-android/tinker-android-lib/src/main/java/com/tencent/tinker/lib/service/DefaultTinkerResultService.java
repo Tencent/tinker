@@ -25,7 +25,7 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/19.
+ * Created by zhangshaowen on 16/3/19.
  */
 public class DefaultTinkerResultService extends AbstractResultService {
     private static final String TAG = "DefaultTinkerResultService";

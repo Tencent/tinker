@@ -28,7 +28,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/18.
+ * Created by zhangshaowen on 16/3/18.
  *
  * if some of a patch data(such as so, dex) is deleted,
  * we will try to repair them via RepairPatch

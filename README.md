@@ -11,7 +11,7 @@ Add tinker-gradle-plugin as a dependency in your main `build.gradle` in the root
 ```gradle
 buildscript {
     dependencies {
-        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.3.0')
+        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.3.1')
     }
 }
 ```
@@ -21,9 +21,9 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 ```gradle
 dependencies {
     //Optional, help to gen the final application 
-    compile('com.tencent.tinker:tinker-android-anno:1.3.0')
+    compile('com.tencent.tinker:tinker-android-anno:1.3.1')
     //tinker's main Android lib
-    compile('com.tencent.tinker:tinker-android-lib:1.3.0') 
+    compile('com.tencent.tinker:tinker-android-lib:1.3.1') 
 }
 ...
 ...

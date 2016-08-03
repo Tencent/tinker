@@ -19,7 +19,7 @@ package com.tencent.tinker.lib.service;
 import java.io.Serializable;
 
 /**
- * Created by shwenzhang on 16/3/19.
+ * Created by zhangshaowen on 16/3/19.
  */
 public class PatchResult implements Serializable {
     public final boolean isUpgradePatch;

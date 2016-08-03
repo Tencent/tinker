@@ -17,7 +17,7 @@
 package com.tencent.tinker.lib.util;
 
 /**
- * Created by shwenzhang on 16/3/17.
+ * Created by zhangshaowen on 16/3/17.
  */
 
 

@@ -17,7 +17,7 @@
 package com.tencent.tinker.build.dexpatcher.util;
 
 /**
- * Created by tomystang on 2016/4/8.
+ * Created by tangyinsheng on 2016/4/8.
  */
 public class PatternUtils {
 

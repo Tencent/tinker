@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 
 /**
- * Created by shwenzhang on 2016/3/23.
+ * Created by zhangshaowen on 2016/3/23.
  */
 public class DexDiffDecoder extends BaseDecoder {
     private final InfoWriter logWriter;

@@ -17,7 +17,7 @@
 package com.tencent.tinker.commons.dexpatcher.struct;
 
 /**
- * Created by tomystang on 2016/6/29.
+ * Created by tangyinsheng on 2016/6/29.
  */
 public final class PatchOperation<T> {
     public static final int OP_DEL = 0;

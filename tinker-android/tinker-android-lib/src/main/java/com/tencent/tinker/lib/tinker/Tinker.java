@@ -41,7 +41,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/10.
+ * Created by zhangshaowen on 16/3/10.
  */
 public class Tinker {
     private static final String TAG = "Tinker";

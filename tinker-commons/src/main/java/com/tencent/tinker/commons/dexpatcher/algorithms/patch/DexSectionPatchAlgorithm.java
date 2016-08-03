@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by tomystang on 2016/6/29.
+ * Created by tangyinsheng on 2016/6/29.
  */
 public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     protected final DexPatchFile patchFile;

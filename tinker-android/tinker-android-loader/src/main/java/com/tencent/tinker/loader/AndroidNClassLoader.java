@@ -28,7 +28,7 @@ import dalvik.system.BaseDexClassLoader;
 import dalvik.system.PathClassLoader;
 
 /**
- * Created by shwenzhang on 16/7/24.
+ * Created by zhangshaowen on 16/7/24.
  */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class AndroidNClassLoader extends BaseDexClassLoader {

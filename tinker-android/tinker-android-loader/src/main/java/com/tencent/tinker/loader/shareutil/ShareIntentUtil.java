@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * Created by shwenzhang on 16/3/18.
+ * Created by zhangshaowen on 16/3/18.
  */
 public class ShareIntentUtil {
     private static final String TAG                              = "ShareIntentUtil";

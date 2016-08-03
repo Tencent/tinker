@@ -61,7 +61,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 /**
- * Created by tomystang on 2016/6/30.
+ * Created by tangyinsheng on 2016/6/30.
  */
 public class DexPatchApplier {
     private final Dex oldDex;

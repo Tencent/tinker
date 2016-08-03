@@ -21,7 +21,7 @@ import android.util.Log;
 import com.tencent.tinker.lib.util.TinkerLog;
 
 /**
- * Created by shwenzhang on 16/6/3.
+ * Created by zhangshaowen on 16/6/3.
  */
 public class MyLogImp implements TinkerLog.TinkerLogImp {
     private static final String TAG = "MyLogImp";

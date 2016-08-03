@@ -69,7 +69,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Created by tomystang on 2016/6/30.
+ * Created by tangyinsheng on 2016/6/30.
  */
 public class DexPatchGenerator {
     private final Dex oldDex;

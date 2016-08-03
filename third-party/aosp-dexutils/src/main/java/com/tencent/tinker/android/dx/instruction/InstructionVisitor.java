@@ -17,7 +17,7 @@
 package com.tencent.tinker.android.dx.instruction;
 
 /**
- * Created by tomystang on 2016/5/26.
+ * Created by tangyinsheng on 2016/5/26.
  */
 public class InstructionVisitor {
     private final InstructionVisitor prevIv;

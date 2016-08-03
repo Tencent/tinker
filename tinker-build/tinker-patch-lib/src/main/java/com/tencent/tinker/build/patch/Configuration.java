@@ -41,7 +41,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 /**
- * @author shwenzhang
+ * @author zhangshaowen
  *         do not use Logger here
  */
 public class Configuration {

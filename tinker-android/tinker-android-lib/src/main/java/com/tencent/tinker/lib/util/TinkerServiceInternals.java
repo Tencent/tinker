@@ -30,7 +30,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.util.List;
 
 /**
- * Created by shwenzhang on 16/3/10.
+ * Created by zhangshaowen on 16/3/10.
  */
 public class TinkerServiceInternals extends ShareTinkerInternals {
     private static final String TAG = "TinkerServiceInternals";

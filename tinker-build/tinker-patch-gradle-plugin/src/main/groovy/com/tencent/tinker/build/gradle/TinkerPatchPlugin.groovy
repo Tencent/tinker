@@ -24,7 +24,7 @@ import org.gradle.api.Project
 /**
  * Registers the plugin's tasks.
  *
- * @author shwenzhang
+ * @author zhangshaowen
  */
 
 class TinkerPatchPlugin implements Plugin<Project> {

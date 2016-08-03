@@ -34,7 +34,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 /**
- * Created by shwenzhang on 16/3/8.
+ * Created by zhangshaowen on 16/3/8.
  * <p/>
  * A base class for implementing an Application that delegates to an {@link ApplicationLifeCycle}
  * instance. This is used in conjunction with secondary dex files so that the logic that would

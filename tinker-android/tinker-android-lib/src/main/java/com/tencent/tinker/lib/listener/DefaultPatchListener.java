@@ -27,7 +27,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/14.
+ * Created by zhangshaowen on 16/3/14.
  */
 public class DefaultPatchListener implements PatchListener {
     protected final Context context;

@@ -21,7 +21,7 @@ import android.content.Intent;
 
 
 /**
- * Created by shwenzhang on 16/4/30.
+ * Created by zhangshaowen on 16/4/30.
  */
 public abstract class AbstractTinkerLoader {
     abstract public Intent tryLoad(Application app, int tinkerFlag, boolean tinkerLoadVerifyFlag);

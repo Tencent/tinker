@@ -25,7 +25,7 @@ import org.gradle.api.tasks.TaskAction
 /**
  * The configuration properties.
  *
- * @author shwenzhang
+ * @author zhangshaowen
  */
 public class TinkerPatchSchemaTask extends DefaultTask {
     def configuration

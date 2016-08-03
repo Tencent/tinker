@@ -38,7 +38,7 @@ import java.util.Properties;
  * tinker :patch process may killed by some reason, we can retry it to increase upgrade success rate
  * if patch file is at sdcard, copy it to dataDir first. because some software may delete it.
  *
- * Created by shwenzhang on 16/7/3.
+ * Created by zhangshaowen on 16/7/3.
  */
 public class UpgradePatchRetry {
     private static final String TAG = "UpgradePatchRetry";

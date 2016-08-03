@@ -20,7 +20,7 @@ import java.util.ArrayList;
 
 /**
  * patch via bsdiff
- * Created by shwenzhang on 16/3/16.
+ * Created by zhangshaowen on 16/3/16.
  */
 public class ShareBsDiffPatchInfo {
     public String name;

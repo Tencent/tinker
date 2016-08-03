@@ -38,7 +38,7 @@ import tinker.sample.android.util.Utils;
 /**
  * optional, you can just use DefaultTinkerResultService
  * we can restart process when we are at background or screen off
- * Created by shwenzhang on 16/4/13.
+ * Created by zhangshaowen on 16/4/13.
  */
 public class SampleResultService extends DefaultTinkerResultService {
     private static final String TAG = "SampleResultService";

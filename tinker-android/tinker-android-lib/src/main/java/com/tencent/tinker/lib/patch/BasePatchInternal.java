@@ -29,7 +29,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Created by shwenzhang on 16/4/12.
+ * Created by zhangshaowen on 16/4/12.
  */
 public class BasePatchInternal {
     protected static final String TAG = "BasePatchInternal";
