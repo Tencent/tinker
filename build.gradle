@@ -59,6 +59,7 @@ ext {
 
     GROUP = 'com.tencent.tinker'
     VERSION_NAME = "1.4.0${VERSION_NAME_SUFFIX}"
+
     POM_PACKAGING = "pom"
     POM_DESCRIPTION= "Tinker"
 
