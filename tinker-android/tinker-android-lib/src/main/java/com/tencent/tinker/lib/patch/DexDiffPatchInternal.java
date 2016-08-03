@@ -193,7 +193,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 } else if (patchFileMd5.equals("0")) {
                     //skip copy for dalvik vm
                     if (!ShareTinkerInternals.isVmArt()) {
-                        return true;
+                        continue;
                     }
 
                     if (rawApkFileEntry == null) {
