@@ -2,7 +2,8 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 
-version rootProject.ext.VERSION_NAME
+//hardcode 1.0.0
+version "1.0.0"
 group rootProject.ext.GROUP
 
 

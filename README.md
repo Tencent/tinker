@@ -77,7 +77,7 @@ Any problem?
 4. Contact us for help.
 
 ## Contributing
-For more information about contributing issues or pull requsets, see our [Tinker Contributing Guide](http://git.code.oa.com/tinker/tinker/blob/master/CONTRIBUTING.md)
+For more information about contributing issues or pull requsets, see our [Tinker Contributing Guide](http://git.code.oa.com/tinker/tinker/blob/master/CONTRIBUTING.md).
 
 ## License
     Copyright (C) 2016 Tencent Wechat, Inc.
