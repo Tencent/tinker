@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 /**
  * Annotations
  *
- * Created by kirozhao on 16/3/31.
+ * Created by zhaoyuan on 16/3/31.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)

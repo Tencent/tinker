@@ -29,7 +29,7 @@ import java.text.ParseException;
 import java.util.List;
 
 /**
- * Created by shwenzhang on 16/4/6.
+ * Created by zhangshaowen on 16/4/6.
  */
 
 public class ManifestDecoder extends BaseDecoder {

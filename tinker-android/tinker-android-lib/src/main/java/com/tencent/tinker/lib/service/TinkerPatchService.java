@@ -35,7 +35,7 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/14.
+ * Created by zhangshaowen on 16/3/14.
  */
 public class TinkerPatchService extends IntentService {
     private static final String TAG = "TinkerPatchService";

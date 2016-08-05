@@ -28,7 +28,7 @@ import java.text.ParseException;
 import java.util.Properties;
 
 /**
- * Created by shwenzhang on 16/3/8.
+ * Created by zhangshaowen on 16/3/8.
  */
 public class PatchInfoGen {
     private final Configuration config;

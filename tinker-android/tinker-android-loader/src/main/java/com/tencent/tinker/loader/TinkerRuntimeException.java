@@ -17,7 +17,7 @@
 package com.tencent.tinker.loader;
 
 /**
- * Created by shwenzhang on 16/7/8.
+ * Created by zhangshaowen on 16/7/8.
  */
 public class TinkerRuntimeException extends RuntimeException {
     private static final String TINKER_RUNTIME_EXCEPTION_PREFIX = "Tinker Exception:";

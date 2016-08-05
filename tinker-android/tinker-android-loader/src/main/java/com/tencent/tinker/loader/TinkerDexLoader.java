@@ -36,7 +36,7 @@ import java.util.HashMap;
 import dalvik.system.PathClassLoader;
 
 /**
- * Created by shwenzhang on 16/3/8.
+ * Created by zhangshaowen on 16/3/8.
  * check the complete of the dex files
  * pre-load patch dex files
  */

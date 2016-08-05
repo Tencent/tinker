@@ -25,7 +25,7 @@ import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 
 /**
- * Created by shwenzhang on 16/3/14.
+ * Created by zhangshaowen on 16/3/14.
  */
 public abstract class AbstractResultService extends IntentService {
     private static final String TAG = "AbstractResultService";

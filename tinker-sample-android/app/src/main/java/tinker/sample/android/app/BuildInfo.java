@@ -3,7 +3,7 @@ package tinker.sample.android.app;
 import tinker.sample.android.BuildConfig;
 
 /**
- * Created by shwenzhang on 16/6/30.
+ * Created by zhangshaowen on 16/6/30.
  * we use BuildInfo instead of {@link BuildInfo} to make less change
  */
 public class BuildInfo {

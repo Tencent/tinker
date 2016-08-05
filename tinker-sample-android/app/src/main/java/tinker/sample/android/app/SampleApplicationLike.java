@@ -51,7 +51,7 @@ import tinker.sample.android.util.TinkerManager;
  *
  * loadVerifyFlag: whether check files' md5 on the load time, defualt it is false.
  *
- * Created by shwenzhang on 16/3/17.
+ * Created by zhangshaowen on 16/3/17.
  */
 @SuppressWarnings("unused")
 @DefaultLifeCycle(application = ".SampleApplication", flags = ShareConstants.TINKER_ENABLE_ALL)

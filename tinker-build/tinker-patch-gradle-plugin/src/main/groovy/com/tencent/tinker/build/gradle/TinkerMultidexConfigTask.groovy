@@ -23,7 +23,7 @@ import org.gradle.api.tasks.TaskAction
 /**
  * The configuration properties.
  *
- * @author shwenzhang
+ * @author zhangshaowen
  */
 public class TinkerMultidexConfigTask extends DefaultTask {
     static final String MULTIDEX_CONFIG_PATH = "build/intermediates/tinker_proguard/tinker_multidexkeep.pro"

@@ -17,7 +17,7 @@ import tinker.sample.android.reporter.SamplePatchReporter;
 import tinker.sample.android.service.SampleResultService;
 
 /**
- * Created by shwenzhang on 16/7/3.
+ * Created by zhangshaowen on 16/7/3.
  */
 public class TinkerManager {
     private static final String TAG = "TinkerManager";

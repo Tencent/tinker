@@ -32,7 +32,7 @@ import java.util.HashMap;
 /**
  * sometimes, you may want to install tinker later, or never install tinker in some process.
  * you can use {@code TinkerApplicationHelper} API to get the tinker status!
- * Created by shwenzhang on 16/6/28.
+ * Created by zhangshaowen on 16/6/28.
  */
 public class TinkerApplicationHelper {
     private static final String TAG = "TinkerApplicationHelper";

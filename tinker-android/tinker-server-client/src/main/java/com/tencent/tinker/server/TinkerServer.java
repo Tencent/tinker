@@ -28,7 +28,7 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/5/29.
+ * Created by zhangshaowen on 16/5/29.
  */
 public class TinkerServer {
     private static final String TAG = "TinkerServer";

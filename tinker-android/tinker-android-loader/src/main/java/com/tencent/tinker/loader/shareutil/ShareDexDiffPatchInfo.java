@@ -21,7 +21,7 @@ import com.tencent.tinker.loader.TinkerRuntimeException;
 import java.util.ArrayList;
 
 /**
- * Created by shwenzhang on 16/4/11.
+ * Created by zhangshaowen on 16/4/11.
  */
 public class ShareDexDiffPatchInfo {
     public final String rawName;

@@ -23,7 +23,7 @@ import com.tencent.tinker.lib.tinker.Tinker;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/5/29.
+ * Created by zhangshaowen on 16/5/29.
  */
 public interface TinkerServerListener {
     TinkerCheckResult checkTinkerUpdate(Context context, Tinker tinker);

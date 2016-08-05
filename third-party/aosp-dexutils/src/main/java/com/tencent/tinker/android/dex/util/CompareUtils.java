@@ -20,7 +20,7 @@ import java.util.Comparator;
 
 /**
  * *** This file is NOT a part of AOSP. ***
- * Created by tomystang on 2016/6/28.
+ * Created by tangyinsheng on 2016/6/28.
  */
 public final class CompareUtils {
     public static int uCompare(byte ubyteA, byte ubyteB) {

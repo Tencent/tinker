@@ -23,7 +23,7 @@ import org.gradle.api.Project
 /**
  * The configuration properties.
  *
- * @author shwenzhang
+ * @author zhangshaowen
  */
 
 public class TinkerPackageConfigExtension {

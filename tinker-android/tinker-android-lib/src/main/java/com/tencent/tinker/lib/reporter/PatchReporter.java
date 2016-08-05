@@ -27,7 +27,7 @@ import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/14.
+ * Created by zhangshaowen on 16/3/14.
  *
  * isUpgradePatch:
  * true: means that it is a newly patch, we would default use {@link UpgradePatch}

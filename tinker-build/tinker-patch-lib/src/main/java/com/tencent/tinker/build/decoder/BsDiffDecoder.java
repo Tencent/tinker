@@ -29,7 +29,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Created by shwenzhang on 16/2/27.
+ * Created by zhangshaowen on 16/2/27.
  */
 public class BsDiffDecoder extends BaseDecoder {
     private final InfoWriter logWriter;

@@ -41,7 +41,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 /**
- * Created by tomystang on 2016/6/29.
+ * Created by tangyinsheng on 2016/6/29.
  */
 public class IndexMap {
     private final SparseIntArray stringIdsMap = new SparseIntArray();

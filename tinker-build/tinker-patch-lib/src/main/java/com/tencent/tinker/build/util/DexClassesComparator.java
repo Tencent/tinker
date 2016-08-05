@@ -50,7 +50,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Created by tomystang on 2016/4/14.
+ * Created by tangyinsheng on 2016/4/14.
  */
 public final class DexClassesComparator {
     private final List<String> addedClassDescList   = new ArrayList<>();

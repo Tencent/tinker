@@ -21,7 +21,7 @@ import com.tencent.tinker.android.dx.util.Hex;
 import java.io.EOFException;
 
 /**
- * Created by tomystang on 2016/7/12.
+ * Created by tangyinsheng on 2016/7/12.
  */
 public abstract class InstructionComparator {
     private final ShortArrayCodeInput codeIn1;

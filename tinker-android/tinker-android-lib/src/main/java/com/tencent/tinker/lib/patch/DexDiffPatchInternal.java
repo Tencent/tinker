@@ -45,7 +45,7 @@ import java.util.zip.ZipOutputStream;
 import dalvik.system.DexFile;
 
 /**
- * Created by shwenzhang on 16/4/12.
+ * Created by zhangshaowen on 16/4/12.
  */
 public class DexDiffPatchInternal extends BasePatchInternal {
     protected static final String TAG = "DexDiffPatchInternal";

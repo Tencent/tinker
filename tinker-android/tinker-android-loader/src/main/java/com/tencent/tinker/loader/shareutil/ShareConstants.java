@@ -17,7 +17,7 @@
 package com.tencent.tinker.loader.shareutil;
 
 /**
- * Created by shwenzhang on 16/3/24.
+ * Created by zhangshaowen on 16/3/24.
  */
 public class ShareConstants {
     public static final int BUFFER_SIZE         = 16384;

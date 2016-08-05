@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * Created by tomystang on 2016/7/1.
+ * Created by tangyinsheng on 2016/7/1.
  */
 public final class DexPatchFile {
     public static final byte[] MAGIC = {0x44, 0x58, 0x44, 0x49, 0x46, 0x46}; // DXDIFF

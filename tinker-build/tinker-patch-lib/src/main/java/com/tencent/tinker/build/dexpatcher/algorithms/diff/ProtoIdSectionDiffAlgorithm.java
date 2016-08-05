@@ -24,7 +24,7 @@ import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dx.util.IndexMap;
 
 /**
- * Created by tomystang on 2016/6/30.
+ * Created by tangyinsheng on 2016/6/30.
  */
 public class ProtoIdSectionDiffAlgorithm extends DexSectionDiffAlgorithm<ProtoId> {
     public ProtoIdSectionDiffAlgorithm(Dex oldDex, Dex newDex, IndexMap oldToNewIndexMap, IndexMap oldToPatchedIndexMap, IndexMap selfIndexMapForSkip) {

@@ -29,7 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by shwenzhang on 16/3/10.
+ * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
     private static final String TAG = "TinkerInternals";

@@ -27,7 +27,7 @@ import tinker.sample.android.util.UpgradePatchRetry;
 
 /**
  * optional, you can just use DefaultPatchReporter
- * Created by shwenzhang on 16/4/8.
+ * Created by zhangshaowen on 16/4/8.
  */
 public class SamplePatchReporter extends DefaultPatchReporter {
     public SamplePatchReporter(Context context) {

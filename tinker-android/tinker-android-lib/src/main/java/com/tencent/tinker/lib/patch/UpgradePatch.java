@@ -32,7 +32,7 @@ import java.io.IOException;
 
 /**
  * generate new patch, you can implement your own patch processor class
- * Created by shwenzhang on 16/3/14.
+ * Created by zhangshaowen on 16/3/14.
  */
 public class UpgradePatch extends AbstractPatch {
     private static final String TAG = "UpgradePatch";

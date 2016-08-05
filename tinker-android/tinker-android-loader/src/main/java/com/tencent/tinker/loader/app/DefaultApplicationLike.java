@@ -17,7 +17,7 @@
 package com.tencent.tinker.loader.app;
 
 /**
- * Created by shwenzhang on 16/3/8.
+ * Created by zhangshaowen on 16/3/8.
  */
 
 import android.app.Application;

@@ -17,7 +17,7 @@
 package com.tencent.tinker.server;
 
 /**
- * Created by shwenzhang on 16/5/30.
+ * Created by zhangshaowen on 16/5/30.
  */
 public class TinkerCheckResult {
     public boolean hasUpdate;

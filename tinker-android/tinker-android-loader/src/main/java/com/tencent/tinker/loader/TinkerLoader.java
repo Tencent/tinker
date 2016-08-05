@@ -31,7 +31,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/3/10.
+ * Created by zhangshaowen on 16/3/10.
  * Warning, it is special for loader classes, they can't change through tinker patch.
  * thus, it's reference class must put in the tinkerPatch.dex.loader{} and the android main dex pattern through gradle
  */

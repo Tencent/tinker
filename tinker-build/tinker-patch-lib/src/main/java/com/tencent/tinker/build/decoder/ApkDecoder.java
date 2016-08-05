@@ -36,7 +36,7 @@ import java.util.Iterator;
 import java.util.regex.Pattern;
 
 /**
- * Created by shwenzhang on 16/3/15.
+ * Created by zhangshaowen on 16/3/15.
  */
 public class ApkDecoder extends BaseDecoder {
     private final File mOldApkDir;

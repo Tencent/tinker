@@ -37,7 +37,7 @@ import javax.tools.JavaFileObject;
 /**
  * Tinker Annotations Processor
  *
- * Created by kirozhao on 16/3/31.
+ * Created by zhaoyuan on 16/3/31.
  */
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class AnnotationProcessor extends AbstractProcessor {

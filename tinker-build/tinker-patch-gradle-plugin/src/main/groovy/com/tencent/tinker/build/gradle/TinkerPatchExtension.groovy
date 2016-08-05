@@ -21,7 +21,7 @@ import org.gradle.api.GradleException;
 /**
  * The configuration properties.
  *
- * @author shwenzhang
+ * @author zhangshaowen
  */
 
 public class TinkerPatchExtension {

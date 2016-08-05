@@ -19,7 +19,7 @@ package com.tencent.tinker.lib.patch;
 import android.content.Context;
 
 /**
- * Created by shwenzhang on 16/3/15.
+ * Created by zhangshaowen on 16/3/15.
  */
 public abstract class AbstractPatch {
 

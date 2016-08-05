@@ -37,7 +37,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
- * Created by shwenzhang on 16/5/5.
+ * Created by zhangshaowen on 16/5/5.
  */
 public class AndroidManifest {
     public static final int TYPE_SERVICE            = 1;

@@ -24,7 +24,7 @@ import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 
 /**
- * Created by tomystang on 2016/7/4.
+ * Created by tangyinsheng on 2016/7/4.
  */
 public class AnnotationSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Annotation> {
     private final TableOfContents.Section patchedAnnotationTocSec;

@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Created by shwenzhang on 16/4/7.
+ * Created by zhangshaowen on 16/4/7.
  */
 public class Logger {
     private static InfoWriter logWriter;

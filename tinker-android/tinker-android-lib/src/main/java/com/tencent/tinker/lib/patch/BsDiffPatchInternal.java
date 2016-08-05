@@ -35,7 +35,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Created by shwenzhang on 16/3/21.
+ * Created by zhangshaowen on 16/3/21.
  */
 public class BsDiffPatchInternal extends BasePatchInternal {
     private static final String TAG = "BsDiffPatchInternal";

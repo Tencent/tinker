@@ -26,7 +26,7 @@ import java.security.MessageDigest;
  * <div class="en">MD5 digest wrapper</div>
  * <div class="zh_CN">MD5计算封装</div>
  *
- * @author kirozhao
+ * @author zhaoyuan
  */
 public final class MD5 {
 

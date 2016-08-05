@@ -24,7 +24,7 @@ import org.gradle.api.artifacts.Dependency
 /**
  * The configuration properties.
  * you should only set one of them, if path is Specified, it will overwrite the artifact param
- * @author shwenzhang
+ * @author zhangshaowen
  */
 public class TinkerSevenZipExtension {
     /**

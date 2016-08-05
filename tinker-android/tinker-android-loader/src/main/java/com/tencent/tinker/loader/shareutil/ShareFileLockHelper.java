@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.nio.channels.FileLock;
 
 /**
- * Created by shwenzhang on 16/6/3.
+ * Created by zhangshaowen on 16/6/3.
  */
 public class ShareFileLockHelper implements Closeable {
     private static final String TAG = "FileLockHelper";

@@ -24,7 +24,7 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import java.io.File;
 
 /**
- * Created by shwenzhang on 16/4/7.
+ * Created by zhangshaowen on 16/4/7.
  */
 public class Utils {
 

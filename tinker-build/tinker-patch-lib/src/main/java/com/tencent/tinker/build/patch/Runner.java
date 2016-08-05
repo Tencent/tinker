@@ -25,7 +25,7 @@ import com.tencent.tinker.build.util.TinkerPatchException;
 import java.io.IOException;
 
 /**
- * Created by shwenzhang on 2/26/16.
+ * Created by zhangshaowen on 2/26/16.
  */
 public class Runner {
 

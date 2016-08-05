@@ -37,7 +37,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
- * Created by shwenzhang on 16/3/10.
+ * Created by zhangshaowen on 16/3/10.
  */
 public class ShareSecurityCheck {
     private static final String TAG = "ShareSecurityCheck";
