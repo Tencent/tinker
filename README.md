@@ -11,7 +11,7 @@ Add tinker-gradle-plugin as a dependency in your main `build.gradle` in the root
 ```gradle
 buildscript {
     dependencies {
-        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.3.1')
+        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.4.0')
     }
 }
 ```
@@ -21,9 +21,9 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 ```gradle
 dependencies {
     //Optional, help to gen the final application 
-    compile('com.tencent.tinker:tinker-android-anno:1.3.1')
+    compile('com.tencent.tinker:tinker-android-anno:1.4.0')
     //tinker's main Android lib
-    compile('com.tencent.tinker:tinker-android-lib:1.3.1') 
+    compile('com.tencent.tinker:tinker-android-lib:1.4.0') 
 }
 ...
 ...
@@ -48,12 +48,12 @@ public class SampleApplication extends TinkerApplication {
         ShareConstants.TINKER_ENABLE_ALL,
         // This is passed as a string so the shell application does not
         // have a binary dependency on your ApplicationLifeCycle class. 
-        "tinker.sample.android.SampleApplicationLifeCycle");
+        "tinker.sample.android.SampleApplicationLike");
     }  
 }
 ```
 
-Use `tinker-android-anno` to generate your `Application` is more recommended, you can just add an annotation for your [ApplicationLifeCycle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLifeCycle.java) class
+Use `tinker-android-anno` to generate your `Application` is more recommended, you can just add an annotation for your [SampleApplicationLike](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLike.java) class
 
 ```java
 @DefaultLifeCycle(
@@ -62,7 +62,7 @@ flags = ShareConstants.TINKER_ENABLE_ALL)                 //tinkerFlags above
 public class SampleApplicationLike extends DefaultApplicationLike 
 ```
 
-How to install tinker? learn more at the sample [SampleApplicationLifeCycle](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLifeCycle.java).
+How to install tinker? learn more at the sample [SampleApplicationLike](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/SampleApplicationLike.java).
 
 For proguard, we have already change the proguard config automatic, and also generate the multiDex keep proguard file for you.
 

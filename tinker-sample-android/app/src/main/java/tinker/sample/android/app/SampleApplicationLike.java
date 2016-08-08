@@ -43,7 +43,7 @@ import tinker.sample.android.util.TinkerManager;
  * application: if it is start with '.', we will add SampleApplicationLifeCycle's package name
  *
  * flags:
- * TINKER_ABLE_ALL: support dex and lib
+ * TINKER_ENABLE_ALL: support dex and lib
  * TINKER_DEX_MASK: just support dex
  * TINKER_NATIVE_LIBRARY_MASK: just support lib
  *
@@ -56,7 +56,7 @@ import tinker.sample.android.util.TinkerManager;
 @SuppressWarnings("unused")
 @DefaultLifeCycle(application = ".SampleApplication", flags = ShareConstants.TINKER_ENABLE_ALL)
 public class SampleApplicationLike extends DefaultApplicationLike {
-    private static final String TAG = "SampleApplicationLifeCycle";
+    private static final String TAG = "SampleApplicationLike";
 
     public SampleApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
                                  long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,

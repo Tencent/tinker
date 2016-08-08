@@ -32,7 +32,7 @@ import android.util.Log;
  * Empty implementation of {@link ApplicationLike}.
  */
 public class DefaultApplicationLike extends ApplicationLike {
-    private static final String TAG = "DefaultLifeCycle";
+    private static final String TAG = "DefaultAppLike";
 
     public DefaultApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
                                   long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
