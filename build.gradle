@@ -1,0 +1,67 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.1.0'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
+    }
+}
+
+allprojects {
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+
+    tasks.withType(Javadoc).all {
+        enabled = false
+        options.setEncoding('UTF-8')
+    }
+
+    apply plugin: 'checkstyle'
+
+    checkstyle {
+        configFile rootProject.file('checkstyle.xml')
+        toolVersion '6.19'
+        ignoreFailures false
+        showViolations true
+    }
+
+    task('checkstyle', type: Checkstyle) {
+        source 'src/main/java'
+        include '**/*.java'
+        classpath = files()
+    }
+}
+
+ext {
+    minSdkVersion = 10
+    compileSdkVersion = 23
+    targetSdkVersion = compileSdkVersion
+    buildToolsVersion = '23.0.2'
+    javaVersion = JavaVersion.VERSION_1_7
+
+    GROUP = 'com.tencent.tinker'
+    VERSION_NAME = "${VERSION_NAME_PREFIX}${VERSION_NAME_SUFFIX}"
+
+    POM_PACKAGING = "pom"
+    POM_DESCRIPTION= "tinker"
+
+    POM_URL = "https://github.com/Tencent/tinker"
+    POM_SCM_URL = "https://github.com/Tencent/tinker.git"
+    POM_ISSUE_URL = 'https://github.com/Tencent/tinker/issues'
+
+    POM_LICENCE_NAME = "BSD License"
+    POM_LICENCE_URL = "https://opensource.org/licenses/BSD-3-Clause"
+    POM_LICENCE_DIST = "repo"
+
+    POM_DEVELOPER_ID="Tencent Wechat"
+    POM_DEVELOPER_NAME="Tencent Wechat, Inc."
+
+    BINTRAY_LICENCE= ['BSD 3-Clause']
+    BINTRAY_ORGANIZATION = "tinker"
+
+}

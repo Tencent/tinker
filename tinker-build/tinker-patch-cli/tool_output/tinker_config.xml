@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--command version is not recommended, you must add the tinker proguard file and multiDex keep file yourself-->
+<!--further, you must put TINKER_ID in your your AndroidManifest.xml such as <meta-data android:name="TINKER_ID" android:value="b168b32"/>-->
+<!--and you'd better use applymapping to build the patch apk-->
+<tinkerPatch>
+    <issue id="property">
+        <!--there are some cases we may get some warnings, default false-->
+        <!--if ignoreWarning is true, we would just assert the patch process-->
+        <!--case 1: minSdkVersion is below 14, but you are using dexMode with raw.-->
+        <!--it must be crash when load.-->
+        <!--case 2: newly added Android Component in AndroidManifest.xml,-->
+        <!--it must be crash when load.-->
+        <!--case 3: loader classes in dex.loader{} are not keep in the main dex,-->
+        <!--it must be let tinker not work.-->
+        <!--case 4: loader classes in dex.loader{} changes,-->
+        <!--loader classes is ues to load patch dex. it is useless to change them.-->
+        <!--it won't crash, but these changes can't effect. you may ignore it-->
+        <ignoreWarning value="false"/>
+
+        <!--whether sign the patch file default true-->
+        <!--if not, you must do yourself. otherwise it can't check success during the patch loading-->
+        <!--we will use the sign config with your build type-->
+        <useSign value="true"/>
+
+        <!--if you don't set sevenZip path, we just use 7za to try-->
+        <sevenZipPath value="/usr/local/bin/7za"/>
+    </issue>
+
+    <issue id="dex">
+        <!--only can be 'raw' or 'jar'. for raw, we would keep its original format-->
+        <!--for jar, we would repack dexes with zip format.-->
+        <!--if you want to support below 14, you must use jar-->
+        <!--or you want to save rom or check quicker, you can use raw mode also-->
+        <dexMode value="jar"/>
+
+        <!--what dexes in apk are expected to deal with tinkerPatch-->
+        <!--it support * or ? pattern.-->
+        <pattern value="classes*.dex"/>
+        <pattern value="assets/secondary-dex-?.jar"/>
+
+        <!--Warning, it is very very important, loader classes can't change with patch.-->
+        <!--thus, they will be removed from patch dexes.-->
+        <!--you must put the following class into main dex.-->
+        <!--Simply, you should add your own application {@code tinker.sample.android.SampleApplication}-->
+        <!--own tinkerLoader {@code SampleTinkerLoader}, and the classes you use in them-->
+        <loader value="com.tencent.tinker.loader.*"/>
+        <loader value="tinker.sample.android.SampleApplication"/>
+    </issue>
+
+    <issue id="lib">
+        <!--what library in apk are expected to deal with tinkerPatch-->
+        <!--it support * or ? pattern.-->
+        <!--for library in assets, we would just recover them in the patch directory-->
+        <!--you can get them in TinkerLoadResult with Tinker-->
+        <pattern value="lib/armeabi/*.so"/>
+    </issue>
+
+    <issue id="resource">
+        <!--what resource in apk are expected to deal with tinkerPatch-->
+        <!--it support * or ? pattern.-->
+        <!--you must include all your resources in apk here-->
+        <!--otherwise, they won't repack in the new apk resources-->
+        <pattern value="res/*"/>
+        <pattern value="assets/*"/>
+        <pattern value="resources.arsc"/>
+        <pattern value="AndroidManifest.xml"/>
+        <!--ignore add, delete or modify resource change-->
+        <!--Warning, we can only use for files no relative with resources.arsc, such as assets files-->
+        <!--it support * or ? pattern.-->
+        <!--Such as I want assets/meta.txt use the base.apk version whatever it is change ir not.-->
+        <ignoreChange value="assets/sample_meta.txt"/>
+        <!--default 100kb-->
+        <!--for modify resource, if it is larger than 'largeModSize'-->
+        <!--we would like to use bsdiff algorithm to reduce patch file size-->
+        <largeModSize value="100"/>
+
+    </issue>
+
+    <issue id="packageConfig">
+        <!--package meta file gen. path is assets/package_meta.txt in patch file-->
+        <!--you can use securityCheck.getPackageProperties() in your ownPackageCheck method-->
+        <!--or TinkerLoadResult.getPackageConfigByName-->
+        <!--you must add TINKER_ID with the old apk manifest's meta TINKER_ID value-->
+        <!--other config files (such as patchMessage below)is not necessary-->
+        <configField name="patchMessage" value="classes.dex"/>
+    </issue>
+
+    <!--sign, if you want to sign the apk, and if you want to use 7zip, you must fill in the following data-->
+    <issue id="sign">
+        <!--the signature file path, in window use \, in linux use /, and the default path is the running location-->
+        <path value="tool_output/release.keystore"/>
+        <!--storepass-->
+        <storepass value="testres"/>
+        <!--keypass-->
+        <keypass value="testres"/>
+        <!--alias-->
+        <alias value="testres"/>
+    </issue>
+
+</tinkerPatch>

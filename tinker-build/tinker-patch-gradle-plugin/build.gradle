@@ -1,0 +1,33 @@
+apply plugin: 'groovy'
+
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+//    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(':tinker-build:tinker-patch-lib')
+    compile 'com.google.gradle:osdetector-gradle-plugin:1.2.1'
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/groovy'
+        }
+
+        resources {
+            srcDir 'src/main/resources'
+        }
+    }
+}
+
+apply from: rootProject.file('gradle/java-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
+

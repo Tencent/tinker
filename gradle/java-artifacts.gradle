@@ -1,0 +1,42 @@
+apply plugin: 'maven-publish'
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+
+//for local maven test
+afterEvaluate { project ->
+    tasks.all { Task task ->
+        if (task.name.equalsIgnoreCase('publishTinkerPatchPublicationToMavenLocal')) {
+            task.dependsOn tasks.getByName('assemble')
+        }
+    }
+}
+
+publishing {
+    publications {
+        TinkerPatch(MavenPublication) {
+            from components.java
+            groupId = group
+            artifactId = project.getName()
+            version = version
+        }
+    }
+}
+
+task buildAndPublishLocalMaven(dependsOn: ['build', 'publishTinkerPatchPublicationToMavenLocal']) {}
+
+//depend checkstyle
+project.tasks.getByName("check").dependsOn tasks.getByName("checkstyle")

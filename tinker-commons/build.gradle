@@ -1,0 +1,24 @@
+apply plugin: 'java'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(':third-party:aosp-dexutils')
+    compile project(':third-party:bsdiff-util')
+}
+
+task buildSdk(type: Copy, dependsOn: [build]) {
+    from('build/libs') {
+        include '*.jar'
+        exclude '*javadoc.jar'
+        exclude '*-sources.jar'
+    }
+    into(rootProject.file("buildSdk/android"))
+}
+
+apply from: rootProject.file('gradle/java-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

@@ -1,0 +1,36 @@
+apply plugin: 'java'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(':tinker-build:tinker-patch-lib')
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.tencent.tinker.patch.CliMain'
+        attributes 'Manifest-Version': version
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+// copy the jar to work directory
+task buildSdk(type: Copy, dependsOn: [build, jar]) {
+    from('build/libs') {
+        include '*.jar'
+        exclude '*-javadoc.jar'
+        exclude '*-sources.jar'
+    }
+    from('./tool_output') {
+        include '*.*'
+    }
+    into(rootProject.file("buildSdk/build"))
+}
+
+defaultTasks 'buildSdk'

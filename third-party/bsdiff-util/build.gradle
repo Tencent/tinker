@@ -1,0 +1,18 @@
+apply plugin: 'java'
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+task buildSdk(type: Copy, dependsOn: [build]) {
+    from('build/libs') {
+        include '*.jar'
+        exclude '*javadoc.jar'
+        exclude '*-sources.jar'
+    }
+    into(rootProject.file("buildSdk/android"))
+}
+
+apply from: rootProject.file('gradle/java-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
