@@ -97,7 +97,11 @@ public class StaticValueSectionPatchAlgorithm extends DexSectionPatchAlgorithm<E
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedEncodedArraySectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedEncodedArraySectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

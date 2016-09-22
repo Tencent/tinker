@@ -101,7 +101,11 @@ public class StringDataSectionPatchAlgorithm extends DexSectionPatchAlgorithm<St
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedStringDataSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedStringDataSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

@@ -99,7 +99,11 @@ public class AnnotationSetRefListSectionPatchAlgorithm extends DexSectionPatchAl
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedAnnotationSetRefListSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedAnnotationSetRefListSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

@@ -97,7 +97,11 @@ public class AnnotationsDirectorySectionPatchAlgorithm extends DexSectionPatchAl
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedAnnotationsDirectorySectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedAnnotationsDirectorySectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

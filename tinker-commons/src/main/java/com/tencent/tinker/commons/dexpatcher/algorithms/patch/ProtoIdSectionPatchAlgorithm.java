@@ -97,7 +97,11 @@ public class ProtoIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Proto
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedProtoIdSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedProtoIdSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

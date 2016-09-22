@@ -97,7 +97,11 @@ public class TypeListSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Type
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedTypeListSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedTypeListSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

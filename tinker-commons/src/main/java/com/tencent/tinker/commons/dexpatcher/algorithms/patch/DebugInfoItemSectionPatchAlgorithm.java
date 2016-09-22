@@ -97,7 +97,11 @@ public class DebugInfoItemSectionPatchAlgorithm extends DexSectionPatchAlgorithm
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedDebugInfoSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedDebugInfoSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

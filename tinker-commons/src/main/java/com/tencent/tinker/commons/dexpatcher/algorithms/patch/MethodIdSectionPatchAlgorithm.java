@@ -97,7 +97,11 @@ public class MethodIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Meth
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedMethodIdSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedMethodIdSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

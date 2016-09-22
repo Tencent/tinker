@@ -98,7 +98,11 @@ public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Clas
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedClassDefSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedClassDefSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

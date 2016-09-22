@@ -68,7 +68,10 @@ import java.util.Arrays;
 public class DexPatchApplier {
     private final Dex oldDex;
     private final Dex patchedDex;
+
+    /** May be null if we need to generate small patch. **/
     private final DexPatchFile patchFile;
+
     private final SmallPatchedDexItemFile extraInfoFile;
     private final IndexMap oldToFullPatchedIndexMap;
     private final IndexMap patchedToSmallPatchedIndexMap;
@@ -172,11 +175,11 @@ public class DexPatchApplier {
         this.extraInfoFile = extraAddedDexElementsFile;
 
         if ((patchFileIn == null) && (extraAddedDexElementsFile == null
-                || extraAddedDexElementsFile.isAffectedOldDex(this.oldDexSignStr))) {
+                || !extraAddedDexElementsFile.isAffectedOldDex(this.oldDexSignStr))) {
             throw new UnsupportedOperationException(
                     "patchFileIn is null, and extraAddedDexElementFile"
                             + "(smallPatchInfo) is null or does not mention "
-                            + "oldDexIn. Consider copy oldDexIn instead."
+                            + "oldDexIn."
             );
         }
     }
@@ -189,15 +192,17 @@ public class DexPatchApplier {
             throw new IOException("failed to compute old dex's signature.");
         }
 
-        byte[] oldDexSignInPatchFile = this.patchFile.getOldDexSignature();
-        if (CompareUtils.uArrCompare(oldDexSign, oldDexSignInPatchFile) != 0) {
-            throw new IOException(
-                    String.format(
-                            "old dex signature mismatch! expected: %s, actual: %s",
-                            Arrays.toString(oldDexSign),
-                            Arrays.toString(oldDexSignInPatchFile)
-                    )
-            );
+        if (this.patchFile != null) {
+            byte[] oldDexSignInPatchFile = this.patchFile.getOldDexSignature();
+            if (CompareUtils.uArrCompare(oldDexSign, oldDexSignInPatchFile) != 0) {
+                throw new IOException(
+                        String.format(
+                                "old dex signature mismatch! expected: %s, actual: %s",
+                                Arrays.toString(oldDexSign),
+                                Arrays.toString(oldDexSignInPatchFile)
+                        )
+                );
+            }
         }
 
         String oldDexSignStr = Hex.toHexString(oldDexSign);

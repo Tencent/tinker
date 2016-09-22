@@ -97,7 +97,11 @@ public class CodeSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Code> {
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedCodeSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedCodeSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override

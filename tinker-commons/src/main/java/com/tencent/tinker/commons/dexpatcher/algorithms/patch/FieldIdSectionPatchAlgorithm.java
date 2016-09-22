@@ -97,7 +97,11 @@ public class FieldIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Field
 
     @Override
     protected int getFullPatchSectionBase() {
-        return this.patchFile.getPatchedFieldIdSectionOffset();
+        if (this.patchFile != null) {
+            return this.patchFile.getPatchedFieldIdSectionOffset();
+        } else {
+            return getTocSection(this.oldDex).off;
+        }
     }
 
     @Override
