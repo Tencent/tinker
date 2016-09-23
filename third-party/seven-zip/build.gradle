@@ -6,6 +6,9 @@ apply plugin: 'com.jfrog.bintray'
 version "1.0.0"
 group rootProject.ext.GROUP
 
+bintray {
+    publications = ['SevenZipPub']
+}
 
 publishing {
     publications {
@@ -40,28 +43,6 @@ task buildAndPublishLocalMaven(dependsOn: 'publishSevenZipPubPublicationToMavenL
 
 }
 
-artifacts {
-    archives(file("executable/SevenZip-linux-x86_32.exe")) {
-        classifier "linux-x86_32"
-        extension "exe"
-    }
-    archives(file("executable/SevenZip-linux-x86_64.exe")) {
-        classifier "linux-x86_64"
-        extension "exe"
-    }
-    archives(file("executable/SevenZip-windows-x86_32.exe")) {
-        classifier "windows-x86_32"
-        extension "exe"
-    }
-    archives(file("executable/SevenZip-windows-x86_64.exe")) {
-        classifier "windows-x86_64"
-        extension "exe"
-    }
-    archives(file("executable/SevenZip-osx-x86_64.exe")) {
-        classifier "osx-x86_64"
-        extension "exe"
-    }
-}
 //don't upload sevenZip default
 if (hasProperty('UPLOAD_SEVEN_ZIP')) {
     apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
