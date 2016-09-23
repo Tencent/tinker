@@ -28,8 +28,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,74 +41,62 @@ public final class SmallPatchedDexItemFile {
     public static final byte[] MAGIC = {0x44, 0x44, 0x45, 0x58, 0x54, 0x52, 0x41}; // DDEXTRA
     public static final short CURRENT_VERSION = 0x0001;
     private final List<String> oldDexSigns = new ArrayList<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedStringIdOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedTypeIdOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedProtoIdOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedFieldIdOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedMethodIdOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedClassDefOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedMapListOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedTypeListOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedAnnotationSetRefListOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedAnnotationSetOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedClassDataOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedCodeOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedStringDataOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedDebugInfoOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedAnnotationOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedEncodedArrayOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedAnnotationsDirectoryOffsetMap = new HashMap<>();
-    private final Map<String, Integer>
-            oldDexSignToPatchedDexSizeMap = new HashMap<>();
-    private final Map<String, Set<Integer>>
+
+    private final Map<String, DexOffsets> oldDexSignToOffsetInfoMap = new HashMap<>();
+
+    private final Map<String, BitSet>
             oldDexSignToStringIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToTypeIdIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToTypeListIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToProtoIdIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToFieldIdIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToMethodIdIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToAnnotationIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToAnnotationSetIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToAnnotationSetRefListIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToAnnotationsDirectoryIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToEncodedArrayIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToDebugInfoIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToCodeIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToClassDataIndicesInSmallPatch = new HashMap<>();
-    private final Map<String, Set<Integer>>
+    private final Map<String, BitSet>
             oldDexSignToClassDefIndicesInSmallPatch = new HashMap<>();
     private int version;
     private int firstChunkOffset;
+
+    private static final class DexOffsets {
+        int stringIdsOffset = -1;
+        int typeIdsOffset = -1;
+        int protoIdsOffset = -1;
+        int fieldIdsOffset = -1;
+        int methodIdsOffset = -1;
+        int classDefsOffset = -1;
+        int mapListOffset = -1;
+        int typeListsOffset = -1;
+        int annotationsOffset = -1;
+        int annotationSetsOffset = -1;
+        int annotationSetRefListsOffset = -1;
+        int annotationsDirectoriesOffset = -1;
+        int classDataItemsOffset = -1;
+        int codeItemsOffset = -1;
+        int stringDataItemsOffset = -1;
+        int debugInfoItemsOffset = -1;
+        int encodedArraysOffset = -1;
+        int dexSize = -1;
+    }
 
     public SmallPatchedDexItemFile(File input) throws IOException {
         DexDataBuffer buffer = new DexDataBuffer(ByteBuffer.wrap(FileUtils.readFile(input)));
@@ -145,24 +133,26 @@ public final class SmallPatchedDexItemFile {
 
         for (int i = 0; i < oldDexSignCount; ++i) {
             final String oldDexSign = oldDexSigns.get(i);
-            oldDexSignToPatchedStringIdOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedTypeIdOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedProtoIdOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedFieldIdOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedMethodIdOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedClassDefOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedStringDataOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedTypeListOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedAnnotationOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedAnnotationSetOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedAnnotationSetRefListOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedAnnotationsDirectoryOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedDebugInfoOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedCodeOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedClassDataOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedEncodedArrayOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedMapListOffsetMap.put(oldDexSign, buffer.readInt());
-            oldDexSignToPatchedDexSizeMap.put(oldDexSign, buffer.readInt());
+            final DexOffsets dexOffsets = new DexOffsets();
+            dexOffsets.stringIdsOffset = buffer.readInt();
+            dexOffsets.typeIdsOffset = buffer.readInt();
+            dexOffsets.protoIdsOffset = buffer.readInt();
+            dexOffsets.fieldIdsOffset = buffer.readInt();
+            dexOffsets.methodIdsOffset = buffer.readInt();
+            dexOffsets.classDefsOffset = buffer.readInt();
+            dexOffsets.stringDataItemsOffset = buffer.readInt();
+            dexOffsets.typeListsOffset = buffer.readInt();
+            dexOffsets.annotationsOffset = buffer.readInt();
+            dexOffsets.annotationSetsOffset = buffer.readInt();
+            dexOffsets.annotationSetRefListsOffset = buffer.readInt();
+            dexOffsets.annotationsDirectoriesOffset = buffer.readInt();
+            dexOffsets.debugInfoItemsOffset = buffer.readInt();
+            dexOffsets.codeItemsOffset = buffer.readInt();
+            dexOffsets.classDataItemsOffset = buffer.readInt();
+            dexOffsets.encodedArraysOffset = buffer.readInt();
+            dexOffsets.mapListOffset = buffer.readInt();
+            dexOffsets.dexSize = buffer.readInt();
+            oldDexSignToOffsetInfoMap.put(oldDexSign, dexOffsets);
         }
 
         readDataChunk(buffer, oldDexSignToStringIndicesInSmallPatch);
@@ -183,7 +173,7 @@ public final class SmallPatchedDexItemFile {
     }
 
     private void readDataChunk(
-            DexDataBuffer buffer, Map<String, Set<Integer>> oldDexSignToIndicesInSmallPatchMap
+            DexDataBuffer buffer, Map<String, BitSet> oldDexSignToIndicesInSmallPatchMap
     ) {
         int oldDexSignCount = oldDexSigns.size();
         for (int i = 0; i < oldDexSignCount; ++i) {
@@ -194,13 +184,13 @@ public final class SmallPatchedDexItemFile {
                 prevIndex += indexDelta;
 
                 final String oldDexSign = oldDexSigns.get(i);
-                Set<Integer> indices = oldDexSignToIndicesInSmallPatchMap.get(oldDexSign);
+                BitSet indices = oldDexSignToIndicesInSmallPatchMap.get(oldDexSign);
                 if (indices == null) {
-                    indices = new HashSet<>();
+                    indices = new BitSet();
                     oldDexSignToIndicesInSmallPatchMap.put(oldDexSign, indices);
                 }
 
-                indices.add(prevIndex);
+                indices.set(prevIndex);
             }
         }
     }
@@ -210,203 +200,221 @@ public final class SmallPatchedDexItemFile {
     }
 
     public boolean isSmallPatchedDexEmpty(String oldDexSign) {
-        Set<Integer> indices = this.oldDexSignToClassDefIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = this.oldDexSignToClassDefIndicesInSmallPatch.get(oldDexSign);
         return (indices == null || indices.isEmpty());
     }
 
     public int getPatchedStringIdOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedStringIdOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.stringIdsOffset : -1;
     }
 
     public int getPatchedTypeIdOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedTypeIdOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.typeIdsOffset : -1;
     }
 
     public int getPatchedProtoIdOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedProtoIdOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.protoIdsOffset : -1;
     }
 
     public int getPatchedFieldIdOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedFieldIdOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.fieldIdsOffset : -1;
     }
 
     public int getPatchedMethodIdOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedMethodIdOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.methodIdsOffset : -1;
     }
 
     public int getPatchedClassDefOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedClassDefOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.classDefsOffset : -1;
     }
 
     public int getPatchedMapListOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedMapListOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.mapListOffset : -1;
     }
 
     public int getPatchedTypeListOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedTypeListOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.typeListsOffset : -1;
     }
 
     public int getPatchedAnnotationSetRefListOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedAnnotationSetRefListOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.annotationSetRefListsOffset : -1;
     }
 
     public int getPatchedAnnotationSetOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedAnnotationSetOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.annotationSetsOffset : -1;
     }
 
     public int getPatchedClassDataOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedClassDataOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.classDataItemsOffset : -1;
     }
 
     public int getPatchedCodeOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedCodeOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.codeItemsOffset : -1;
     }
 
     public int getPatchedStringDataOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedStringDataOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.stringDataItemsOffset : -1;
     }
 
     public int getPatchedDebugInfoOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedDebugInfoOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.debugInfoItemsOffset : -1;
     }
 
     public int getPatchedAnnotationOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedAnnotationOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.annotationsOffset : -1;
     }
 
     public int getPatchedEncodedArrayOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedEncodedArrayOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.encodedArraysOffset : -1;
     }
 
     public int getPatchedAnnotationsDirectoryOffsetByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedAnnotationsDirectoryOffsetMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.annotationsDirectoriesOffset : -1;
     }
 
     public int getPatchedDexSizeByOldDexSign(String oldDexSign) {
-        return this.oldDexSignToPatchedDexSizeMap.get(oldDexSign);
+        DexOffsets dexOffsets = this.oldDexSignToOffsetInfoMap.get(oldDexSign);
+        return dexOffsets != null ? dexOffsets.dexSize : -1;
     }
 
     public boolean isStringInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToStringIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToStringIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isTypeIdInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToTypeIdIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToTypeIdIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isTypeListInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToTypeListIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToTypeListIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isProtoIdInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToProtoIdIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToProtoIdIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isFieldIdInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToFieldIdIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToFieldIdIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isMethodIdInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToMethodIdIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToMethodIdIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isAnnotationInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToAnnotationIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToAnnotationIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isAnnotationSetInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToAnnotationSetIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToAnnotationSetIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isAnnotationSetRefListInSmallPatchedDex(
             String oldDexSign, int indexInPatchedDex
     ) {
-        Set<Integer> indices = oldDexSignToAnnotationSetRefListIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToAnnotationSetRefListIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isAnnotationsDirectoryInSmallPatchedDex(
             String oldDexSign, int indexInPatchedDex
     ) {
-        Set<Integer> indices = oldDexSignToAnnotationsDirectoryIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToAnnotationsDirectoryIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isEncodedArrayInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToEncodedArrayIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToEncodedArrayIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isDebugInfoInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToDebugInfoIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToDebugInfoIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isCodeInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToCodeIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToCodeIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isClassDataInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToClassDataIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToClassDataIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 
     public boolean isClassDefInSmallPatchedDex(String oldDexSign, int indexInPatchedDex) {
-        Set<Integer> indices = oldDexSignToClassDefIndicesInSmallPatch.get(oldDexSign);
+        BitSet indices = oldDexSignToClassDefIndicesInSmallPatch.get(oldDexSign);
         if (indices == null) {
             return false;
         }
-        return indices.contains(indexInPatchedDex);
+        return indices.get(indexInPatchedDex);
     }
 }
