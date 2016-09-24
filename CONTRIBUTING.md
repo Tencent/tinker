@@ -1,11 +1,11 @@
 # Contributing to Tinker
-Welcome to [report Issues](https://github.com/Tencent/tinker/issues) or [pull requests](https://github.com/Tencent/tinker/pulls). It's recommended to read the following Contributing Guild first to make contributing earlier. 
+Welcome to [report Issues](https://github.com/Tencent/tinker/issues) or [pull requests](https://github.com/Tencent/tinker/pulls). It's recommended to read the following Contributing Guide first before contributing. 
 
 ## issues
 We use Git Issues to track public bugs and feature requests.
 
 ### Search Known Issues First
-Please search the exist issues to see if any similar issue or feature request has already been filed. You shold try to make sure your issue doesn't already exist.
+Please search the existing issues to see if any similar issue or feature request has already been filed. You should make sure your issue isn't redundant.
 
 ### Reporting New Issues
 If you open an issue, the more information the better. Such as detailed description, screenshot or video of your problem, logcat or code blocks for your crash.
@@ -39,14 +39,14 @@ feature/bugfix PR
 ```  
 
 ### Make Pull Requests
-The code team will monitor all pull request, we run some code check and test on it. After all tests passing, we will accecpt this pr. But it won't merge to `master` branch at once, which have some delay.
+The code team will monitor all pull request, we run some code check and test on it. After all tests passed, we will accecpt this PR. But it won't merge to `master` branch at once, which have some delay.
 
-Before submitting a pull request, please make sure the following is done
+Before submitting a pull request, please make sure the followings are done:
 
 1. Fork the repo and create your branch from `master` or `hotfix`.
 2. Update code or documentation if you have changed APIs.
 3. Add the copyright notice to the top of any new files you've added.
-4. Make sure your code lints and checkstyles.
+4. Check your code lints and checkstyles.
 5. Test and test again your code.
 6. Now, you can submit your pull request on `dev` or `hotfix` branch.
 
