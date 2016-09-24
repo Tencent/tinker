@@ -1,7 +1,7 @@
 ## Tinker
 [![license](http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat)](https://github.com/Tencent/tinker/blob/master/LICENSE)
 
-Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstall apk.
+Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.
 
 ![tinker.png](assets/tinker.png) 
 
@@ -20,7 +20,7 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 
 ```gradle
 dependencies {
-    //optional, help to gen the final application 
+    //optional, help to generate the final application 
     compile('com.tencent.tinker:tinker-android-anno:1.6.0')
     //tinker's main Android lib
     compile('com.tencent.tinker:tinker-android-lib:1.6.0') 
@@ -37,7 +37,7 @@ If your app has a class that subclasses android.app.Application, then you need t
 +public class SampleApplicationLike extends DefaultApplicationLike
 ```
 
-Now you should change your `Application` class, which will be a subclass of [TinkerApplication](https://github.com/Tencent/tinker/blob/master/tinker-android/tinker-android-loader/src/main/java/com/tencent/tinker/loader/app/TinkerApplication.java). As you can see from its API, it is an abstract class that does not have a default constructor, so you must define a no-arg constructor as follows:
+Now you should change your `Application` class, make it a subclass of [TinkerApplication](https://github.com/Tencent/tinker/blob/master/tinker-android/tinker-android-loader/src/main/java/com/tencent/tinker/loader/app/TinkerApplication.java). As you can see from its API, it is an abstract class that does not have a default constructor, so you must define a no-arg constructor:
 
 ```java
 public class SampleApplication extends TinkerApplication {
@@ -53,7 +53,7 @@ public class SampleApplication extends TinkerApplication {
 }
 ```
 
-Use `tinker-android-anno` to generate your `Application` is more recommended, you can just add an annotation for your [SampleApplicationLike](http://git.code.oa.com/tinker/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/app/SampleApplicationLike.java) class
+Use `tinker-android-anno` to generate your `Application` is recommended, you just need to add an annotation for your [SampleApplicationLike](https://github.com/Tencent/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/app/SampleApplicationLike.java) class
 
 ```java
 @DefaultLifeCycle(
@@ -64,7 +64,7 @@ public class SampleApplicationLike extends DefaultApplicationLike
 
 How to install tinker? learn more at the sample [SampleApplicationLike](https://github.com/Tencent/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/app/SampleApplicationLike.java).
 
-For proguard, we have already change the proguard config automatic, and also generate the multiDex keep proguard file for you.
+For proguard, we have already made the proguard config automatic, and tinker will also generate the multiDex keep proguard file for you.
 
 For more tinker configurations, learn more at the sample [app/build.gradle](https://github.com/Tencent/tinker/blob/master/tinker-sample-android/app/build.gradle).
 
