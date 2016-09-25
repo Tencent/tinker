@@ -34,7 +34,7 @@ If your app has a class that subclasses android.app.Application, then you need t
 
 ```java
 -public class YourApplication extends Application {
-+public class SampleApplicationLike extends DefaultApplicationLike
++public class SampleApplicationLike extends DefaultApplicationLike {
 ```
 
 Now you should change your `Application` class, make it a subclass of [TinkerApplication](https://github.com/Tencent/tinker/blob/master/tinker-android/tinker-android-loader/src/main/java/com/tencent/tinker/loader/app/TinkerApplication.java). As you can see from its API, it is an abstract class that does not have a default constructor, so you must define a no-arg constructor:
