@@ -324,29 +324,32 @@ if (buildWithTinker()) {
  * task type, you want to bak
  */
     def taskName = "debug"
-/**
- * bak apk and mapping
- */
-    tasks.getByName("assemble${taskName.capitalize()}") {
-        it.doLast {
-            copy {
-                def date = new Date().format("MMdd-HH-mm-ss")
-                from "${buildDir}/outputs/apk/${project.getName()}-${taskName}.apk"
-                into bakPath
-                rename { String fileName ->
-                    fileName.replace("${project.getName()}-${taskName}.apk", "${project.getName()}-${taskName}-${date}.apk")
-                }
 
-                from "${buildDir}/outputs/mapping/${taskName}/mapping.txt"
-                into bakPath
-                rename { String fileName ->
-                    fileName.replace("mapping.txt", "${project.getName()}-${taskName}-${date}-mapping.txt")
-                }
+    /**
+     * bak apk and mapping
+     */
+    tasks.all {
+        if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
+            it.doLast {
+                copy {
+                    def date = new Date().format("MMdd-HH-mm-ss")
+                    from "${buildDir}/outputs/apk/${project.getName()}-${taskName}.apk"
+                    into bakPath
+                    rename { String fileName ->
+                        fileName.replace("${project.getName()}-${taskName}.apk", "${project.getName()}-${taskName}-${date}.apk")
+                    }
 
-                from "${buildDir}/intermediates/symbols/${taskName}/R.txt"
-                into bakPath
-                rename { String fileName ->
-                    fileName.replace("R.txt", "${project.getName()}-${taskName}-${date}-R.txt")
+                    from "${buildDir}/outputs/mapping/${taskName}/mapping.txt"
+                    into bakPath
+                    rename { String fileName ->
+                        fileName.replace("mapping.txt", "${project.getName()}-${taskName}-${date}-mapping.txt")
+                    }
+
+                    from "${buildDir}/intermediates/symbols/${taskName}/R.txt"
+                    into bakPath
+                    rename { String fileName ->
+                        fileName.replace("R.txt", "${project.getName()}-${taskName}-${date}-R.txt")
+                    }
                 }
             }
         }
