@@ -1,5 +1,7 @@
 ## Tinker
 [![license](http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat)](https://github.com/Tencent/tinker/blob/master/LICENSE)
+[![Release Version](https://img.shields.io/badge/release-1.6.0-red.svg)](https://github.com/Tencent/tinker/releases) 
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Tencent/tinker/pulls)
 
 Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.
 
@@ -67,6 +69,11 @@ How to install tinker? learn more at the sample [SampleApplicationLike](https://
 For proguard, we have already made the proguard config automatic, and tinker will also generate the multiDex keep proguard file for you.
 
 For more tinker configurations, learn more at the sample [app/build.gradle](https://github.com/Tencent/tinker/blob/master/tinker-sample-android/app/build.gradle).
+
+## Known Issues
+There are some issues which Tinker can't dynamic update.
+
+1. Update AndroidManifest.xml, such as add Android Component.
 
 ## Support
 Any problem?

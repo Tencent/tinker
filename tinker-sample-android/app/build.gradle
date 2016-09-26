@@ -320,14 +320,14 @@ if (buildWithTinker()) {
         }
     }
 
-/**
- * task type, you want to bak
- */
+    /**
+    * task type, you want to bak
+    */
     def taskName = "debug"
 
     /**
-     * bak apk and mapping
-     */
+    * bak apk and mapping
+    */
     tasks.all {
         if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
             it.doLast {

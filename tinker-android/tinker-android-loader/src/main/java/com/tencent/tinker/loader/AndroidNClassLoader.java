@@ -40,10 +40,15 @@ class AndroidNClassLoader extends PathClassLoader {
     private static AndroidNClassLoader createAndroidNClassLoader(PathClassLoader original) throws Exception {
         //let all element ""
         AndroidNClassLoader androidNClassLoader = new AndroidNClassLoader("",  original);
-        Object originPathList = findField(original, "pathList").get(original);
+        Field originPathList = findField(original, "pathList");
+        Object originPathListObject = originPathList.get(original);
+        //should reflect definingContext also
+        Field originClassloader = findField(originPathListObject, "definingContext");
+        originClassloader.set(originPathListObject, androidNClassLoader);
+        //copy pathList
         Field pathListField = findField(androidNClassLoader, "pathList");
-        //just use PathClassloader's pathlist
-        pathListField.set(androidNClassLoader, originPathList);
+        //just use PathClassloader's pathList
+        pathListField.set(androidNClassLoader, originPathListObject);
         return androidNClassLoader;
     }
 
