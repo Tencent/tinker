@@ -59,7 +59,6 @@ public class TypedValue {
     public static final String RES_MANIFEST    = "AndroidManifest.xml";
     public static final String RES_OUT         = "resources_out.zip";
     public static final String RES_OUT_7ZIP    = "resources_out_7z.zip";
-    public static final String RES_OUT_MD5_TAG = "%RES_OUT_MD5_TAG%";
 
     public static final int ADD       = 1;
     public static final int MOD       = 2;

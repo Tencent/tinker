@@ -6,9 +6,15 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile "com.android.support:appcompat-v7:23.1.1"
-    compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}")
-    compile("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}")
+    compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
+    compile("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
     compile "com.android.support:multidex:1.0.1"
+
+    //use for local maven test
+    compile("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
+    compile("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
+    compile("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
+    compile("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
 
     //use to test multiDex
 //    compile group: 'com.google.guava', name: 'guava', version: '19.0'
@@ -16,7 +22,15 @@ dependencies {
 }
 
 def gitSha() {
-    return 'git rev-parse --short HEAD'.execute().text.trim()
+    try {
+        String gitRev = 'git rev-parse --short HEAD'.execute().text.trim()
+        if (gitRev == null) {
+            throw new GradleException("can't get git rev, you should add git to system path or just input test value, such as 'testTinkerId'")
+        }
+        return gitRev
+    } catch (Exception e) {
+        throw new GradleException("can't get git rev, you should add git to system path or just input test value, such as 'testTinkerId'")
+    }
 }
 
 def javaVersion = JavaVersion.VERSION_1_7

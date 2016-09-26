@@ -119,7 +119,7 @@ public final class PatchUtil {
 //                        if (rType.equals(RType.STYLE)) {
                             String rawName = aaptResourceCollector.getRawName(rDotTxtEntry.name);
                             if (StringUtil.isBlank(rawName)) {
-                                System.err.println("Blank?" + rDotTxtEntry.name);
+//                                System.err.println("Blank?" + rDotTxtEntry.name);
                                 rawName = rDotTxtEntry.name;
                             }
                             publicWriter.println("<public type=\"" + rType + "\" name=\"" + rawName + "\" id=\"" + rDotTxtEntry.idValue + "\" />");

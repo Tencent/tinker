@@ -45,6 +45,7 @@ public class TinkerInstaller {
      */
     public static void install(ApplicationLike applicationLike) {
         Tinker tinker = new Tinker.Builder(applicationLike.getApplication()).build();
+        Tinker.create(tinker);
         tinker.install(applicationLike.getTinkerResultIntent());
     }
 
