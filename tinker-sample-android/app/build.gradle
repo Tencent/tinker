@@ -11,10 +11,10 @@ dependencies {
     compile "com.android.support:multidex:1.0.1"
 
     //use for local maven test
-    compile("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
-    compile("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
-    compile("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
-    compile("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
+//    compile("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
+//    compile("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
+//    compile("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
+//    compile("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
 
     //use to test multiDex
 //    compile group: 'com.google.guava', name: 'guava', version: '19.0'
