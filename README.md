@@ -1,6 +1,6 @@
 ## Tinker
 [![license](http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat)](https://github.com/Tencent/tinker/blob/master/LICENSE)
-[![Release Version](https://img.shields.io/badge/release-1.6.0-red.svg)](https://github.com/Tencent/tinker/releases) 
+[![Release Version](https://img.shields.io/badge/release-1.6.1-red.svg)](https://github.com/Tencent/tinker/releases) 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Tencent/tinker/pulls)
 
 Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.
@@ -13,7 +13,7 @@ Add tinker-gradle-plugin as a dependency in your main `build.gradle` in the root
 ```gradle
 buildscript {
     dependencies {
-        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.6.0')
+        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.6.1')
     }
 }
 ```
@@ -23,9 +23,9 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 ```gradle
 dependencies {
     //optional, help to generate the final application 
-    compile('com.tencent.tinker:tinker-android-anno:1.6.0')
+    compile('com.tencent.tinker:tinker-android-anno:1.6.1')
     //tinker's main Android lib
-    compile('com.tencent.tinker:tinker-android-lib:1.6.0') 
+    compile('com.tencent.tinker:tinker-android-lib:1.6.1') 
 }
 ...
 ...
@@ -74,6 +74,8 @@ For more tinker configurations, learn more at the sample [app/build.gradle](http
 There are some issues which Tinker can't dynamic update.
 
 1. Update AndroidManifest.xml, such as add Android Component.
+2. Do not support some Samsung models with os version android-19.
+3. Due to Google Play Developer Distribution Agreement, we can't dynamic update our apk.
 
 ## Support
 Any problem?
