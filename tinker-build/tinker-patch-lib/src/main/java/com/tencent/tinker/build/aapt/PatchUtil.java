@@ -116,16 +116,16 @@ public final class PatchUtil {
                 if (!rType.equals(RType.STYLEABLE)) {
                     Set<RDotTxtEntry> set = entry.getValue();
                     for (RDotTxtEntry rDotTxtEntry : set) {
-                        if (rType.equals(RType.STYLE)) {
+//                        if (rType.equals(RType.STYLE)) {
                             String rawName = aaptResourceCollector.getRawName(rDotTxtEntry.name);
                             if (StringUtil.isBlank(rawName)) {
                                 System.err.println("Blank?" + rDotTxtEntry.name);
                                 rawName = rDotTxtEntry.name;
                             }
                             publicWriter.println("<public type=\"" + rType + "\" name=\"" + rawName + "\" id=\"" + rDotTxtEntry.idValue + "\" />");
-                        } else {
-                            publicWriter.println("<public type=\"" + rType + "\" name=\"" + rDotTxtEntry.name + "\" id=\"" + rDotTxtEntry.idValue + "\" />");
-                        }
+//                        } else {
+//                            publicWriter.println("<public type=\"" + rType + "\" name=\"" + rDotTxtEntry.name + "\" id=\"" + rDotTxtEntry.idValue + "\" />");
+//                        }
                     }
                     Set<String> ignoreIdSet = aaptResourceCollector.getIgnoreIdSet();
                     for (RDotTxtEntry rDotTxtEntry : set) {

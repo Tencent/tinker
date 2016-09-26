@@ -227,6 +227,7 @@ public final class AaptUtil {
                 case DIMEN:
                 case DRAWABLE:
                 case BOOL:
+                case INTEGER:
                     resourceValue = node.getTextContent().trim();
                     break;
                 case ARRAY://has sub item
