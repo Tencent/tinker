@@ -1,4 +1,41 @@
 apply plugin: 'maven-publish'
+apply plugin: 'com.github.dcendents.android-maven'
+
+version = version
+group = GROUP
+
+install {
+    repositories.mavenInstaller {
+        // This generates POM.xml with proper parameters
+        pom.project {
+            name POM_NAME
+            artifactId POM_ARTIFACT_ID
+            packaging POM_PACKAGING
+            description POM_DESCRIPTION
+            url POM_URL
+
+            scm {
+                url POM_SCM_URL
+            }
+
+            licenses {
+                license {
+                    name POM_LICENCE_NAME
+                    url POM_LICENCE_URL
+                    Distribution POM_LICENCE_DIST
+                }
+            }
+
+            developers {
+                developer {
+                    id POM_DEVELOPER_ID
+                    name POM_DEVELOPER_NAME
+                }
+            }
+        }
+    }
+}
+
 
 task androidJavadocs(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
