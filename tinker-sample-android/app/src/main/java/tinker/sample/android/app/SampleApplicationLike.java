@@ -83,7 +83,7 @@ public class SampleApplicationLike extends DefaultApplicationLike {
         MultiDex.install(base);
 
         SampleApplicationContext.application = getApplication();
-        SampleApplicationContext.context = getApplication().getApplicationContext();
+        SampleApplicationContext.context = getApplication();
         TinkerManager.setTinkerApplicationLike(this);
         TinkerManager.initFastCrashProtect();
         //should set before tinker is installed

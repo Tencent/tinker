@@ -133,11 +133,11 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL              = -18;
     public static final int ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION                    = -19;
     //resource
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_DIRECTORY_NOT_EXIST = -21;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST      = -22;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -23;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -24;
-    public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -25;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_DIRECTORY_NOT_EXIST = -20;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST      = -21;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -22;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -23;
+    public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -24;
 
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 

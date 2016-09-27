@@ -212,6 +212,7 @@ public class DexDiffDecoder extends BaseDecoder {
 
                 relatedInfo.dexDiffFile = dexDiffOut;
                 relatedInfo.dexDiffMd5 = MD5.getMD5(dexDiffOut);
+                Logger.d("\nGen %s patch file:%s, size:%d, md5:%s", dexName, relatedInfo.dexDiffFile.getAbsolutePath(), relatedInfo.dexDiffFile.length(), relatedInfo.dexDiffMd5);
 
                 File tempFullPatchedDexFile = new File(tempFullPatchDexPath, dexName);
 
@@ -238,7 +239,7 @@ public class DexDiffDecoder extends BaseDecoder {
                 if (!tempFullPatchedDexFile.exists()) {
                     throw new TinkerPatchException("can not find the temporary full patched dex file:" + tempFullPatchedDexFile.getAbsolutePath());
                 }
-                Logger.e("Gen %s for dalvik full dex file:%s, size:%d, md5:%s", dexName, tempFullPatchedDexFile.getAbsolutePath(), tempFullPatchedDexFile.length(), relatedInfo.newOrFullPatchedMd5);
+                Logger.d("\nGen %s for dalvik full dex file:%s, size:%d, md5:%s", dexName, tempFullPatchedDexFile.getAbsolutePath(), tempFullPatchedDexFile.length(), relatedInfo.newOrFullPatchedMd5);
             } else {
                 // In this case newDexFile is the same as oldDexFile, but we still
                 // need to treat it as patched dex file so that the SmallPatchGenerator
@@ -356,7 +357,7 @@ public class DexDiffDecoder extends BaseDecoder {
                     throw new TinkerPatchException("can not find the temporary small patched dex file:" + tempSmallPatchInfoFile.getAbsolutePath());
                 }
                 relatedInfo.smallPatchedMd5 = MD5.getMD5(tempSmallPatchedFile);
-                Logger.e("Gen %s for art small dex file:%s, size:%d, md5:%s", dexName, tempSmallPatchedFile.getAbsolutePath(), tempSmallPatchedFile.length(), relatedInfo.smallPatchedMd5);
+                Logger.d("\nGen %s for art small dex file:%s, size:%d, md5:%s", dexName, tempSmallPatchedFile.getAbsolutePath(), tempSmallPatchedFile.length(), relatedInfo.smallPatchedMd5);
 
                 if (relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
                     // Unmodified dex, which has no dexDiffFile, and is ignored in dvm environment.
@@ -531,7 +532,7 @@ public class DexDiffDecoder extends BaseDecoder {
 
         File dest = new File(config.mTempResultDir + "/" + TEST_DEX_PATH);
         FileOperation.copyResourceUsingStream(TEST_DEX_PATH, dest);
-        Logger.d("Add test install result dex: %s, size:%d", dest.getAbsolutePath(), dest.length());
+        Logger.d("\nAdd test install result dex: %s, size:%d", dest.getAbsolutePath(), dest.length());
         Logger.d("DexDecoder:write test dex meta file data: %s", meta);
 
         metaWriter.writeLineToInfoFile(meta);
