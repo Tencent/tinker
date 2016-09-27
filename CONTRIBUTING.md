@@ -1,8 +1,8 @@
 # Contributing to Tinker
 Welcome to [report Issues](https://github.com/Tencent/tinker/issues) or [pull requests](https://github.com/Tencent/tinker/pulls). It's recommended to read the following Contributing Guide first before contributing. 
 
-## issues
-We use Git Issues to track public bugs and feature requests.
+## Issues
+We use Github Issues to track public bugs and feature requests.
 
 ### Search Known Issues First
 Please search the existing issues to see if any similar issue or feature request has already been filed. You should make sure your issue isn't redundant.
@@ -11,24 +11,24 @@ Please search the existing issues to see if any similar issue or feature request
 If you open an issue, the more information the better. Such as detailed description, screenshot or video of your problem, logcat or code blocks for your crash.
 
 ## Pull Requests
-We strongly welcome your pull request to make tinker better. 
+We strongly welcome your pull request to make Tinker better. 
 
 ### Branch Management
-There are three main branch here:
+There are three main branches here:
 
 1. `master` branch.
-	1. It is the latest (pre-)release branch. We use `master` for tag, with version number `1.1.0`, `1.2.0`, `1.3.0`...
+	1. It is the latest (pre-)release branch. We use `master` for tags, with version number `1.1.0`, `1.2.0`, `1.3.0`...
 	2. **Don't submit any PR on `master` branch.**
 2. `dev` branch. 
-	1. It is our stable developing branch. After full testing, `dev` will publish to `master` branch for the next release.
+	1. It is our stable developing branch. After full testing, `dev` will be merged to `master` branch for the next release.
 	2. **You are recommended to submit bugfix or feature PR on `dev` branch.**
 3. `hotfix` branch. 
 	1. It is the latest tag version for hot fix. If we accept your pull request, we may just tag with version number `1.1.1`, `1.2.3`.
 	2. **Only submit urgent PR on `hotfix` branch for next specific release.**
 
-Normal bugfix or feature request should submit on `dev` branch. After full testing, we will merge them on `master` branch for the next release. 
+Normal bugfix or feature request should be submitted to `dev` branch. After full testing, we will merge them to `master` branch for the next release. 
 
-If you have some urgent bugfix on a published version, but the `master` branch have already far away with the latest tag version, you can submit a PR on hotfix. And it will be cherry picked to `dev` branch if it is possible.
+If you have some urgent bugfixes on a published version, but the `master` branch have already far away with the latest tag version, you can submit a PR on hotfix. And it will be cherry picked to `dev` branch if it is possible.
 
 ```
 master
