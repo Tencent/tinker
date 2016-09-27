@@ -75,7 +75,7 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     }
 
     /**
-     * Get {@code Section} in {@code TableOfContents}.
+     * Get {@link TableOfContents.Section} from {@code dex}.
      */
     protected abstract TableOfContents.Section getTocSection(Dex dex);
 
@@ -148,7 +148,7 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
 
     /**
      * Adapter method for item's offset fetching, if an item is not
-     * inherited from {@code Item} (which means it is a simple item in dex section
+     * inherited from {@link TableOfContents.Section.Item} (which means it is a simple item in dex section
      * that doesn't need multiple members to describe), this method
      * return {@code index} instead.
      */
