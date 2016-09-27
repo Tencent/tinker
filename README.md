@@ -50,7 +50,7 @@ public class SampleApplication extends TinkerApplication {
         ShareConstants.TINKER_ENABLE_ALL,
         // This is passed as a string so the shell application does not
         // have a binary dependency on your ApplicationLifeCycle class. 
-        "tinker.sample.android.SampleApplicationLike");
+        "tinker.sample.android.app.SampleApplicationLike");
     }  
 }
 ```
