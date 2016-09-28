@@ -73,7 +73,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             project.logger.error("----------------------tinker build warning ------------------------------------")
             project.logger.error("tinker will change your build configs:")
-            project.logger.error("we will add TINDER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
+            project.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
             project.logger.error("")
             project.logger.error("if minifyEnabled is true")
 
