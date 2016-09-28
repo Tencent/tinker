@@ -136,13 +136,44 @@ ext {
     tinkerEnabled = true
     //you should bak the following files
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/app-debug-0919-20-32-57.apk"
+    tinkerOldApkPath = getLastestOldApkPathInBakPath(bakPath)
     //proguard mapping file to build patch apk
     tinkerApplyMappingPath = "${bakPath}/"
     //resource R.txt to build patch apk, must input if there is resource changed
     tinkerApplyResourcePath = "${bakPath}/"
 }
 
+def getLastestOldApkPathInBakPath(File bakPath) {
+    File[] sortedApkList = bakPath.listFiles(new FilenameFilter() {
+        @Override
+        boolean accept(File dir, String filename) {
+            return filename.endsWith('.apk')
+        }
+    });
+
+    if (sortedApkList == null) {
+        return ;
+    }
+
+    sortedApkList.sort(new Comparator<File>() {
+        @Override
+        int compare(File lhs, File rhs) {
+            long diff = lhs.lastModified() - rhs.lastModified()
+            if (diff == 0L) {
+                return 0;
+            } else if (diff > 0L) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+    }).reverse(true);
+
+    if (sortedApkList.length > 0) {
+        println "lastest apk file: ${sortedApkList[0]}"
+        return sortedApkList[0];
+    }
+}
 
 def getOldApkPath() {
     return hasProperty("OLD_APK") ? OLD_APK : ext.tinkerOldApkPath
