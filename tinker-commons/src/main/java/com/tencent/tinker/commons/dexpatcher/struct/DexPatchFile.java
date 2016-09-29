@@ -17,7 +17,6 @@
 package com.tencent.tinker.commons.dexpatcher.struct;
 
 import com.tencent.tinker.android.dex.SizeOf;
-import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.FileUtils;
@@ -26,16 +25,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by tangyinsheng on 2016/7/1.
  */
-public final class DexPatchFile<T extends Comparable<T>> {
+public final class DexPatchFile {
     public static final byte[] MAGIC = {0x44, 0x58, 0x44, 0x49, 0x46, 0x46}; // DXDIFF
     public static final short CURRENT_VERSION = 0x0002;
     private final DexDataBuffer buffer;
@@ -104,116 +99,6 @@ public final class DexPatchFile<T extends Comparable<T>> {
         this.oldDexSignature = this.buffer.readByteArray(SizeOf.SIGNATURE);
 
         this.buffer.position(firstChunkOffset);
-    }
-
-    private List<Integer> readDeltaIndiciesOrOffsets(int count) {
-        List<Integer> result = new ArrayList<>(count);
-        int lastVal = 0;
-        for (int i = 0; i < count; ++i) {
-            int delta = this.buffer.readSleb128();
-            lastVal = lastVal + delta;
-            result.add(lastVal);
-        }
-        return result;
-    }
-
-    private void readChunkData(
-            int sectionType, Set<Integer> deletedItemIndices, Map<Integer, T> indexToNewItemMap
-    ) {
-        int deletedItemCount = this.buffer.readUleb128();
-        List<Integer> deletedIndices = readDeltaIndiciesOrOffsets(deletedItemCount);
-        deletedItemIndices.addAll(deletedIndices);
-
-        int addedItemCount = this.buffer.readUleb128();
-        List<Integer> addedIndices = readDeltaIndiciesOrOffsets(addedItemCount);
-
-        int replacedItemCount = this.buffer.readUleb128();
-        List<Integer> replacedIndices = readDeltaIndiciesOrOffsets(replacedItemCount);
-
-        int addedIndexCursor = 0;
-        int replacedIndexCursor = 0;
-
-        while (addedIndexCursor < addedItemCount || replacedIndexCursor < replacedItemCount) {
-            if (addedIndexCursor >= addedItemCount) {
-                // rest items are all replaced item.
-                while (replacedIndexCursor < replacedItemCount) {
-                    T newItem = readItemBySectionType(sectionType);
-                    indexToNewItemMap.put(replacedIndexCursor, newItem);
-                    ++replacedIndexCursor;
-                }
-            } else
-            if (replacedIndexCursor >= replacedItemCount) {
-                // rest items are all added item.
-                while (addedIndexCursor < addedItemCount) {
-                    T newItem = readItemBySectionType(sectionType);
-                    indexToNewItemMap.put(addedIndexCursor, newItem);
-                    ++addedIndexCursor;
-                }
-            } else {
-                T newItem = readItemBySectionType(sectionType);
-                if (addedIndexCursor <= replacedIndexCursor) {
-                    indexToNewItemMap.put(addedIndexCursor, newItem);
-                    ++addedIndexCursor;
-                } else {
-                    indexToNewItemMap.put(replacedIndexCursor, newItem);
-                    ++replacedIndexCursor;
-                }
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private  T readItemBySectionType(int sectionType) {
-        switch (sectionType) {
-            case TableOfContents.SECTION_TYPE_TYPEIDS: {
-                return (T) (Integer) this.buffer.readInt();
-            }
-            case TableOfContents.SECTION_TYPE_PROTOIDS: {
-                return (T) this.buffer.readProtoId();
-            }
-            case TableOfContents.SECTION_TYPE_FIELDIDS: {
-                return (T) this.buffer.readFieldId();
-            }
-            case TableOfContents.SECTION_TYPE_METHODIDS: {
-                return (T) this.buffer.readMethodId();
-            }
-            case TableOfContents.SECTION_TYPE_CLASSDEFS: {
-                return (T) this.buffer.readClassDef();
-            }
-            case TableOfContents.SECTION_TYPE_STRINGDATAS: {
-                return (T) this.buffer.readStringData();
-            }
-            case TableOfContents.SECTION_TYPE_TYPELISTS: {
-                return (T) this.buffer.readTypeList();
-            }
-            case TableOfContents.SECTION_TYPE_ANNOTATIONS: {
-                return (T) this.buffer.readAnnotation();
-            }
-            case TableOfContents.SECTION_TYPE_ANNOTATIONSETS: {
-                return (T) this.buffer.readAnnotationSet();
-            }
-            case TableOfContents.SECTION_TYPE_ANNOTATIONSETREFLISTS: {
-                return (T) this.buffer.readAnnotationSetRefList();
-            }
-            case TableOfContents.SECTION_TYPE_ANNOTATIONSDIRECTORIES: {
-                return (T) this.buffer.readAnnotationsDirectory();
-            }
-            case TableOfContents.SECTION_TYPE_DEBUGINFOS: {
-                return (T) this.buffer.readDebugInfoItem();
-            }
-            case TableOfContents.SECTION_TYPE_CODES: {
-                return (T) this.buffer.readCode();
-            }
-            case TableOfContents.SECTION_TYPE_CLASSDATA: {
-                return (T) this.buffer.readClassData();
-            }
-            case TableOfContents.SECTION_TYPE_ENCODEDARRAYS: {
-                return (T) this.buffer.readEncodedArray();
-            }
-            default: {
-                return null;
-            }
-        }
     }
 
     public short getVersion() {
