@@ -52,18 +52,19 @@ public class TinkerResourceLoader {
         }
         String resourceString = directory + "/" + RESOURCE_PATH +  "/" + RESOURCE_FILE;
         File resourceFile = new File(resourceString);
+        long start = System.currentTimeMillis();
 
         if (tinkerLoadVerifyFlag) {
-            long start = System.currentTimeMillis();
             if (!SharePatchFileUtil.checkResourceArscMd5(resourceFile, resPatchInfo.resArscMd5)) {
                 Log.e(TAG, "Failed to load resource file, path: " + resourceFile.getPath() + ", expect md5: " + resPatchInfo.resArscMd5);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH);
                 return false;
             }
-            Log.i(TAG, "verify resource file:" + resourceFile.getPath() + ", md5 use time: " + (System.currentTimeMillis() - start));
+            Log.i(TAG, "verify resource file:" + resourceFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
         }
         try {
             TinkerResourcePatcher.monkeyPatchExistingResources(resourceString);
+            Log.i(TAG, "monkeyPatchExistingResources resource file:" + resourceString + ", use time: " + (System.currentTimeMillis() - start));
         } catch (Throwable e) {
             Log.e(TAG, "install resources failed", e);
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);

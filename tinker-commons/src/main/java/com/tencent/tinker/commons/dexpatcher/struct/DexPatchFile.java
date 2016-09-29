@@ -35,7 +35,7 @@ import java.util.Set;
 /**
  * Created by tangyinsheng on 2016/7/1.
  */
-public final class DexPatchFile {
+public final class DexPatchFile<T extends Comparable<T>> {
     public static final byte[] MAGIC = {0x44, 0x58, 0x44, 0x49, 0x46, 0x46}; // DXDIFF
     public static final short CURRENT_VERSION = 0x0002;
     private final DexDataBuffer buffer;
@@ -117,7 +117,7 @@ public final class DexPatchFile {
         return result;
     }
 
-    private <T extends Comparable<T>> void readChunkData(
+    private void readChunkData(
             int sectionType, Set<Integer> deletedItemIndices, Map<Integer, T> indexToNewItemMap
     ) {
         int deletedItemCount = this.buffer.readUleb128();
@@ -163,7 +163,7 @@ public final class DexPatchFile {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Comparable<T>> T readItemBySectionType(int sectionType) {
+    private  T readItemBySectionType(int sectionType) {
         switch (sectionType) {
             case TableOfContents.SECTION_TYPE_TYPEIDS: {
                 return (T) (Integer) this.buffer.readInt();

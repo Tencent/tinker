@@ -5,6 +5,7 @@ group rootProject.ext.GROUP
 
 [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
 
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':third-party:aosp-dexutils')
