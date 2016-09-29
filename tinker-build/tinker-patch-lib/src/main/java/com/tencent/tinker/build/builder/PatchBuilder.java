@@ -54,7 +54,7 @@ public class PatchBuilder {
         if (resultDir.listFiles().length == 0) {
             return;
         }
-        generalUnsignedApk(unSignedApk);
+        generateUnsignedApk(unSignedApk);
         signApk(unSignedApk, signedApk);
 
         use7zApk(signedApk, signedWith7ZipApk, sevenZipOutPutDir);
@@ -113,8 +113,8 @@ public class PatchBuilder {
      * @param output unsigned apk file output
      * @throws IOException
      */
-    private void generalUnsignedApk(File output) throws IOException {
-        Logger.d("General unsigned apk: %s", output.getName());
+    private void generateUnsignedApk(File output) throws IOException {
+        Logger.d("Generate unsigned apk: %s", output.getName());
         final File tempOutDir = config.mTempResultDir;
         if (!tempOutDir.exists()) {
             throw new IOException(String.format(

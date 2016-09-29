@@ -9,7 +9,7 @@ group rootProject.ext.GROUP
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':tinker-commons')
-    compile group: 'net.dongliu', name: 'apk-parser', version: '2.1.2'
+    compile group: 'net.dongliu', name: 'apk-parser', version: '2.1.6'
     compile group: 'com.google.guava', name: 'guava', version: '11.0.2'
 }
 
