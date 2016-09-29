@@ -24,6 +24,7 @@ import com.tencent.tinker.build.util.TypedValue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * @author zhangshaowen
@@ -92,19 +93,28 @@ public class PatchBuilder {
             if (output.exists()) {
                 output.delete();
             }
-            String cmd = "jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore " + config.mSignatureFile
-                + " -storepass " + config.mStorePass
-                + " -keypass " + config.mKeyPass
-                + " -signedjar " + output.getAbsolutePath()
-                + " " + input.getAbsolutePath()
-                + " " + config.mStoreAlias;
-            Process pro = Runtime.getRuntime().exec(cmd);
-            //destroy the stream
-            pro.waitFor();
-            pro.destroy();
+            ArrayList<String> command = new ArrayList<>();
+            command.add("jarsigner");
+            command.add("-sigalg");
+            command.add("MD5withRSA");
+            command.add("-digestalg");
+            command.add("SHA1");
+            command.add("-keystore");
+            command.add(config.mSignatureFile.getAbsolutePath());
+            command.add("-storepass");
+            command.add(config.mStorePass);
+            command.add("-keypass");
+            command.add(config.mKeyPass);
+            command.add("-signedjar");
+            command.add(output.getAbsolutePath());
+            command.add(input.getAbsolutePath());
+            command.add(config.mStoreAlias);
 
+            Process process = new ProcessBuilder(command).start();
+            process.waitFor();
+            process.destroy();
             if (!output.exists()) {
-                throw new IOException("Can't Generate signed APK. Please check your sign info is correct.");
+                throw new IOException("Can't Generate signed APK. Please check if your sign info is correct.");
             }
         }
     }
