@@ -63,6 +63,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -547,173 +548,129 @@ public class DexPatchGenerator {
         buffer.writeInt(firstChunkOffset);
         buffer.position(firstChunkOffset);
 
-        new PatchOperationsWriter<StringData>(this.stringDataSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, StringData item) {
-                buffer.writeStringData(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<Integer>(this.typeIdSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, Integer item) {
-                buffer.writeInt(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<TypeList>(this.typeListSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, TypeList item) {
-                buffer.writeTypeList(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<ProtoId>(this.protoIdSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, ProtoId item) {
-                buffer.writeProtoId(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<FieldId>(this.fieldIdSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, FieldId item) {
-                buffer.writeFieldId(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<MethodId>(this.methodIdSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, MethodId item) {
-                buffer.writeMethodId(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<Annotation>(this.annotationSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, Annotation item) {
-                buffer.writeAnnotation(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<AnnotationSet>(this.annotationSetSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, AnnotationSet item) {
-                buffer.writeAnnotationSet(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<AnnotationSetRefList>(this.annotationSetRefListSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, AnnotationSetRefList item) {
-                buffer.writeAnnotationSetRefList(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<AnnotationsDirectory>(this.annotationsDirectorySectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, AnnotationsDirectory item) {
-                buffer.writeAnnotationsDirectory(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<DebugInfoItem>(this.debugInfoSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, DebugInfoItem item) {
-                buffer.writeDebugInfoItem(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<Code>(this.codeSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, Code item) {
-                buffer.writeCode(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<ClassData>(this.classDataSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, ClassData item) {
-                buffer.writeClassData(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<EncodedValue>(this.encodedArraySectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, EncodedValue item) {
-                buffer.writeEncodedArray(item);
-            }
-        }.writeToBuffer(buffer);
-
-        new PatchOperationsWriter<ClassDef>(this.classDefSectionDiffAlg.getPatchOperationList()) {
-            @Override
-            protected void writeItem(DexDataBuffer buffer, ClassDef item) {
-                buffer.writeClassDef(item);
-            }
-        }.writeToBuffer(buffer);
+        writePatchOperations(buffer, this.stringDataSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.typeIdSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.typeListSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.protoIdSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.fieldIdSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.methodIdSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.annotationSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.annotationSetSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.annotationSetRefListSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.annotationsDirectorySectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.debugInfoSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.codeSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.classDataSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.encodedArraySectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.classDefSectionDiffAlg.getPatchOperationList());
 
         byte[] bufferData = buffer.array();
         os.write(bufferData);
         os.flush();
     }
 
-    private abstract class PatchOperationsWriter<T> {
-        private final List<PatchOperation<T>> patchOperationList;
+    private <T extends Comparable<T>> void writePatchOperations(
+            DexDataBuffer buffer, List<PatchOperation<T>> patchOperationList
+    ) {
+        List<Integer> delOpIndexList = new ArrayList<>(patchOperationList.size());
+        List<Integer> addOpIndexList = new ArrayList<>(patchOperationList.size());
+        List<Integer> replaceOpIndexList = new ArrayList<>(patchOperationList.size());
+        List<T> newItemList = new ArrayList<>(patchOperationList.size());
 
-        PatchOperationsWriter(List<PatchOperation<T>> patchOperationList) {
-            this.patchOperationList = patchOperationList;
-        }
-
-        protected abstract void writeItem(DexDataBuffer buffer, T item);
-
-        public final void writeToBuffer(DexDataBuffer buffer) {
-            List<Integer> delOpIndexList = new ArrayList<>(patchOperationList.size());
-            List<Integer> addOpIndexList = new ArrayList<>(patchOperationList.size());
-            List<Integer> replaceOpIndexList = new ArrayList<>(patchOperationList.size());
-            List<T> newItemList = new ArrayList<>(patchOperationList.size());
-
-            for (PatchOperation<T> patchOperation : patchOperationList) {
-                switch (patchOperation.op) {
-                    case PatchOperation.OP_DEL: {
-                        delOpIndexList.add(patchOperation.index);
-                        break;
-                    }
-                    case PatchOperation.OP_ADD: {
-                        addOpIndexList.add(patchOperation.index);
-                        newItemList.add(patchOperation.newItem);
-                        break;
-                    }
-                    case PatchOperation.OP_REPLACE: {
-                        replaceOpIndexList.add(patchOperation.index);
-                        newItemList.add(patchOperation.newItem);
-                        break;
-                    }
+        for (PatchOperation<T> patchOperation : patchOperationList) {
+            switch (patchOperation.op) {
+                case PatchOperation.OP_DEL: {
+                    delOpIndexList.add(patchOperation.index);
+                    break;
+                }
+                case PatchOperation.OP_ADD: {
+                    addOpIndexList.add(patchOperation.index);
+                    newItemList.add(patchOperation.newItem);
+                    break;
+                }
+                case PatchOperation.OP_REPLACE: {
+                    replaceOpIndexList.add(patchOperation.index);
+                    newItemList.add(patchOperation.newItem);
+                    break;
                 }
             }
+        }
 
-            buffer.writeUleb128(delOpIndexList.size());
-            int lastIndex = 0;
-            for (Integer index : delOpIndexList) {
-                buffer.writeSleb128(index - lastIndex);
-                lastIndex = index;
-            }
+        buffer.writeUleb128(delOpIndexList.size());
+        int lastIndex = 0;
+        for (Integer index : delOpIndexList) {
+            buffer.writeSleb128(index - lastIndex);
+            lastIndex = index;
+        }
 
-            buffer.writeUleb128(addOpIndexList.size());
-            lastIndex = 0;
-            for (Integer index : addOpIndexList) {
-                buffer.writeSleb128(index - lastIndex);
-                lastIndex = index;
-            }
+        buffer.writeUleb128(addOpIndexList.size());
+        lastIndex = 0;
+        for (Integer index : addOpIndexList) {
+            buffer.writeSleb128(index - lastIndex);
+            lastIndex = index;
+        }
 
-            buffer.writeUleb128(replaceOpIndexList.size());
-            lastIndex = 0;
-            for (Integer index : replaceOpIndexList) {
-                buffer.writeSleb128(index - lastIndex);
-                lastIndex = index;
-            }
+        buffer.writeUleb128(replaceOpIndexList.size());
+        lastIndex = 0;
+        for (Integer index : replaceOpIndexList) {
+            buffer.writeSleb128(index - lastIndex);
+            lastIndex = index;
+        }
 
-            for (T newItem : newItemList) {
-                writeItem(buffer, newItem);
+        for (T newItem : newItemList) {
+            if (newItem instanceof StringData) {
+                buffer.writeStringData((StringData) newItem);
+            } else
+            if (newItem instanceof Integer) {
+                // TypeId item.
+                buffer.writeInt((Integer) newItem);
+            } else
+            if (newItem instanceof TypeList) {
+                buffer.writeTypeList((TypeList) newItem);
+            } else
+            if (newItem instanceof ProtoId) {
+                buffer.writeProtoId((ProtoId) newItem);
+            } else
+            if (newItem instanceof FieldId) {
+                buffer.writeFieldId((FieldId) newItem);
+            } else
+            if (newItem instanceof MethodId) {
+                buffer.writeMethodId((MethodId) newItem);
+            } else
+            if (newItem instanceof Annotation) {
+                buffer.writeAnnotation((Annotation) newItem);
+            } else
+            if (newItem instanceof AnnotationSet) {
+                buffer.writeAnnotationSet((AnnotationSet) newItem);
+            } else
+            if (newItem instanceof AnnotationSetRefList) {
+                buffer.writeAnnotationSetRefList(
+                        (AnnotationSetRefList) newItem
+                );
+            } else
+            if (newItem instanceof AnnotationsDirectory) {
+                buffer.writeAnnotationsDirectory(
+                        (AnnotationsDirectory) newItem
+                );
+            } else
+            if (newItem instanceof DebugInfoItem) {
+                buffer.writeDebugInfoItem((DebugInfoItem) newItem);
+            } else
+            if (newItem instanceof Code) {
+                buffer.writeCode((Code) newItem);
+            } else
+            if (newItem instanceof ClassData) {
+                buffer.writeClassData((ClassData) newItem);
+            } else
+            if (newItem instanceof EncodedValue) {
+                buffer.writeEncodedArray((EncodedValue) newItem);
+            } else
+            if (newItem instanceof ClassDef) {
+                buffer.writeClassDef((ClassDef) newItem);
+            } else {
+                throw new IllegalStateException(
+                        "Unknown item type: " + newItem.getClass()
+                );
             }
         }
     }
