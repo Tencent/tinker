@@ -972,12 +972,12 @@ public final class DexClassesComparator {
             case EncodedValueReader.ENCODED_FLOAT: {
                 float oldFloat = oldAnnoReader.readFloat();
                 float newFloat = newAnnoReader.readFloat();
-                return oldFloat == newFloat;
+                return Float.compare(oldFloat, newFloat) == 0;
             }
             case EncodedValueReader.ENCODED_DOUBLE: {
                 double oldDouble = oldAnnoReader.readDouble();
                 double newDouble = newAnnoReader.readDouble();
-                return oldDouble == newDouble;
+                return Double.compare(oldDouble, newDouble) == 0;
             }
             case EncodedValueReader.ENCODED_STRING: {
                 int oldStringIdx = oldAnnoReader.readString();

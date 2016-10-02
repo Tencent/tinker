@@ -21,6 +21,8 @@ import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dx.util.Hex;
 
 import java.io.EOFException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * *** This file is NOT a part of AOSP. ***
@@ -30,8 +32,14 @@ import java.io.EOFException;
 public abstract class InstructionComparator {
     private final InstructionHolder[] insnHolders1;
     private final InstructionHolder[] insnHolders2;
+    private final Set<String> visitedInsnAddrPairs;
+    private final short[] insns1;
+    private final short[] insns2;
 
     public InstructionComparator(short[] insns1, short[] insns2) {
+        this.insns1 = insns1;
+        this.insns2 = insns2;
+
         if (insns1 != null) {
             ShortArrayCodeInput codeIn1 = new ShortArrayCodeInput(insns1);
             this.insnHolders1 = readInstructionsIntoHolders(codeIn1, insns1.length);
@@ -44,6 +52,7 @@ public abstract class InstructionComparator {
         } else {
             this.insnHolders2 = null;
         }
+        visitedInsnAddrPairs = new HashSet<>();
     }
 
     private InstructionHolder[] readInstructionsIntoHolders(ShortArrayCodeInput in, int length) {
@@ -189,6 +198,8 @@ public abstract class InstructionComparator {
     }
 
     public final boolean compare() {
+        this.visitedInsnAddrPairs.clear();
+
         if (this.insnHolders1 == null && this.insnHolders2 == null) {
             return true;
         }
@@ -275,7 +286,16 @@ public abstract class InstructionComparator {
             case InstructionCodec.INSN_FORMAT_22T:
             case InstructionCodec.INSN_FORMAT_30T:
             case InstructionCodec.INSN_FORMAT_31T: {
-                return isSameInstruction(insnHolder1.target, insnHolder2.target);
+                final String addrPairStr = insnAddress1 + "-" + insnAddress2;
+                if (this.visitedInsnAddrPairs.add(addrPairStr)) {
+                    // If we haven't compared target insns, following the control flow
+                    // and do further compare.
+                    return isSameInstruction(insnHolder1.target, insnHolder2.target);
+                } else {
+                    // If we have already compared target insns, here we can return
+                    // true directly.
+                    return true;
+                }
             }
             case InstructionCodec.INSN_FORMAT_21C:
             case InstructionCodec.INSN_FORMAT_22C:

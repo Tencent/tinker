@@ -1,6 +1,12 @@
 apply plugin: 'maven-publish'
 apply plugin: 'com.github.dcendents.android-maven'
 
+android {
+    compileOptions {
+        sourceCompatibility rootProject.ext.javaVersion
+        targetCompatibility rootProject.ext.javaVersion
+    }
+}
 version = version
 group = GROUP
 

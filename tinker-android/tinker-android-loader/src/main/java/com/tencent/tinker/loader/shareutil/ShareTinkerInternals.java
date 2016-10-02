@@ -91,6 +91,12 @@ public class ShareTinkerInternals {
         return ShareConstants.ERROR_PACKAGE_CHECK_OK;
     }
 
+
+    public static int checkPackageAndTinkerFlag(ShareSecurityCheck securityCheck, int tinkerFlag) {
+
+        return ShareConstants.ERROR_PACKAGE_CHECK_OK;
+    }
+
     /**
      * not like {@cod ShareSecurityCheck.getPackagePropertiesIfPresent}
      * we don't check Signatures or other files, we just get the package meta's properties directly

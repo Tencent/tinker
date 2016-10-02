@@ -105,6 +105,16 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
 
     /**
      * Mark deleted index or offset in {@code indexMap}.
+     *
+     * Here we mark deleted item for such a case like this:
+     *   Item in DebugInfo section reference a string in StringData section
+     *   by index X, while in patched dex, the referenced string is removed.
+     *
+     * The {@code indexMap} must be aware of this case and return -1
+     * instead of the original value X.
+     *
+     * Further more, the special value -1 is not chosen by our inspiration but
+     * the definition of NO_INDEX in document of dex file format.
      */
     protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
         // Should override by subclass if needed.
@@ -247,11 +257,21 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
             } else
             if (Arrays.binarySearch(deletedIndices, oldIndex) >= 0) {
                 T skippedOldItem = nextItem(oldSection); // skip old item.
+                markDeletedIndexOrOffset(
+                        oldToFullPatchedIndexMap,
+                        oldIndex,
+                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
+                );
                 ++oldIndex;
                 ++deletedItemCounter;
             } else
             if (Arrays.binarySearch(replacedIndices, oldIndex) >= 0) {
                 T skippedOldItem = nextItem(oldSection); // skip old item.
+                markDeletedIndexOrOffset(
+                        oldToFullPatchedIndexMap,
+                        oldIndex,
+                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
+                );
                 ++oldIndex;
             } else
             if (oldIndex < oldItemCount) {
@@ -362,11 +382,21 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
             } else
             if (Arrays.binarySearch(deletedIndices, oldIndex) >= 0) {
                 T skippedOldItem = nextItem(oldSection); // skip old item.
+                markDeletedIndexOrOffset(
+                        oldToFullPatchedIndexMap,
+                        oldIndex,
+                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
+                );
                 ++oldIndex;
                 ++deletedItemCounter;
             } else
             if (Arrays.binarySearch(replacedIndices, oldIndex) >= 0) {
                 T skippedOldItem = nextItem(oldSection); // skip old item.
+                markDeletedIndexOrOffset(
+                        oldToFullPatchedIndexMap,
+                        oldIndex,
+                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
+                );
                 ++oldIndex;
             } else
             if (oldIndex < oldItemCount) {

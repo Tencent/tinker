@@ -99,7 +99,7 @@ public class TinkerDexLoader {
                         file.getAbsolutePath());
                     return false;
                 }
-                Log.i(TAG, "verify dex file:" + file.getPath() + ", md5 use time: " + (System.currentTimeMillis() - start));
+                Log.i(TAG, "verify dex file:" + file.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
             }
             legalFiles.add(file);
         }
