@@ -102,7 +102,7 @@ public class CliMain extends Runner {
             } else {
                 File[] files = outputFile.listFiles();
                 if (files != null && files.length > 0) {
-                    // 注:需要用户指定的目录为空的,否则在创建补丁过程中会删除里面的文件
+                    // patch process may delete all files when the output folder already exists files
                     Logger.e("Output folder is not empty");
                     goToError();
                 }
