@@ -33,10 +33,11 @@ def gitSha() {
         throw new GradleException("can't get git rev, you should add git to system path or just input test value, such as 'testTinkerId'")
     }
 }
+def bakPath = file("${buildDir}/bakApk/")
 
 
 andResGuard {
-    mappingFile = file("/Users/baidu/Documents/github/tinker-dodo/tinker-sample-android/app/build/bakApk/resguard/app-release-1010-15-58-36-resource_mapping.txt")
+    mappingFile = file("${buildDir}/bakApk/resguard/app-release-1010-18-11-02-resource_mapping.txt")
     use7zip = true
     useSign = true
     keepRoot = false
@@ -176,7 +177,6 @@ android {
     }
 }
 
-def bakPath = file("${buildDir}/bakApk/")
 
 /**
  * you can use assembleRelease to build you base apk
@@ -188,11 +188,13 @@ ext {
     tinkerEnabled = true
     //you should bak the following files
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/resguard/app-release-1010-15-47-07.apk"
+//    tinkerOldApkPath=""
+    tinkerOldApkPath = "${bakPath}/resguard/app-release-1010-18-11-02.apk"
     //proguard mapping file to build patch apk
     tinkerApplyMappingPath = "${bakPath}/"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/resguard/app-release-1010-15-42-37-R.txt"
+    tinkerApplyResourcePath = "${bakPath}/resguard/app-release-1010-18-11-02-R.txt"
+//    tinkerApplyResourcePath=""
 }
 
 
