@@ -189,11 +189,11 @@ ext {
     //you should bak the following files
     //old apk file to build patch apk
 //    tinkerOldApkPath=""
-    tinkerOldApkPath = "${bakPath}/resguard/app-release-1010-18-11-02.apk"
+    tinkerOldApkPath = "${bakPath}/app-debug-1011-19-08-52.apk"
     //proguard mapping file to build patch apk
     tinkerApplyMappingPath = "${bakPath}/"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/resguard/app-release-1010-18-11-02-R.txt"
+    tinkerApplyResourcePath = "${bakPath}/app-debug-1011-19-08-52-R.txt"
 //    tinkerApplyResourcePath=""
 }
 

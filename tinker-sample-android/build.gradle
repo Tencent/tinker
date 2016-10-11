@@ -5,7 +5,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.0'
+        classpath 'com.android.tools.build:gradle:2.2.1'
         classpath "com.tencent.tinker:tinker-patch-gradle-plugin:${TINKER_VERSION}"
         classpath 'com.tencent.mm:AndResGuard-gradle-plugin:1.1.11'
 
