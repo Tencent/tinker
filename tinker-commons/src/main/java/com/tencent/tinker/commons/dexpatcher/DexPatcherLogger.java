@@ -7,6 +7,10 @@ package com.tencent.tinker.commons.dexpatcher;
 public final class DexPatcherLogger {
     private IDexPatcherLogger loggerImpl = null;
 
+    public IDexPatcherLogger getLoggerImpl() {
+        return this.loggerImpl;
+    }
+
     public void setLoggerImpl(IDexPatcherLogger dexPatcherLogger) {
         this.loggerImpl = dexPatcherLogger;
     }

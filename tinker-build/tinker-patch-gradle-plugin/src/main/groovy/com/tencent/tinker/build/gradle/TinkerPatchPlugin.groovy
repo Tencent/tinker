@@ -16,24 +16,14 @@
 
 package com.tencent.tinker.build.gradle
 
-import com.tencent.tinker.build.gradle.extension.TinkerBuildConfigExtension
-import com.tencent.tinker.build.gradle.extension.TinkerDexExtension
-import com.tencent.tinker.build.gradle.extension.TinkerLibExtension
-import com.tencent.tinker.build.gradle.extension.TinkerPackageConfigExtension
-import com.tencent.tinker.build.gradle.extension.TinkerPatchExtension
-import com.tencent.tinker.build.gradle.extension.TinkerResourceExtension
-import com.tencent.tinker.build.gradle.extension.TinkerSevenZipExtension
-import com.tencent.tinker.build.gradle.task.TinkerManifestTask
-import com.tencent.tinker.build.gradle.task.TinkerMultidexConfigTask
-import com.tencent.tinker.build.gradle.task.TinkerPatchSchemaTask
-import com.tencent.tinker.build.gradle.task.TinkerProguardConfigTask
-import com.tencent.tinker.build.gradle.task.TinkerResourceIdTask
+import com.tencent.tinker.build.gradle.extension.*
+import com.tencent.tinker.build.gradle.task.*
+import com.tencent.tinker.build.gradle.transform.AuxiliaryInjectTransform
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.build.util.TypedValue
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-
 /**
  * Registers the plugin's tasks.
  *
@@ -58,6 +48,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
         project.tinkerPatch.extensions.create('sevenZip', TinkerSevenZipExtension, project)
 
         def configuration = project.tinkerPatch
+
+        project.android.registerTransform(new AuxiliaryInjectTransform(project))
 
         project.afterEvaluate {
             if (!project.plugins.hasPlugin('com.android.application')) {

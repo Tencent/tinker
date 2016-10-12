@@ -35,6 +35,7 @@ public class InputParam {
     public final String  storealias;
     public final String  storepass;
     public final boolean ignoreWarning;
+    public final boolean usePreGeneratedPatchDex;
     public final boolean useSign;
 
     /**
@@ -81,6 +82,7 @@ public class InputParam {
         String storealias,
         String storepass,
         boolean ignoreWarning,
+        boolean usePreGeneratedPatchDex,
         boolean useSign,
 
         ArrayList<String> dexFilePattern,
@@ -103,6 +105,7 @@ public class InputParam {
         this.storealias = storealias;
         this.storepass = storepass;
         this.ignoreWarning = ignoreWarning;
+        this.usePreGeneratedPatchDex = usePreGeneratedPatchDex;
         this.useSign = useSign;
 
         this.dexFilePattern = dexFilePattern;
@@ -132,6 +135,7 @@ public class InputParam {
         private String  storealias;
         private String  storepass;
         private boolean ignoreWarning;
+        private boolean usePreGeneratedPatchDex;
         private boolean useSign;
 
         /**
@@ -243,6 +247,11 @@ public class InputParam {
             return this;
         }
 
+        public Builder setUsePreGeneratedPatchDex(boolean usePreGeneratedPatchDex) {
+            this.usePreGeneratedPatchDex = usePreGeneratedPatchDex;
+            return this;
+        }
+
         public Builder setDexLoaderPattern(ArrayList<String> dexLoaderPattern) {
             this.dexLoaderPattern = dexLoaderPattern;
             return this;
@@ -270,25 +279,26 @@ public class InputParam {
 
         public InputParam create() {
             return new InputParam(
-                oldApk,
-                newApk,
-                outFolder,
-                signFile,
-                keypass,
-                storealias,
-                storepass,
-                ignoreWarning,
-                useSign,
-                dexFilePattern,
-                dexLoaderPattern,
-                dexMode,
-                soFilePattern,
-                resourceFilePattern,
-                resourceIgnoreChangePattern,
-                largeModSize,
-                useApplyResource,
-                configFields,
-                sevenZipPath
+                    oldApk,
+                    newApk,
+                    outFolder,
+                    signFile,
+                    keypass,
+                    storealias,
+                    storepass,
+                    ignoreWarning,
+                    usePreGeneratedPatchDex,
+                    useSign,
+                    dexFilePattern,
+                    dexLoaderPattern,
+                    dexMode,
+                    soFilePattern,
+                    resourceFilePattern,
+                    resourceIgnoreChangePattern,
+                    largeModSize,
+                    useApplyResource,
+                    configFields,
+                    sevenZipPath
             );
         }
     }

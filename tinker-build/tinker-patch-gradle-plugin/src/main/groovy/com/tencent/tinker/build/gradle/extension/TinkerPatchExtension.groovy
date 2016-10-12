@@ -31,7 +31,7 @@ public class TinkerPatchExtension {
     String oldApk
 
     /**
-     * if there is loader class changes,
+     * If there is loader class changes,
      * or Activity, Service, Receiver, Provider change, it will terminal
      * if ignoreWarning is false
      * default: false
@@ -39,7 +39,19 @@ public class TinkerPatchExtension {
     boolean ignoreWarning
 
     /**
-     * if sign the patch file with the android signConfig
+     * If mUsePreGeneratedPatchDex was enabled, tinker framework would generate
+     * a dex file including all added and changed classes instead of patch info file.
+     *
+     * You can make this mode enabled if you're using any dex encrypting solutions or
+     * maintaining patches that suitable for multi-channel base packages.
+     *
+     * Notice that although you use this mode, proguard mappings should still be applied
+     * to base package and all patched packages.
+     */
+    boolean usePreGeneratedPatchDex
+
+    /**
+     * If sign the patch file with the android signConfig
      * default: true
      */
     boolean useSign
