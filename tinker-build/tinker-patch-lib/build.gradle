@@ -11,6 +11,8 @@ dependencies {
     compile project(':tinker-commons')
     compile group: 'net.dongliu', name: 'apk-parser', version: '2.1.6'
     compile group: 'com.google.guava', name: 'guava', version: '11.0.2'
+    compile group: 'org.smali', name: 'dexlib2', version: '2.1.3'
+    compile group: 'org.ow2.asm', name: 'asm-all', version: '5.0.4'
 }
 
 sourceSets {

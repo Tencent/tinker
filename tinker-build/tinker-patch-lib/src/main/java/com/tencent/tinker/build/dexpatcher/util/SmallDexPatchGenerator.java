@@ -44,7 +44,6 @@ import com.tencent.tinker.android.dx.instruction.InstructionVisitor;
 import com.tencent.tinker.android.dx.instruction.ShortArrayCodeInput;
 import com.tencent.tinker.android.dx.util.Hex;
 import com.tencent.tinker.android.dx.util.IndexMap;
-import com.tencent.tinker.build.util.DexClassesComparator;
 import com.tencent.tinker.build.util.DexClassesComparator.DexClassInfo;
 import com.tencent.tinker.build.util.DexClassesComparator.DexGroup;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger;
@@ -737,104 +736,17 @@ public final class SmallDexPatchGenerator {
         }
     }
 
-    private boolean isClassMethodReferenceToRefAffectedClass(
-            Dex owner,
-            ClassData.Method[] methods,
-            Collection<String> affectedClassDescs
-    ) {
-        if (affectedClassDescs.isEmpty() || methods == null || methods.length == 0) {
-            return false;
-        }
-
-        for (ClassData.Method method : methods) {
-            if (method.codeOffset == 0) {
-                continue;
-            }
-            Code code = owner.readCode(method);
-            RefToRefAffectedClassInsnVisitor refInsnVisitor =
-                    new RefToRefAffectedClassInsnVisitor(owner, method, affectedClassDescs);
-            InstructionReader insnReader =
-                    new InstructionReader(new ShortArrayCodeInput(code.instructions));
-            try {
-                insnReader.accept(refInsnVisitor);
-                if (refInsnVisitor.isMethodReferencedToRefAffectedClass) {
-                    return true;
-                }
-            } catch (EOFException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        return false;
-    }
-
     private void collectItemIndicesFromDexGroup(
             DexGroup oldDexGroup,
             DexGroup patchedDexGroup
     ) {
-        DexClassesComparator dexClassesCmp = new DexClassesComparator("*");
-        dexClassesCmp.setCompareMode(DexClassesComparator.COMPARE_MODE_CAUSE_REF_CHANGE_ONLY);
-        dexClassesCmp.setIgnoredRemovedClassDescPattern(this.loaderClassPatterns);
-        dexClassesCmp.startCheck(oldDexGroup, patchedDexGroup);
+        SmallDexClassInfoCollector smallDexClassInfoCollector = new SmallDexClassInfoCollector();
+        smallDexClassInfoCollector.setLoaderClassPatterns(this.loaderClassPatterns);
+        smallDexClassInfoCollector.setLogger(this.logger.getLoggerImpl());
+        Set<DexClassInfo> patchedClassInfosForItemIndexCollecting =
+                smallDexClassInfoCollector.doCollect(oldDexGroup, patchedDexGroup);
 
-        Set<String> refAffectedClassDescs
-                = dexClassesCmp.getChangedClassDescToInfosMap().keySet();
-
-        Set<DexClassInfo> classInfosInPatchedDexGroup
-                = patchedDexGroup.getClassInfosInDexesWithDuplicateCheck();
-
-        Set<DexClassInfo> patchedClassInfosForItemIndexCollecting = new HashSet<>();
-
-        for (DexClassInfo patchedClassInfo : classInfosInPatchedDexGroup) {
-            if (patchedClassInfo.classDef.classDataOffset == 0) {
-                continue;
-            }
-            ClassData patchedClassData
-                    = patchedClassInfo.owner.readClassData(patchedClassInfo.classDef);
-
-            boolean shouldAdd = isClassMethodReferenceToRefAffectedClass(
-                    patchedClassInfo.owner,
-                    patchedClassData.directMethods,
-                    refAffectedClassDescs
-            );
-
-            if (!shouldAdd) {
-                shouldAdd = isClassMethodReferenceToRefAffectedClass(
-                        patchedClassInfo.owner,
-                        patchedClassData.virtualMethods,
-                        refAffectedClassDescs
-                );
-            }
-
-            if (shouldAdd) {
-                logger.i(TAG, "Add class %s to small patched dex.", patchedClassInfo.classDesc);
-                patchedClassInfosForItemIndexCollecting.add(patchedClassInfo);
-            }
-        }
-
-        // So far we get descriptors of classes we need to add additionally,
-        // while we still need to do a fully compare to collect added classes
-        // and replaced classes since they may use items in their owner dex which
-        // is not modified.
-        dexClassesCmp.setCompareMode(DexClassesComparator.COMPARE_MODE_NORMAL);
-        dexClassesCmp.startCheck(oldDexGroup, patchedDexGroup);
-
-        Collection<DexClassInfo> addedClassInfos = dexClassesCmp.getAddedClassInfos();
-        for (DexClassInfo addClassInfo : addedClassInfos) {
-            logger.i(TAG, "Add class %s to small patched dex.", addClassInfo.classDesc);
-            patchedClassInfosForItemIndexCollecting.add(addClassInfo);
-        }
-
-        Collection<DexClassInfo[]> changedOldPatchedClassInfos =
-                dexClassesCmp.getChangedClassDescToInfosMap().values();
-
-        // changedOldPatchedClassInfo[1] means changedPatchedClassInfo
-        for (DexClassInfo[] changedOldPatchedClassInfo : changedOldPatchedClassInfos) {
-            logger.i(TAG, "Add class %s to small patched dex.", changedOldPatchedClassInfo[1].classDesc);
-            patchedClassInfosForItemIndexCollecting.add(changedOldPatchedClassInfo[1]);
-        }
-
-        // Finally we collect all elements' indices of collected class.
+        // Collect all elements' indices of collected class.
 
         Map<Dex, OffsetToIndexConverter> dexToOffsetToIndexConverterMap = new HashMap<>();
 
@@ -1784,105 +1696,6 @@ public final class SmallDexPatchGenerator {
                 }
             }
             return smallPatchOffset - smallPatchBaseOffset;
-        }
-    }
-
-    private class RefToRefAffectedClassInsnVisitor extends InstructionVisitor {
-        private final Dex methodOwner;
-        private final ClassData.Method method;
-        private final Collection<String> refAffectedClassDefs;
-        private boolean isMethodReferencedToRefAffectedClass;
-
-        RefToRefAffectedClassInsnVisitor(Dex methodOwner, ClassData.Method method, Collection<String> refAffectedClassDefs) {
-            super(null);
-            this.methodOwner = methodOwner;
-            this.method = method;
-            this.refAffectedClassDefs = refAffectedClassDefs;
-            this.isMethodReferencedToRefAffectedClass = false;
-        }
-
-        @Override
-        public void visitZeroRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal) {
-            processIndexByType(index, indexType);
-        }
-
-        @Override
-        public void visitOneRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a) {
-            processIndexByType(index, indexType);
-        }
-
-        @Override
-        public void visitTwoRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b) {
-            processIndexByType(index, indexType);
-        }
-
-        @Override
-        public void visitThreeRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b, int c) {
-            processIndexByType(index, indexType);
-        }
-
-        @Override
-        public void visitFourRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b, int c, int d) {
-            processIndexByType(index, indexType);
-        }
-
-        @Override
-        public void visitFiveRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b, int c, int d, int e) {
-            processIndexByType(index, indexType);
-        }
-
-        @Override
-        public void visitRegisterRangeInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int registerCount) {
-            processIndexByType(index, indexType);
-        }
-
-        private void processIndexByType(int index, int indexType) {
-            String typeName = null;
-            String refInfoInLog = null;
-            switch (indexType) {
-                case InstructionCodec.INDEX_TYPE_TYPE_REF: {
-                    typeName = methodOwner.typeNames().get(index);
-                    refInfoInLog = "init ref-changed class";
-                    break;
-                }
-                case InstructionCodec.INDEX_TYPE_FIELD_REF: {
-                    final FieldId fieldId = methodOwner.fieldIds().get(index);
-                    typeName = methodOwner.typeNames().get(fieldId.declaringClassIndex);
-                    refInfoInLog = "referencing to field: " + methodOwner.strings().get(fieldId.nameIndex);
-                    break;
-                }
-                case InstructionCodec.INDEX_TYPE_METHOD_REF: {
-                    final MethodId methodId = methodOwner.methodIds().get(index);
-                    typeName = methodOwner.typeNames().get(methodId.declaringClassIndex);
-                    refInfoInLog = "invoking method: " + getMethodProtoTypeStr(methodId);
-                    break;
-                }
-            }
-            if (typeName != null && refAffectedClassDefs.contains(typeName)) {
-                MethodId methodId = methodOwner.methodIds().get(method.methodIndex);
-                logger.i(
-                        TAG,
-                        "Method %s in class %s referenced ref-changed class %s by %s",
-                        getMethodProtoTypeStr(methodId),
-                        methodOwner.typeNames().get(methodId.declaringClassIndex),
-                        typeName,
-                        refInfoInLog
-                );
-                isMethodReferencedToRefAffectedClass = true;
-            }
-        }
-
-        private String getMethodProtoTypeStr(MethodId methodId) {
-            StringBuilder strBuilder = new StringBuilder();
-            strBuilder.append(methodOwner.strings().get(methodId.nameIndex));
-            ProtoId protoId = methodOwner.protoIds().get(methodId.protoIndex);
-            strBuilder.append('(');
-            short[] paramTypeIds = methodOwner.parameterTypeIndicesFromMethodId(methodId);
-            for (short typeId : paramTypeIds) {
-                strBuilder.append(methodOwner.typeNames().get(typeId));
-            }
-            strBuilder.append(')').append(methodOwner.typeNames().get(protoId.returnTypeIndex));
-            return strBuilder.toString();
         }
     }
 

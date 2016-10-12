@@ -190,6 +190,18 @@ if (buildWithTinker()) {
          * case 5: resources.arsc has changed, but we don't use applyResourceMapping to build
          */
         ignoreWarning = false
+
+        /**
+         * optional，default 'false'
+         * if usePreGeneratedPatchDex is true, tinker framework will insert auxiliary instruction
+         * when compiling base package using assemble{Debug/Release} task to prevent class
+         * pre-verified issue in dvm. Besides, a real dex file contains necessary class
+         * will be generated and packed into patch package instead of any patch info files.
+         *
+         * Use this mode if you have to use any dex encryption solutions.
+         */
+        usePreGeneratedPatchDex = true
+
         /**
          * optional，default 'true'
          * whether sign the patch file

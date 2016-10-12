@@ -68,6 +68,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setNewApk(buildApkPath)
                .setOutBuilder(outputFolder)
                .setIgnoreWarning(configuration.ignoreWarning)
+               .setUsePreGeneratedPatchDex(configuration.usePreGeneratedPatchDex)
                .setDexFilePattern(configuration.dex.pattern)
                .setDexLoaderPattern(configuration.dex.loader)
                .setDexMode(configuration.dex.dexMode)

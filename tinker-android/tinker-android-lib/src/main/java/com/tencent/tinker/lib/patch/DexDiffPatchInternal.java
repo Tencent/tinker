@@ -149,21 +149,20 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             if (ShareTinkerInternals.isVmArt()) {
                 File extractedFile = new File(dir + ShareConstants.DEX_SMALLPATCH_INFO_FILE);
                 ZipEntry smallPatchInfoEntry = patch.getEntry(ShareConstants.DEX_SMALLPATCH_INFO_FILE);
-                if (smallPatchInfoEntry == null) {
-                    TinkerLog.w(TAG, "small patch info is not exists, bad patch package?");
-                    manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, ShareConstants.DEX_SMALLPATCH_INFO_FILE, type, isUpgradePatch);
-                    return false;
-                }
-                InputStream smallPatchInfoIs = null;
-                try {
-                    smallPatchInfoIs = patch.getInputStream(smallPatchInfoEntry);
-                    smallPatchInfoFile = new SmallPatchedDexItemFile(smallPatchInfoIs);
-                } catch (Throwable e) {
-                    TinkerLog.w(TAG, "failed to read small patched info. reason: " + e.getMessage());
-                    manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, ShareConstants.DEX_SMALLPATCH_INFO_FILE, type, isUpgradePatch);
-                    return false;
-                } finally {
-                    SharePatchFileUtil.closeQuietly(smallPatchInfoIs);
+                if (smallPatchInfoEntry != null) {
+                    InputStream smallPatchInfoIs = null;
+                    try {
+                        smallPatchInfoIs = patch.getInputStream(smallPatchInfoEntry);
+                        smallPatchInfoFile = new SmallPatchedDexItemFile(smallPatchInfoIs);
+                    } catch (Throwable e) {
+                        TinkerLog.w(TAG, "failed to read small patched info. reason: " + e.getMessage());
+                        manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, ShareConstants.DEX_SMALLPATCH_INFO_FILE, type, isUpgradePatch);
+                        return false;
+                    } finally {
+                        SharePatchFileUtil.closeQuietly(smallPatchInfoIs);
+                    }
+                } else {
+                    TinkerLog.w(TAG, "small patch info is not exists, it's ok now.");
                 }
             }
 

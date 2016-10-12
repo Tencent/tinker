@@ -60,6 +60,7 @@ public class Configuration {
     protected static final String ATTR_NAME  = "name";
 
     protected static final String ATTR_IGNORE_WARNING    = "ignoreWarning";
+    protected static final String ATTR_NO_DIFFPATCH_MODE = "mUsePreGeneratedPatchDex";
     protected static final String ATTR_USE_SIGN          = "useSign";
     protected static final String ATTR_SEVEN_ZIP_PATH    = "sevenZipPath";
     protected static final String ATTR_DEX_MODE          = "dexMode";
@@ -83,6 +84,7 @@ public class Configuration {
     public File             mOldApkFile;
     public File             mNewApkFile;
     public boolean          mIgnoreWarning;
+    public boolean          mUsePreGeneratedPatchDex;
     /**
      * lib config
      */
@@ -213,6 +215,8 @@ public class Configuration {
         mOutFolder = param.outFolder;
 
         mIgnoreWarning = param.ignoreWarning;
+        mUsePreGeneratedPatchDex = param.usePreGeneratedPatchDex;
+
         mSevenZipPath = param.sevenZipPath;
         mPackageFields = param.configFields;
 
@@ -234,6 +238,7 @@ public class Configuration {
         sb.append("newApk:" + mNewApkPath + "\n");
         sb.append("outputFolder:" + mOutFolder + "\n");
         sb.append("isIgnoreWarning:" + mIgnoreWarning + "\n");
+        sb.append("isInsertStubMode:" + mUsePreGeneratedPatchDex + "\n");
         sb.append("7-ZipPath:" + mSevenZipPath + "\n");
         sb.append("useSignAPk:" + mUseSignAPk + "\n");
 
@@ -406,6 +411,9 @@ public class Configuration {
                     }
                     if (tagName.equals(ATTR_IGNORE_WARNING)) {
                         mIgnoreWarning = value.equals("true");
+                    } else
+                    if (tagName.equals(ATTR_NO_DIFFPATCH_MODE)) {
+                        mUsePreGeneratedPatchDex = value.equals("true");
                     } else if (tagName.equals(ATTR_USE_SIGN)) {
                         mUseSignAPk = value.equals("true");
                     } else if (tagName.equals(ATTR_SEVEN_ZIP_PATH)) {
