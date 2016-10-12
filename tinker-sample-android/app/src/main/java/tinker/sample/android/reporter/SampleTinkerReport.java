@@ -100,11 +100,13 @@ public class SampleTinkerReport {
 
 
     // KEY -- load detail
-    public static final int KEY_LOADED_UNKNOWN_EXCEPTION   = 250;
-    public static final int KEY_LOADED_UNCAUGHT_EXCEPTION  = 251;
-    public static final int KEY_LOADED_EXCEPTION_DEX       = 252;
-    public static final int KEY_LOADED_EXCEPTION_DEX_CHECK = 253;
-    public static final int KEY_LOADED_EXCEPTION_RESOURCE  = 254;
+    public static final int KEY_LOADED_UNKNOWN_EXCEPTION        = 250;
+    public static final int KEY_LOADED_UNCAUGHT_EXCEPTION       = 251;
+    public static final int KEY_LOADED_EXCEPTION_DEX            = 252;
+    public static final int KEY_LOADED_EXCEPTION_DEX_CHECK      = 253;
+    public static final int KEY_LOADED_EXCEPTION_RESOURCE       = 254;
+    public static final int KEY_LOADED_EXCEPTION_RESOURCE_CEHCK = 255;
+
 
     public static final int KEY_LOADED_MISMATCH_DEX       = 300;
     public static final int KEY_LOADED_MISMATCH_LIB       = 301;
@@ -309,12 +311,12 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        boolean isDexCheckFail = false;
+        boolean isCheckFail = false;
         switch (errorCode) {
             case ShareConstants.ERROR_LOAD_EXCEPTION_DEX:
                 if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
                     reporter.onReport(KEY_LOADED_EXCEPTION_DEX_CHECK);
-                    isDexCheckFail = true;
+                    isCheckFail = true;
                     TinkerLog.e(TAG, "tinker dex check fail:" + throwable.getMessage());
                 } else {
                     reporter.onReport(KEY_LOADED_EXCEPTION_DEX);
@@ -322,7 +324,14 @@ public class SampleTinkerReport {
                 }
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE:
-                reporter.onReport(KEY_LOADED_EXCEPTION_RESOURCE);
+                if (throwable.getMessage().contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
+                    reporter.onReport(KEY_LOADED_EXCEPTION_RESOURCE_CEHCK);
+                    isCheckFail = true;
+                    TinkerLog.e(TAG, "tinker res check fail:" + throwable.getMessage());
+                } else {
+                    reporter.onReport(KEY_LOADED_EXCEPTION_RESOURCE);
+                    TinkerLog.e(TAG, "tinker res reflect fail:" + throwable.getMessage());
+                }
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_UNCAUGHT:
                 reporter.onReport(KEY_LOADED_UNCAUGHT_EXCEPTION);
@@ -332,7 +341,7 @@ public class SampleTinkerReport {
                 break;
         }
         //reporter exception, for dex check fail, we don't need to report stacktrace
-        if (!isDexCheckFail) {
+        if (!isCheckFail) {
             reporter.onReport("Tinker Exception:load tinker occur exception " + Utils.getExceptionCauseString(throwable));
         }
     }

@@ -17,7 +17,7 @@
 package com.tencent.tinker.build.decoder;
 
 
-import com.tencent.tinker.build.apkparser.AndroidManifest;
+import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TinkerPatchException;
@@ -42,8 +42,8 @@ public class ManifestDecoder extends BaseDecoder {
     public boolean patch(File oldFile, File newFile) throws IOException, TinkerPatchException {
         final boolean ignoreWarning = config.mIgnoreWarning;
         try {
-            AndroidManifest oldAndroidManifest = AndroidManifest.getAndroidManifest(oldFile);
-            AndroidManifest newAndroidManifest = AndroidManifest.getAndroidManifest(newFile);
+            AndroidParser oldAndroidManifest = AndroidParser.getAndroidManifest(oldFile);
+            AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(newFile);
             //check minSdkVersion
             int minSdkVersion = Integer.parseInt(oldAndroidManifest.apkMeta.getMinSdkVersion());
 

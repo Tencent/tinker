@@ -60,6 +60,7 @@ public class TinkerResourceIdTask extends DefaultTask {
             rTypeResourceMap = PatchUtil.readRTxt(resourceMappingFile);
         } else {
             project.logger.error("apply resource mapping file ${resourceMappingFile} is illegal, just ignore")
+            return
         }
         AaptResourceCollector aaptResourceCollector = AaptUtil.collectResource(resourceDirectoryList, rTypeResourceMap)
         PatchUtil.generatePublicResourceXml(aaptResourceCollector, idsXml, publicXml)

@@ -21,8 +21,16 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Build;
 
-import java.lang.reflect.Field;
+import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+
+import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
 /**
@@ -30,6 +38,7 @@ import dalvik.system.PathClassLoader;
  */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 class AndroidNClassLoader extends PathClassLoader {
+    static ArrayList<DexFile> oldDexFiles = new ArrayList<>();
     PathClassLoader originClassLoader;
 
     private AndroidNClassLoader(String dexPath, PathClassLoader parent) {
@@ -40,33 +49,32 @@ class AndroidNClassLoader extends PathClassLoader {
     private static AndroidNClassLoader createAndroidNClassLoader(PathClassLoader original) throws Exception {
         //let all element ""
         AndroidNClassLoader androidNClassLoader = new AndroidNClassLoader("",  original);
-        Field originPathList = findField(original, "pathList");
+        Field originPathList = ShareReflectUtil.findField(original, "pathList");
         Object originPathListObject = originPathList.get(original);
         //should reflect definingContext also
-        Field originClassloader = findField(originPathListObject, "definingContext");
+        Field originClassloader = ShareReflectUtil.findField(originPathListObject, "definingContext");
         originClassloader.set(originPathListObject, androidNClassLoader);
         //copy pathList
-        Field pathListField = findField(androidNClassLoader, "pathList");
+        Field pathListField = ShareReflectUtil.findField(androidNClassLoader, "pathList");
         //just use PathClassloader's pathList
         pathListField.set(androidNClassLoader, originPathListObject);
-        return androidNClassLoader;
-    }
 
-    private static Field findField(Object instance, String name) throws NoSuchFieldException {
-        for (Class<?> clazz = instance.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
-            try {
-                Field field = clazz.getDeclaredField(name);
-
-                if (!field.isAccessible()) {
-                    field.setAccessible(true);
-                }
-
-                return field;
-            } catch (NoSuchFieldException e) {
-                // ignore and search next
-            }
+        //we must recreate dexFile due to dexCache
+        List<File> additionalClassPathEntries = new ArrayList<>();
+        Field dexElement = ShareReflectUtil.findField(originPathListObject, "dexElements");
+        Object[] originDexElements = (Object[]) dexElement.get(originPathListObject);
+        for (Object element : originDexElements) {
+            DexFile dexFile = (DexFile) ShareReflectUtil.findField(element, "dexFile").get(element);
+            additionalClassPathEntries.add(new File(dexFile.getName()));
+            //protect for java.lang.AssertionError: Failed to close dex file in finalizer.
+            oldDexFiles.add(dexFile);
         }
-        throw new NoSuchFieldException("Field " + name + " not found in " + instance.getClass());
+        Method makePathElements = ShareReflectUtil.findMethod(originPathListObject, "makePathElements", List.class, File.class,
+            List.class);
+        ArrayList<IOException> suppressedExceptions = new ArrayList<>();
+        Object[] newDexElements = (Object[]) makePathElements.invoke(originPathListObject, additionalClassPathEntries, null, suppressedExceptions);
+        dexElement.set(originPathListObject, newDexElements);
+        return androidNClassLoader;
     }
 
     private static void reflectPackageInfoClassloader(Application application, ClassLoader reflectClassLoader) throws Exception {
@@ -74,9 +82,9 @@ class AndroidNClassLoader extends PathClassLoader {
         String defPackageInfo = "mPackageInfo";
         String defClassLoader = "mClassLoader";
 
-        Context baseContext = (Context) findField(application, defBase).get(application);
-        Object basePackageInfo = findField(baseContext, defPackageInfo).get(baseContext);
-        Field classLoaderField = findField(basePackageInfo, defClassLoader);
+        Context baseContext = (Context) ShareReflectUtil.findField(application, defBase).get(application);
+        Object basePackageInfo = ShareReflectUtil.findField(baseContext, defPackageInfo).get(baseContext);
+        Field classLoaderField = ShareReflectUtil.findField(basePackageInfo, defClassLoader);
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
         classLoaderField.set(basePackageInfo, reflectClassLoader);
     }

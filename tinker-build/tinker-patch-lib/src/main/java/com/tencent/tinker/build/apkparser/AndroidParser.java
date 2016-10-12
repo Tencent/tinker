@@ -16,9 +16,14 @@
 
 package com.tencent.tinker.build.apkparser;
 
+import com.tencent.tinker.build.patch.Configuration;
+
 import net.dongliu.apk.parser.ApkParser;
 import net.dongliu.apk.parser.bean.ApkMeta;
 import net.dongliu.apk.parser.exception.ParserException;
+import net.dongliu.apk.parser.struct.StringPool;
+import net.dongliu.apk.parser.struct.resource.ResourceTable;
+import net.dongliu.apk.parser.utils.ParseUtils;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -27,7 +32,9 @@ import org.w3c.dom.NodeList;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +46,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 /**
  * Created by zhangshaowen on 16/5/5.
  */
-public class AndroidManifest {
+public class AndroidParser {
     public static final int TYPE_SERVICE            = 1;
     public static final int TYPE_ACTIVITY           = 2;
     public static final int TYPE_BROADCAST_RECEIVER = 3;
@@ -55,15 +62,75 @@ public class AndroidManifest {
     public final HashMap<String, String> metaDatas = new HashMap<>();
 
 
-    public AndroidManifest(ApkMeta apkMeta, String xml) throws ParserException {
+    public AndroidParser(ApkMeta apkMeta, String xml) throws ParserException {
         this.apkMeta = apkMeta;
         this.xml = xml;
         parse();
     }
 
-    public static AndroidManifest getAndroidManifest(File file) throws IOException, ParseException {
+    public static boolean resourceTableLogicalChange(Configuration config) throws IOException {
+        ApkParser parser = new ApkParser(config.mOldApkFile);
+        ApkParser newParser = new ApkParser(config.mNewApkFile);
+        parser.parseResourceTable();
+        newParser.parseResourceTable();
+        return parser.getResourceTable().equals(newParser.getResourceTable());
+    }
+
+    public static void editResourceTableString(String from, String to, File originFile, File destFile) throws IOException {
+        if (from == null || to == null) {
+            return;
+        }
+        if (from.length() != to.length()) {
+            throw new RuntimeException("only support the same string length now!");
+        }
+        ApkParser parser = new ApkParser();
+        parser.parseResourceTable(originFile);
+        ResourceTable resourceTable = parser.getResourceTable();
+        StringPool stringPool = resourceTable.getStringPool();
+        ByteBuffer buffer = resourceTable.getBuffers();
+        byte[] array = buffer.array();
+        int length = stringPool.getPool().length;
+        boolean found = false;
+        for (int i = 0; i < length; i++) {
+            String value = stringPool.get(i);
+            if (value.equals(from)) {
+                found = true;
+                long offset = stringPool.getPoolOffsets().get(i);
+                //length
+                offset += 2;
+                byte[] tempByte;
+                if (stringPool.isUtf8()) {
+                    tempByte = to.getBytes(ParseUtils.charsetUTF8);
+                    if (to.length() != tempByte.length) {
+                        throw new RuntimeException(String.format(
+                            "editResourceTableString length is different, name %d, tempByte %d\n", to.length(), tempByte.length));
+                    }
+                } else {
+                    tempByte = to.getBytes(ParseUtils.charsetUTF16);
+                    if ((to.length() * 2) != tempByte.length) {
+                        throw new RuntimeException(String.format(
+                            "editResourceTableString length is different, name %d, tempByte %d\n", to.length(), tempByte.length));
+                    }
+                }
+                System.arraycopy(tempByte, 0, array, (int) offset, tempByte.length);
+            }
+        }
+        if (!found) {
+            throw new RuntimeException("can't found string:" + from + " in the resources.arsc file's string pool!");
+        }
+
+        //write array to file
+        FileOutputStream fileOutputStream = new FileOutputStream(destFile);
+        try {
+            fileOutputStream.write(array);
+        } finally {
+            fileOutputStream.close();
+        }
+    }
+
+    public static AndroidParser getAndroidManifest(File file) throws IOException, ParseException {
         ApkParser apkParser = new ApkParser(file);
-        AndroidManifest androidManifest = new AndroidManifest(apkParser.getApkMeta(), apkParser.getManifestXml());
+        AndroidParser androidManifest = new AndroidParser(apkParser.getApkMeta(), apkParser.getManifestXml());
         return androidManifest;
     }
 

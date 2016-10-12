@@ -32,13 +32,11 @@ import java.io.File;
  * Created by liangwenxiang on 2016/4/14.
  */
 public class TinkerResourceLoader {
-
     protected static final String RESOURCE_META_FILE = ShareConstants.RES_META_FILE;
     protected static final String RESOURCE_FILE      = ShareConstants.RES_NAME;
     protected static final String RESOURCE_PATH      = ShareConstants.RES_PATH;
     private static final String TAG = "Tinker.ResourceLoader";
     private static ShareResPatchInfo resPatchInfo = new ShareResPatchInfo();
-
 
     private TinkerResourceLoader() {
     }
@@ -46,7 +44,7 @@ public class TinkerResourceLoader {
     /**
      * Load tinker resources
      */
-    public static boolean loadTinkerResources(boolean tinkerLoadVerifyFlag, String directory, Intent intentResult) {
+    public static boolean loadTinkerResources(Context context, boolean tinkerLoadVerifyFlag, String directory, Intent intentResult) {
         if (resPatchInfo == null || resPatchInfo.resArscMd5 == null) {
             return true;
         }
@@ -63,14 +61,21 @@ public class TinkerResourceLoader {
             Log.i(TAG, "verify resource file:" + resourceFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
         }
         try {
-            TinkerResourcePatcher.monkeyPatchExistingResources(resourceString);
+            TinkerResourcePatcher.monkeyPatchExistingResources(context, resourceString);
             Log.i(TAG, "monkeyPatchExistingResources resource file:" + resourceString + ", use time: " + (System.currentTimeMillis() - start));
         } catch (Throwable e) {
-            Log.e(TAG, "install resources failed", e);
+            Log.e(TAG, "install resources failed");
+            //remove patch dex if resource is installed failed
+            try {
+                SystemClassLoaderAdder.uninstallPatchDex(context.getClassLoader());
+            } catch (Throwable throwable) {
+                Log.e(TAG, "uninstallPatchDex failed", e);
+            }
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION);
             return false;
         }
+
         return true;
     }
 

@@ -125,4 +125,33 @@ public class ShareReflectUtil {
         jlrField.set(instance, combined);
     }
 
+    /**
+     * Replace the value of a field containing a non null array, by a new array containing the
+     * elements of the original array plus the elements of extraElements.
+     *
+     * @param instance      the instance whose field is to be modified.
+     * @param fieldName     the field to modify.
+     */
+    public static void reduceFieldArray(Object instance, String fieldName, int reduceSize)
+        throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        if (reduceSize <= 0) {
+            return;
+        }
+
+        Field jlrField = findField(instance, fieldName);
+
+        Object[] original = (Object[]) jlrField.get(instance);
+        int finalLength = original.length - reduceSize;
+
+        if (finalLength <= 0) {
+            return;
+        }
+
+        Object[] combined = (Object[]) Array.newInstance(original.getClass().getComponentType(), finalLength);
+
+        System.arraycopy(original, reduceSize, combined, 0, finalLength);
+
+        jlrField.set(instance, combined);
+    }
+
 }

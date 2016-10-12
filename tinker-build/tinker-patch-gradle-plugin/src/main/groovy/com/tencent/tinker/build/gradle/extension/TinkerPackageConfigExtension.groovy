@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.gradle.extension
 
-import com.tencent.tinker.build.apkparser.AndroidManifest
+import com.tencent.tinker.build.apkparser.AndroidParser
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 
@@ -32,7 +32,7 @@ public class TinkerPackageConfigExtension {
      */
     private Map<String, String> fields
     private Project project;
-    private AndroidManifest androidManifest;
+    private AndroidParser androidManifest;
 
 
     public TinkerPackageConfigExtension(project) {
@@ -57,7 +57,7 @@ public class TinkerPackageConfigExtension {
                         String.format("old apk file %s is not exist, you can set the value directly!", oldPakFile)
                 )
             }
-            androidManifest = AndroidManifest.getAndroidManifest(oldPakFile);
+            androidManifest = AndroidParser.getAndroidManifest(oldPakFile);
         }
     }
 

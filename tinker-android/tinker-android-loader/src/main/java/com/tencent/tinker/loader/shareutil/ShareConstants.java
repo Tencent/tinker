@@ -47,7 +47,9 @@ public class ShareConstants {
     public static final String DEX_OPTIMIZE_PATH        = "odex";
     public static final String DEX_SUFFIX               = ".dex";
     public static final String JAR_SUFFIX               = ".jar";
+
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
+    public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";
 
     public static final String RES_META_FILE       = "assets/res_meta.txt";
     public static final String RES_ARSC            = "resources.arsc";

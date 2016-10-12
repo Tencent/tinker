@@ -20,6 +20,9 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.util.ArrayMap;
+import android.util.Log;
+
+import com.tencent.tinker.loader.shareutil.ShareConstants;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
@@ -31,9 +34,11 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.KITKAT;
 
 class TinkerResourcePatcher {
+    private static final String TAG = "Tinker.ResourcePatcher";
+    private static final String TEST_STRING_NAME  = "tinker_test_resource";
+    private static final String TEST_STRING_VALUE = "only use for test tinker resource: b";
     // original value
     private static Collection<WeakReference<Resources>> references;
-
     private static AssetManager newAssetManager          = null;
     private static Method       addAssetPathMethod       = null;
     private static Method       ensureStringBlocksMethod = null;
@@ -128,7 +133,7 @@ class TinkerResourcePatcher {
         }
     }
 
-    public static void monkeyPatchExistingResources(String externalResourceFile) throws Throwable {
+    public static void monkeyPatchExistingResources(Context context, String externalResourceFile) throws Throwable {
         if (externalResourceFile == null) {
             return;
         }
@@ -162,8 +167,26 @@ class TinkerResourcePatcher {
                 resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
             }
         }
+
+        if (!checkResUpdate(context)) {
+            throw new TinkerRuntimeException(ShareConstants.CHECK_RES_INSTALL_FAIL);
+        }
     }
 
+    private static boolean checkResUpdate(Context context) {
+        int testStringID = context.getResources().getIdentifier(TEST_STRING_NAME, "string", context.getPackageName());
+        if (testStringID > 0) {
+            String value = context.getString(testStringID);
+            Log.w(TAG, "checkResUpdate resource value:" + value);
+
+            if (!value.equals(TEST_STRING_VALUE)) {
+                return false;
+            }
+        } else  {
+            Log.e(TAG, "checkResUpdate resource id < 0 " + testStringID);
+        }
+        return true;
+    }
     private static Object getActivityThread(Context context,
                                             Class<?> activityThread) {
         try {

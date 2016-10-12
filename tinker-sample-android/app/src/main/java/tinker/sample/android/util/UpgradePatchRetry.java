@@ -149,6 +149,10 @@ public class UpgradePatchRetry {
         File patchFile = new File(path);
 
         String patchMd5 = SharePatchFileUtil.getMD5(patchFile);
+        if (patchMd5 == null) {
+            TinkerLog.w(TAG, "onPatchServiceStart patch md5 is null, just return");
+            return;
+        }
 
         if (retryInfoFile.exists()) {
             retryInfo = RetryInfo.readRetryProperty(retryInfoFile);

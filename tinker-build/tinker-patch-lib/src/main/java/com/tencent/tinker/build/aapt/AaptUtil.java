@@ -78,7 +78,7 @@ public final class AaptUtil {
         return collectResource(resourceDirectoryList, null);
     }
 
-    public static AaptResourceCollector collectResource(List<String> resourceDirectoryList, Map<RType, Set<com.tencent.tinker.build.aapt.RDotTxtEntry>> rTypeResourceMap) {
+    public static AaptResourceCollector collectResource(List<String> resourceDirectoryList, Map<RType, Set<RDotTxtEntry>> rTypeResourceMap) {
         AaptResourceCollector resourceCollector = new AaptResourceCollector(rTypeResourceMap);
         List<com.tencent.tinker.build.aapt.RDotTxtEntry> references = new ArrayList<com.tencent.tinker.build.aapt.RDotTxtEntry>();
         for (String resourceDirectory : resourceDirectoryList) {
@@ -98,7 +98,7 @@ public final class AaptUtil {
         return resourceCollector;
     }
 
-    public static void processXmlFilesForIds(String resourceDirectory, List<com.tencent.tinker.build.aapt.RDotTxtEntry> references, AaptResourceCollector resourceCollector) throws Exception {
+    public static void processXmlFilesForIds(String resourceDirectory, List<RDotTxtEntry> references, AaptResourceCollector resourceCollector) throws Exception {
         List<String> xmlFullFilenameList = FileUtil.findMatchFile(resourceDirectory, Constant.Symbol.DOT + Constant.File.XML);
         if (xmlFullFilenameList != null) {
             for (String xmlFullFilename : xmlFullFilenameList) {
@@ -170,7 +170,7 @@ public final class AaptUtil {
 
                 RType rType = RESOURCE_TYPES.get(directoryName);
                 resourceCollector.addIntResourceIfNotPresent(rType, resourceName);
-                com.tencent.tinker.build.aapt.ResourceDirectory resourceDirectoryBean = new com.tencent.tinker.build.aapt.ResourceDirectory(file.getParentFile().getName(), file.getAbsolutePath());
+                ResourceDirectory resourceDirectoryBean = new ResourceDirectory(file.getParentFile().getName(), file.getAbsolutePath());
                 resourceCollector.addRTypeResourceName(rType, resourceName, null, resourceDirectoryBean);
             }
         }
@@ -244,14 +244,14 @@ public final class AaptUtil {
                     break;
             }
             try {
-                addToResourceCollector(resourceCollector, new com.tencent.tinker.build.aapt.ResourceDirectory(directoryName, valuesFullFilename), node, rType, resourceValue);
+                addToResourceCollector(resourceCollector, new ResourceDirectory(directoryName, valuesFullFilename), node, rType, resourceValue);
             } catch (Exception e) {
                 throw new AaptUtilException(e.getMessage() + ",Process file error:" + valuesFullFilename, e);
             }
         }
     }
 
-    public static void processXmlFile(String xmlFullFilename, List<com.tencent.tinker.build.aapt.RDotTxtEntry> references, AaptResourceCollector resourceCollector) throws IOException, XPathExpressionException {
+    public static void processXmlFile(String xmlFullFilename, List<RDotTxtEntry> references, AaptResourceCollector resourceCollector) throws IOException, XPathExpressionException {
         Document document = JavaXmlUtil.parse(xmlFullFilename);
         NodeList nodesWithIds = (NodeList) ANDROID_ID_DEFINITION.evaluate(document, XPathConstants.NODESET);
         for (int i = 0; i < nodesWithIds.getLength(); i++) {
@@ -267,7 +267,9 @@ public final class AaptUtil {
         for (int i = 0; i < nodesUsingIds.getLength(); i++) {
             String resourceName = nodesUsingIds.item(i).getNodeValue();
             int slashPosition = resourceName.indexOf('/');
-
+            if (slashPosition < 0) {
+                continue;
+            }
             String rawRType = resourceName.substring(1, slashPosition);
             String name = resourceName.substring(slashPosition + 1);
 
@@ -282,7 +284,7 @@ public final class AaptUtil {
 //if(!resourceCollector.isContainResource(rType, IdType.INT, sanitizeName(resourceCollector, name))){
 //throw new AaptUtilException("Not found reference '" + resourceName + "' in '" + xmlFullFilename + "'");
 //}
-            references.add(new com.tencent.tinker.build.aapt.FakeRDotTxtEntry(IdType.INT, rType, sanitizeName(resourceCollector, name)));
+            references.add(new FakeRDotTxtEntry(IdType.INT, rType, sanitizeName(resourceCollector, name)));
         }
     }
 

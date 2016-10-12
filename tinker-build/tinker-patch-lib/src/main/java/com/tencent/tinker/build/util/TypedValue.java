@@ -70,4 +70,8 @@ public class TypedValue {
     public static final String LARGE_MOD_TITLE = "large modify:";
     public static final String DEL_TITLE       = "delete:";
     public static final String PATTERN_TITLE   = "pattern:";
+
+    public static final String TEST_STRING_VALUE_A = "only use for test tinker resource: a";
+    public static final String TEST_STRING_VALUE_B = "only use for test tinker resource: b";
+
 }

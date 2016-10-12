@@ -1,6 +1,6 @@
 ## Tinker
 [![license](http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat)](https://github.com/Tencent/tinker/blob/master/LICENSE)
-[![Release Version](https://img.shields.io/badge/release-1.6.1-red.svg)](https://github.com/Tencent/tinker/releases) 
+[![Release Version](https://img.shields.io/badge/release-1.6.2-red.svg)](https://github.com/Tencent/tinker/releases) 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Tencent/tinker/pulls)
 
 Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.
@@ -73,8 +73,8 @@ For more tinker configurations, learn more at the sample [app/build.gradle](http
 ## Known Issues
 There are some issues which Tinker can't dynamic update.
 
-1. Update AndroidManifest.xml, such as add Android Component.
-2. Do not support some Samsung models with os version android-19.
+1. Can't update AndroidManifest.xml, such as add Android Component.
+2. Do not support some Samsung models with os version android-21.
 3. Due to Google Play Developer Distribution Agreement, we can't dynamic update our apk.
 
 ## Support

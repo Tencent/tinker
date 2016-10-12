@@ -17,6 +17,7 @@
 package com.tencent.tinker.build.decoder;
 
 import com.tencent.tinker.bsdiff.BSDiff;
+import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.FileOperation;
@@ -52,6 +53,11 @@ public class ResDiffDecoder extends BaseDecoder {
     private       HashMap<String, LargeModeInfo> largeModifiedMap;
     private ArrayList<String> deletedSet;
 
+    private boolean arscChanged;
+    private File oldArscFile;
+    private File newArscFile;
+
+
     public ResDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
         super(config);
 
@@ -80,8 +86,8 @@ public class ResDiffDecoder extends BaseDecoder {
     }
 
     private boolean checkLargeModFile(File file) {
-        long lenght = file.length();
-        if (lenght > config.mLargeModSize * TypedValue.K_BYTES) {
+        long length = file.length();
+        if (length > config.mLargeModSize * TypedValue.K_BYTES) {
             return true;
         }
         return false;
@@ -128,13 +134,29 @@ public class ResDiffDecoder extends BaseDecoder {
         }
         String name = getRelativeString(newFile);
         if (Utils.checkFileInPattern(config.mResIgnoreChangePattern, name)) {
-            Logger.e("found modify resource: " + name + " ,but it match ignore change pattern, just ignore!");
+            Logger.d("found modify resource: " + name + ", but it match ignore change pattern, just ignore!");
             return false;
         }
         if (name.equals(TypedValue.RES_MANIFEST)) {
-            Logger.e("found modify resource: " + name + " ,but it is AndroidManifest.xml, just ignore!");
+            Logger.d("found modify resource: " + name + ", but it is AndroidManifest.xml, just ignore!");
             return false;
         }
+        if (name.equals(TypedValue.RES_ARSC)) {
+            if (AndroidParser.resourceTableLogicalChange(config)) {
+                Logger.d("found modify resource: " + name + ", but it is logically the same as original new resources.arsc, just ignore!");
+                return false;
+            }
+            //deal with resources.arsc later
+            arscChanged = true;
+            oldArscFile = oldFile;
+            newArscFile = newFile;
+            return true;
+        }
+        dealWithModeFile(name, newMd5, oldFile, newFile, outputFile);
+        return true;
+    }
+
+    private boolean dealWithModeFile(String name, String newMd5, File oldFile, File newFile, File outputFile) throws IOException {
         if (checkLargeModFile(newFile)) {
             if (!outputFile.getParentFile().exists()) {
                 outputFile.getParentFile().mkdirs();
@@ -155,7 +177,7 @@ public class ResDiffDecoder extends BaseDecoder {
         modifiedSet.add(name);
         FileOperation.copyFileUsingStream(newFile, outputFile);
         writeResLog(newFile, oldFile, TypedValue.MOD);
-        return true;
+        return false;
     }
 
     private void writeResLog(File newFile, File oldFile, int mode) throws IOException {
@@ -197,10 +219,18 @@ public class ResDiffDecoder extends BaseDecoder {
 
     }
 
+    private void modArscFileForTestResource() throws IOException {
+        File tempArscFile = new File(config.mOutFolder + File.separator + "edited_resources.arsc");
+        //there is resource changed, edit test resource string
+        AndroidParser.editResourceTableString(TypedValue.TEST_STRING_VALUE_A, TypedValue.TEST_STRING_VALUE_B, newArscFile, tempArscFile);
+        dealWithModeFile(TypedValue.RES_ARSC, MD5.getMD5(tempArscFile), oldArscFile, tempArscFile, getOutputPath(newArscFile).toFile());
+        Logger.d("Edit resources.arsc file for test resource change, final path: " + tempArscFile.getAbsolutePath());
+    }
+
     @Override
     public void onAllPatchesEnd() throws IOException, TinkerPatchException {
         //only there is only deleted set, we just ignore
-        if (addedSet.isEmpty() && modifiedSet.isEmpty() && largeModifiedSet.isEmpty()) {
+        if (addedSet.isEmpty() && modifiedSet.isEmpty() && largeModifiedSet.isEmpty() && !arscChanged) {
             return;
         }
 
@@ -210,6 +240,8 @@ public class ResDiffDecoder extends BaseDecoder {
         if (!config.mResRawPattern.contains(TypedValue.RES_MANIFEST)) {
             throw new TinkerPatchException("resource must contain AndroidManifest.xml pattern");
         }
+
+        modArscFileForTestResource();
 
         //check gradle build
         if (config.mUsingGradle) {

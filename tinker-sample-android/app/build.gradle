@@ -264,6 +264,7 @@ if (buildWithTinker()) {
              *
              */
             loader = ["com.tencent.tinker.loader.*",
+                      //warning, you must change it with your application
                       "tinker.sample.android.SampleApplication",
                       //use sample, let BaseBuildInfo unchangeable with tinker
                       "tinker.sample.android.app.BaseBuildInfo"

@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.info;
 
-import com.tencent.tinker.build.apkparser.AndroidManifest;
+import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
@@ -41,7 +41,7 @@ public class PatchInfoGen {
 
     private void addTinkerID() throws IOException, ParseException {
         if (!config.mPackageFields.containsKey(TypedValue.TINKER_ID)) {
-            AndroidManifest oldAndroidManifest = AndroidManifest.getAndroidManifest(config.mOldApkFile);
+            AndroidParser oldAndroidManifest = AndroidParser.getAndroidManifest(config.mOldApkFile);
             String tinkerID = oldAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
 
             if (tinkerID == null) {
@@ -51,7 +51,7 @@ public class PatchInfoGen {
         }
 
         if (!config.mPackageFields.containsKey(TypedValue.NEW_TINKER_ID)) {
-            AndroidManifest newAndroidManifest = AndroidManifest.getAndroidManifest(config.mNewApkFile);
+            AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(config.mNewApkFile);
             String tinkerID = newAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
 
             if (tinkerID == null) {

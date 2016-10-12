@@ -48,6 +48,7 @@ public class SystemClassLoaderAdder {
     private static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
     private static final String CHECK_DEX_FIELD = "isPatch";
 
+    private static int sPatchDexCount = 0;
 
     @SuppressLint("NewApi")
     public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files)
@@ -70,14 +71,34 @@ public class SystemClassLoaderAdder {
                 V4.install(classLoader, files, dexOptDir);
             }
 
-            if (!checkDexInstall()) {
+            if (!checkDexInstall(classLoader)) {
                 throw new TinkerRuntimeException(ShareConstants.CHECK_DEX_INSTALL_FAIL);
+            }
+            sPatchDexCount = files.size();
+        }
+    }
+
+    public static void uninstallPatchDex(ClassLoader classLoader) throws Throwable {
+        if (sPatchDexCount <= 0) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 14) {
+            Field pathListField = ShareReflectUtil.findField(classLoader, "pathList");
+            Object dexPathList = pathListField.get(classLoader);
+            ShareReflectUtil.reduceFieldArray(dexPathList, "dexElements", sPatchDexCount);
+        } else {
+            ShareReflectUtil.reduceFieldArray(classLoader, "mPaths", sPatchDexCount);
+            ShareReflectUtil.reduceFieldArray(classLoader, "mFiles", sPatchDexCount);
+            ShareReflectUtil.reduceFieldArray(classLoader, "mZips", sPatchDexCount);
+            try {
+                ShareReflectUtil.reduceFieldArray(classLoader, "mDexs", sPatchDexCount);
+            } catch (Exception e) {
             }
         }
     }
 
-    private static boolean checkDexInstall() throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-        Class<?> clazz = Class.forName(CHECK_DEX_CLASS);
+    private static boolean checkDexInstall(ClassLoader classLoader) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+        Class<?> clazz = Class.forName(CHECK_DEX_CLASS, true, classLoader);
         Field filed = ShareReflectUtil.findField(clazz, CHECK_DEX_FIELD);
         boolean isPatch = (boolean) filed.get(null);
         Log.w(TAG, "checkDexInstall result:" + isPatch);
