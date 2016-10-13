@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'AndResGuard'
 
 
 
@@ -32,6 +33,58 @@ def gitSha() {
         throw new GradleException("can't get git rev, you should add git to system path or just input test value, such as 'testTinkerId'")
     }
 }
+def bakPath = file("${buildDir}/bakApk/")
+
+
+andResGuard {
+    mappingFile = file("${buildDir}/bakApk/resguard/app-release-1010-18-11-02-resource_mapping.txt")
+    use7zip = true
+    useSign = true
+    keepRoot = false
+    whiteList = [
+            // your icon
+            "R.drawable.icon",
+            // for fabric
+            "R.string.com.crashlytics.*",
+            // for umeng update
+            "R.string.umeng*",
+            "R.string.UM*",
+            "R.string.tb_*",
+            "R.layout.umeng*",
+            "R.layout.tb_*",
+            "R.drawable.umeng*",
+            "R.drawable.tb_*",
+            "R.anim.umeng*",
+            "R.color.umeng*",
+            "R.color.tb_*",
+            "R.style.*UM*",
+            "R.style.umeng*",
+            "R.id.umeng*",
+            // umeng share for sina
+            "R.drawable.sina*",
+            // for google-services.json
+            "R.string.google_app_id",
+            "R.string.gcm_defaultSenderId",
+            "R.string.default_web_client_id",
+            "R.string.ga_trackingId",
+            "R.string.firebase_database_url",
+            "R.string.google_api_key",
+            "R.string.google_crash_reporting_api_key"
+    ]
+    compressFilePattern = [
+            "*.png",
+            "*.jpg",
+            "*.jpeg",
+            "*.gif",
+            "resources.arsc"
+    ]
+
+    sevenzip {
+        artifact = 'com.tencent.mm:SevenZip:1.1.11'
+        //path = "/usr/local/bin/7za"
+    }
+}
+
 
 def javaVersion = JavaVersion.VERSION_1_7
 
@@ -124,7 +177,6 @@ android {
     }
 }
 
-def bakPath = file("${buildDir}/bakApk/")
 
 /**
  * you can use assembleRelease to build you base apk
@@ -136,11 +188,13 @@ ext {
     tinkerEnabled = true
     //you should bak the following files
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/app-debug-0919-20-32-57.apk"
+//    tinkerOldApkPath=""
+    tinkerOldApkPath = "${bakPath}/app-debug-1011-19-08-52.apk"
     //proguard mapping file to build patch apk
     tinkerApplyMappingPath = "${bakPath}/"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/"
+    tinkerApplyResourcePath = "${bakPath}/app-debug-1011-19-08-52-R.txt"
+//    tinkerApplyResourcePath=""
 }
 
 
@@ -289,7 +343,7 @@ if (buildWithTinker()) {
              * you must include all your resources in apk here,
              * otherwise, they won't repack in the new apk resources.
              */
-            pattern = ["res/*", "assets/*", "resources.arsc", "AndroidManifest.xml"]
+            pattern = ["res/*", "r/*","assets/*", "resources.arsc", "AndroidManifest.xml"]
 
             /**
              * optional，default '[]'
@@ -357,7 +411,63 @@ if (buildWithTinker()) {
          */
         def taskName = variant.name
 
+
         tasks.all {
+
+            if (variant.buildType.name == 'release') {
+
+                if ("tinkerPatch${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
+
+                    // find resguard task
+                    def resguardTask
+                    tasks.all {
+                        if (it.name.startsWith("resguard")) {
+                            resguardTask = it
+                        }
+                    }
+                    it.doFirst({
+                        // change build apk path
+                        it.buildApkPath = "${buildDir}/outputs/apk/AndResGuard_${project.getName()}-${taskName}/${project.getName()}-${taskName}_signed.apk"
+                    })
+
+                    // change task dependence to resguard task
+                    it.dependsOn resguardTask
+
+
+                }
+
+                if ("resguard".equalsIgnoreCase(it.name)) {
+                    it.doLast {
+                        copy {
+                            def date = new Date().format("MMdd-HH-mm-ss")
+                            from "${buildDir}/outputs/apk/AndResGuard_${project.getName()}-${taskName}/${project.getName()}-${taskName}_signed.apk"
+                            into file(bakPath.absolutePath+"/resguard")
+                            rename { String fileName ->
+                                fileName.replace("${project.getName()}-${taskName}_signed.apk", "${project.getName()}-${taskName}-${date}.apk")
+                            }
+
+                            from "${buildDir}/outputs/mapping/${taskName}/mapping.txt"
+                            into file(bakPath.absolutePath+"/resguard")
+                            rename { String fileName ->
+                                fileName.replace("mapping.txt", "${project.getName()}-${taskName}-${date}-mapping.txt")
+                            }
+
+                            from "${buildDir}/intermediates/symbols/${taskName}/R.txt"
+                            into file(bakPath.absolutePath+"/resguard")
+                            rename { String fileName ->
+                                fileName.replace("R.txt", "${project.getName()}-${taskName}-${date}-R.txt")
+                            }
+                            from "${buildDir}/outputs/apk/AndResGuard_${project.getName()}-${taskName}/resource_mapping_${project.getName()}-release.txt"
+                            into file(bakPath.absolutePath+"/resguard")
+                            rename { String fileName ->
+                                fileName.replace("resource_mapping_${project.getName()}-release.txt", "${project.getName()}-${taskName}-${date}-resource_mapping.txt")
+                            }
+                        }
+                    }
+                }
+            }
+
+
             if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
                 it.doLast {
                     copy {

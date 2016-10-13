@@ -38,11 +38,11 @@ import javax.xml.parsers.ParserConfigurationException;
  * do not use Logger here
  */
 public class CliMain extends Runner {
-    private static final String ARG_HELP   = "--help";
-    private static final String ARG_OUT    = "-out";
+    private static final String ARG_HELP = "--help";
+    private static final String ARG_OUT = "-out";
     private static final String ARG_CONFIG = "-config";
-    private static final String ARG_OLD    = "-old";
-    private static final String ARG_NEW    = "-new";
+    private static final String ARG_OLD = "-old";
+    private static final String ARG_NEW = "-new";
 
 
     protected static String mRunningLocation;
@@ -92,10 +92,20 @@ public class CliMain extends Runner {
             if (oldApkFile == null || newApkFile == null) {
                 Logger.e("Missing old apk or new apk file argument");
                 goToError();
+            } else if (!oldApkFile.exists() || !newApkFile.exists()) {
+                Logger.e("Old apk or new apk file does not exist");
+                goToError();
             }
 
             if (outputFile == null) {
                 outputFile = new File(mRunningLocation, TypedValue.PATH_DEFAULT_OUTPUT);
+            } else {
+                File[] files = outputFile.listFiles();
+                if (files != null && files.length > 0) {
+                    // patch process may delete all files when the output folder already exists files
+                    Logger.e("Output folder is not empty");
+                    goToError();
+                }
             }
 
             loadConfigFromXml(configFile, outputFile, oldApkFile, newApkFile);
@@ -137,10 +147,10 @@ public class CliMain extends Runner {
 
     private class ReadArgs {
         private String[] args;
-        private File     configFile;
-        private File     outputFile;
-        private File     oldApkFile;
-        private File     newApkFile;
+        private File configFile;
+        private File outputFile;
+        private File oldApkFile;
+        private File newApkFile;
 
         ReadArgs(String[] args) {
             this.args = args;
