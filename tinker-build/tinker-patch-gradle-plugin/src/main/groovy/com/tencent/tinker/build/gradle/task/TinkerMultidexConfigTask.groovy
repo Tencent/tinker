@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.build.gradle.task
 
+import com.tencent.tinker.build.auxiliaryclass.AuxiliaryClassInjector
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -39,7 +40,7 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                     "\n" +
                     "-keep public class * extends com.tencent.tinker.loader.app.TinkerApplication {\n" +
                     "    *;\n" +
-                    "}"
+                    "}\n"
 
 
     def applicationVariant
@@ -61,6 +62,17 @@ public class TinkerMultidexConfigTask extends DefaultTask {
 
         fr.write(MULTIDEX_CONFIG_SETTINGS)
         fr.write("\n")
+
+        // Write additional rules to keep auxiliary class in primary dex.
+        if (project.tinkerPatch.dex.usePreGeneratedPatchDex) {
+            final String additionalRules =
+                    "-keep class ${AuxiliaryClassInjector.AUXILIARY_CLASSNAME} {\n" +
+                            '    *;\n' +
+                            '}\n'
+            fr.write(additionalRules)
+            fr.write('\n')
+        }
+
         //unlike proguard, if loader endwith *, we must change to **
         fr.write("#your dex.loader patterns here\n")
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader

@@ -238,12 +238,16 @@ if (buildWithTinker()) {
             dexMode = "jar"
             /**
              * optional，default 'false'
-             * if usePreGeneratedPatchDex is true, tinker framework will insert auxiliary instruction
-             * when compiling base package using assemble{Debug/Release} task to prevent class
-             * pre-verified issue in dvm. Besides, a real dex file contains necessary class
-             * will be generated and packed into patch package instead of any patch info files.
+             * if usePreGeneratedPatchDex is true, tinker framework will generate auxiliary class
+             * and insert auxiliary instruction when compiling base package using
+             * assemble{Debug/Release} task to prevent class pre-verified issue in dvm.
+             * Besides, a real dex file contains necessary class will be generated and packed into
+             * patch package instead of any patch info files.
              *
              * Use this mode if you have to use any dex encryption solutions.
+             *
+             * Notice: If you change this value, please trigger clean task
+             * and regenerate base package.
              */
             usePreGeneratedPatchDex = false
             /**

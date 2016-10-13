@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.build.auxiliaryinject;
+package com.tencent.tinker.build.auxiliaryclass;
 
 import com.tencent.tinker.commons.ziputil.Streams;
 
@@ -39,8 +39,12 @@ import java.util.zip.ZipOutputStream;
  * Created by tangyinsheng on 2016/10/9.
  */
 
-public final class AuxiliaryInjector {
+public final class AuxiliaryClassInjector {
     public static final String AUXILIARY_CLASSNAME = "dalvik.system.PathClassLoader";
+
+    public interface ProcessJarCallback {
+        boolean onProcessClassEntry(String entryName);
+    }
 
     public static void processClass(File classIn, File classOut) throws IOException {
         InputStream is = null;
@@ -55,12 +59,12 @@ public final class AuxiliaryInjector {
         }
     }
 
-    public static void processJar(File jarIn, File jarOut) throws IOException {
+    public static void processJar(File jarIn, File jarOut, ProcessJarCallback cb) throws IOException {
         try {
-            processJarHelper(jarIn, jarOut, Charset.forName("UTF-8"), Charset.forName("UTF-8"));
+            processJarHelper(jarIn, jarOut, cb, Charset.forName("UTF-8"), Charset.forName("UTF-8"));
         } catch (IllegalArgumentException e) {
             if ("MALFORMED".equals(e.getMessage())) {
-                processJarHelper(jarIn, jarOut, Charset.forName("GBK"), Charset.forName("UTF-8"));
+                processJarHelper(jarIn, jarOut, cb, Charset.forName("GBK"), Charset.forName("UTF-8"));
             } else {
                 throw e;
             }
@@ -68,7 +72,7 @@ public final class AuxiliaryInjector {
     }
 
     @SuppressWarnings("NewApi")
-    private static void processJarHelper(File jarIn, File jarOut, Charset charsetIn, Charset charsetOut) throws IOException {
+    private static void processJarHelper(File jarIn, File jarOut, ProcessJarCallback cb, Charset charsetIn, Charset charsetOut) throws IOException {
         ZipInputStream zis = null;
         ZipOutputStream zos = null;
         try {
@@ -81,7 +85,11 @@ public final class AuxiliaryInjector {
                 zos.putNextEntry(entryOut);
                 if (!entryIn.isDirectory()) {
                     if (entryName.endsWith(".class")) {
-                        processClass(zis, zos);
+                        if (cb == null || cb.onProcessClassEntry(entryName)) {
+                            processClass(zis, zos);
+                        } else {
+                            Streams.copy(zis, zos);
+                        }
                     } else {
                         Streams.copy(zis, zos);
                     }
@@ -97,7 +105,7 @@ public final class AuxiliaryInjector {
     private static void processClass(InputStream classIn, OutputStream classOut) throws IOException {
         ClassReader cr = new ClassReader(classIn);
         ClassWriter cw = new ClassWriter(0);
-        AuxiliaryInjectAdapter aia = new AuxiliaryInjectAdapter(AUXILIARY_CLASSNAME, cw);
+        AuxiliaryClassInjectAdapter aia = new AuxiliaryClassInjectAdapter(AUXILIARY_CLASSNAME, cw);
         cr.accept(aia, 0);
         classOut.write(cw.toByteArray());
         classOut.flush();

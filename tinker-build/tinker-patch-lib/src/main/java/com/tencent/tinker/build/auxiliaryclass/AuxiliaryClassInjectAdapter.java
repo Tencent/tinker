@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.build.auxiliaryinject;
+package com.tencent.tinker.build.auxiliaryclass;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -26,14 +26,14 @@ import org.objectweb.asm.Type;
  * Created by tangyinsheng on 2016/10/10.
  */
 
-public final class AuxiliaryInjectAdapter extends ClassVisitor {
+public final class AuxiliaryClassInjectAdapter extends ClassVisitor {
     private final String auxiliaryClassDesc;
     private boolean isClInitExists;
     private boolean isInitExists;
     private boolean isTargetClass;
     private boolean isInjected;
 
-    public AuxiliaryInjectAdapter(String auxiliaryClassName, ClassWriter cw) {
+    public AuxiliaryClassInjectAdapter(String auxiliaryClassName, ClassWriter cw) {
         super(Opcodes.ASM5, cw);
         this.auxiliaryClassDesc = fastClassNameToDesc(auxiliaryClassName);
     }
@@ -104,7 +104,7 @@ public final class AuxiliaryInjectAdapter extends ClassVisitor {
         if (!this.isClInitExists && !this.isInitExists) {
             MethodVisitor mv = super.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
             mv.visitCode();
-            mv.visitLdcInsn(Type.getType(AuxiliaryInjectAdapter.this.auxiliaryClassDesc));
+            mv.visitLdcInsn(Type.getType(AuxiliaryClassInjectAdapter.this.auxiliaryClassDesc));
             mv.visitVarInsn(Opcodes.ASTORE, 0);
             mv.visitInsn(Opcodes.RETURN);
             mv.visitMaxs(1, 1);
@@ -121,7 +121,7 @@ public final class AuxiliaryInjectAdapter extends ClassVisitor {
         @Override
         public void visitInsn(int opcode) {
             if (opcode == Opcodes.RETURN) {
-                super.visitLdcInsn(Type.getType(AuxiliaryInjectAdapter.this.auxiliaryClassDesc));
+                super.visitLdcInsn(Type.getType(AuxiliaryClassInjectAdapter.this.auxiliaryClassDesc));
                 super.visitVarInsn(Opcodes.ASTORE, 0);
             }
             super.visitInsn(opcode);
