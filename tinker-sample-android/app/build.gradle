@@ -352,34 +352,28 @@ if (buildWithTinker()) {
     * bak apk and mapping
     */
     android.applicationVariants.all { variant ->
-        /**
-         * task type, you want to bak
-         */
-        def taskName = variant.name
+        variant.assemble.doLast {
+            copy {
+                def date = new Date().format("MMdd-HH-mm-ss")
+                def fileNamePrefix = "${project.name}-${variant.buildType.name}"
+                def newFileNamePrefix = "${fileNamePrefix}-${date}"
 
-        tasks.all {
-            if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
-                it.doLast {
-                    copy {
-                        def date = new Date().format("MMdd-HH-mm-ss")
-                        from "${buildDir}/outputs/apk/${project.getName()}-${taskName}.apk"
-                        into bakPath
-                        rename { String fileName ->
-                            fileName.replace("${project.getName()}-${taskName}.apk", "${project.getName()}-${taskName}-${date}.apk")
-                        }
+                from "${buildDir}/outputs/apk/${fileNamePrefix}.apk"
+                into bakPath
+                rename { String fileName ->
+                    fileName.replace("${fileNamePrefix}.apk", "${newFileNamePrefix}.apk")
+                }
 
-                        from "${buildDir}/outputs/mapping/${taskName}/mapping.txt"
-                        into bakPath
-                        rename { String fileName ->
-                            fileName.replace("mapping.txt", "${project.getName()}-${taskName}-${date}-mapping.txt")
-                        }
+                from "${buildDir}/outputs/mapping/${variant.buildType.name}/mapping.txt"
+                into bakPath
+                rename { String fileName ->
+                    fileName.replace("mapping.txt", "${newFileNamePrefix}-mapping.txt")
+                }
 
-                        from "${buildDir}/intermediates/symbols/${taskName}/R.txt"
-                        into bakPath
-                        rename { String fileName ->
-                            fileName.replace("R.txt", "${project.getName()}-${taskName}-${date}-R.txt")
-                        }
-                    }
+                from "${buildDir}/intermediates/symbols/${variant.buildType.name}/R.txt"
+                into bakPath
+                rename { String fileName ->
+                    fileName.replace("R.txt", "${newFileNamePrefix}-R.txt")
                 }
             }
         }
