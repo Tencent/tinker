@@ -89,7 +89,7 @@ public class TinkerProguardConfigTask extends DefaultTask {
         fr.write(PROGUARD_CONFIG_SETTINGS)
 
         // write additional rules to keep <init> and <clinit>
-        if (project.tinkerPatch.usePreGeneratedPatchDex) {
+        if (project.tinkerPatch.dex.usePreGeneratedPatchDex) {
             def additionalKeptRules =
                     "-dontwarn ${AuxiliaryInjector.AUXILIARY_CLASSNAME} \n" +
                             '-keepclassmembers class * { \n' +

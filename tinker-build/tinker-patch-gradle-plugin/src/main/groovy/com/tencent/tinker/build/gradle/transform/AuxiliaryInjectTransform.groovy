@@ -56,7 +56,8 @@ public class AuxiliaryInjectTransform extends Transform {
     public AuxiliaryInjectTransform(Project project) {
         this.project = project
         project.afterEvaluate {
-            this.isEnabled = project.tinkerPatch.usePreGeneratedPatchDex
+            this.isEnabled = project.tinkerPatch.dex.usePreGeneratedPatchDex
+
             this.applicationVariants = project.android.applicationVariants
         }
     }

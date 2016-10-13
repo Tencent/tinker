@@ -89,7 +89,7 @@ public final class AuxiliaryInjectAdapter extends ClassVisitor {
                 this.isInjected = true;
                 mv = new InjectImplMethodVisitor(mv);
             } else
-            if ("<init>".equals(name)){
+            if ("<init>".equals(name)) {
                 this.isInitExists = true;
                 this.isInjected = true;
                 mv = new InjectImplMethodVisitor(mv);
@@ -114,7 +114,7 @@ public final class AuxiliaryInjectAdapter extends ClassVisitor {
     }
 
     private class InjectImplMethodVisitor extends MethodVisitor {
-        public InjectImplMethodVisitor(MethodVisitor mv) {
+        InjectImplMethodVisitor(MethodVisitor mv) {
             super(Opcodes.ASM5, mv);
         }
 

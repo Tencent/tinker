@@ -219,10 +219,6 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
         }
     }
 
-    private interface Task {
-        void perform();
-    }
-
     public BuilderMutableMethodImplementation(int registerCount) {
         this.dexBuilder = null;
         this.registerCount = registerCount;
@@ -284,8 +280,8 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                     public Iterable<? extends DebugItem> apply(@Nullable MethodLocation input) {
                         assert input != null;
                         if (fixInstructions) {
-                            throw new IllegalStateException("This iterator was invalidated by a change to" +
-                                    " this MutableMethodImplementation.");
+                            throw new IllegalStateException("This iterator was invalidated by a change to"
+                                + " this MutableMethodImplementation.");
                         }
                         return input.getDebugItems();
                     }
@@ -473,30 +469,30 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                                 ((BuilderOffsetInstruction) instruction).getTarget().getLocation();
                         BuilderInstruction targetInstruction = targetLocation.instruction;
                         if (targetInstruction == null) {
-                            throw new IllegalStateException(String.format("Switch instruction at address/index " +
-                                    "0x%x/%d points to the end of the method.", location.codeAddress, location.index));
+                            throw new IllegalStateException(String.format("Switch instruction at address/index "
+                                + "0x%x/%d points to the end of the method.", location.codeAddress, location.index));
                         }
 
                         if (targetInstruction.getOpcode() == Opcode.NOP) {
                             targetInstruction = getFirstNonNop(targetLocation.index + 1);
                         }
                         if (targetInstruction == null || !(targetInstruction instanceof BuilderSwitchPayload)) {
-                            throw new IllegalStateException(String.format("Switch instruction at address/index " +
-                                            "0x%x/%d does not refer to a payload instruction.",
+                            throw new IllegalStateException(String.format("Switch instruction at address/index "
+                                + "0x%x/%d does not refer to a payload instruction.",
                                     location.codeAddress, location.index));
                         }
-                        if ((instruction.opcode == Opcode.PACKED_SWITCH &&
-                                targetInstruction.getOpcode() != Opcode.PACKED_SWITCH_PAYLOAD) ||
-                                (instruction.opcode == Opcode.SPARSE_SWITCH &&
-                                        targetInstruction.getOpcode() != Opcode.SPARSE_SWITCH_PAYLOAD)) {
-                            throw new IllegalStateException(String.format("Switch instruction at address/index " +
-                                            "0x%x/%d refers to the wrong type of payload instruction.",
+                        if ((instruction.opcode == Opcode.PACKED_SWITCH
+                            && targetInstruction.getOpcode() != Opcode.PACKED_SWITCH_PAYLOAD)
+                            || (instruction.opcode == Opcode.SPARSE_SWITCH
+                            && targetInstruction.getOpcode() != Opcode.SPARSE_SWITCH_PAYLOAD)) {
+                            throw new IllegalStateException(String.format("Switch instruction at address/index "
+                                + "0x%x/%d refers to the wrong type of payload instruction.",
                                     location.codeAddress, location.index));
                         }
 
                         if (!payloadLocations.add(targetLocation)) {
-                            throw new IllegalStateException("Multiple switch instructions refer to the same payload. " +
-                                    "This is not currently supported. Please file a bug :)");
+                            throw new IllegalStateException("Multiple switch instructions refer to the same payload. "
+                                + "This is not currently supported. Please file a bug :)");
                         }
 
                         ((BuilderSwitchPayload) targetInstruction).referrer = location;
@@ -636,11 +632,6 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
     private Label newLabel(@Nonnull int[] codeAddressToIndex, int codeAddress) {
         MethodLocation referent = instructionList.get(mapCodeAddressToIndex(codeAddressToIndex, codeAddress));
         return referent.addNewLabel();
-    }
-
-    private static class SwitchPayloadReferenceLabel extends Label {
-        @Nonnull
-        public MethodLocation switchLocation;
     }
 
     @Nonnull
@@ -1016,8 +1007,8 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
             for (Label label : location.getLabels()) {
                 if (label instanceof SwitchPayloadReferenceLabel) {
                     if (switchLocation != null) {
-                        throw new IllegalStateException("Multiple switch instructions refer to the same payload. " +
-                                "This is not currently supported. Please file a bug :)");
+                        throw new IllegalStateException("Multiple switch instructions refer to the same payload. "
+                            + "This is not currently supported. Please file a bug :)");
                     }
                     switchLocation = ((SwitchPayloadReferenceLabel) label).switchLocation;
                 }
@@ -1137,6 +1128,15 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
             default:
                 throw new ExceptionWithContext("Invalid debug item type: " + debugItem.getDebugItemType());
         }
+    }
+
+    private interface Task {
+        void perform();
+    }
+
+    private static class SwitchPayloadReferenceLabel extends Label {
+        @Nonnull
+        public MethodLocation switchLocation;
     }
 }
 

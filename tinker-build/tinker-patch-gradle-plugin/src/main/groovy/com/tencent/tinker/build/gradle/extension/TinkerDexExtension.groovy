@@ -31,6 +31,19 @@ public class TinkerDexExtension {
      * default: raw, keep the orginal file type
      */
     String dexMode;
+
+    /**
+     * If mUsePreGeneratedPatchDex was enabled, tinker framework would generate
+     * a dex file including all added and changed classes instead of patch info file.
+     *
+     * You can make this mode enabled if you're using any dex encrypting solutions or
+     * maintaining patches that suitable for multi-channel base packages.
+     *
+     * Notice that although you use this mode, proguard mappings should still be applied
+     * to base package and all patched packages.
+     */
+    boolean usePreGeneratedPatchDex
+
     /**
      * the dex file patterns, which dex or jar files will be deal to gen patch
      * such as [classes.dex, classes-*.dex, assets/multiDex/*.jar]
@@ -48,6 +61,7 @@ public class TinkerDexExtension {
         dexMode = "jar"
         pattern = []
         loader = []
+        usePreGeneratedPatchDex = false
         this.project = project
     }
 
@@ -60,6 +74,7 @@ public class TinkerDexExtension {
     @Override
     public String toString() {
         """| dexMode = ${dexMode}
+           | usePreGeneratedPatchDex = ${usePreGeneratedPatchDex}
            | pattern = ${pattern}
            | loader = ${loader}
         """.stripMargin()
