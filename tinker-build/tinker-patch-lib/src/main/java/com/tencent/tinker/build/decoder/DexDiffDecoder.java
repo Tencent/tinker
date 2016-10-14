@@ -17,6 +17,8 @@
 package com.tencent.tinker.build.decoder;
 
 
+import com.google.common.io.Files;
+
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
@@ -69,7 +71,7 @@ import java.util.zip.ZipEntry;
  */
 public class DexDiffDecoder extends BaseDecoder {
     private static final String TEST_DEX_NAME = "test.dex";
-    private static final String STUBMODE_PATCH_DEX_NAME = "changed_classes.dex";
+    private static final String PREGENERATED_PATCH_DEX_NAME = "changed_classes.dex";
 
     private final InfoWriter logWriter;
     private final InfoWriter metaWriter;
@@ -282,14 +284,18 @@ public class DexDiffDecoder extends BaseDecoder {
 
         // Write constructed stub mode patch dex to file and record it in meta file.
         final String dexMode = config.mDexRaw ? "raw" : "jar";
-        final File dest = new File(config.mTempResultDir + "/" + STUBMODE_PATCH_DEX_NAME);
+        final File dest = new File(config.mTempResultDir + "/" + PREGENERATED_PATCH_DEX_NAME);
 
         FileDataStore fileDataStore = new FileDataStore(dest);
         dexBuilder.writeTo(fileDataStore);
 
+        final File tempPreGeneratedPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "pre-generated");
+        ensureDirectoryExist(tempPreGeneratedPatchDexPath);
+        Files.copy(dest, new File(tempPreGeneratedPatchDexPath, PREGENERATED_PATCH_DEX_NAME));
+
         final String md5 = MD5.getMD5(dest);
 
-        String meta = STUBMODE_PATCH_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0
+        String meta = PREGENERATED_PATCH_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0
                         + "," + 0 + "," + dexMode;
 
         Logger.d("\nPre-generated patch dex: %s, size:%d", dest.getAbsolutePath(), dest.length());
