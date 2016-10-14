@@ -30,7 +30,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
     def android
     String buildApkPath
     String outputFolder
-    def signconfig
+    def signConfig
 
     public TinkerPatchSchemaTask() {
         description = 'Assemble Tinker Patch'
@@ -54,13 +54,13 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
         InputParam.Builder builder = new InputParam.Builder()
         if (configuration.useSign) {
-            if (signconfig == null) {
-                throw new GradleException("can't the get signconfig for ${taskName} build")
+            if (signConfig == null) {
+                throw new GradleException("can't the get signConfig for ${taskName} build")
             }
-            builder.setSignFile(signconfig.storeFile)
-                    .setKeypass(signconfig.keyPassword)
-                    .setStorealias(signconfig.keyAlias)
-                    .setStorepass(signconfig.storePassword)
+            builder.setSignFile(signConfig.storeFile)
+                    .setKeypass(signConfig.keyPassword)
+                    .setStorealias(signConfig.keyAlias)
+                    .setStorepass(signConfig.storePassword)
 
         }
 

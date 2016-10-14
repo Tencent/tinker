@@ -95,8 +95,11 @@ public class PatchBuilder {
             }
             ArrayList<String> command = new ArrayList<>();
             command.add("jarsigner");
-            command.add("-sigalg");
-            command.add("MD5withRSA");
+            // -sigalg algorithm: If this option is not specified, then SHA1withDSA, SHA256withRSA,
+            // or SHA256withECDSA are used depending on the type of private key.
+            // issue https://github.com/Tencent/tinker/issues/118
+//            command.add("-sigalg");
+//            command.add("MD5withRSA");
             command.add("-digestalg");
             command.add("SHA1");
             command.add("-keystore");

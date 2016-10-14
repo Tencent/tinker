@@ -100,7 +100,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
                 tinkerPatchBuildTask.dependsOn variant.assemble
 
-                tinkerPatchBuildTask.signconfig = variant.apkVariantData.variantConfiguration.signingConfig
+                tinkerPatchBuildTask.signConfig = variant.apkVariantData.variantConfiguration.signingConfig
 
                 variant.outputs.each { output ->
                     tinkerPatchBuildTask.buildApkPath = output.outputFile

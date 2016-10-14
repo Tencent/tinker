@@ -92,6 +92,9 @@ public class CliMain extends Runner {
             if (oldApkFile == null || newApkFile == null) {
                 Logger.e("Missing old apk or new apk file argument");
                 goToError();
+            } else if (!oldApkFile.exists() || !newApkFile.exists()) {
+                Logger.e("Old apk or new apk file does not exist");
+                goToError();
             }
 
             if (outputFile == null) {

@@ -245,11 +245,8 @@ public class ResDiffDecoder extends BaseDecoder {
 
         //check gradle build
         if (config.mUsingGradle) {
-            final boolean resourceArscChanged = modifiedSet.contains(TypedValue.RES_ARSC)
-                || largeModifiedSet.contains(TypedValue.RES_ARSC);
             final boolean ignoreWarning = config.mIgnoreWarning;
-
-            if (resourceArscChanged && !config.mUseApplyResource) {
+            if (arscChanged && !config.mUseApplyResource) {
                 if (ignoreWarning) {
                     //ignoreWarning, just log
                     Logger.e("Warning:ignoreWarning is true, but resources.arsc is changed, you should use applyResourceMapping mode to build the new apk, otherwise, it may be crash at some times");

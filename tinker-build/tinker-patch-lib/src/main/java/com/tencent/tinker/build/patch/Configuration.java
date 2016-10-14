@@ -60,7 +60,6 @@ public class Configuration {
     protected static final String ATTR_NAME  = "name";
 
     protected static final String ATTR_IGNORE_WARNING    = "ignoreWarning";
-    protected static final String ATTR_NO_DIFFPATCH_MODE = "mUsePreGeneratedPatchDex";
     protected static final String ATTR_USE_SIGN          = "useSign";
     protected static final String ATTR_SEVEN_ZIP_PATH    = "sevenZipPath";
     protected static final String ATTR_DEX_MODE          = "dexMode";
@@ -411,9 +410,6 @@ public class Configuration {
                     }
                     if (tagName.equals(ATTR_IGNORE_WARNING)) {
                         mIgnoreWarning = value.equals("true");
-                    } else
-                    if (tagName.equals(ATTR_NO_DIFFPATCH_MODE)) {
-                        mUsePreGeneratedPatchDex = value.equals("true");
                     } else if (tagName.equals(ATTR_USE_SIGN)) {
                         mUseSignAPk = value.equals("true");
                     } else if (tagName.equals(ATTR_SEVEN_ZIP_PATH)) {

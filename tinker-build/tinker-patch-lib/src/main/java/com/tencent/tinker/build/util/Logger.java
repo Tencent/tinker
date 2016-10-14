@@ -34,7 +34,9 @@ public class Logger {
     }
 
     public static void closeLogger() {
-        logWriter.close();
+        if (logWriter != null) {
+            logWriter.close();
+        }
     }
 
     public static void d(final String msg) {

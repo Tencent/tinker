@@ -46,23 +46,24 @@ import java.io.File;
 public class Tinker {
     private static final String TAG = "Tinker.Tinker";
 
-    private static Tinker        sInstance;
-    private static boolean installed = false;
-    final          Context       context;
+    private static Tinker sInstance;
+    private static boolean sInstalled = false;
+
+    final Context       context;
     /**
      * data dir, such as /data/data/tinker.sample.android/tinker
      */
-    final          File          patchDirectory;
-    final          PatchListener listener;
-    final          LoadReporter  loadReporter;
-    final          PatchReporter patchReporter;
-    final          File          patchInfoFile;
-    final          boolean       isMainProcess;
-    final          boolean       isPatchProcess;
+    final File          patchDirectory;
+    final PatchListener listener;
+    final LoadReporter  loadReporter;
+    final PatchReporter patchReporter;
+    final File          patchInfoFile;
+    final boolean       isMainProcess;
+    final boolean       isPatchProcess;
     /**
      * same with {@code TinkerApplication.tinkerLoadVerifyFlag}
      */
-    final boolean tinkerLoadVerifyFlag;
+    final boolean       tinkerLoadVerifyFlag;
     /**
      * same with {@code TinkerApplication.tinkerFlags}
      */
@@ -71,7 +72,7 @@ public class Tinker {
     /**
      * whether load patch success
      */
-    private        boolean loaded    = false;
+    private boolean loaded = false;
 
     private Tinker(Context context, int tinkerFlags, LoadReporter loadReporter, PatchReporter patchReporter,
                    PatchListener listener, File patchDirectory, File patchInfoFile,
@@ -96,7 +97,7 @@ public class Tinker {
      * @return the Tinker object
      */
     public static Tinker with(Context context) {
-        if (!installed) {
+        if (!sInstalled) {
             throw new TinkerRuntimeException("you must install tinker before get tinker sInstance");
         }
         if (sInstance == null) {
@@ -133,7 +134,7 @@ public class Tinker {
     public void install(Intent intentResult, Class<? extends AbstractResultService> serviceClass,
                         AbstractPatch upgradePatch, AbstractPatch repairPatch
     ) {
-        installed = true;
+        sInstalled = true;
         AbstractResultService.setResultServiceClass(serviceClass);
         TinkerPatchService.setPatchProcessor(upgradePatch, repairPatch);
 
@@ -156,6 +157,7 @@ public class Tinker {
 
     /**
      * set tinkerPatchServiceNotificationId
+     *
      * @param id
      */
     public void setPatchServiceNotificationId(int id) {
@@ -212,7 +214,7 @@ public class Tinker {
     }
 
     public boolean isTinkerInstalled() {
-        return installed;
+        return sInstalled;
     }
 
     public boolean isTinkerLoadVerify() {

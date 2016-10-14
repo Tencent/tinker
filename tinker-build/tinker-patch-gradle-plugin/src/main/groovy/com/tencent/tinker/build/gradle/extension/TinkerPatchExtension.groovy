@@ -53,9 +53,14 @@ public class TinkerPatchExtension {
     void checkParameter() {
         if (oldApk == null) {
             throw new GradleException("old apk is null, you must set the correct old apk value!")
-        } else if (!new File(oldApk).exists()) {
-            throw new GradleException("old apk ${oldApk} is not exist, you must set the correct old apk value!")
         }
+        File apk = new File(oldApk)
+        if (!apk.exists()) {
+            throw new GradleException("old apk ${oldApk} is not exist, you must set the correct old apk value!")
+        } else if (!apk.isFile()) {
+            throw new GradleException("old apk ${oldApk} is a directory, you must set the correct old apk value!")
+        }
+
     }
 
     @Override
