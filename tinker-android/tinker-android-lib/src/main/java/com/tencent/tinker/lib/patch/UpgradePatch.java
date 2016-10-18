@@ -56,7 +56,7 @@ public class UpgradePatch extends AbstractPatch {
         //check the signature, we should create a new checker
         ShareSecurityCheck signatureCheck = new ShareSecurityCheck(context);
 
-        int returnCode = ShareTinkerInternals.checkSignatureAndTinkerID(context, patchFile, signatureCheck);
+        int returnCode = ShareTinkerInternals.checkTinkerPackage(context, manager.getTinkerFlags(), patchFile, signatureCheck);
         if (returnCode != ShareConstants.ERROR_PACKAGE_CHECK_OK) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:onPatchPackageCheckFail");
             manager.getPatchReporter().onPatchPackageCheckFail(patchFile, true, returnCode);

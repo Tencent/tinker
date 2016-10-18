@@ -80,6 +80,10 @@ public class AndroidParser {
         if (from == null || to == null) {
             return;
         }
+        if (!originFile.exists()) {
+            throw new RuntimeException("origin resources.arsc is not exist, path:" + originFile.getPath());
+        }
+
         if (from.length() != to.length()) {
             throw new RuntimeException("only support the same string length now!");
         }

@@ -74,6 +74,8 @@ public class SampleTinkerReport {
     public static final int KEY_APPLIED_PACKAGE_CHECK_META_NOT_FOUND            = 155;
     public static final int KEY_APPLIED_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL       = 156;
     public static final int KEY_APPLIED_PACKAGE_CHECK_RES_META                  = 157;
+    public static final int KEY_APPLIED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = 158;
+
     //version check
     public static final int KEY_APPLIED_VERSION_CHECK                           = 180;
     //extract error
@@ -128,6 +130,8 @@ public class SampleTinkerReport {
     public static final int KEY_LOADED_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL       = 355;
     public static final int KEY_LOADED_PACKAGE_CHECK_PACKAGE_META_NOT_FOUND    = 356;
     public static final int KEY_LOADED_PACKAGE_CHECK_RES_META                  = 357;
+    public static final int KEY_LOADED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = 358;
+
 
     public static final int KEY_LOADED_SUCC_COST_500_LESS  = 400;
     public static final int KEY_LOADED_SUCC_COST_1000_LESS = 401;
@@ -229,6 +233,9 @@ public class SampleTinkerReport {
                 break;
             case ShareConstants.ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED:
                 reporter.onReport(KEY_LOADED_PACKAGE_CHECK_RES_META);
+                break;
+            case ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT:
+                reporter.onReport(KEY_LOADED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT);
                 break;
         }
     }
@@ -491,6 +498,9 @@ public class SampleTinkerReport {
                 break;
             case ShareConstants.ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED:
                 reporter.onReport(KEY_APPLIED_PACKAGE_CHECK_RES_META);
+                break;
+            case ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT:
+                reporter.onReport(KEY_APPLIED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT);
                 break;
         }
     }

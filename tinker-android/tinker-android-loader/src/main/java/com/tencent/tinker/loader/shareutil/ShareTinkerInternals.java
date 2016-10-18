@@ -58,6 +58,21 @@ public class ShareTinkerInternals {
     }
 
     /**
+     * thinker package check
+     * @param context
+     * @param tinkerFlag
+     * @param patchFile
+     * @param securityCheck
+     * @return
+     */
+    public static int checkTinkerPackage(Context context, int tinkerFlag, File patchFile, ShareSecurityCheck securityCheck) {
+        int returnCode = checkSignatureAndTinkerID(context, patchFile, securityCheck);
+        if (returnCode == ShareConstants.ERROR_PACKAGE_CHECK_OK) {
+            returnCode = checkPackageAndTinkerFlag(securityCheck, tinkerFlag);
+        }
+        return returnCode;
+    }
+    /**
      * check patch file signature and TINKER_ID
      *
      * @param context
@@ -93,6 +108,25 @@ public class ShareTinkerInternals {
 
 
     public static int checkPackageAndTinkerFlag(ShareSecurityCheck securityCheck, int tinkerFlag) {
+        if (isTinkerEnabledAll(tinkerFlag)) {
+            return ShareConstants.ERROR_PACKAGE_CHECK_OK;
+        }
+        HashMap<String, String> metaContentMap = securityCheck.getMetaContentMap();
+        //check dex
+        boolean dexEnable = isTinkerEnabledForDex(tinkerFlag);
+        if (!dexEnable && metaContentMap.containsKey(ShareConstants.DEX_META_FILE)) {
+            return ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT;
+        }
+        //check native library
+        boolean nativeEnable = isTinkerEnabledForNativeLib(tinkerFlag);
+        if (!nativeEnable && metaContentMap.containsKey(ShareConstants.SO_META_FILE)) {
+            return ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT;
+        }
+        //check resource
+        boolean resEnable = isTinkerEnabledForResource(tinkerFlag);
+        if (!resEnable && metaContentMap.containsKey(ShareConstants.RES_META_FILE)) {
+            return ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT;
+        }
 
         return ShareConstants.ERROR_PACKAGE_CHECK_OK;
     }

@@ -168,5 +168,5 @@ public class ShareConstants {
     public static final int ERROR_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND = -6;
     public static final int ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL       = -7;
     public static final int ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED   = -8;
-
+    public static final int ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = -9;
 }

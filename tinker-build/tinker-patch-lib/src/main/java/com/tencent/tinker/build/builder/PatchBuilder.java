@@ -23,7 +23,10 @@ import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TypedValue;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.Key;
+import java.security.KeyStore;
 import java.util.ArrayList;
 
 /**
@@ -45,7 +48,7 @@ public class PatchBuilder {
         this.sevenZipOutPutDir = new File(config.mOutFolder, TypedValue.OUT_7ZIP_FILE_PATH);
     }
 
-    public void buildPatch() throws IOException, InterruptedException {
+    public void buildPatch() throws Exception {
         final File resultDir = config.mTempResultDir;
         if (!resultDir.exists()) {
             throw new IOException(String.format(
@@ -80,26 +83,47 @@ public class PatchBuilder {
 
     }
 
+    private String getSignatureAlgorithm() throws Exception {
+        FileInputStream fileIn = new FileInputStream(config.mSignatureFile);
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(fileIn, config.mStorePass.toCharArray());
+        Key key = keyStore.getKey(config.mStoreAlias, config.mKeyPass.toCharArray());
+        String keyAlgorithm = key.getAlgorithm();
+        String signatureAlgorithm;
+        if (keyAlgorithm.equalsIgnoreCase("DSA")) {
+            signatureAlgorithm = "SHA1withDSA";
+        } else if (keyAlgorithm.equalsIgnoreCase("RSA")) {
+            signatureAlgorithm = "SHA1withRSA";
+        } else if (keyAlgorithm.equalsIgnoreCase("EC")) {
+            signatureAlgorithm = "SHA1withECDSA";
+        } else {
+            throw new RuntimeException("private key is not a DSA or "
+                + "RSA key");
+        }
+        return signatureAlgorithm;
+    }
+
     /**
      * @param input  unsigned file input
      * @param output signed file output
      * @throws IOException
      * @throws InterruptedException
      */
-    private void signApk(File input, File output) throws IOException, InterruptedException {
+    private void signApk(File input, File output) throws Exception {
         //sign apk
         if (config.mUseSignAPk) {
             Logger.d("Signing apk: %s", output.getName());
+            String signatureAlgorithm = getSignatureAlgorithm();
+            Logger.d("Signing key algorithm is %s", signatureAlgorithm);
+
             if (output.exists()) {
                 output.delete();
             }
             ArrayList<String> command = new ArrayList<>();
             command.add("jarsigner");
-            // -sigalg algorithm: If this option is not specified, then SHA1withDSA, SHA256withRSA,
-            // or SHA256withECDSA are used depending on the type of private key.
             // issue https://github.com/Tencent/tinker/issues/118
             command.add("-sigalg");
-            command.add("MD5withRSA");
+            command.add(signatureAlgorithm);
             command.add("-digestalg");
             command.add("SHA1");
             command.add("-keystore");

@@ -138,14 +138,14 @@ ext {
 
     //for normal build
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/app-armeabi-debug.apk.apk"
+    tinkerOldApkPath = "${bakPath}/app-debug-1018-17-32-47.apk"
     //proguard mapping file to build patch apk
     tinkerApplyMappingPath = "${bakPath}/"
     //resource R.txt to build patch apk, must input if there is resource changed
     tinkerApplyResourcePath = "${bakPath}/"
 
     //use for build all flavor, just fill this field
-    tinkerBuildFlavorDirectory = "${bakPath}/app-1014-13-35-12"
+    tinkerBuildFlavorDirectory = "${bakPath}/app-debug-1018-17-32-47-R.txt"
 }
 
 
@@ -277,7 +277,7 @@ if (buildWithTinker()) {
              */
             loader = ["com.tencent.tinker.loader.*",
                       //warning, you must change it with your application
-                      "tinker.sample.android.SampleApplication",
+                      "tinker.sample.android.app.SampleApplication",
                       //use sample, let BaseBuildInfo unchangeable with tinker
                       "tinker.sample.android.app.BaseBuildInfo"
             ]

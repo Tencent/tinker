@@ -64,6 +64,7 @@ public class Tinker {
      * same with {@code TinkerApplication.tinkerLoadVerifyFlag}
      */
     final boolean       tinkerLoadVerifyFlag;
+
     /**
      * same with {@code TinkerApplication.tinkerFlags}
      */
@@ -243,6 +244,11 @@ public class Tinker {
 
     public PatchListener getPatchListener() {
         return listener;
+    }
+
+
+    public int getTinkerFlags() {
+        return tinkerFlags;
     }
 
     /**
