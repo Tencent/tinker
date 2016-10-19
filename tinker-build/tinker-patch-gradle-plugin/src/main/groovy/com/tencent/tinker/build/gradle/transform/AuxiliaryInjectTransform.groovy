@@ -19,18 +19,12 @@ package com.tencent.tinker.build.gradle.transform
 import com.android.build.api.transform.*
 import com.google.common.collect.ImmutableSet
 import com.google.common.io.Files
-import com.tencent.tinker.build.auxiliaryclass.AuxiliaryClassGenerator
 import com.tencent.tinker.build.auxiliaryclass.AuxiliaryClassInjector
 import com.tencent.tinker.build.auxiliaryclass.AuxiliaryClassInjector.ProcessJarCallback
 import com.tencent.tinker.build.util.MD5
-import com.tencent.tinker.commons.ziputil.Streams
 import groovy.io.FileType
+import groovy.xml.Namespace
 import org.gradle.api.Project
-
-import java.lang.reflect.Constructor
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
 
 /**
  * Transform for calling AuxiliaryClassGenerator and AuxiliaryClassInjector.
@@ -41,7 +35,6 @@ public class AuxiliaryInjectTransform extends Transform {
     private static final String TRANSFORM_NAME = 'AuxiliaryInject'
 
     private final Project project
-    private final String auxiliaryClassPathName
 
     private boolean isEnabled = false
 
@@ -50,16 +43,14 @@ public class AuxiliaryInjectTransform extends Transform {
     /* ****** Variant related parameters start ****** */
 
     boolean isInitialized = false
-    def manifestFile
-    def appClassName
-    def appClassPathName
+    def manifestFile = null
+    def appClassName = ''
+    def appClassPathName = ''
 
     /* ******  Variant related parameters end  ****** */
 
     public AuxiliaryInjectTransform(Project project) {
         this.project = project
-        this.auxiliaryClassPathName =
-                AuxiliaryClassInjector.AUXILIARY_CLASSNAME.replace('.', '/') + '.class'
 
         project.afterEvaluate {
             this.isEnabled = project.tinkerPatch.dex.usePreGeneratedPatchDex
@@ -82,8 +73,8 @@ public class AuxiliaryInjectTransform extends Transform {
     Set<QualifiedContent.Scope> getScopes() {
         return ImmutableSet.of(
                 QualifiedContent.Scope.PROJECT,
-                QualifiedContent.Scope.PROJECT_LOCAL_DEPS,
                 QualifiedContent.Scope.SUB_PROJECTS,
+                QualifiedContent.Scope.PROJECT_LOCAL_DEPS,
                 QualifiedContent.Scope.SUB_PROJECTS_LOCAL_DEPS,
                 QualifiedContent.Scope.EXTERNAL_LIBRARIES
         )
@@ -132,11 +123,17 @@ public class AuxiliaryInjectTransform extends Transform {
         }
 
         // Get application classname from manifest file.
-        def parsedManifest = new XmlParser().parse(this.manifestFile)
-        def androidTag = new groovy.xml.Namespace(
-                "http://schemas.android.com/apk/res/android", 'android')
-        this.appClassName = parsedManifest.application[0].attribute(androidTag.name)
-        this.appClassPathName = this.appClassName.replace('.', '/') + '.class'
+        if (this.manifestFile != null) {
+            def parsedManifest = new XmlParser().parse(
+                    new InputStreamReader(new FileInputStream(this.manifestFile), "utf-8"))
+            def androidTag = new Namespace(
+                    'http://schemas.android.com/apk/res/android', 'android')
+            this.appClassName = parsedManifest.application[0].attribute(androidTag.name)
+
+            if (this.appClassName != null && this.appClassName.length() > 0) {
+                this.appClassPathName = this.appClassName.replace('.', '/') + '.class'
+            }
+        }
 
         this.isInitialized = true
     }
@@ -162,9 +159,6 @@ public class AuxiliaryInjectTransform extends Transform {
         if (!this.isEnabled) {
             printMsgLog("PreGeneratedPatchDex mode is disabled, skip transforming.")
         }
-
-        // Auxiliary class may be exist if user create it manually in his project.
-        boolean isAuxiliaryClassExists = false
 
         if (!dirInputs.isEmpty() || !jarInputs.isEmpty()) {
             File dirOutput = transformInvocation.outputProvider.getContentLocation(
@@ -195,19 +189,14 @@ public class AuxiliaryInjectTransform extends Transform {
                                         return // continue.
                                     }
 
-                                    // If disabled, skip all classes.
-                                    if (!this.isEnabled) {
+                                    // If disabled or not a class file, skip transforming them.
+                                    if (!this.isEnabled || !fileInput.getName().endsWith('.class')) {
                                         Files.copy(fileInput, fileOutput)
                                     } else {
                                         // Skip application class.
                                         if (relativeInputClassPath.equals(this.appClassPathName)) {
                                             printWarnLog('Skipping Application class: %s',
                                                     relativeInputClassPath)
-                                            Files.copy(fileInput, fileOutput)
-                                        } else
-                                        // Skip and mark auxiliary class.
-                                        if (relativeInputClassPath.equals(this.auxiliaryClassPathName)) {
-                                            isAuxiliaryClassExists = true
                                             Files.copy(fileInput, fileOutput)
                                         } else {
                                             printMsgLog('Processing %s file %s',
@@ -239,7 +228,7 @@ public class AuxiliaryInjectTransform extends Transform {
                             dirOutput.deleteDir()
                         }
 
-                        dirInput.file.traverse(type: FileType.FILES, nameFilter: ~/.*\.class$/) { fileInput ->
+                        dirInput.file.traverse(type: FileType.FILES) { fileInput ->
                             File fileOutput = new File(fileInput.getAbsolutePath().replace(dirInput.file.getAbsolutePath(), dirOutput.getAbsolutePath()))
                             if (!fileOutput.exists()) {
                                 fileOutput.getParentFile().mkdirs()
@@ -248,19 +237,14 @@ public class AuxiliaryInjectTransform extends Transform {
                                     dirInput.file.toPath().relativize(fileInput.toPath())
                                             .toString().replace('\\', '/')
 
-                            // If disabled, skip all classes.
-                            if (!this.isEnabled) {
+                            // If disabled or not a class file, skip transforming them.
+                            if (!this.isEnabled || !fileInput.getName().endsWith('.class')) {
                                 Files.copy(fileInput, fileOutput)
                             } else {
                                 // Skip application class.
                                 if (relativeInputClassPath.equals(this.appClassPathName)) {
                                     printWarnLog('Skipping Application class: %s',
                                             relativeInputClassPath)
-                                    Files.copy(fileInput, fileOutput)
-                                } else
-                                // Skip and mark auxiliary class.
-                                if (relativeInputClassPath.equals(this.auxiliaryClassPathName)) {
-                                    isAuxiliaryClassExists = true
                                     Files.copy(fileInput, fileOutput)
                                 } else {
                                     printMsgLog('Processing %s file %s',
@@ -275,26 +259,13 @@ public class AuxiliaryInjectTransform extends Transform {
             }
 
             if (!jarInputs.isEmpty()) {
-                File jarOutput = transformInvocation.outputProvider.getContentLocation(
-                        "combined", getOutputTypes(), getScopes(), Format.JAR
-                )
-                if (!jarOutput.exists()) {
-                    jarOutput.getParentFile().mkdirs()
-                }
-
-                File tempJarOutputDir = new File(transformInvocation.context.temporaryDir, "combined-jars")
-                if (!tempJarOutputDir.exists()) {
-                    tempJarOutputDir.mkdirs()
-                }
-
-                List<File> jarsToMerge = new ArrayList<>()
-
                 jarInputs.each { jarInput ->
-                    File fileInput = jarInput.file
-                    File fileOutput = new File(tempJarOutputDir,
-                            getUniqueHashName(fileInput))
-                    if (!fileOutput.exists()) {
-                        fileOutput.getParentFile().mkdirs()
+                    File jarInputFile = jarInput.file
+                    File jarOutputFile = transformInvocation.outputProvider.getContentLocation(
+                            getUniqueHashName(jarInputFile), getOutputTypes(), getScopes(), Format.JAR
+                    )
+                    if (!jarOutputFile.exists()) {
+                        jarOutputFile.getParentFile().mkdirs()
                     }
 
                     switch (jarInput.status) {
@@ -308,23 +279,18 @@ public class AuxiliaryInjectTransform extends Transform {
                             if (this.isEnabled) {
                                 printMsgLog('Processing %s file %s',
                                         transformInvocation.incremental ? jarInput.status : Status.ADDED,
-                                        tempJarOutputDir.toPath().relativize(fileOutput.toPath()).toString())
+                                        jarInputFile)
                             }
 
-                            AuxiliaryClassInjector.processJar(fileInput, fileOutput, new ProcessJarCallback() {
+                            AuxiliaryClassInjector.processJar(jarInputFile, jarOutputFile, new ProcessJarCallback() {
                                 @Override
                                 boolean onProcessClassEntry(String entryName) {
-                                    // If disabled, skip all classes.
-                                    if (!this.isEnabled) {
+                                    // If disabled or not a class file, skip transforming them.
+                                    if (!this.isEnabled || !entryName.endsWith('.class')) {
                                         return false
                                     } else {
                                         // Skip application class.
                                         if (entryName.equals(AuxiliaryInjectTransform.this.appClassPathName)) {
-                                            return false
-                                        } else
-                                        // Skip and mark auxiliary class.
-                                        if (entryName.equals(AuxiliaryInjectTransform.this.auxiliaryClassPathName)) {
-                                            isAuxiliaryClassExists = true
                                             return false
                                         } else {
                                             return true;
@@ -332,35 +298,19 @@ public class AuxiliaryInjectTransform extends Transform {
                                     }
                                 }
                             })
-                            jarsToMerge.add(fileOutput)
                             break
                         case Status.REMOVED:
                             // Print log if it's enabled only.
                             if (this.isEnabled) {
                                 printMsgLog('Removing %s file %s from result.', fileStatus,
-                                        tempJarOutputDir.toPath().relativize(fileOutput.toPath()).toString())
+                                        jarOutputFile)
                             }
 
-                            if (fileOutput.exists()) {
-                                fileOutput.delete()
+                            if (jarOutputFile.exists()) {
+                                jarOutputFile.delete()
                             }
                             break
                     }
-                }
-
-                mergeJars(jarsToMerge, jarOutput)
-            }
-
-            if (this.isEnabled) {
-                if (!isAuxiliaryClassExists) {
-                    printMsgLog('Generating auxiliary class %s.', this.auxiliaryClassPathName)
-                    AuxiliaryClassGenerator.generateAuxiliaryClass(
-                            dirOutput, AuxiliaryClassInjector.AUXILIARY_CLASSNAME)
-                } else {
-                    printWarnLog(
-                            'Found auxiliary class %s in your source codes, skip generating.',
-                            this.auxiliaryClassPathName
-                    )
                 }
             }
         }
@@ -376,44 +326,7 @@ public class AuxiliaryInjectTransform extends Transform {
         final int extSepPos = fileInputName.lastIndexOf('.')
         final String fileInputNamePrefix =
                 (extSepPos >= 0 ? fileInputName.substring(0, extSepPos) : fileInputName)
-        final String fileInputNameSurfix =
-                (extSepPos >= 0 ? fileInputName.substring(extSepPos) : '')
-        return fileInputNamePrefix + '_' + pathMD5 + fileInputNameSurfix
-    }
-
-    private void mergeJars(Collection<File> jarsToMerge, File jarOutput) {
-        if (jarsToMerge == null || jarsToMerge.size() == 0) {
-            return
-        }
-
-        Set<String> addedEntries = new HashSet<>()
-        ZipOutputStream zos = null
-        try {
-            zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(jarOutput)))
-            jarsToMerge.each { jarInput ->
-                ZipInputStream zis = null
-                try {
-                    zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(jarInput)))
-                    ZipEntry entryIn = null
-                    while ((entryIn = zis.getNextEntry()) != null) {
-                        final String entryName = entryIn.getName()
-                        if (!addedEntries.contains(entryName)) {
-                            addedEntries.add(entryName)
-                            ZipEntry entryOut = new ZipEntry(entryIn.getName())
-                            zos.putNextEntry(entryOut)
-                            if (!entryIn.isDirectory()) {
-                                Streams.copy(zis, zos)
-                            }
-                            zos.closeEntry()
-                        }
-                    }
-                } finally {
-                    closeQuietly(zis)
-                }
-            }
-        } finally {
-            closeQuietly(zos)
-        }
+        return fileInputNamePrefix + '_' + pathMD5
     }
 
     private void printMsgLog(String fmt, Object... vals) {
@@ -426,16 +339,6 @@ public class AuxiliaryInjectTransform extends Transform {
         final String title = TRANSFORM_NAME.capitalize()
         this.project.logger.warn("[{}] {}", title,
                 (vals == null || vals.length == 0 ? fmt : String.format(fmt, vals)))
-    }
-
-    private void closeQuietly(Closeable target) {
-        if (target != null) {
-            try {
-                target.close()
-            } catch (Exception e) {
-                // Ignored.
-            }
-        }
     }
 }
 

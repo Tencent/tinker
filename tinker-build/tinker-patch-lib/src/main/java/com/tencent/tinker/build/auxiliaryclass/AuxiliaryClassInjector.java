@@ -40,7 +40,10 @@ import java.util.zip.ZipOutputStream;
  */
 
 public final class AuxiliaryClassInjector {
-    public static final String AUXILIARY_CLASSNAME = "dalvik.system.PathClassLoader";
+    // The descriptor of this class is so strange so that we hope no one
+    // would happen to create a class named the same as it.
+    public static final String NOT_EXISTS_CLASSNAME
+            = "tInKEr.pReVEnT.PrEVErIfIEd.STuBCLaSS";
 
     public interface ProcessJarCallback {
         boolean onProcessClassEntry(String entryName);
@@ -105,7 +108,7 @@ public final class AuxiliaryClassInjector {
     private static void processClass(InputStream classIn, OutputStream classOut) throws IOException {
         ClassReader cr = new ClassReader(classIn);
         ClassWriter cw = new ClassWriter(0);
-        AuxiliaryClassInjectAdapter aia = new AuxiliaryClassInjectAdapter(AUXILIARY_CLASSNAME, cw);
+        AuxiliaryClassInjectAdapter aia = new AuxiliaryClassInjectAdapter(NOT_EXISTS_CLASSNAME, cw);
         cr.accept(aia, 0);
         classOut.write(cw.toByteArray());
         classOut.flush();

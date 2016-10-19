@@ -18,6 +18,7 @@ package com.tencent.tinker.build.auxiliaryclass;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -104,8 +105,12 @@ public final class AuxiliaryClassInjectAdapter extends ClassVisitor {
         if (!this.isClInitExists && !this.isInitExists) {
             MethodVisitor mv = super.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
             mv.visitCode();
-            mv.visitLdcInsn(Type.getType(AuxiliaryClassInjectAdapter.this.auxiliaryClassDesc));
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "lineSeparator", "()Ljava/lang/String;", false);
+            Label lblSkipInvalidInsn = new Label();
+            mv.visitJumpInsn(Opcodes.IFNONNULL, lblSkipInvalidInsn);
+            mv.visitLdcInsn(Type.getType(this.auxiliaryClassDesc));
             mv.visitVarInsn(Opcodes.ASTORE, 0);
+            mv.visitLabel(lblSkipInvalidInsn);
             mv.visitInsn(Opcodes.RETURN);
             mv.visitMaxs(1, 1);
             mv.visitEnd();
@@ -121,8 +126,12 @@ public final class AuxiliaryClassInjectAdapter extends ClassVisitor {
         @Override
         public void visitInsn(int opcode) {
             if (opcode == Opcodes.RETURN) {
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "lineSeparator", "()Ljava/lang/String;", false);
+                Label lblSkipInvalidInsn = new Label();
+                super.visitJumpInsn(Opcodes.IFNONNULL, lblSkipInvalidInsn);
                 super.visitLdcInsn(Type.getType(AuxiliaryClassInjectAdapter.this.auxiliaryClassDesc));
                 super.visitVarInsn(Opcodes.ASTORE, 0);
+                super.visitLabel(lblSkipInvalidInsn);
             }
             super.visitInsn(opcode);
         }
