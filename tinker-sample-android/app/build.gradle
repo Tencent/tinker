@@ -24,7 +24,7 @@ dependencies {
 
 def gitSha() {
     try {
-        String gitRev = 'git rev-parse --short HEAD'.execute().text.trim()
+        String gitRev = 'git rev-parse --short HEAD'.execute(null, project.rootDir).text.trim()
         if (gitRev == null) {
             throw new GradleException("can't get git rev, you should add git to system path or just input test value, such as 'testTinkerId'")
         }
@@ -258,7 +258,7 @@ if (buildWithTinker()) {
              * Notice: If you change this value, please trigger clean task
              * and regenerate base package.
              */
-            usePreGeneratedPatchDex = false
+            usePreGeneratedPatchDex = true
             /**
              * necessary，default '[]'
              * what dexes in apk are expected to deal with tinkerPatch
