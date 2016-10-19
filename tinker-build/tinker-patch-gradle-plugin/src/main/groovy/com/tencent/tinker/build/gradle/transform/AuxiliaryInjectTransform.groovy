@@ -27,7 +27,7 @@ import groovy.xml.Namespace
 import org.gradle.api.Project
 
 /**
- * Transform for calling AuxiliaryClassGenerator and AuxiliaryClassInjector.
+ * Transform for calling AuxiliaryClassInjector.
  *
  * @author tangyinsheng
  */
