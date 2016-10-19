@@ -24,6 +24,8 @@ import com.tencent.tinker.build.util.TypedValue
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.UnknownTaskException
+
 /**
  * Registers the plugin's tasks.
  *
@@ -96,6 +98,19 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 def variantOutput = variant.outputs.first()
                 def variantName = variant.name.capitalize()
+
+                try {
+                    def instantRunTask = project.tasks.getByName("transformClassesWithInstantRunFor${variantName}")
+                    if (instantRunTask) {
+                        throw new GradleException(
+                                "Tinker does not support instant run mode, please trigger build"
+                                        + " by assemble${variantName} or disable instant run"
+                                        + " in 'File->Settings...'."
+                        )
+                    }
+                } catch (UnknownTaskException e) {
+                    // Not in instant run mode, continue.
+                }
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
                 tinkerPatchBuildTask.dependsOn variant.assemble
