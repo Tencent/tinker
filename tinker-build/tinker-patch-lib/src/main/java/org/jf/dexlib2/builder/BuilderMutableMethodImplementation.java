@@ -213,7 +213,7 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
 
             for (ExceptionHandler exceptionHandler : tryBlock.getExceptionHandlers()) {
                 tryBlocks.add(new BuilderTryBlock(startLabel, endLabel,
-                        exceptionHandler.getExceptionTypeReference(),
+                        (TypeReference) convertReference(exceptionHandler.getExceptionTypeReference()),
                         newLabel(codeAddressToIndex, exceptionHandler.getHandlerCodeAddress())));
             }
         }
