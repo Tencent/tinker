@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -82,26 +84,51 @@ public final class AuxiliaryClassInjector {
             zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(jarIn)), charsetIn);
             zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(jarOut)), charsetOut);
             ZipEntry entryIn = null;
+            Map<String, Integer> processedEntryNamesMap = new HashMap<>();
             while ((entryIn = zis.getNextEntry()) != null) {
                 final String entryName = entryIn.getName();
-                ZipEntry entryOut = new ZipEntry(entryName);
-                zos.putNextEntry(entryOut);
-                if (!entryIn.isDirectory()) {
-                    if (entryName.endsWith(".class")) {
-                        if (cb == null || cb.onProcessClassEntry(entryName)) {
-                            processClass(zis, zos);
+                ZipEntry entryOut = new ZipEntry(entryIn);
+                entryOut.setCompressedSize(-1);
+                if (!processedEntryNamesMap.containsKey(entryName)) {
+                    zos.putNextEntry(entryOut);
+                    if (!entryIn.isDirectory()) {
+                        if (entryName.endsWith(".class")) {
+                            if (cb == null || cb.onProcessClassEntry(entryName)) {
+                                processClass(zis, zos);
+                            } else {
+                                Streams.copy(zis, zos);
+                            }
                         } else {
                             Streams.copy(zis, zos);
                         }
-                    } else {
-                        Streams.copy(zis, zos);
                     }
+                    zos.closeEntry();
+                    processedEntryNamesMap.put(entryName, 1);
+                } else {
+                    int duplicateCount = processedEntryNamesMap.get(entryName);
+                    final String wrapperJarName
+                            = jarOut.getName().substring(0, jarOut.getName().lastIndexOf(".jar"))
+                            + "_dup_ew_" + duplicateCount + ".jar";
+                    File wrapperJarOut = new File(jarOut.getParentFile(), wrapperJarName);
+                    wrapEntryByJar(entryOut, zis, wrapperJarOut);
+                    processedEntryNamesMap.put(entryName, duplicateCount + 1);
                 }
-                zos.closeEntry();
             }
         } finally {
             closeQuietly(zos);
             closeQuietly(zis);
+        }
+    }
+
+    private static void wrapEntryByJar(ZipEntry ze, InputStream eData, File jarOut) throws IOException {
+        ZipOutputStream zos = null;
+        try {
+            zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(jarOut)));
+            zos.putNextEntry(ze);
+            Streams.copy(eData, zos);
+            zos.closeEntry();
+        } finally {
+            closeQuietly(zos);
         }
     }
 
