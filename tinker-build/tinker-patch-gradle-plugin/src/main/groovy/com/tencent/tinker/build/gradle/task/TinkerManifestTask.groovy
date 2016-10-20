@@ -46,7 +46,7 @@ public class TinkerManifestTask extends DefaultTask {
         project.logger.error("tinker add ${tinkerValue} to your AndroidManifest.xml ${manifestPath}")
 
         def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
-        manifestPath
+
         def xml = new XmlParser().parse(new InputStreamReader(new FileInputStream(manifestPath), "utf-8"))
 
         def application = xml.application[0]
