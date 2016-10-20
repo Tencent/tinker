@@ -1,6 +1,6 @@
 ## Tinker
 [![license](http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat)](https://github.com/Tencent/tinker/blob/master/LICENSE)
-[![Release Version](https://img.shields.io/badge/release-1.7.0-red.svg)](https://github.com/Tencent/tinker/releases) 
+[![Release Version](https://img.shields.io/badge/release-1.7.1-red.svg)](https://github.com/Tencent/tinker/releases) 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Tencent/tinker/pulls)
 [![WeChat Approved](https://img.shields.io/badge/Wechat_Approved-1.6.2-red.svg)](https://github.com/Tencent/tinker/wiki)
 
@@ -14,7 +14,7 @@ Add tinker-gradle-plugin as a dependency in your main `build.gradle` in the root
 ```gradle
 buildscript {
     dependencies {
-        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.7.0')
+        classpath ('com.tencent.tinker:tinker-patch-gradle-plugin:1.7.1')
     }
 }
 ```
@@ -24,9 +24,9 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 ```gradle
 dependencies {
     //optional, help to generate the final application 
-    compile('com.tencent.tinker:tinker-android-anno:1.7.0')
+    compile('com.tencent.tinker:tinker-android-anno:1.7.1')
     //tinker's main Android lib
-    compile('com.tencent.tinker:tinker-android-lib:1.7.0') 
+    compile('com.tencent.tinker:tinker-android-lib:1.7.1') 
 }
 ...
 ...
