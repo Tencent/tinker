@@ -289,9 +289,9 @@ public class ResDiffDecoder extends BaseDecoder {
         String resZipMd5 = Utils.genResOutputFile(extractToZip, tempResZip, config,
             addedSet, modifiedSet, deletedSet, largeModifiedSet, largeModifiedMap);
 
-        Logger.e("final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5);
+        Logger.e("Final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5);
         logWriter.writeLineToInfoFile(
-            String.format("final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5)
+            String.format("Final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5)
         );
         //delete temp file
         FileOperation.deleteFile(tempResZip);
@@ -309,9 +309,9 @@ public class ResDiffDecoder extends BaseDecoder {
                     addedSet, modifiedSet, deletedSet, largeModifiedSet, largeModifiedMap);
                 //delete temp file
                 FileOperation.deleteFile(tempRes7Zip);
-                Logger.e("final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5);
+                Logger.e("Final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5);
                 logWriter.writeLineToInfoFile(
-                    String.format("final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5)
+                    String.format("Final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5)
                 );
             }
         }

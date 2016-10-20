@@ -140,12 +140,12 @@ ext {
     //old apk file to build patch apk
     tinkerOldApkPath = "${bakPath}/app-debug-1018-17-32-47.apk"
     //proguard mapping file to build patch apk
-    tinkerApplyMappingPath = "${bakPath}/"
+    tinkerApplyMappingPath = "${bakPath}/app-debug-1018-17-32-47-mapping.txt"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/"
+    tinkerApplyResourcePath = "${bakPath}/app-debug-1018-17-32-47-R.txt"
 
-    //use for build all flavor, just fill this field
-    tinkerBuildFlavorDirectory = "${bakPath}/app-debug-1018-17-32-47-R.txt"
+    //only use for build all flavor, if not, just ignore this field
+    tinkerBuildFlavorDirectory = "${bakPath}/app-1018-17-32-47"
 }
 
 

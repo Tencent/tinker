@@ -132,6 +132,14 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 variantOutput.processResources.dependsOn manifestTask
 
+                //resource id
+                TinkerResourceIdTask applyResourceTask = project.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
+                applyResourceTask.resDir = variantOutput.processResources.resDir
+                //let applyResourceTask run after manifestTask
+                applyResourceTask.mustRunAfter manifestTask
+
+                variantOutput.processResources.dependsOn applyResourceTask
+
                 // Add this proguard settings file to the list
                 boolean proguardEnable = variant.getBuildType().buildType.minifyEnabled
 
@@ -149,14 +157,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     multidexConfigTask.applicationVariant = variant
                     variantOutput.packageApplication.dependsOn multidexConfigTask
                 }
-//                if (tempResourceFile != null && tempResourceFile.exists() && tempResourceFile.isFile()) {
-                    TinkerResourceIdTask applyResourceTask = project.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                    applyResourceTask.resDir = variantOutput.processResources.resDir
-                    variantOutput.processResources.dependsOn applyResourceTask
-//                }
-//                else {
-//                    project.logger.error("apply resource mapping file ${resourceMappingFile} is not exist, just ignore")
-//                }
+
             }
         }
 

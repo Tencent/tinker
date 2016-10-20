@@ -23,7 +23,6 @@ import com.tencent.tinker.build.aapt.RDotTxtEntry
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
 import org.gradle.api.DefaultTask
-import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -43,25 +42,24 @@ public class TinkerResourceIdTask extends DefaultTask {
 
     @TaskAction
     def applyResourceId() {
+        String resourceMappingFile = project.extensions.tinkerPatch.buildConfig.applyResourceMapping
+
         // Parse the public.xml and ids.xml
+        if (!FileOperation.isLegalFile(resourceMappingFile)) {
+            project.logger.error("apply resource mapping file ${resourceMappingFile} is illegal, just ignore")
+            return
+        }
         String idsXml = resDir + "/values/ids.xml";
         String publicXml = resDir + "/values/public.xml";
         FileOperation.deleteFile(idsXml);
         FileOperation.deleteFile(publicXml);
         List<String> resourceDirectoryList = new ArrayList<String>()
         resourceDirectoryList.add(resDir)
-        Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap = null
 
-        String resourceMappingFile = project.extensions.tinkerPatch.buildConfig.applyResourceMapping
+        project.logger.error("we build ${project.getName()} apk with apply resource mapping file ${resourceMappingFile}")
+        project.extensions.tinkerPatch.buildConfig.usingResourceMapping = true
+        Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap = PatchUtil.readRTxt(resourceMappingFile)
 
-        if (FileOperation.isLegalFile(resourceMappingFile)) {
-            project.logger.error("we build ${project.getName()} apk with apply resource mapping file ${resourceMappingFile}")
-            project.extensions.tinkerPatch.buildConfig.usingResourceMapping = true
-            rTypeResourceMap = PatchUtil.readRTxt(resourceMappingFile);
-        } else {
-            project.logger.error("apply resource mapping file ${resourceMappingFile} is illegal, just ignore")
-            return
-        }
         AaptResourceCollector aaptResourceCollector = AaptUtil.collectResource(resourceDirectoryList, rTypeResourceMap)
         PatchUtil.generatePublicResourceXml(aaptResourceCollector, idsXml, publicXml)
         File publicFile = new File(publicXml)
