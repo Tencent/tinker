@@ -95,6 +95,11 @@ android {
         buildConfigField "String", "CLIENTVERSION", "\"${getTinkerIdValue()}\""
         buildConfigField "String", "PLATFORM",  "\"all\""
     }
+
+//    aaptOptions{
+//        cruncherEnabled false
+//    }
+
 //    //use to test flavors support
 //    productFlavors {
 //        flavor1 {
