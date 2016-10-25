@@ -8,6 +8,8 @@ dependencies {
     compile "com.android.support:appcompat-v7:23.1.1"
     compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
     compile("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+    compile("com.tencent.tinker:tinker-server-client:${TINKER_VERSION}") { changing = true }
+
     compile "com.android.support:multidex:1.0.1"
 
     //use to test multiDex

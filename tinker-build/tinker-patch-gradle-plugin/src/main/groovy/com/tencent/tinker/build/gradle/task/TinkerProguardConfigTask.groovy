@@ -108,6 +108,9 @@ public class TinkerProguardConfigTask extends DefaultTask {
         //they will removed when apply
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
         for (String pattern : loader) {
+            if (pattern.endsWith("*") && !pattern.endsWith("**")) {
+                pattern += "*"
+            }
             fr.write("-keep class " + pattern)
             fr.write("\n")
         }

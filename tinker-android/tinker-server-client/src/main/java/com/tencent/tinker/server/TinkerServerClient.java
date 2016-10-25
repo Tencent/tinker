@@ -62,7 +62,7 @@ public class TinkerServerClient {
             return;
         }
         long interval = System.currentTimeMillis() - last;
-        if (tinkerClientImp.isDebug() || interval > checkInterval) {
+        if (tinkerClientImp.isDebug() || interval >= checkInterval) {
             sp.edit().putLong(TINKER_LAST_CHECK, System.currentTimeMillis()).commit();
             tinkerClientImp.sync(context, new DataFetcher.DataCallback<String>() {
                 @Override
@@ -75,10 +75,11 @@ public class TinkerServerClient {
                     TinkerLog.i(TAG, "tinker sync onLoadFailed:" + e);
                 }
             });
+        } else {
+            TinkerLog.i(TAG, "tinker sync should wait interval %ss", (checkInterval - interval) / 1000);
         }
 
         return;
-
     }
 
     public void setCheckIntervalByHours(int hours) {

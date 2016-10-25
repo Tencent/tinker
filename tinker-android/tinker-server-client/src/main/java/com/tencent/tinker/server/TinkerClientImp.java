@@ -389,7 +389,7 @@ public class TinkerClientImp implements TinkerClientAPI {
 
         public TinkerClientImp build() {
             makeDefault();
-            return new TinkerClientImp(this.appVersion, this.appKey, this.host, this.debug, this.conditions);
+            return new TinkerClientImp(this.appKey, this.appVersion, this.host, this.debug, this.conditions);
         }
     }
 }

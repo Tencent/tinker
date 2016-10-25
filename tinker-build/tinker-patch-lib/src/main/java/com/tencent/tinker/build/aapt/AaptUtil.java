@@ -284,12 +284,12 @@ public final class AaptUtil {
 //if(!resourceCollector.isContainResource(rType, IdType.INT, sanitizeName(resourceCollector, name))){
 //throw new AaptUtilException("Not found reference '" + resourceName + "' in '" + xmlFullFilename + "'");
 //}
-            references.add(new FakeRDotTxtEntry(IdType.INT, rType, sanitizeName(resourceCollector, name)));
+            references.add(new FakeRDotTxtEntry(IdType.INT, rType, sanitizeName(rType, resourceCollector, name)));
         }
     }
 
-    private static void addToResourceCollector(AaptResourceCollector resourceCollector, com.tencent.tinker.build.aapt.ResourceDirectory resourceDirectory, Node node, RType rType, String resourceValue) {
-        String resourceName = sanitizeName(resourceCollector, extractNameAttribute(node));
+    private static void addToResourceCollector(AaptResourceCollector resourceCollector, ResourceDirectory resourceDirectory, Node node, RType rType, String resourceValue) {
+        String resourceName = sanitizeName(rType, resourceCollector, extractNameAttribute(node));
         resourceCollector.addRTypeResourceName(rType, resourceName, resourceValue, resourceDirectory);
         if (rType.equals(RType.STYLEABLE)) {
 
@@ -300,7 +300,7 @@ public final class AaptUtil {
                 }
 
                 String rawAttrName = extractNameAttribute(attrNode);
-                String attrName = sanitizeName(resourceCollector, rawAttrName);
+                String attrName = sanitizeName(rType, resourceCollector, rawAttrName);
                 resourceCollector.addResource(RType.STYLEABLE, IdType.INT, String.format("%s_%s", resourceName, attrName), Integer.toString(count++));
 
                 if (!rawAttrName.startsWith("android:")) {
@@ -315,9 +315,9 @@ public final class AaptUtil {
         }
     }
 
-    private static String sanitizeName(AaptResourceCollector resourceCollector, String rawName) {
+    private static String sanitizeName(RType rType, AaptResourceCollector resourceCollector, String rawName) {
         String sanitizeName = rawName.replaceAll("[.:]", "_");
-        resourceCollector.putSanitizeName(sanitizeName, rawName);
+        resourceCollector.putSanitizeName(rType, sanitizeName, rawName);
         return sanitizeName;
     }
 
