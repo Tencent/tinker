@@ -36,18 +36,18 @@ public class ClassReferringInsnVisitor extends InstructionVisitor {
 
     private final Dex methodOwner;
     private final ClassData.Method method;
-    private final Collection<String> refAffectedClassDefs;
+    private final Collection<String> classDescsToCheck;
     private final DexPatcherLogger logger;
 
-    public boolean isMethodReferencedToRefAffectedClass;
+    public boolean isMethodReferencedToAnyProvidedClasses;
 
-    ClassReferringInsnVisitor(Dex methodOwner, ClassData.Method method, Collection<String> refAffectedClassDefs, DexPatcherLogger logger) {
+    ClassReferringInsnVisitor(Dex methodOwner, ClassData.Method method, Collection<String> classDescsToCheck, DexPatcherLogger logger) {
         super(null);
         this.methodOwner = methodOwner;
         this.method = method;
-        this.refAffectedClassDefs = refAffectedClassDefs;
+        this.classDescsToCheck = classDescsToCheck;
         this.logger = logger;
-        this.isMethodReferencedToRefAffectedClass = false;
+        this.isMethodReferencedToAnyProvidedClasses = false;
     }
 
     @Override
@@ -91,7 +91,7 @@ public class ClassReferringInsnVisitor extends InstructionVisitor {
         switch (indexType) {
             case InstructionCodec.INDEX_TYPE_TYPE_REF: {
                 typeName = methodOwner.typeNames().get(index);
-                refInfoInLog = "init ref-changed class";
+                refInfoInLog = "init class";
                 break;
             }
             case InstructionCodec.INDEX_TYPE_FIELD_REF: {
@@ -107,7 +107,7 @@ public class ClassReferringInsnVisitor extends InstructionVisitor {
                 break;
             }
         }
-        if (typeName != null && refAffectedClassDefs.contains(typeName)) {
+        if (typeName != null && classDescsToCheck.contains(typeName)) {
             MethodId methodId = methodOwner.methodIds().get(method.methodIndex);
             logger.i(
                     TAG,
@@ -117,7 +117,7 @@ public class ClassReferringInsnVisitor extends InstructionVisitor {
                     typeName,
                     refInfoInLog
             );
-            isMethodReferencedToRefAffectedClass = true;
+            isMethodReferencedToAnyProvidedClasses = true;
         }
     }
 

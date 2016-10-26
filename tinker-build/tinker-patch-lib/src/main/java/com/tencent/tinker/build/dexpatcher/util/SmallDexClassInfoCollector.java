@@ -206,7 +206,7 @@ public final class SmallDexClassInfoCollector {
                     new InstructionReader(new ShortArrayCodeInput(code.instructions));
             try {
                 insnReader.accept(refInsnVisitor);
-                if (refInsnVisitor.isMethodReferencedToRefAffectedClass) {
+                if (refInsnVisitor.isMethodReferencedToAnyProvidedClasses) {
                     return true;
                 }
             } catch (EOFException e) {
