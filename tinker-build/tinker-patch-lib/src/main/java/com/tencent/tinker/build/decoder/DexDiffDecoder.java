@@ -308,9 +308,9 @@ public class DexDiffDecoder extends BaseDecoder {
 
     @SuppressWarnings("NewApi")
     private void generatePatchInfoFile() throws IOException {
-        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "full");
+        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "dalvik");
         ensureDirectoryExist(tempFullPatchDexPath);
-        File tempSmallPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "small");
+        File tempSmallPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "art");
         ensureDirectoryExist(tempSmallPatchDexPath);
 
         // Generate dex diff out and full patched dex if a pair of dex is different.

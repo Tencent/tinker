@@ -60,7 +60,7 @@ public class DefaultPatchListener implements PatchListener {
 
     protected int patchCheck(String path, boolean isUpgrade) {
         Tinker manager = Tinker.with(context);
-        //check SharePrefenences also
+        //check SharePreferences also
         if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
             return ShareConstants.ERROR_PATCH_DISABLE;
         }

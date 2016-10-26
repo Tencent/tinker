@@ -70,11 +70,14 @@ public class SystemClassLoaderAdder {
             } else {
                 V4.install(classLoader, files, dexOptDir);
             }
+            //install done
+            sPatchDexCount = files.size();
 
             if (!checkDexInstall(classLoader)) {
+                //reset patch dex
+                SystemClassLoaderAdder.uninstallPatchDex(classLoader);
                 throw new TinkerRuntimeException(ShareConstants.CHECK_DEX_INSTALL_FAIL);
             }
-            sPatchDexCount = files.size();
         }
     }
 
