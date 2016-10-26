@@ -117,7 +117,7 @@ public final class PatchUtil {
                     Set<RDotTxtEntry> set = entry.getValue();
                     for (RDotTxtEntry rDotTxtEntry : set) {
 //                        if (rType.equals(RType.STYLE)) {
-                            String rawName = aaptResourceCollector.getRawName(rDotTxtEntry.name);
+                            String rawName = aaptResourceCollector.getRawName(rType, rDotTxtEntry.name);
                             if (StringUtil.isBlank(rawName)) {
 //                                System.err.println("Blank?" + rDotTxtEntry.name);
                                 rawName = rDotTxtEntry.name;
