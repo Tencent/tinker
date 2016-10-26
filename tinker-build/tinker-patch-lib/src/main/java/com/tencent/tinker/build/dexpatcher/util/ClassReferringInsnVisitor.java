@@ -31,8 +31,8 @@ import java.util.Collection;
  * Created by tangyinsheng on 2016/10/8.
  */
 
-public class RefToRefAffectedClassInsnVisitor extends InstructionVisitor {
-    private static final String TAG = "RefToRefAffectedClassInsnVisitor";
+public class ClassReferringInsnVisitor extends InstructionVisitor {
+    private static final String TAG = "ClassReferringInsnVisitor";
 
     private final Dex methodOwner;
     private final ClassData.Method method;
@@ -41,7 +41,7 @@ public class RefToRefAffectedClassInsnVisitor extends InstructionVisitor {
 
     public boolean isMethodReferencedToRefAffectedClass;
 
-    RefToRefAffectedClassInsnVisitor(Dex methodOwner, ClassData.Method method, Collection<String> refAffectedClassDefs, DexPatcherLogger logger) {
+    ClassReferringInsnVisitor(Dex methodOwner, ClassData.Method method, Collection<String> refAffectedClassDefs, DexPatcherLogger logger) {
         super(null);
         this.methodOwner = methodOwner;
         this.method = method;
@@ -111,7 +111,7 @@ public class RefToRefAffectedClassInsnVisitor extends InstructionVisitor {
             MethodId methodId = methodOwner.methodIds().get(method.methodIndex);
             logger.i(
                     TAG,
-                    "Method %s in class %s referenced ref-changed class %s by %s",
+                    "Method %s in class %s referenced class %s by %s",
                     getMethodProtoTypeStr(methodId),
                     methodOwner.typeNames().get(methodId.declaringClassIndex),
                     typeName,
