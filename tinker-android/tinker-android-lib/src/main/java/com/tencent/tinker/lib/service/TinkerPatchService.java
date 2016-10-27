@@ -149,6 +149,10 @@ public class TinkerPatchService extends IntentService {
     }
 
     private void increasingPriority() {
+        if (Build.VERSION.SDK_INT > 24) {
+            TinkerLog.i(TAG, "for Android 7.1, we just ignore increasingPriority job");
+            return;
+        }
         TinkerLog.i(TAG, "try to increase patch process priority");
         Notification notification = new Notification();
         if (Build.VERSION.SDK_INT < 18) {

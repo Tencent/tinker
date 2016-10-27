@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.KITKAT;
@@ -44,8 +45,28 @@ class TinkerResourcePatcher {
     private static Method       ensureStringBlocksMethod = null;
     private static Field        assetsFiled              = null;
     private static Field        resourcesImplFiled      = null;
+    private static Field        resDir      = null;
 
     public static void isResourceCanPatch(Context context) throws Throwable {
+        //   - Replace mResDir to point to the external resource file instead of the .apk. This is
+        //     used as the asset path for new Resources objects.
+        //   - Set Application#mLoadedApk to the found LoadedApk instance
+
+        // Find the ActivityThread instance for the current thread
+        Class<?> activityThread = Class.forName("android.app.ActivityThread");
+        Object currentActivityThread = getActivityThread(context, activityThread);
+        // API version 8 has PackageInfo, 10 has LoadedApk. 9, I don't know.
+        Class<?> loadedApkClass;
+        try {
+            loadedApkClass = Class.forName("android.app.LoadedApk");
+        } catch (ClassNotFoundException e) {
+            loadedApkClass = Class.forName("android.app.ActivityThread$PackageInfo");
+        }
+        Field mApplication = loadedApkClass.getDeclaredField("mApplication");
+        mApplication.setAccessible(true);
+        resDir = loadedApkClass.getDeclaredField("mResDir");
+        resDir.setAccessible(true);
+
         /*
         (Note: the resource directory is *also* inserted into the loadedApk in
         monkeyPatchApplication)
@@ -110,13 +131,11 @@ class TinkerResourcePatcher {
                 references = (Collection<WeakReference<Resources>>) mResourceReferences.get(resourcesManager);
             }
         } else {
-            Class<?> activityThread = Class.forName("android.app.ActivityThread");
             Field fMActiveResources = activityThread.getDeclaredField("mActiveResources");
             fMActiveResources.setAccessible(true);
-            Object thread = getActivityThread(context, activityThread);
             @SuppressWarnings("unchecked")
             HashMap<?, WeakReference<Resources>> map =
-                (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(thread);
+                (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
             references = map.values();
         }
         // check resource
@@ -137,7 +156,27 @@ class TinkerResourcePatcher {
         if (externalResourceFile == null) {
             return;
         }
+        // Find the ActivityThread instance for the current thread
+        Class<?> activityThread = Class.forName("android.app.ActivityThread");
+        Object currentActivityThread = getActivityThread(context, activityThread);
 
+        for (String fieldName : new String[]{"mPackages", "mResourcePackages"}) {
+            Field field = activityThread.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Object value = field.get(currentActivityThread);
+
+            for (Map.Entry<String, WeakReference<?>> entry
+                : ((Map<String, WeakReference<?>>) value).entrySet()) {
+                Object loadedApk = entry.getValue().get();
+                if (loadedApk == null) {
+                    continue;
+                }
+                if (externalResourceFile != null) {
+                   resDir.set(loadedApk, externalResourceFile);
+                }
+
+            }
+        }
         // Create a new AssetManager instance and point it to the resources installed under
         // /sdcard
 

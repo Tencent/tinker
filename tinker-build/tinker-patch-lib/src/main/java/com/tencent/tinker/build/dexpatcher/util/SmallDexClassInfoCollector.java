@@ -17,6 +17,7 @@
 package com.tencent.tinker.build.dexpatcher.util;
 
 import com.tencent.tinker.android.dex.ClassData;
+import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Code;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dx.instruction.InstructionReader;
@@ -62,79 +63,135 @@ public final class SmallDexClassInfoCollector {
         return this;
     }
 
+    // Collect target:
+    //  Added classes;
+    //  Changed classes;
+    //  Subclasses of referrer-affected changed classes;
+    //  Classes which refer to changed classes.
     public Set<DexClassInfo> doCollect(DexGroup oldDexGroup, DexGroup newDexGroup) {
+        Set<DexClassInfo> classInfosInSmallDex = new HashSet<>();
+
         DexClassesComparator dexClassesCmp = new DexClassesComparator("*");
-        dexClassesCmp.setCompareMode(DexClassesComparator.COMPARE_MODE_CAUSE_REF_CHANGE_ONLY);
         dexClassesCmp.setIgnoredRemovedClassDescPattern(this.loaderClassPatterns);
+
+        dexClassesCmp.setCompareMode(DexClassesComparator.COMPARE_MODE_CAUSE_REF_CHANGE_ONLY);
         dexClassesCmp.startCheck(oldDexGroup, newDexGroup);
 
-        Set<String> refAffectedClassDescs
+        Set<String> referrerAffectedChangedClassDescs
                 = dexClassesCmp.getChangedClassDescToInfosMap().keySet();
+
+        Set<String> referrerAffectedChangedClassesChainSet = new HashSet<>();
+        referrerAffectedChangedClassesChainSet.addAll(referrerAffectedChangedClassDescs);
+
+        // Add added classes to small patched dex.
+        Collection<DexClassInfo> addedClassInfos = dexClassesCmp.getAddedClassInfos();
+        for (DexClassInfo addClassInfo : addedClassInfos) {
+            logger.i(TAG, "Add class %s to small dex.", addClassInfo.classDesc);
+            classInfosInSmallDex.add(addClassInfo);
+        }
+
+        // Use normal mode to compare again, then we get all changed class infos.
+        dexClassesCmp.setCompareMode(DexClassesComparator.COMPARE_MODE_NORMAL);
+        dexClassesCmp.startCheck(oldDexGroup, newDexGroup);
+
+        Collection<DexClassInfo[]> changedOldNewClassInfos =
+                dexClassesCmp.getChangedClassDescToInfosMap().values();
+
+        // Add changed classes to small patched dex.
+        // changedOldNewClassInfo[1] means changedNewClassInfo
+        for (DexClassInfo[] changedOldNewClassInfo : changedOldNewClassInfos) {
+            logger.i(TAG, "Add class %s to small dex.", changedOldNewClassInfo[1].classDesc);
+            classInfosInSmallDex.add(changedOldNewClassInfo[1]);
+        }
 
         Set<DexClassInfo> classInfosInNewDexGroup
                 = newDexGroup.getClassInfosInDexesWithDuplicateCheck();
 
-        Set<DexClassInfo> classInfosOfSmallDex = new HashSet<>();
+        Set<String> changedClassDescs = dexClassesCmp.getChangedClassDescToInfosMap().keySet();
 
+        // Add subclasses of referrer-affected changed classes to small patched dex.
+        // By the way, collect all subclasses to form referrer-affected changed classes chain.
         for (DexClassInfo patchedClassInfo : classInfosInNewDexGroup) {
-            if (patchedClassInfo.classDef.classDataOffset == 0) {
-                continue;
+            final String superClassDesc
+                    = patchedClassInfo.classDef.supertypeIndex == ClassDef.NO_INDEX
+                    ? ""
+                    : patchedClassInfo.owner.typeNames().get(patchedClassInfo.classDef.supertypeIndex);
+
+            if (referrerAffectedChangedClassesChainSet.contains(superClassDesc)) {
+                referrerAffectedChangedClassesChainSet.add(patchedClassInfo.classDesc);
+                logger.i(TAG, "Class %s is subclass of referrer-affected changed class %s.",
+                        patchedClassInfo.classDesc, superClassDesc);
+
+                logger.i(TAG, "Add class %s to small dex.", patchedClassInfo.classDesc);
+
+                classInfosInSmallDex.add(patchedClassInfo);
             }
+        }
 
-            ClassData patchedClassData
-                    = patchedClassInfo.owner.readClassData(patchedClassInfo.classDef);
+        Set<String> classesToCheckReference = new HashSet<>();
+        classesToCheckReference.addAll(changedClassDescs);
+        classesToCheckReference.addAll(referrerAffectedChangedClassesChainSet);
 
-            boolean shouldAdd = isClassMethodReferenceToRefAffectedClass(
-                    patchedClassInfo.owner,
-                    patchedClassData.directMethods,
-                    refAffectedClassDescs
-            );
+        Set<String> addedClassDescs = new HashSet<>();
+        for (DexClassInfo addedClassInfo : addedClassInfos) {
+            addedClassDescs.add(addedClassInfo.classDesc);
+        }
 
-            if (!shouldAdd) {
-                shouldAdd = isClassMethodReferenceToRefAffectedClass(
-                        patchedClassInfo.owner,
-                        patchedClassData.virtualMethods,
-                        refAffectedClassDescs
+        // Add classes which refer to changed classes and referrer-affected
+        // changed classes chain to small patched dex.
+        for (DexClassInfo patchedClassInfo : classInfosInNewDexGroup) {
+            if (!addedClassDescs.contains(patchedClassInfo.classDesc)
+             && !changedClassDescs.contains(patchedClassInfo.classDesc)) {
+                processMethodReference(
+                        patchedClassInfo,
+                        classesToCheckReference,
+                        classInfosInSmallDex
                 );
             }
-
-            if (shouldAdd) {
-                logger.i(TAG, "Add class %s to small dex.", patchedClassInfo.classDesc);
-                classInfosOfSmallDex.add(patchedClassInfo);
-            }
         }
 
-        // So far we get descriptors of classes we need to add additionally,
-        // while we still need to do a fully compare to collect added classes
-        // and replaced classes since they may use items in their owner dex which
-        // is not modified.
-        dexClassesCmp.setCompareMode(DexClassesComparator.COMPARE_MODE_NORMAL);
-        dexClassesCmp.startCheck(oldDexGroup, newDexGroup);
-
-        Collection<DexClassInfo> addedClassInfos = dexClassesCmp.getAddedClassInfos();
-        for (DexClassInfo addClassInfo : addedClassInfos) {
-            logger.i(TAG, "Add class %s to small dex.", addClassInfo.classDesc);
-            classInfosOfSmallDex.add(addClassInfo);
-        }
-
-        Collection<DexClassInfo[]> changedOldPatchedClassInfos =
-                dexClassesCmp.getChangedClassDescToInfosMap().values();
-
-        // changedOldPatchedClassInfo[1] means changedPatchedClassInfo
-        for (DexClassInfo[] changedOldPatchedClassInfo : changedOldPatchedClassInfos) {
-            logger.i(TAG, "Add class %s to small dex.", changedOldPatchedClassInfo[1].classDesc);
-            classInfosOfSmallDex.add(changedOldPatchedClassInfo[1]);
-        }
-
-        return classInfosOfSmallDex;
+        return classInfosInSmallDex;
     }
 
-    private boolean isClassMethodReferenceToRefAffectedClass(
+    private void processMethodReference(
+            DexClassInfo patchedClassInfo,
+            Set<String> classDescsToCheck,
+            Set<DexClassInfo> result
+    ) {
+        final ClassDef classDef = patchedClassInfo.classDef;
+        if (classDef.classDataOffset == ClassDef.NO_OFFSET) {
+            return;
+        }
+
+        ClassData patchedClassData
+                = patchedClassInfo.owner.readClassData(classDef);
+
+        boolean shouldAdd = isClassMethodReferenceToClasses(
+                patchedClassInfo.owner,
+                patchedClassData.directMethods,
+                classDescsToCheck
+        );
+
+        if (!shouldAdd) {
+            shouldAdd = isClassMethodReferenceToClasses(
+                    patchedClassInfo.owner,
+                    patchedClassData.virtualMethods,
+                    classDescsToCheck
+            );
+        }
+
+        if (shouldAdd) {
+            logger.i(TAG, "Add class %s to small dex.", patchedClassInfo.classDesc);
+            result.add(patchedClassInfo);
+        }
+    }
+
+    private boolean isClassMethodReferenceToClasses(
             Dex owner,
             ClassData.Method[] methods,
-            Collection<String> affectedClassDescs
+            Collection<String> referredClassDescs
     ) {
-        if (affectedClassDescs.isEmpty() || methods == null || methods.length == 0) {
+        if (referredClassDescs.isEmpty() || methods == null || methods.length == 0) {
             return false;
         }
 
@@ -143,13 +200,13 @@ public final class SmallDexClassInfoCollector {
                 continue;
             }
             Code code = owner.readCode(method);
-            RefToRefAffectedClassInsnVisitor refInsnVisitor =
-                    new RefToRefAffectedClassInsnVisitor(owner, method, affectedClassDescs, logger);
+            ClassReferringInsnVisitor refInsnVisitor =
+                    new ClassReferringInsnVisitor(owner, method, referredClassDescs, logger);
             InstructionReader insnReader =
                     new InstructionReader(new ShortArrayCodeInput(code.instructions));
             try {
                 insnReader.accept(refInsnVisitor);
-                if (refInsnVisitor.isMethodReferencedToRefAffectedClass) {
+                if (refInsnVisitor.isMethodReferencedToAnyProvidedClasses) {
                     return true;
                 }
             } catch (EOFException e) {
