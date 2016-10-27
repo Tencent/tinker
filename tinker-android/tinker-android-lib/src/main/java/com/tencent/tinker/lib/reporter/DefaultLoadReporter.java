@@ -234,6 +234,7 @@ public class DefaultLoadReporter implements LoadReporter {
                 //exception can be caught, it is no need to disable Tinker with sharedPreference
                 break;
         }
+        TinkerLog.e(TAG, "tinker load exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
         TinkerLog.printErrStackTrace(TAG, e, "tinker load exception");
 
         Tinker.with(context).setTinkerDisable();

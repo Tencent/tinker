@@ -180,6 +180,7 @@ public class DefaultPatchReporter implements PatchReporter {
     @Override
     public void onPatchException(File patchFile, Throwable e, boolean isUpgradePatch) {
         TinkerLog.i(TAG, "patchReporter: patch exception path:%s, throwable:%s, isUpgrade:%b", patchFile.getAbsolutePath(), e.getMessage(), isUpgradePatch);
+        TinkerLog.e(TAG, "tinker patch exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
         TinkerLog.printErrStackTrace(TAG, e, "tinker patch exception");
         //don't accept request any more!
         Tinker.with(context).setTinkerDisable();
