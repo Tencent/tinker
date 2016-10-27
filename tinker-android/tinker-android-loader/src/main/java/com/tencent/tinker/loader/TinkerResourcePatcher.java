@@ -23,6 +23,7 @@ import android.util.ArrayMap;
 import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareConstants;
+import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
@@ -35,17 +36,19 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.KITKAT;
 
 class TinkerResourcePatcher {
-    private static final String TAG = "Tinker.ResourcePatcher";
-    private static final String TEST_STRING_NAME  = "tinker_test_resource";
-    private static final String TEST_STRING_VALUE = "only use for test tinker resource: b";
+    private static final String TAG               = "Tinker.ResourcePatcher";
+    private static final String TEST_ASSETS_VALUE = "only_use_to_test_tinker_resource.txt";
+
     // original value
     private static Collection<WeakReference<Resources>> references;
     private static AssetManager newAssetManager          = null;
     private static Method       addAssetPathMethod       = null;
     private static Method       ensureStringBlocksMethod = null;
     private static Field        assetsFiled              = null;
-    private static Field        resourcesImplFiled      = null;
-    private static Field        resDir      = null;
+    private static Field        resourcesImplFiled       = null;
+    private static Field        resDir                   = null;
+    private static Field        packagesFiled            = null;
+    private static Field        resourcePackagesFiled    = null;
 
     public static void isResourceCanPatch(Context context) throws Throwable {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
@@ -54,7 +57,6 @@ class TinkerResourcePatcher {
 
         // Find the ActivityThread instance for the current thread
         Class<?> activityThread = Class.forName("android.app.ActivityThread");
-        Object currentActivityThread = getActivityThread(context, activityThread);
         // API version 8 has PackageInfo, 10 has LoadedApk. 9, I don't know.
         Class<?> loadedApkClass;
         try {
@@ -66,7 +68,11 @@ class TinkerResourcePatcher {
         mApplication.setAccessible(true);
         resDir = loadedApkClass.getDeclaredField("mResDir");
         resDir.setAccessible(true);
+        packagesFiled = activityThread.getDeclaredField("mPackages");
+        packagesFiled.setAccessible(true);
 
+        resourcePackagesFiled = activityThread.getDeclaredField("mResourcePackages");
+        resourcePackagesFiled.setAccessible(true);
         /*
         (Note: the resource directory is *also* inserted into the loadedApk in
         monkeyPatchApplication)
@@ -100,7 +106,15 @@ class TinkerResourcePatcher {
         */
         // Create a new AssetManager instance and point it to the resources installed under
         // /sdcard
-        newAssetManager = AssetManager.class.getConstructor().newInstance();
+        AssetManager assets = context.getAssets();
+        // Baidu os
+        if (assets.getClass().getName().equals("android.content.res.BaiduAssetManager")) {
+            Class baiduAssetManager = Class.forName("android.content.res.BaiduAssetManager");
+            newAssetManager = (AssetManager) baiduAssetManager.getConstructor().newInstance();
+        } else {
+            newAssetManager = AssetManager.class.getConstructor().newInstance();
+        }
+
         addAssetPathMethod = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
         addAssetPathMethod.setAccessible(true);
 
@@ -133,9 +147,10 @@ class TinkerResourcePatcher {
         } else {
             Field fMActiveResources = activityThread.getDeclaredField("mActiveResources");
             fMActiveResources.setAccessible(true);
+            Object thread = getActivityThread(context, activityThread);
             @SuppressWarnings("unchecked")
             HashMap<?, WeakReference<Resources>> map =
-                (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
+                (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(thread);
             references = map.values();
         }
         // check resource
@@ -160,9 +175,7 @@ class TinkerResourcePatcher {
         Class<?> activityThread = Class.forName("android.app.ActivityThread");
         Object currentActivityThread = getActivityThread(context, activityThread);
 
-        for (String fieldName : new String[]{"mPackages", "mResourcePackages"}) {
-            Field field = activityThread.getDeclaredField(fieldName);
-            field.setAccessible(true);
+        for (Field field : new Field[]{packagesFiled, resourcePackagesFiled}) {
             Object value = field.get(currentActivityThread);
 
             for (Map.Entry<String, WeakReference<?>> entry
@@ -172,14 +185,12 @@ class TinkerResourcePatcher {
                     continue;
                 }
                 if (externalResourceFile != null) {
-                   resDir.set(loadedApk, externalResourceFile);
+                    resDir.set(loadedApk, externalResourceFile);
                 }
-
             }
         }
         // Create a new AssetManager instance and point it to the resources installed under
         // /sdcard
-
         if (((Integer) addAssetPathMethod.invoke(newAssetManager, externalResourceFile)) == 0) {
             throw new IllegalStateException("Could not create new AssetManager");
         }
@@ -196,9 +207,10 @@ class TinkerResourcePatcher {
                 try {
                     assetsFiled.set(resources, newAssetManager);
                 } catch (Throwable ignore) {
-                    //N
+                    // N
                     Object resourceImpl = resourcesImplFiled.get(resources);
-                    Field implAssets = resourceImpl.getClass().getDeclaredField("mAssets");
+                    // for Huawei HwResourcesImpl
+                    Field implAssets = ShareReflectUtil.findField(resourceImpl, "mAssets");
                     implAssets.setAccessible(true);
                     implAssets.set(resourceImpl, newAssetManager);
                 }
@@ -213,19 +225,16 @@ class TinkerResourcePatcher {
     }
 
     private static boolean checkResUpdate(Context context) {
-        int testStringID = context.getResources().getIdentifier(TEST_STRING_NAME, "string", context.getPackageName());
-        if (testStringID > 0) {
-            String value = context.getString(testStringID);
-            Log.w(TAG, "checkResUpdate resource value:" + value);
-
-            if (!value.equals(TEST_STRING_VALUE)) {
-                return false;
-            }
-        } else  {
-            Log.e(TAG, "checkResUpdate resource id < 0 " + testStringID);
+        try {
+            Log.e(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
+            context.getAssets().open(TEST_ASSETS_VALUE);
+        } catch (Throwable e) {
+            Log.e(TAG, "checkResUpdate failed, can't find test resource assets file " + TEST_ASSETS_VALUE + " e:" + e.getMessage());
+            return false;
         }
         return true;
     }
+
     private static Object getActivityThread(Context context,
                                             Class<?> activityThread) {
         try {

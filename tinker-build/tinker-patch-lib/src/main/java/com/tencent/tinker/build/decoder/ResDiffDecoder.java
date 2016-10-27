@@ -42,6 +42,8 @@ import java.util.HashSet;
  * Created by zhangshaowen on 16/8/8.
  */
 public class ResDiffDecoder extends BaseDecoder {
+    private static final String TEST_RESOURCE_NAME        = "only_use_to_test_tinker_resource.txt";
+    private static final String TEST_RESOURCE_ASSETS_PATH = "assets/" + TEST_RESOURCE_NAME;
 
     private static final String TEMP_RES_ZIP  = "temp_res.zip";
     private static final String TEMP_RES_7ZIP = "temp_res_7ZIP.zip";
@@ -52,11 +54,6 @@ public class ResDiffDecoder extends BaseDecoder {
     private       ArrayList<String>              largeModifiedSet;
     private       HashMap<String, LargeModeInfo> largeModifiedMap;
     private ArrayList<String> deletedSet;
-
-    private boolean arscChanged;
-    private File oldArscFile;
-    private File newArscFile;
-
 
     public ResDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
         super(config);
@@ -96,10 +93,7 @@ public class ResDiffDecoder extends BaseDecoder {
     @Override
     public boolean patch(File oldFile, File newFile) throws IOException, TinkerPatchException {
         String name = getRelativeString(newFile);
-        if (name.equals(TypedValue.RES_ARSC)) {
-            oldArscFile = oldFile;
-            newArscFile = newFile;
-        }
+
         //actually, it won't go below
         if (newFile == null || !newFile.exists()) {
             String relativeStringByOldDir = getRelativeStringByOldDir(oldFile);
@@ -149,9 +143,6 @@ public class ResDiffDecoder extends BaseDecoder {
                 Logger.d("found modify resource: " + name + ", but it is logically the same as original new resources.arsc, just ignore!");
                 return false;
             }
-            //deal with resources.arsc later
-            arscChanged = true;
-            return true;
         }
         dealWithModeFile(name, newMd5, oldFile, newFile, outputFile);
         return true;
@@ -220,18 +211,20 @@ public class ResDiffDecoder extends BaseDecoder {
 
     }
 
-    private void modArscFileForTestResource() throws IOException {
-        File tempArscFile = new File(config.mOutFolder + File.separator + "edited_resources.arsc");
-        //there is resource changed, edit test resource string
-        AndroidParser.editResourceTableString(TypedValue.TEST_STRING_VALUE_A, TypedValue.TEST_STRING_VALUE_B, newArscFile, tempArscFile);
-        dealWithModeFile(TypedValue.RES_ARSC, MD5.getMD5(tempArscFile), oldArscFile, tempArscFile, getOutputPath(newArscFile).toFile());
-        Logger.d("Edit resources.arsc file for test resource change, final path: " + tempArscFile.getAbsolutePath());
+    private void addAssetsFileForTestResource() throws IOException {
+        File dest = new File(config.mTempResultDir + "/" + TEST_RESOURCE_ASSETS_PATH);
+        FileOperation.copyResourceUsingStream(TEST_RESOURCE_NAME, dest);
+        addedSet.add(TEST_RESOURCE_ASSETS_PATH);
+        Logger.d("Add Test resource file: " + TEST_RESOURCE_ASSETS_PATH);
+        String log = "add test resource: " + TEST_RESOURCE_ASSETS_PATH + ", oldSize=" + 0 + ", newSize="
+            + FileOperation.getFileSizes(dest);
+        logWriter.writeLineToInfoFile(log);
     }
 
     @Override
     public void onAllPatchesEnd() throws IOException, TinkerPatchException {
         //only there is only deleted set, we just ignore
-        if (addedSet.isEmpty() && modifiedSet.isEmpty() && largeModifiedSet.isEmpty() && !arscChanged) {
+        if (addedSet.isEmpty() && modifiedSet.isEmpty() && largeModifiedSet.isEmpty()) {
             return;
         }
 
@@ -242,12 +235,14 @@ public class ResDiffDecoder extends BaseDecoder {
             throw new TinkerPatchException("resource must contain AndroidManifest.xml pattern");
         }
 
-        modArscFileForTestResource();
+        addAssetsFileForTestResource();
 
         //check gradle build
         if (config.mUsingGradle) {
             final boolean ignoreWarning = config.mIgnoreWarning;
-            if (arscChanged && !config.mUseApplyResource) {
+            final boolean resourceArscChanged = modifiedSet.contains(TypedValue.RES_ARSC)
+                || largeModifiedSet.contains(TypedValue.RES_ARSC);
+            if (resourceArscChanged && !config.mUseApplyResource) {
                 if (ignoreWarning) {
                     //ignoreWarning, just log
                     Logger.e("Warning:ignoreWarning is true, but resources.arsc is changed, you should use applyResourceMapping mode to build the new apk, otherwise, it may be crash at some times");

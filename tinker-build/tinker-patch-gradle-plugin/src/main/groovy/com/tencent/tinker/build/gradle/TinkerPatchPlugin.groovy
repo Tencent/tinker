@@ -64,6 +64,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
             android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
             //open jumboMode
             android.dexOptions.jumboMode = true
+            //close preDexLibraries
+            try {
+                android.dexOptions.preDexLibraries = false
+            } catch (Throwable e) {
+                //no preDexLibraries field, just continue
+            }
 
             project.logger.error("----------------------tinker build warning ------------------------------------")
             project.logger.error("tinker will change your build configs:")
