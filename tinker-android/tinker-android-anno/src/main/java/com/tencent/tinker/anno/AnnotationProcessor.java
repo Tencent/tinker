@@ -26,7 +26,6 @@ import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
@@ -39,7 +38,6 @@ import javax.tools.JavaFileObject;
  *
  * Created by zhaoyuan on 16/3/31.
  */
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class AnnotationProcessor extends AbstractProcessor {
 
     private static final String SUFFIX                    = "$$DefaultLifeCycle";
@@ -52,6 +50,11 @@ public class AnnotationProcessor extends AbstractProcessor {
         supportedAnnotationTypes.add(DefaultLifeCycle.class.getName());
 
         return supportedAnnotationTypes;
+    }
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latestSupported();
     }
 
     @Override
