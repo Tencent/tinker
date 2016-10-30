@@ -25,8 +25,9 @@ import com.tencent.tinker.build.util.TypedValue;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.Key;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 
 /**
@@ -87,20 +88,12 @@ public class PatchBuilder {
         FileInputStream fileIn = new FileInputStream(config.mSignatureFile);
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(fileIn, config.mStorePass.toCharArray());
-        Key key = keyStore.getKey(config.mStoreAlias, config.mKeyPass.toCharArray());
-        String keyAlgorithm = key.getAlgorithm();
-        String signatureAlgorithm;
-        if (keyAlgorithm.equalsIgnoreCase("DSA")) {
-            signatureAlgorithm = "SHA1withDSA";
-        } else if (keyAlgorithm.equalsIgnoreCase("RSA")) {
-            signatureAlgorithm = "SHA1withRSA";
-        } else if (keyAlgorithm.equalsIgnoreCase("EC")) {
-            signatureAlgorithm = "SHA1withECDSA";
+        Certificate cert = keyStore.getCertificate(config.mStoreAlias);
+        if (cert instanceof X509Certificate) {
+            return ((X509Certificate) cert).getSigAlgName();
         } else {
-            throw new RuntimeException("private key is not a DSA or "
-                + "RSA key");
+            throw new RuntimeException("Provided certificate is not X.509 certificate.");
         }
-        return signatureAlgorithm;
     }
 
     /**
