@@ -182,6 +182,10 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 String dexDiffMd5 = info.dexDiffMd5;
                 String oldDexCrc = info.oldDexCrC;
 
+                if (dexDiffMd5.equals("0") && !ShareTinkerInternals.isVmArt()) {
+                    TinkerLog.w(TAG, "patch dex %s is only for art, just continue", patchRealPath);
+                    continue;
+                }
                 String extractedFileMd5 = ShareTinkerInternals.isVmArt() ? info.destMd5InArt : info.destMd5InDvm;
 
                 if (!SharePatchFileUtil.checkIfMd5Valid(extractedFileMd5)) {
@@ -411,7 +415,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
     private static void checkVmArtProperty() {
         boolean art = ShareTinkerInternals.isVmArt();
         if (!art && Build.VERSION.SDK_INT >= 21) {
-            throw new TinkerRuntimeException("it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21");
+            throw new TinkerRuntimeException("it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
         }
     }
 
