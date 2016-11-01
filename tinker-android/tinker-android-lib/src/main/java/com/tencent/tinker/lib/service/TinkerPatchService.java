@@ -154,13 +154,17 @@ public class TinkerPatchService extends IntentService {
             return;
         }
         TinkerLog.i(TAG, "try to increase patch process priority");
-        Notification notification = new Notification();
-        if (Build.VERSION.SDK_INT < 18) {
-            startForeground(notificationId, notification);
-        } else {
-            startForeground(notificationId, notification);
-            // start InnerService
-            startService(new Intent(this, InnerService.class));
+        try {
+            Notification notification = new Notification();
+            if (Build.VERSION.SDK_INT < 18) {
+                startForeground(notificationId, notification);
+            } else {
+                startForeground(notificationId, notification);
+                // start InnerService
+                startService(new Intent(this, InnerService.class));
+            }
+        } catch (Throwable e) {
+            TinkerLog.i(TAG, "try to increase patch process priority error:" + e);
         }
     }
 
@@ -174,7 +178,7 @@ public class TinkerPatchService extends IntentService {
             super.onCreate();
             try {
                 startForeground(notificationId, new Notification());
-            } catch (NullPointerException e) {
+            } catch (Throwable e) {
                 TinkerLog.e(TAG, "InnerService set service for push exception:%s.", e);
             }
             // kill

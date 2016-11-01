@@ -101,7 +101,7 @@ public class UpgradePatch extends AbstractPatch {
         //check ok, we can real recover a new patch
         final String patchDirectory = manager.getPatchDirectory().getAbsolutePath();
 
-        TinkerLog.i(TAG, "UpgradePatch tryPatch:dexDiffMd5:%s", patchMd5);
+        TinkerLog.i(TAG, "UpgradePatch tryPatch:patchMd5:%s", patchMd5);
 
         final String patchName = SharePatchFileUtil.getPatchVersionDirectory(patchMd5);
 
