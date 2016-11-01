@@ -182,7 +182,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 String dexDiffMd5 = info.dexDiffMd5;
                 String oldDexCrc = info.oldDexCrC;
 
-                if (dexDiffMd5.equals("0") && !ShareTinkerInternals.isVmArt()) {
+                if (!ShareTinkerInternals.isVmArt() && info.destMd5InDvm.equals("0")) {
                     TinkerLog.w(TAG, "patch dex %s is only for art, just continue", patchRealPath);
                     continue;
                 }
