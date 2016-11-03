@@ -51,26 +51,32 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
         def configuration = project.tinkerPatch
 
-        project.android.registerTransform(new AuxiliaryInjectTransform(project))
+        if (!project.plugins.hasPlugin('com.android.application')) {
+            throw new GradleException('generateTinkerApk: Android Application plugin required')
+        }
+
+        def android = project.extensions.android
+
+        //add the tinker anno resource to the package exclude option
+        project.logger.error("** Tinker Auto Operation: Excluding annotation processor and source template from app packaging.")
+        android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
+        android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
+
+        //open jumboMode
+        project.logger.error("** Tinker Auto Operation: Enable dx jumboMode to reduce package size.")
+        android.dexOptions.jumboMode = true
+
+        //close preDexLibraries
+        project.logger.error("** Tinker Auto Operation: Disable preDexLibraries to prevent ClassDefNotFoundException when your app is booting.")
+        try {
+            android.dexOptions.preDexLibraries = false
+        } catch (Throwable e) {
+            //no preDexLibraries field, just continue
+        }
+
+        android.registerTransform(new AuxiliaryInjectTransform(project))
 
         project.afterEvaluate {
-            if (!project.plugins.hasPlugin('com.android.application')) {
-                throw new GradleException('generateTinkerApk: Android Application plugin required')
-            }
-
-            def android = project.extensions.android
-            //add the tinker anno resource to the package exclude option
-            android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
-            android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
-            //open jumboMode
-            android.dexOptions.jumboMode = true
-            //close preDexLibraries
-            try {
-                android.dexOptions.preDexLibraries = false
-            } catch (Throwable e) {
-                //no preDexLibraries field, just continue
-            }
-
             project.logger.error("----------------------tinker build warning ------------------------------------")
             project.logger.error("tinker will change your build configs:")
             project.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
