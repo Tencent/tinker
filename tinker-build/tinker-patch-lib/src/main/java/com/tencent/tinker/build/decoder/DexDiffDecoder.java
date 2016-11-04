@@ -48,6 +48,7 @@ import org.jf.dexlib2.dexbacked.DexBackedDexFile;
 import org.jf.dexlib2.iface.DexFile;
 import org.jf.dexlib2.iface.Field;
 import org.jf.dexlib2.iface.Method;
+import org.jf.dexlib2.iface.MethodImplementation;
 import org.jf.dexlib2.writer.builder.BuilderField;
 import org.jf.dexlib2.writer.builder.BuilderMethod;
 import org.jf.dexlib2.writer.builder.DexBuilder;
@@ -254,6 +255,12 @@ public class DexDiffDecoder extends BaseDecoder {
                     }
                     List<BuilderMethod> builderMethods = new ArrayList<>();
                     for (Method parsedMethod : parsedClassDef.getMethods()) {
+                        MethodImplementation methodImpl = null;
+                        if (parsedMethod.getImplementation() != null) {
+                            methodImpl = new BuilderMutableMethodImplementation(
+                                    dexBuilder, parsedMethod.getImplementation()
+                            );
+                        }
                         BuilderMethod builderMethod = dexBuilder.internMethod(
                                 parsedMethod.getDefiningClass(),
                                 parsedMethod.getName(),
@@ -261,9 +268,7 @@ public class DexDiffDecoder extends BaseDecoder {
                                 parsedMethod.getReturnType(),
                                 parsedMethod.getAccessFlags(),
                                 parsedMethod.getAnnotations(),
-                                new BuilderMutableMethodImplementation(
-                                        dexBuilder, parsedMethod.getImplementation()
-                                )
+                                methodImpl
                         );
                         builderMethods.add(builderMethod);
                     }
