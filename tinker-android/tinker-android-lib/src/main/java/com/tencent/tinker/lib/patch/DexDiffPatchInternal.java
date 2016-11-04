@@ -251,7 +251,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         oldDexIs = apk.getInputStream(rawApkFileEntry);
                         new DexPatchApplier(oldDexIs, (int) rawApkFileEntry.getSize(), null, smallPatchInfoFile).executeAndSaveTo(extractedFile);
                     } catch (Throwable e) {
-                        TinkerLog.w(TAG, "Failed to recover dex file " + extractedFile.getPath());
+                        TinkerLog.w(TAG, "Failed to recover dex file when apply patch: " + extractedFile.getPath());
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.rawName, type, isUpgradePatch);
                         SharePatchFileUtil.safeDeleteFile(extractedFile);
                         return false;
@@ -260,7 +260,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     }
 
                     if (!SharePatchFileUtil.verifyDexFileMd5(extractedFile, extractedFileMd5)) {
-                        TinkerLog.w(TAG, "Failed to recover dex file " + extractedFile.getPath());
+                        TinkerLog.w(TAG, "Failed to recover dex file when verify patched dex: " + extractedFile.getPath());
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.rawName, type, isUpgradePatch);
                         SharePatchFileUtil.safeDeleteFile(extractedFile);
                         return false;
@@ -334,7 +334,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     }
 
                     if (!SharePatchFileUtil.verifyDexFileMd5(extractedFile, extractedFileMd5)) {
-                        TinkerLog.w(TAG, "Failed to recover dex file " + extractedFile.getPath());
+                        TinkerLog.w(TAG, "Failed to recover dex file when verify patched dex: " + extractedFile.getPath());
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.rawName, type, isUpgradePatch);
                         SharePatchFileUtil.safeDeleteFile(extractedFile);
                         return false;
