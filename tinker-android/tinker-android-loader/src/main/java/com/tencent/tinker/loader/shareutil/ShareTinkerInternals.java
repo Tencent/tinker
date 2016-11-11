@@ -177,7 +177,8 @@ public class ShareTinkerInternals {
 
             Object object = appInfo.metaData.get(ShareConstants.TINKER_ID);
             if (object != null) {
-                tinkerID = String.valueOf(object);
+                String tinkerIdValue = String.valueOf(object);
+                tinkerID = tinkerIdValue.replace(ShareConstants.TINKER_ID + "_", "");
             } else {
                 tinkerID = null;
             }
