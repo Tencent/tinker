@@ -181,6 +181,10 @@ public class DefaultPatchReporter implements PatchReporter {
     public void onPatchException(File patchFile, Throwable e, boolean isUpgradePatch) {
         TinkerLog.i(TAG, "patchReporter: patch exception path:%s, throwable:%s, isUpgrade:%b", patchFile.getAbsolutePath(), e.getMessage(), isUpgradePatch);
         TinkerLog.e(TAG, "tinker patch exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
+        if (e.getMessage().contains(ShareConstants.CHECK_VM_PROPERTY_FAIL)) {
+            ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
+            TinkerLog.i(TAG, "check vm property exception disable tinker forever with sp");
+        }
         TinkerLog.printErrStackTrace(TAG, e, "tinker patch exception");
         //don't accept request any more!
         Tinker.with(context).setTinkerDisable();

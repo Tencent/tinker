@@ -440,7 +440,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
     private static void checkVmArtProperty() {
         boolean art = ShareTinkerInternals.isVmArt();
         if (!art && Build.VERSION.SDK_INT >= 21) {
-            throw new TinkerRuntimeException("it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
+            throw new TinkerRuntimeException(ShareConstants.CHECK_VM_PROPERTY_FAIL + ", it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
         }
     }
 

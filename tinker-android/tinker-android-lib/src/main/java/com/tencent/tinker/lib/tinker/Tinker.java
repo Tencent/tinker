@@ -136,8 +136,7 @@ public class Tinker {
                         AbstractPatch upgradePatch, AbstractPatch repairPatch
     ) {
         sInstalled = true;
-        AbstractResultService.setResultServiceClass(serviceClass);
-        TinkerPatchService.setPatchProcessor(upgradePatch, repairPatch);
+        TinkerPatchService.setPatchProcessor(upgradePatch, repairPatch, serviceClass);
 
         if (!isTinkerEnabled()) {
             TinkerLog.e(TAG, "tinker is disabled");

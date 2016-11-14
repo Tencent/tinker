@@ -50,6 +50,8 @@ public class ShareConstants {
 
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
     public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";
+    public static final String CHECK_VM_PROPERTY_FAIL = "checkVmArtProperty failed";
+
 
     public static final String RES_META_FILE       = "assets/res_meta.txt";
     public static final String RES_ARSC            = "resources.arsc";
@@ -123,23 +125,23 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_INFO_BLANK                           = -5;
     public static final int ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST          = -6;
     public static final int ERROR_LOAD_PATCH_VERSION_FILE_NOT_EXIST               = -7;
-    public static final int ERROR_LOAD_PATCH_PACKAGE_CHECK_FAIL                   = -9;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST      = -10;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST           = -11;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST       = -12;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL         = -13;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_MD5_MISMATCH             = -14;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION           = -15;
-    public static final int ERROR_LOAD_PATCH_VERSION_LIB_DIRECTORY_NOT_EXIST      = -16;
-    public static final int ERROR_LOAD_PATCH_VERSION_LIB_FILE_NOT_EXIST           = -17;
-    public static final int ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL              = -18;
-    public static final int ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION                    = -19;
+    public static final int ERROR_LOAD_PATCH_PACKAGE_CHECK_FAIL                   = -8;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST      = -9;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST           = -10;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST       = -11;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL         = -12;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_MD5_MISMATCH             = -13;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION           = -14;
+    public static final int ERROR_LOAD_PATCH_VERSION_LIB_DIRECTORY_NOT_EXIST      = -15;
+    public static final int ERROR_LOAD_PATCH_VERSION_LIB_FILE_NOT_EXIST           = -16;
+    public static final int ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL              = -17;
+    public static final int ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION                    = -18;
     //resource
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_DIRECTORY_NOT_EXIST = -20;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST      = -21;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -22;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -23;
-    public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -24;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_DIRECTORY_NOT_EXIST = -19;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST      = -20;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -21;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -22;
+    public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -23;
 
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 
