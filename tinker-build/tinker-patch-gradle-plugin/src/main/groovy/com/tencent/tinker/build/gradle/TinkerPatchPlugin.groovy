@@ -58,16 +58,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
         def android = project.extensions.android
 
         //add the tinker anno resource to the package exclude option
-        project.logger.error("Tinker Auto Operation: Excluding annotation processor and source template from app packaging.")
         android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
         android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
 
         //open jumboMode
-        project.logger.error("Tinker Auto Operation: Enable dx jumboMode to reduce package size.")
         android.dexOptions.jumboMode = true
 
         //close preDexLibraries
-        project.logger.error("Tinker Auto Operation: Disable preDexLibraries to prevent ClassDefNotFoundException when your app is booting.")
         try {
             android.dexOptions.preDexLibraries = false
         } catch (Throwable e) {
@@ -78,6 +75,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
         project.afterEvaluate {
             project.logger.error("----------------------tinker build warning ------------------------------------")
+            project.logger.error("tinker auto operation: ")
+            project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")
+            project.logger.error("enable dx jumboMode to reduce package size.")
+            project.logger.error("disable preDexLibraries to prevent ClassDefNotFoundException when your app is booting.")
+            project.logger.error("")
             project.logger.error("tinker will change your build configs:")
             project.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
             project.logger.error("")
