@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.util.Log;
 
 import java.io.File;
@@ -47,7 +48,7 @@ public class ShareTinkerInternals {
     private static String tinkerID = null;
 
     public static boolean isVmArt() {
-        return VM_IS_ART;
+        return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
     }
 
     public static boolean isNullOrNil(final String object) {

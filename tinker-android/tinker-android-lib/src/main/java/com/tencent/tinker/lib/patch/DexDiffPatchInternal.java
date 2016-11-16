@@ -18,7 +18,6 @@ package com.tencent.tinker.lib.patch;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
@@ -31,8 +30,6 @@ import com.tencent.tinker.loader.shareutil.ShareDexDiffPatchInfo;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
-import dalvik.system.DexFile;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -72,9 +69,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return result;
     }
 
-    private static boolean patchDexExtractViaDexDiff(Context context, String patchVersionDirectory, String meta, File patchFile, boolean isUpgradePatch) {
-        checkVmArtProperty();
-
+    private static boolean patchDexExtractViaDexDiff(Context context, String patchVersionDirectory, String meta, final File patchFile, final boolean isUpgradePatch) {
         String dir = patchVersionDirectory + "/" + DEX_PATH + "/";
 
         int dexType = ShareTinkerInternals.isVmArt() ? TYPE_DEX_FOR_ART : TYPE_DEX;
@@ -83,38 +78,40 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             return false;
         }
 
-        Tinker manager = Tinker.with(context);
+        final Tinker manager = Tinker.with(context);
 
         File dexFiles = new File(dir);
         File[] files = dexFiles.listFiles();
 
         if (files != null) {
-            String optimizeDexDirectory = patchVersionDirectory + "/" + DEX_OPTIMIZE_PATH + "/";
+            final String optimizeDexDirectory = patchVersionDirectory + "/" + DEX_OPTIMIZE_PATH + "/";
             File optimizeDexDirectoryFile = new File(optimizeDexDirectory);
 
             if (!optimizeDexDirectoryFile.exists()) {
                 optimizeDexDirectoryFile.mkdirs();
             }
 
-            for (File file : files) {
-                try {
-                    String outputPathName = SharePatchFileUtil.optimizedPathFor(file, optimizeDexDirectoryFile);
-                    long start = System.currentTimeMillis();
-                    DexFile.loadDex(file.getAbsolutePath(), outputPathName, 0);
-                    TinkerLog.i(TAG, "success dex optimize file, path: %s, use time: %d", file.getPath(), (System.currentTimeMillis() - start));
-                } catch (Throwable e) {
-                    TinkerLog.e(TAG, "dex optimize or load failed, path:" + file.getPath());
-                    //delete file
-                    SharePatchFileUtil.safeDeleteFile(file);
-                    manager.getPatchReporter().onPatchDexOptFail(patchFile, file, optimizeDexDirectory, file.getName(), e, isUpgradePatch);
-                    return false;
-                }
-            }
+            boolean isSuccess = ParallelDexOptimizer.optimizeAll(
+                    files, optimizeDexDirectoryFile,
+                    new ParallelDexOptimizer.ResultCallback() {
+                        @Override
+                        public void onSuccess(File dexFile, File optimizedDir) {
+                            // Do nothing.
+                        }
+
+                        @Override
+                        public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                            SharePatchFileUtil.safeDeleteFile(dexFile);
+                            manager.getPatchReporter().onPatchDexOptFail(patchFile, dexFile, optimizeDexDirectory, dexFile.getName(), thr, isUpgradePatch);
+                        }
+                    }
+            );
+
+            return isSuccess;
         }
 
         return true;
     }
-
 
     private static boolean extractDexDiffInternals(Context context, String dir, String meta, File patchFile, int type, boolean isUpgradePatch) {
         //parse
@@ -148,25 +145,29 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
             SmallPatchedDexItemFile smallPatchInfoFile = null;
 
-            if (ShareTinkerInternals.isVmArt()) {
-                File extractedFile = new File(dir + ShareConstants.DEX_SMALLPATCH_INFO_FILE);
-                ZipEntry smallPatchInfoEntry = patch.getEntry(ShareConstants.DEX_SMALLPATCH_INFO_FILE);
-                if (smallPatchInfoEntry != null) {
-                    InputStream smallPatchInfoIs = null;
-                    try {
-                        smallPatchInfoIs = patch.getInputStream(smallPatchInfoEntry);
-                        smallPatchInfoFile = new SmallPatchedDexItemFile(smallPatchInfoIs);
-                    } catch (Throwable e) {
-                        TinkerLog.w(TAG, "failed to read small patched info. reason: " + e.getMessage());
-                        manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, ShareConstants.DEX_SMALLPATCH_INFO_FILE, type, isUpgradePatch);
-                        return false;
-                    } finally {
-                        SharePatchFileUtil.closeQuietly(smallPatchInfoIs);
-                    }
-                } else {
-                    TinkerLog.w(TAG, "small patch info is not exists, it's ok now.");
-                }
-            }
+            // !! May cause problem if method from patched class was inlined. Disable small patched dex
+            // generating strategy so far. !!
+
+            //if (ShareTinkerInternals.isVmArt()) {
+            //    File extractedFile = new File(dir + ShareConstants.DEX_SMALLPATCH_INFO_FILE);
+            //    ZipEntry smallPatchInfoEntry = patch.getEntry(ShareConstants.DEX_SMALLPATCH_INFO_FILE);
+            //    if (smallPatchInfoEntry != null) {
+            //        InputStream smallPatchInfoIs = null;
+            //        try {
+            //            smallPatchInfoIs = patch.getInputStream(smallPatchInfoEntry);
+            //            smallPatchInfoFile = new SmallPatchedDexItemFile(smallPatchInfoIs);
+            //        } catch (Throwable e) {
+            //            TinkerLog.w(TAG, "failed to read small patched info. reason: " + e.getMessage());
+            //            manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, ShareConstants.DEX_SMALLPATCH_INFO_FILE, type, isUpgradePatch);
+            //            return false;
+            //        } finally {
+            //            SharePatchFileUtil.closeQuietly(smallPatchInfoIs);
+            //        }
+            //    } else {
+            //        TinkerLog.w(TAG, "small patch info is not exists, it's ok now.");
+            //    }
+            //}
+
 
             for (ShareDexDiffPatchInfo info : patchList) {
                 long start = System.currentTimeMillis();
@@ -227,7 +228,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         return false;
                     }
                 } else if (dexDiffMd5.equals("0")) {
-                    // skip process old dex for dalvik vm
+                    // skip process old dex for real dalvik vm
                     if (!ShareTinkerInternals.isVmArt()) {
                         continue;
                     }
@@ -246,43 +247,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         return false;
                     }
 
-                    final boolean isRawDexFile = SharePatchFileUtil.isRawDexFile(info.rawName);
-                    InputStream oldInputStream = apk.getInputStream(rawApkFileEntry);
-                    //if it is not the dex file or we are using jar mode, we should repack the output dex to jar
-                    try {
-                        if (!isRawDexFile || info.isJarMode) {
-                            FileOutputStream fos = new FileOutputStream(extractedFile);
-                            ZipOutputStream zos = new ZipOutputStream(new
-                                    BufferedOutputStream(fos));
-                            try {
-                                zos.putNextEntry(new ZipEntry(ShareConstants.DEX_IN_JAR));
-                                //it is not a raw dex file, we do not want to any temp files
-                                int oldDexSize;
-                                if (!isRawDexFile) {
-                                    ZipEntry entry;
-                                    ZipInputStream zis = new ZipInputStream(oldInputStream);
-                                    while ((entry = zis.getNextEntry()) != null) {
-                                        if (ShareConstants.DEX_IN_JAR.equals(entry.getName())) break;
-                                    }
-                                    if (entry == null) {
-                                        throw new TinkerRuntimeException("can't recognize zip dex format file:" + extractedFile.getAbsolutePath());
-                                    }
-                                    oldInputStream = zis;
-                                    oldDexSize = (int) entry.getSize();
-                                } else {
-                                    oldDexSize = (int) rawApkFileEntry.getSize();
-                                }
-                                new DexPatchApplier(oldInputStream, oldDexSize, null, smallPatchInfoFile).executeAndSaveTo(zos);
-                                zos.closeEntry();
-                            } finally {
-                                SharePatchFileUtil.closeQuietly(zos);
-                            }
-                        } else {
-                            new DexPatchApplier(oldInputStream, (int) rawApkFileEntry.getSize(), null, smallPatchInfoFile).executeAndSaveTo(extractedFile);
-                        }
-                    } finally {
-                        SharePatchFileUtil.closeQuietly(oldInputStream);
-                    }
+                    // Small patched dex generating strategy was disabled, we copy full original dex directly now.
+                    //patchDexFile(apk, patch, rawApkFileEntry, null, info, smallPatchInfoFile, extractedFile);
+                    extractDexFile(apk, rawApkFileEntry, extractedFile, info);
 
                     if (!SharePatchFileUtil.verifyDexFileMd5(extractedFile, extractedFileMd5)) {
                         TinkerLog.w(TAG, "Failed to recover dex file when verify patched dex: " + extractedFile.getPath());
@@ -316,47 +283,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         return false;
                     }
 
-                    final boolean isRawDexFile = SharePatchFileUtil.isRawDexFile(info.rawName);
-                    InputStream oldInputStream = apk.getInputStream(rawApkFileEntry);
-                    InputStream newInputStream = patch.getInputStream(patchFileEntry);
-                    //if it is not the dex file or we are using jar mode, we should repack the output dex to jar
-                    try {
-                        if (!isRawDexFile || info.isJarMode) {
-                            FileOutputStream fos = new FileOutputStream(extractedFile);
-                            ZipOutputStream zos = new ZipOutputStream(new
-                                BufferedOutputStream(fos));
-
-                            try {
-                                zos.putNextEntry(new ZipEntry(ShareConstants.DEX_IN_JAR));
-                                //it is not a raw dex file, we do not want to any temp files
-                                int oldDexSize;
-                                if (!isRawDexFile) {
-                                    ZipEntry entry;
-                                    ZipInputStream zis = new ZipInputStream(oldInputStream);
-                                    while ((entry = zis.getNextEntry()) != null) {
-                                        if (ShareConstants.DEX_IN_JAR.equals(entry.getName())) break;
-                                    }
-                                    if (entry == null) {
-                                        throw new TinkerRuntimeException("can't recognize zip dex format file:" + extractedFile.getAbsolutePath());
-                                    }
-                                    oldInputStream = zis;
-                                    oldDexSize = (int) entry.getSize();
-                                } else {
-                                    oldDexSize = (int) rawApkFileEntry.getSize();
-                                }
-                                new DexPatchApplier(oldInputStream, oldDexSize, newInputStream, smallPatchInfoFile).executeAndSaveTo(zos);
-                                zos.closeEntry();
-                            } finally {
-                                SharePatchFileUtil.closeQuietly(zos);
-                            }
-
-                        } else {
-                            new DexPatchApplier(oldInputStream, (int) rawApkFileEntry.getSize(), newInputStream, smallPatchInfoFile).executeAndSaveTo(extractedFile);
-                        }
-                    } finally {
-                        SharePatchFileUtil.closeQuietly(oldInputStream);
-                        SharePatchFileUtil.closeQuietly(newInputStream);
-                    }
+                    patchDexFile(apk, patch, rawApkFileEntry, patchFileEntry, info, smallPatchInfoFile, extractedFile);
 
                     if (!SharePatchFileUtil.verifyDexFileMd5(extractedFile, extractedFileMd5)) {
                         TinkerLog.w(TAG, "Failed to recover dex file when verify patched dex: " + extractedFile.getPath());
@@ -364,13 +291,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         SharePatchFileUtil.safeDeleteFile(extractedFile);
                         return false;
                     }
+
                     TinkerLog.w(TAG, "success recover dex file: %s, use time: %d",
                         extractedFile.getPath(), (System.currentTimeMillis() - start));
                 }
             }
-
         } catch (Throwable e) {
-//            e.printStackTrace();
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) + " extract failed (" + e.getMessage() + ").", e);
         } finally {
             SharePatchFileUtil.closeZip(apk);
@@ -453,6 +379,75 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             return extractDexToJar(zipFile, entryFile, extractTo, fileMd5);
         }
         return extract(zipFile, entryFile, extractTo, fileMd5, true);
+    }
+
+    /**
+     * Generate patched dex file (May wrapped it by a jar if needed.)
+     * @param baseApk
+     *   OldApk.
+     * @param patchPkg
+     *   Patch package, it is also a zip file.
+     * @param oldDexEntry
+     *   ZipEntry of old dex.
+     * @param patchFileEntry
+     *   ZipEntry of patch file. (also ends with .dex) This could be null.
+     * @param patchInfo
+     *   Parsed patch info from package-meta.txt
+     * @param smallPatchInfoFile
+     *   Small patch info file which indicates if an element should appear in small patched dex.
+     *   This could be null.
+     * @param patchedDexFile
+     *   Patched dex file, may be a jar.
+     *
+     * <b>Notice: patchFileEntry and smallPatchInfoFile cannot both be null.</b>
+     *
+     * @throws IOException
+     */
+    private static void patchDexFile(
+            ZipFile baseApk, ZipFile patchPkg, ZipEntry oldDexEntry, ZipEntry patchFileEntry,
+            ShareDexDiffPatchInfo patchInfo, SmallPatchedDexItemFile smallPatchInfoFile, File patchedDexFile) throws IOException {
+        InputStream oldDexStream = null;
+        InputStream patchFileStream = null;
+        try {
+            oldDexStream = baseApk.getInputStream(oldDexEntry);
+            patchFileStream = (patchFileEntry != null ? patchPkg.getInputStream(patchFileEntry) : null);
+
+            final boolean isRawDexFile = SharePatchFileUtil.isRawDexFile(patchInfo.rawName);
+            if (!isRawDexFile || patchInfo.isJarMode) {
+                ZipOutputStream zos = null;
+                try {
+                    zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(patchedDexFile)));
+                    zos.putNextEntry(new ZipEntry(ShareConstants.DEX_IN_JAR));
+                    // Old dex is not a raw dex file.
+                    if (!isRawDexFile) {
+                        ZipInputStream zis = null;
+                        try {
+                            zis = new ZipInputStream(oldDexStream);
+                            ZipEntry entry;
+                            while ((entry = zis.getNextEntry()) != null) {
+                                if (ShareConstants.DEX_IN_JAR.equals(entry.getName())) break;
+                            }
+                            if (entry == null) {
+                                throw new TinkerRuntimeException("can't recognize zip dex format file:" + patchedDexFile.getAbsolutePath());
+                            }
+                            new DexPatchApplier(zis, (int) entry.getSize(), patchFileStream, smallPatchInfoFile).executeAndSaveTo(zos);
+                        } finally {
+                            SharePatchFileUtil.closeQuietly(zis);
+                        }
+                    } else {
+                        new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream, smallPatchInfoFile).executeAndSaveTo(zos);
+                    }
+                    zos.closeEntry();
+                } finally {
+                    SharePatchFileUtil.closeQuietly(zos);
+                }
+            } else {
+                new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream, smallPatchInfoFile).executeAndSaveTo(patchedDexFile);
+            }
+        } finally {
+            SharePatchFileUtil.closeQuietly(oldDexStream);
+            SharePatchFileUtil.closeQuietly(patchFileStream);
+        }
     }
 
 }
