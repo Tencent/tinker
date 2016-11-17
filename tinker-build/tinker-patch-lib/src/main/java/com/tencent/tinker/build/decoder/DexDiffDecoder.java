@@ -211,9 +211,9 @@ public class DexDiffDecoder extends BaseDecoder {
 
     @SuppressWarnings("NewApi")
     private void generateStubModePatchDex() throws IOException {
-        Logger.e("!!!! It's proved that pre-generated dex mode has the same problem"
+        Logger.e("\n!!!! It's proved that pre-generated dex mode has the same problem"
                 + " when inline optimization is done in the OS whose version is equal to or larger than 5.0. !!!!"
-                + "\n!!!! We're strongly NOT recommend you to use this mode now. !!!!");
+                + "\n!!!! We're strongly NOT recommend you to use this mode now. !!!!\n");
 
         List<File> oldDexList = new ArrayList<>();
         List<File> newDexList = new ArrayList<>();
