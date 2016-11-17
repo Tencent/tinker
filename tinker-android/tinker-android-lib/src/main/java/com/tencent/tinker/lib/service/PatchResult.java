@@ -35,12 +35,6 @@ public class PatchResult implements Serializable {
     //@Nullable
     public String patchVersion;
 
-    //@Nullable
-    public String patchTinkerID;
-
-    //@Nullable
-    public String baseTinkerID;
-
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
@@ -51,12 +45,6 @@ public class PatchResult implements Serializable {
         sb.append("costTime:" + costTime + "\n");
         if (patchVersion != null) {
             sb.append("patchVersion:" + patchVersion + "\n");
-        }
-        if (patchTinkerID != null) {
-            sb.append("patchTinkerID:" + patchTinkerID + "\n");
-        }
-        if (baseTinkerID != null) {
-            sb.append("baseTinkerID:" + baseTinkerID + "\n");
         }
 
         if (e != null) {

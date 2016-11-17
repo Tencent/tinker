@@ -93,7 +93,7 @@ android {
          * client version would update with patch
          * so we can get the newly git version easily!
          */
-        buildConfigField "String", "CLIENTVERSION", "\"${getTinkerIdValue()}\""
+        buildConfigField "String", "TINKER_ID", "\"${getTinkerIdValue()}\""
         buildConfigField "String", "PLATFORM",  "\"all\""
     }
 

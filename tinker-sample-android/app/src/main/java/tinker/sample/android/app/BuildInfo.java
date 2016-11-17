@@ -31,7 +31,7 @@ public class BuildInfo {
     public static int     VERSION_CODE = BuildConfig.VERSION_CODE;
 
     public static String MESSAGE       = BuildConfig.MESSAGE;
-    public static String CLIENTVERSION = BuildConfig.CLIENTVERSION;
+    public static String TINKER_ID     = BuildConfig.TINKER_ID;
     public static String PLATFORM      = BuildConfig.PLATFORM;
 
 }

@@ -63,9 +63,6 @@ public class UpgradePatch extends AbstractPatch {
             return false;
         }
 
-        patchResult.patchTinkerID = signatureCheck.getNewTinkerID();
-        patchResult.baseTinkerID = signatureCheck.getTinkerID();
-
         //it is a new patch, so we should not find a exist
         SharePatchInfo oldInfo = manager.getTinkerLoadResultIfPresent().patchInfo;
         String patchMd5 = SharePatchFileUtil.getMD5(patchFile);

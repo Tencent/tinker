@@ -104,16 +104,19 @@ public class MainActivity extends AppCompatActivity {
         Tinker tinker = Tinker.with(getApplicationContext());
         if (tinker.isTinkerLoaded()) {
             sb.append(String.format("[patch is loaded] \n"));
-            sb.append(String.format("[buildConfig CLIENTVERSION] %s \n", BuildInfo.CLIENTVERSION));
+            sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
+            sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
+
             sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
             sb.append(String.format("[TINKER_ID] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName(ShareConstants.TINKER_ID)));
-            sb.append(String.format("[REAL TINKER_ID] %s \n", tinker.getTinkerLoadResultIfPresent().getTinkerID()));
             sb.append(String.format("[packageConfig patchMessage] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName("patchMessage")));
             sb.append(String.format("[TINKER_ID Rom Space] %d k \n", tinker.getTinkerRomSpace()));
 
         } else {
             sb.append(String.format("[patch is not loaded] \n"));
-            sb.append(String.format("[buildConfig CLIENTVERSION] %s \n", BuildInfo.CLIENTVERSION));
+            sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
+            sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
+
             sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
             sb.append(String.format("[TINKER_ID] %s \n", ShareTinkerInternals.getManifestTinkerID(getApplicationContext())));
         }

@@ -66,9 +66,6 @@ public class RepairPatch extends AbstractPatch {
             return false;
         }
 
-        patchResult.patchTinkerID = signatureCheck.getNewTinkerID();
-        patchResult.baseTinkerID = signatureCheck.getTinkerID();
-
         //it is a old patch, so we should find a exist
         SharePatchInfo oldInfo = manager.getTinkerLoadResultIfPresent().patchInfo;
         String patchMd5 = SharePatchFileUtil.getMD5(patchFile);

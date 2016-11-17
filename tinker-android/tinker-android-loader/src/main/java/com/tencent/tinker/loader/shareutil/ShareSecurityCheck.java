@@ -65,32 +65,6 @@ public class ShareSecurityCheck {
     }
 
     /**
-     * get the base tinkerId
-     *
-     * @return
-     */
-    public String getTinkerID() {
-        if (packageProperties != null) {
-            String tinkerId = packageProperties.get(ShareConstants.TINKER_ID);
-            return tinkerId;
-        }
-        return null;
-    }
-
-    /**
-     * get the new tinkerId
-     *
-     * @return
-     */
-    public String getNewTinkerID() {
-        if (packageProperties != null) {
-            String tinkerId = packageProperties.get(ShareConstants.NEW_TINKER_ID);
-
-            return tinkerId;
-        }
-        return null;
-    }
-    /**
      * Nullable
      *
      * @return HashMap<String, String>

@@ -320,33 +320,6 @@ public class TinkerLoadResult {
     }
 
     /**
-     * get the base tinkerId
-     *
-     * @return
-     */
-    public String getTinkerID() {
-        if (packageConfig != null) {
-            String tinkerId = packageConfig.get(ShareConstants.TINKER_ID);
-            return tinkerId;
-        }
-        return null;
-    }
-
-    /**
-     * get the new tinkerId
-     *
-     * @return
-     */
-    public String getNewTinkerID() {
-        if (packageConfig != null) {
-            String tinkerId = packageConfig.get(ShareConstants.NEW_TINKER_ID);
-
-            return tinkerId;
-        }
-        return null;
-    }
-
-    /**
      * get package configs
      *
      * @param name
