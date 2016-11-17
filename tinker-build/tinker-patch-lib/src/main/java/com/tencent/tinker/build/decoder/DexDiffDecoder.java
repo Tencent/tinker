@@ -122,13 +122,21 @@ public class DexDiffDecoder extends BaseDecoder {
 
     }
 
+    /**
+     * Provide /oldFileRoot/dir/to/oldDex, /newFileRoot/dir/to/newDex,
+     * return dir/to/oldDex or dir/to/newDex if any one is not null.
+     */
+    protected String getRelativeDexName(File oldDexFile, File newDexFile) {
+        return oldDexFile != null ? getRelativePathStringToOldFile(oldDexFile) : getRelativePathStringToNewFile(newDexFile);
+    }
+
     @SuppressWarnings("NewApi")
     @Override
     public boolean patch(final File oldFile, final File newFile) throws IOException, TinkerPatchException {
+        final String dexName = getRelativeDexName(oldFile, newFile);
+
         // first of all, we should check input files if excluded classes were modified.
-        Logger.d("Check for loader classes in dex: %s",
-            (oldFile == null ? getRelativeString(newFile) : getRelativeString(oldFile))
-        );
+        Logger.d("Check for loader classes in dex: %s", dexName);
 
         try {
             excludedClassModifiedChecker.checkIfExcludedClassWasModifiedInNewDex(oldFile, newFile);
@@ -180,7 +188,6 @@ public class DexDiffDecoder extends BaseDecoder {
         // collect current old dex file and corresponding new dex file for further processing.
         oldAndNewDexFilePairList.add(new AbstractMap.SimpleEntry<>(oldFile, newFile));
 
-        final String dexName = (oldFile != null ? oldFile.getName() : newFile.getName());
         dexNameToRelatedInfoMap.put(dexName, relatedInfo);
 
         return true;
@@ -340,7 +347,7 @@ public class DexDiffDecoder extends BaseDecoder {
 
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             File oldFile = oldAndNewDexFilePair.getKey();
-            final String dexName = oldFile.getName();
+            final String dexName = getRelativeDexName(oldFile, null);
             if (isDexNameMatchesClassNPattern(dexName)) {
                 dexNameToClassNOldDexFileMap.put(dexName, oldFile);
             }
@@ -363,7 +370,7 @@ public class DexDiffDecoder extends BaseDecoder {
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             final File oldDexFile = oldAndNewDexFilePair.getKey();
             final File newDexFile = oldAndNewDexFilePair.getValue();
-            final String dexName = oldDexFile.getName();
+            final String dexName = getRelativeDexName(oldDexFile, newDexFile);
             final RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
             if (!relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
                 //logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.smallPatchedMd5, relatedInfo.dexDiffMd5);
@@ -384,13 +391,12 @@ public class DexDiffDecoder extends BaseDecoder {
     @SuppressWarnings("NewApi")
     private void generatePatchedDexInfoFile() {
         File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "dalvik");
-        ensureDirectoryExist(tempFullPatchDexPath);
 
         // Generate dex diff out and full patched dex if a pair of dex is different.
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             File oldFile = oldAndNewDexFilePair.getKey();
             File newFile = oldAndNewDexFilePair.getValue();
-            final String dexName = oldFile.getName();
+            final String dexName = getRelativeDexName(oldFile, newFile);
             RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
 
             if (!relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
@@ -423,6 +429,9 @@ public class DexDiffDecoder extends BaseDecoder {
                 Logger.d("\nGen %s patch file:%s, size:%d, md5:%s", dexName, relatedInfo.dexDiffFile.getAbsolutePath(), relatedInfo.dexDiffFile.length(), relatedInfo.dexDiffMd5);
 
                 File tempFullPatchedDexFile = new File(tempFullPatchDexPath, dexName);
+                if (!tempFullPatchedDexFile.exists()) {
+                    ensureDirectoryExist(tempFullPatchedDexFile.getParentFile());
+                }
 
                 try {
                     new DexPatchApplier(oldFile, dexDiffOut).executeAndSaveTo(tempFullPatchedDexFile);
@@ -461,13 +470,13 @@ public class DexDiffDecoder extends BaseDecoder {
     @SuppressWarnings("NewApi")
     private void generateSmallPatchedDexInfoFile() throws IOException {
         File tempSmallPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "art");
-        ensureDirectoryExist(tempSmallPatchDexPath);
 
         Set<File> classNOldDexFiles = new HashSet<>();
 
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             File oldFile = oldAndNewDexFilePair.getKey();
-            final String dexName = oldFile.getName();
+            File newFile = oldAndNewDexFilePair.getValue();
+            final String dexName = getRelativeDexName(oldFile, newFile);
 
             if (isDexNameMatchesClassNPattern(dexName)) {
                 classNOldDexFiles.add(oldFile);
@@ -480,7 +489,8 @@ public class DexDiffDecoder extends BaseDecoder {
         // rest dexes as part of class N dexes.
         Map<String, File> dexNameToClassNOldDexFileMap = new HashMap<>();
         for (File classNOldDex : classNOldDexFiles) {
-            dexNameToClassNOldDexFileMap.put(classNOldDex.getName(), classNOldDex);
+            final String oldDexName = getRelativeDexName(classNOldDex, null);
+            dexNameToClassNOldDexFileMap.put(oldDexName, classNOldDex);
         }
 
         boolean isRestDexNotInClassN = false;
@@ -497,7 +507,6 @@ public class DexDiffDecoder extends BaseDecoder {
         }
 
         File tempSmallPatchInfoFile = new File(config.mTempResultDir, TypedValue.DEX_SMALLPATCH_INFO_FILE);
-        ensureDirectoryExist(tempSmallPatchInfoFile.getParentFile());
 
         // So far we know whether a pair of dex is belong to class N dexes or other dexes.
         // Then we collect class N dex pairs and other dex pairs by separate their old dex
@@ -514,7 +523,8 @@ public class DexDiffDecoder extends BaseDecoder {
         List<File> otherFullPatchedDexFileList = new ArrayList<>();
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             File oldFile = oldAndNewDexFilePair.getKey();
-            final String dexName = oldFile.getName();
+            File newFile = oldAndNewDexFilePair.getValue();
+            final String dexName = getRelativeDexName(oldFile, newFile);
             File fullPatchedFile = dexNameToRelatedInfoMap.get(dexName).newOrFullPatchedFile;
             if (classNOldDexFiles.contains(oldFile)) {
                 classNOldDexFileList.add(oldFile);
@@ -552,9 +562,12 @@ public class DexDiffDecoder extends BaseDecoder {
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             File oldFile = oldAndNewDexFilePair.getKey();
             File newFile = oldAndNewDexFilePair.getValue();
-            final String dexName = oldFile.getName();
             final String oldDexSignStr = Hex.toHexString(new Dex(oldFile).computeSignature(false));
+            final String dexName = getRelativeDexName(oldFile, newFile);
             File tempSmallPatchedFile = new File(tempSmallPatchDexPath, dexName);
+            if (!tempSmallPatchedFile.exists()) {
+                ensureDirectoryExist(tempSmallPatchedFile.getParentFile());
+            }
             RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
             File dexDiffFile = relatedInfo.dexDiffFile;
 
@@ -753,8 +766,8 @@ public class DexDiffDecoder extends BaseDecoder {
         if (metaWriter == null && logWriter == null) {
             return;
         }
-        String parentRelative = getParentRelativeString(newOrFullPatchedFile);
-        String relative = getRelativeString(newOrFullPatchedFile);
+        String parentRelative = getParentRelativePathStringToNewFile(newOrFullPatchedFile);
+        String relative = getRelativePathStringToNewFile(newOrFullPatchedFile);
 
         if (metaWriter != null) {
             String fileName = newOrFullPatchedFile.getName();
