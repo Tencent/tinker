@@ -751,35 +751,35 @@ public class DexDiffDecoder extends BaseDecoder {
     }
 
     private final class DexPatcherLoggerBridge implements IDexPatcherLogger {
-        private final InfoWriter logWritter;
+        private final InfoWriter logWriter;
 
         DexPatcherLoggerBridge(InfoWriter logWritter) {
-            this.logWritter = logWritter;
+            this.logWriter = logWritter;
         }
 
         @Override
         public void v(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void d(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void i(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void w(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void e(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
     }
 }
