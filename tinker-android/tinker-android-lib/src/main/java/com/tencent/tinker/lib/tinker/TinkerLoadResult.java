@@ -18,6 +18,7 @@ package com.tencent.tinker.lib.tinker;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -100,7 +101,7 @@ public class TinkerLoadResult {
                 resourceDirectory = new File(patchVersionDirectory, ShareConstants.RES_PATH);
                 resourceFile = new File(resourceDirectory, ShareConstants.RES_NAME);
             }
-            patchInfo = new SharePatchInfo(oldVersion, newVersion);
+            patchInfo = new SharePatchInfo(oldVersion, newVersion, Build.FINGERPRINT);
             versionChanged = !(oldVersion.equals(newVersion));
         }
 
@@ -115,6 +116,9 @@ public class TinkerLoadResult {
                     break;
                 case ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION:
                     errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_DEX;
+                    break;
+                case ShareConstants.ERROR_LOAD_PATCH_VERSION_PARALLEL_DEX_OPT_EXCEPTION:
+                    errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_DEX_OPT;
                     break;
                 case ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION:
                     errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE;

@@ -18,13 +18,12 @@ package com.tencent.tinker.lib.patch;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.TinkerParallelDexOptimizer;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareDexDiffPatchInfo;
@@ -92,9 +91,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 optimizeDexDirectoryFile.mkdirs();
             }
 
-            boolean isSuccess = ParallelDexOptimizer.optimizeAll(
+            boolean isSuccess = TinkerParallelDexOptimizer.optimizeAll(
                     files, optimizeDexDirectoryFile,
-                    new ParallelDexOptimizer.ResultCallback() {
+                    new TinkerParallelDexOptimizer.ResultCallback() {
                         @Override
                         public void onSuccess(File dexFile, File optimizedDir) {
                             // Do nothing.
@@ -143,32 +142,6 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             String apkPath = applicationInfo.sourceDir;
             apk = new ZipFile(apkPath);
             patch = new ZipFile(patchFile);
-
-            SmallPatchedDexItemFile smallPatchInfoFile = null;
-
-            // !! May cause problem if method from patched class was inlined. Disable small patched dex
-            // generating strategy so far. !!
-
-            //if (ShareTinkerInternals.isVmArt()) {
-            //    File extractedFile = new File(dir + ShareConstants.DEX_SMALLPATCH_INFO_FILE);
-            //    ZipEntry smallPatchInfoEntry = patch.getEntry(ShareConstants.DEX_SMALLPATCH_INFO_FILE);
-            //    if (smallPatchInfoEntry != null) {
-            //        InputStream smallPatchInfoIs = null;
-            //        try {
-            //            smallPatchInfoIs = patch.getInputStream(smallPatchInfoEntry);
-            //            smallPatchInfoFile = new SmallPatchedDexItemFile(smallPatchInfoIs);
-            //        } catch (Throwable e) {
-            //            TinkerLog.w(TAG, "failed to read small patched info. reason: " + e.getMessage());
-            //            manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, ShareConstants.DEX_SMALLPATCH_INFO_FILE, type, isUpgradePatch);
-            //            return false;
-            //        } finally {
-            //            SharePatchFileUtil.closeQuietly(smallPatchInfoIs);
-            //        }
-            //    } else {
-            //        TinkerLog.w(TAG, "small patch info is not exists, it's ok now.");
-            //    }
-            //}
-
 
             for (ShareDexDiffPatchInfo info : patchList) {
                 long start = System.currentTimeMillis();
@@ -293,7 +266,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         return false;
                     }
 
-                    patchDexFile(apk, patch, rawApkFileEntry, patchFileEntry, info, smallPatchInfoFile, extractedFile);
+                    patchDexFile(apk, patch, rawApkFileEntry, patchFileEntry, info, extractedFile);
 
                     if (!SharePatchFileUtil.verifyDexFileMd5(extractedFile, extractedFileMd5)) {
                         TinkerLog.w(TAG, "Failed to recover dex file when verify patched dex: " + extractedFile.getPath());
@@ -370,15 +343,15 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return isExtractionSuccessful;
     }
 
-    /**
-     * reject dalvik vm, but sdk version is larger than 21
-     */
-    private static void checkVmArtProperty() {
-        boolean art = ShareTinkerInternals.isVmArt();
-        if (!art && Build.VERSION.SDK_INT >= 21) {
-            throw new TinkerRuntimeException(ShareConstants.CHECK_VM_PROPERTY_FAIL + ", it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
-        }
-    }
+//    /**
+//     * reject dalvik vm, but sdk version is larger than 21
+//     */
+//    private static void checkVmArtProperty() {
+//        boolean art = ShareTinkerInternals.isVmArt();
+//        if (!art && Build.VERSION.SDK_INT >= 21) {
+//            throw new TinkerRuntimeException(ShareConstants.CHECK_VM_PROPERTY_FAIL + ", it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
+//        }
+//    }
 
     private static boolean extractDexFile(ZipFile zipFile, ZipEntry entryFile, File extractTo, ShareDexDiffPatchInfo dexInfo) throws IOException {
         final String fileMd5 = ShareTinkerInternals.isVmArt() ? dexInfo.destMd5InArt : dexInfo.destMd5InDvm;
@@ -403,9 +376,6 @@ public class DexDiffPatchInternal extends BasePatchInternal {
      *   ZipEntry of patch file. (also ends with .dex) This could be null.
      * @param patchInfo
      *   Parsed patch info from package-meta.txt
-     * @param smallPatchInfoFile
-     *   Small patch info file which indicates if an element should appear in small patched dex.
-     *   This could be null.
      * @param patchedDexFile
      *   Patched dex file, may be a jar.
      *
@@ -415,7 +385,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
      */
     private static void patchDexFile(
             ZipFile baseApk, ZipFile patchPkg, ZipEntry oldDexEntry, ZipEntry patchFileEntry,
-            ShareDexDiffPatchInfo patchInfo, SmallPatchedDexItemFile smallPatchInfoFile, File patchedDexFile) throws IOException {
+            ShareDexDiffPatchInfo patchInfo,  File patchedDexFile) throws IOException {
         InputStream oldDexStream = null;
         InputStream patchFileStream = null;
         try {
@@ -440,19 +410,19 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             if (entry == null) {
                                 throw new TinkerRuntimeException("can't recognize zip dex format file:" + patchedDexFile.getAbsolutePath());
                             }
-                            new DexPatchApplier(zis, (int) entry.getSize(), patchFileStream, smallPatchInfoFile).executeAndSaveTo(zos);
+                            new DexPatchApplier(zis, (int) entry.getSize(), patchFileStream).executeAndSaveTo(zos);
                         } finally {
                             SharePatchFileUtil.closeQuietly(zis);
                         }
                     } else {
-                        new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream, smallPatchInfoFile).executeAndSaveTo(zos);
+                        new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream).executeAndSaveTo(zos);
                     }
                     zos.closeEntry();
                 } finally {
                     SharePatchFileUtil.closeQuietly(zos);
                 }
             } else {
-                new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream, smallPatchInfoFile).executeAndSaveTo(patchedDexFile);
+                new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream).executeAndSaveTo(patchedDexFile);
             }
         } finally {
             SharePatchFileUtil.closeQuietly(oldDexStream);

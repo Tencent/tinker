@@ -197,8 +197,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 return;
             }
         }
+        //only work for art platform oat
+        boolean isSystemOTA = ShareTinkerInternals.isVmArt() && ShareTinkerInternals.isSystemOTA(patchInfo.fingerPrint);
+
         //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if (mainProcess && versionChanged) {
+        if (isSystemOTA
+            || (mainProcess && versionChanged)) {
             patchInfo.oldVersion = version;
             //update old version to new
             if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
@@ -215,7 +219,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
         //now we can load patch jar
         if (isEnabledForDex) {
-            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent);
+            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent, isSystemOTA);
             if (!loadTinkerJars) {
                 Log.w(TAG, "tryLoadPatchFiles:onPatchLoadDexesFail");
                 return;
