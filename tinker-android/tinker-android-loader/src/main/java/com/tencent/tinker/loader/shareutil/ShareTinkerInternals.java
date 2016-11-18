@@ -51,6 +51,25 @@ public class ShareTinkerInternals {
         return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
     }
 
+    public static boolean isSystemOTA(String lastFingerPrint) {
+        String currentFingerprint = Build.FINGERPRINT;
+        if (lastFingerPrint == null
+            || lastFingerPrint.equals("")
+            || currentFingerprint == null
+            || currentFingerprint.equals("")) {
+            Log.d(TAG, "fingerprint empty:" + lastFingerPrint + ",current:" + currentFingerprint);
+            return false;
+        } else {
+            if (lastFingerPrint.equals(currentFingerprint)) {
+                Log.d(TAG, "same fingerprint:" + currentFingerprint);
+                return false;
+            } else {
+                Log.d(TAG, "system OTA,fingerprint not equal:" + lastFingerPrint + "," + currentFingerprint);
+                return true;
+            }
+        }
+    }
+
     public static boolean isNullOrNil(final String object) {
         if ((object == null) || (object.length() <= 0)) {
             return true;

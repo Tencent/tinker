@@ -215,6 +215,9 @@ public class DefaultLoadReporter implements LoadReporter {
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
                 TinkerLog.i(TAG, "dex exception disable tinker forever with sp");
                 break;
+            case ShareConstants.ERROR_LOAD_EXCEPTION_DEX_OPT:
+                TinkerLog.i(TAG, "patch load parallel dex opt exception: %s", e);
+                break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE:
                 if (e.getMessage().contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
                     TinkerLog.e(TAG, "tinker res check fail:" + e.getMessage());

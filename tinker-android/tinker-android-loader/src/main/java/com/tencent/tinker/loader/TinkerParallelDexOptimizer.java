@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.lib.patch;
+package com.tencent.tinker.loader;
 
 import android.util.Log;
 
-import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
 import dalvik.system.DexFile;
@@ -35,13 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by tangyinsheng on 2016/11/15.
  */
 
-public final class ParallelDexOptimizer {
+public final class TinkerParallelDexOptimizer {
     private static final String TAG = "ParallelDexOptimizer";
-
-    interface ResultCallback {
-        void onSuccess(File dexFile, File optimizedDir);
-        void onFailed(File dexFile, File optimizedDir, Throwable thr);
-    }
 
     /**
      * Optimize (trigger dexopt or dex2oat) dexes.
@@ -85,10 +79,10 @@ public final class ParallelDexOptimizer {
             lauch.await();
             long timeCost = (System.nanoTime() - startTick) / 1000000;
             if (successCount.get() == dexFiles.size()) {
-                TinkerLog.i(TAG, "All dexes are optimized successfully, cost: " + timeCost + " ms.");
+                Log.i(TAG, "All dexes are optimized successfully, cost: " + timeCost + " ms.");
                 return true;
             } else {
-                TinkerLog.e(TAG, "Dexes optimizing failed, some dexes are not optimized.");
+                Log.e(TAG, "Dexes optimizing failed, some dexes are not optimized.");
                 return false;
             }
         } catch (InterruptedException e) {
@@ -97,6 +91,11 @@ public final class ParallelDexOptimizer {
         } finally {
             threadPool.shutdown();
         }
+    }
+
+    public interface ResultCallback {
+        void onSuccess(File dexFile, File optimizedDir);
+        void onFailed(File dexFile, File optimizedDir, Throwable thr);
     }
 
     private static class OptimizeWorker implements Runnable {
@@ -123,7 +122,7 @@ public final class ParallelDexOptimizer {
                     callback.onSuccess(dexFile, optimizedDir);
                 }
             } catch (final Exception e) {
-                TinkerLog.e(TAG, "Failed to optimize dex: " + dexFile.getAbsolutePath(), e);
+                Log.e(TAG, "Failed to optimize dex: " + dexFile.getAbsolutePath(), e);
                 if (callback != null) {
                     callback.onFailed(dexFile, optimizedDir, e);
                 }

@@ -18,14 +18,11 @@ package com.tencent.tinker.build.decoder;
 
 
 import com.google.common.io.Files;
-
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
-import com.tencent.tinker.android.dx.util.Hex;
 import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
 import com.tencent.tinker.build.dexpatcher.util.SmallDexClassInfoCollector;
-import com.tencent.tinker.build.dexpatcher.util.SmallDexPatchGenerator;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.DexClassesComparator;
@@ -40,7 +37,6 @@ import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
 
 import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
@@ -467,128 +463,6 @@ public class DexDiffDecoder extends BaseDecoder {
         }
     }
 
-    @SuppressWarnings("NewApi")
-    private void generateSmallPatchedDexInfoFile() throws IOException {
-        File tempSmallPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "art");
-
-        Set<File> classNOldDexFiles = new HashSet<>();
-
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldFile = oldAndNewDexFilePair.getKey();
-            File newFile = oldAndNewDexFilePair.getValue();
-            final String dexName = getRelativeDexName(oldFile, newFile);
-
-            if (isDexNameMatchesClassNPattern(dexName)) {
-                classNOldDexFiles.add(oldFile);
-            }
-        }
-
-        // If we meet a case like:
-        // classes.dex, classes2.dex, classes4.dex, classes5.dex
-        // Since classes3.dex is missing, according to the logic in AOSP, we should not treat
-        // rest dexes as part of class N dexes.
-        Map<String, File> dexNameToClassNOldDexFileMap = new HashMap<>();
-        for (File classNOldDex : classNOldDexFiles) {
-            final String oldDexName = getRelativeDexName(classNOldDex, null);
-            dexNameToClassNOldDexFileMap.put(oldDexName, classNOldDex);
-        }
-
-        boolean isRestDexNotInClassN = false;
-        for (int i = 0; i < classNOldDexFiles.size(); ++i) {
-            final String expectedDexName = (i == 0 ? DexFormat.DEX_IN_JAR_NAME : "classes" + (i + 1) + ".dex");
-            if (!dexNameToClassNOldDexFileMap.containsKey(expectedDexName)) {
-                isRestDexNotInClassN = true;
-            } else {
-                if (isRestDexNotInClassN) {
-                    File mistakenClassNOldDexFile = dexNameToClassNOldDexFileMap.get(expectedDexName);
-                    classNOldDexFiles.remove(mistakenClassNOldDexFile);
-                }
-            }
-        }
-
-        File tempSmallPatchInfoFile = new File(config.mTempResultDir, TypedValue.DEX_SMALLPATCH_INFO_FILE);
-
-        // So far we know whether a pair of dex is belong to class N dexes or other dexes.
-        // Then we collect class N dex pairs and other dex pairs by separate their old dex
-        // and full patched dex into different list.
-        SmallDexPatchGenerator smallDexPatchGenerator = new SmallDexPatchGenerator();
-        smallDexPatchGenerator.setLoaderClassPatterns(config.mDexLoaderPattern);
-        smallDexPatchGenerator.setLogger(dexPatcherLoggerBridge);
-
-        logWriter.writeLineToInfoFile("\nStart collecting old dex and full patched dex...");
-
-        List<File> classNOldDexFileList = new ArrayList<>();
-        List<File> classNFullPatchedDexFileList = new ArrayList<>();
-        List<File> otherOldDexFileList = new ArrayList<>();
-        List<File> otherFullPatchedDexFileList = new ArrayList<>();
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldFile = oldAndNewDexFilePair.getKey();
-            File newFile = oldAndNewDexFilePair.getValue();
-            final String dexName = getRelativeDexName(oldFile, newFile);
-            File fullPatchedFile = dexNameToRelatedInfoMap.get(dexName).newOrFullPatchedFile;
-            if (classNOldDexFiles.contains(oldFile)) {
-                classNOldDexFileList.add(oldFile);
-                classNFullPatchedDexFileList.add(fullPatchedFile);
-            } else {
-                otherOldDexFileList.add(oldFile);
-                otherFullPatchedDexFileList.add(fullPatchedFile);
-            }
-        }
-
-        logWriter.writeLineToInfoFile(String.format("\nCollected class N old dexes: %s", classNOldDexFileList));
-        logWriter.writeLineToInfoFile(String.format("Collected class N full patched dexes: %s", classNFullPatchedDexFileList));
-        logWriter.writeLineToInfoFile(String.format("\nCollected other old dexes: %s", otherOldDexFileList));
-        logWriter.writeLineToInfoFile(String.format("Collected other full patched dexes: %s", otherFullPatchedDexFileList));
-
-        smallDexPatchGenerator.appendDexGroup(DexGroup.wrap(classNOldDexFileList), DexGroup.wrap(classNFullPatchedDexFileList));
-
-        if (!otherOldDexFileList.isEmpty()) {
-            smallDexPatchGenerator.appendDexGroup(DexGroup.wrap(otherOldDexFileList), DexGroup.wrap(otherFullPatchedDexFileList));
-        }
-
-        try {
-            Logger.d("Start generating small patch info file...");
-            smallDexPatchGenerator.executeAndSaveTo(tempSmallPatchInfoFile);
-        } catch (Exception e) {
-            throw new TinkerPatchException("\nFailed to generate small patch info file.", e);
-        }
-        if (!tempSmallPatchInfoFile.exists()) {
-            throw new TinkerPatchException("can not find the small patch info file:" + tempSmallPatchInfoFile.getAbsolutePath());
-        }
-
-        SmallPatchedDexItemFile smallPatchedDexItemFile = new SmallPatchedDexItemFile(tempSmallPatchInfoFile);
-
-        // Generate small patched dex and write meta.
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldFile = oldAndNewDexFilePair.getKey();
-            File newFile = oldAndNewDexFilePair.getValue();
-            final String oldDexSignStr = Hex.toHexString(new Dex(oldFile).computeSignature(false));
-            final String dexName = getRelativeDexName(oldFile, newFile);
-            File tempSmallPatchedFile = new File(tempSmallPatchDexPath, dexName);
-            if (!tempSmallPatchedFile.exists()) {
-                ensureDirectoryExist(tempSmallPatchedFile.getParentFile());
-            }
-            RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
-            File dexDiffFile = relatedInfo.dexDiffFile;
-
-            if (!smallPatchedDexItemFile.isSmallPatchedDexEmpty(oldDexSignStr)) {
-                try {
-                    new DexPatchApplier(oldFile, dexDiffFile, smallPatchedDexItemFile).executeAndSaveTo(tempSmallPatchedFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new TinkerPatchException(
-                            "Failed to generate temporary small patched dex, which makes MD5 generating procedure of small patched dex failed, either.", e
-                    );
-                }
-                if (!tempSmallPatchedFile.exists()) {
-                    throw new TinkerPatchException("can not find the temporary small patched dex file:" + tempSmallPatchInfoFile.getAbsolutePath());
-                }
-                relatedInfo.smallPatchedMd5 = MD5.getMD5(tempSmallPatchedFile);
-                Logger.d("\nGen %s for art small dex file:%s, size:%d, md5:%s", dexName, tempSmallPatchedFile.getAbsolutePath(), tempSmallPatchedFile.length(), relatedInfo.smallPatchedMd5);
-            }
-        }
-    }
-
     private void addTestDex() throws IOException {
         //write test dex
         String dexMode = "jar";
@@ -874,7 +748,6 @@ public class DexDiffDecoder extends BaseDecoder {
          *  newDex md5, if new dex is marked to be copied directly;
          */
         String newOrFullPatchedMd5 = "0";
-        String smallPatchedMd5 = "0";
     }
 
     private final class DexPatcherLoggerBridge implements IDexPatcherLogger {
