@@ -196,16 +196,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     return false;
                 }
 
-                String extractedRelativePathSeg = info.path;
-                if (extractedRelativePathSeg != null && extractedRelativePathSeg.length() > 0) {
-                    extractedRelativePathSeg = extractedRelativePathSeg.replace('\\', '_');
-                    extractedRelativePathSeg = extractedRelativePathSeg.replace('/', '_');
-                    extractedRelativePathSeg += "_";
-                } else if (extractedRelativePathSeg == null) {
-                    extractedRelativePathSeg = "";
-                }
-
-                File extractedFile = new File(dir + extractedRelativePathSeg + info.realName);
+                File extractedFile = new File(dir + info.realName);
 
                 //check file whether already exist
                 if (extractedFile.exists()) {
@@ -303,7 +294,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     }
 
                     TinkerLog.w(TAG, "success recover dex file: %s, use time: %d",
-                        extractedFile.getPath(), (System.currentTimeMillis() - start));
+                            extractedFile.getPath(), (System.currentTimeMillis() - start));
                 }
             }
         } catch (Throwable e) {
@@ -340,7 +331,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             TinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
             try {
                 zos = new ZipOutputStream(new
-                    BufferedOutputStream(fos));
+                        BufferedOutputStream(fos));
                 bis = new BufferedInputStream(in);
 
                 byte[] buffer = new byte[ShareConstants.BUFFER_SIZE];

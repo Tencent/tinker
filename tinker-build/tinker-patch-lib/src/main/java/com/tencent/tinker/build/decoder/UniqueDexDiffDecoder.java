@@ -38,11 +38,11 @@ public class UniqueDexDiffDecoder extends DexDiffDecoder {
     public boolean patch(File oldFile, File newFile) throws IOException, TinkerPatchException {
         boolean added = super.patch(oldFile, newFile);
         if (added) {
-            final String dexName = getRelativeDexName(oldFile, newFile);
-            if (addedDexFiles.contains(dexName)) {
-                throw new TinkerPatchException("illegal dex name, dex name should be unique, dex:" + dexName);
+            String name = newFile.getName();
+            if (addedDexFiles.contains(name)) {
+                throw new TinkerPatchException("illegal dex name, dex name should be unique, dex:" + name);
             } else {
-                addedDexFiles.add(dexName);
+                addedDexFiles.add(name);
             }
         }
         return added;
