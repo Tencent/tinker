@@ -259,6 +259,8 @@ public class AuxiliaryInjectTransform extends Transform {
             }
 
             if (!jarInputs.isEmpty()) {
+                Map<String, String> entryNameToJarPathMap = new HashMap<>()
+
                 jarInputs.each { jarInput ->
                     File jarInputFile = jarInput.file
                     File jarOutputFile = transformInvocation.outputProvider.getContentLocation(
@@ -285,6 +287,13 @@ public class AuxiliaryInjectTransform extends Transform {
                             AuxiliaryClassInjector.processJar(jarInputFile, jarOutputFile, new ProcessJarCallback() {
                                 @Override
                                 boolean onProcessClassEntry(String entryName) {
+                                    final String lastContainsJarPath = entryNameToJarPathMap.get(entryName)
+                                    if (lastContainsJarPath != null) {
+                                        printWarnLog("Duplicate zip entry ${entryName} found in ${lastContainsJarPath} and ${jarInputFile.absolutePath}")
+                                    } else {
+                                        entryNameToJarPathMap.put(entryName, jarInputFile.absolutePath)
+                                    }
+
                                     // If disabled or not a class file, skip transforming them.
                                     if (!this.isEnabled || !entryName.endsWith('.class')) {
                                         return false
@@ -337,7 +346,7 @@ public class AuxiliaryInjectTransform extends Transform {
 
     private void printWarnLog(String fmt, Object... vals) {
         final String title = TRANSFORM_NAME.capitalize()
-        this.project.logger.warn("[{}] {}", title,
+        this.project.logger.error("[{}] {}", title,
                 (vals == null || vals.length == 0 ? fmt : String.format(fmt, vals)))
     }
 }
