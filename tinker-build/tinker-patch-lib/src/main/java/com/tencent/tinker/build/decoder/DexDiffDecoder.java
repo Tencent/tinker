@@ -18,6 +18,7 @@ package com.tencent.tinker.build.decoder;
 
 
 import com.google.common.io.Files;
+
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
@@ -378,7 +379,16 @@ public class DexDiffDecoder extends BaseDecoder {
                     //if (!"0".equals(relatedInfo.smallPatchedMd5)) {
                     //    logToDexMeta(newDexFile, oldDexFile, null, "0", relatedInfo.smallPatchedMd5, "0");
                     //}
-                    logToDexMeta(newDexFile, oldDexFile, null, "0", relatedInfo.oldMd5, "0");
+
+                    // Bugfix: However, if what we would copy directly is main dex, we should do an additional diff operation
+                    // so that patch applier would help us remove all loader classes of it in runtime.
+                    if (dexName.equals(DexFormat.DEX_IN_JAR_NAME)) {
+                        Logger.d("\nDo additional diff on main dex to remove loader classes in it.");
+                        diffDexPairAndFillRelatedInfo(oldDexFile, newDexFile, relatedInfo);
+                        logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.newOrFullPatchedMd5, relatedInfo.dexDiffMd5);
+                    } else {
+                        logToDexMeta(newDexFile, oldDexFile, null, "0", relatedInfo.oldMd5, "0");
+                    }
                 }
             }
         }
@@ -386,73 +396,14 @@ public class DexDiffDecoder extends BaseDecoder {
 
     @SuppressWarnings("NewApi")
     private void generatePatchedDexInfoFile() {
-        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "full");
-
         // Generate dex diff out and full patched dex if a pair of dex is different.
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             File oldFile = oldAndNewDexFilePair.getKey();
             File newFile = oldAndNewDexFilePair.getValue();
             final String dexName = getRelativeDexName(oldFile, newFile);
             RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
-
             if (!relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
-                File dexDiffOut = getOutputPath(newFile).toFile();
-                ensureDirectoryExist(dexDiffOut.getParentFile());
-
-                try {
-                    DexPatchGenerator dexPatchGen = new DexPatchGenerator(oldFile, newFile);
-                    dexPatchGen.setAdditionalRemovingClassPatterns(config.mDexLoaderPattern);
-
-                    logWriter.writeLineToInfoFile(
-                            String.format(
-                                    "Start diff between [%s] as old and [%s] as new:",
-                                    getRelativeStringBy(oldFile, config.mTempUnzipOldDir),
-                                    getRelativeStringBy(newFile, config.mTempUnzipNewDir)
-                            )
-                    );
-
-                    dexPatchGen.executeAndSaveTo(dexDiffOut);
-                } catch (Exception e) {
-                    throw new TinkerPatchException(e);
-                }
-
-                if (!dexDiffOut.exists()) {
-                    throw new TinkerPatchException("can not find the diff file:" + dexDiffOut.getAbsolutePath());
-                }
-
-                relatedInfo.dexDiffFile = dexDiffOut;
-                relatedInfo.dexDiffMd5 = MD5.getMD5(dexDiffOut);
-                Logger.d("\nGen %s patch file:%s, size:%d, md5:%s", dexName, relatedInfo.dexDiffFile.getAbsolutePath(), relatedInfo.dexDiffFile.length(), relatedInfo.dexDiffMd5);
-
-                File tempFullPatchedDexFile = new File(tempFullPatchDexPath, dexName);
-                if (!tempFullPatchedDexFile.exists()) {
-                    ensureDirectoryExist(tempFullPatchedDexFile.getParentFile());
-                }
-
-                try {
-                    new DexPatchApplier(oldFile, dexDiffOut).executeAndSaveTo(tempFullPatchedDexFile);
-
-                    Logger.d(
-                            String.format("Verifying if patched new dex is logically the same as original new dex: %s ...", getRelativeStringBy(newFile, config.mTempUnzipNewDir))
-                    );
-
-                    Dex origNewDex = new Dex(newFile);
-                    Dex patchedNewDex = new Dex(tempFullPatchedDexFile);
-                    checkDexChange(origNewDex, patchedNewDex);
-
-                    relatedInfo.newOrFullPatchedFile = tempFullPatchedDexFile;
-                    relatedInfo.newOrFullPatchedMd5 = MD5.getMD5(tempFullPatchedDexFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new TinkerPatchException(
-                            "Failed to generate temporary patched dex, which makes MD5 generating procedure of new dex failed, either.", e
-                    );
-                }
-
-                if (!tempFullPatchedDexFile.exists()) {
-                    throw new TinkerPatchException("can not find the temporary full patched dex file:" + tempFullPatchedDexFile.getAbsolutePath());
-                }
-                Logger.d("\nGen %s for dalvik full dex file:%s, size:%d, md5:%s", dexName, tempFullPatchedDexFile.getAbsolutePath(), tempFullPatchedDexFile.length(), relatedInfo.newOrFullPatchedMd5);
+                diffDexPairAndFillRelatedInfo(oldFile, newFile, relatedInfo);
             } else {
                 // In this case newDexFile is the same as oldDexFile, but we still
                 // need to treat it as patched dex file so that the SmallPatchGenerator
@@ -461,6 +412,69 @@ public class DexDiffDecoder extends BaseDecoder {
                 relatedInfo.newOrFullPatchedMd5 = relatedInfo.newMd5;
             }
         }
+    }
+
+    private void diffDexPairAndFillRelatedInfo(File oldDexFile, File newDexFile, RelatedInfo relatedInfo) {
+        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "full");
+        final String dexName = getRelativeDexName(oldDexFile, newDexFile);
+
+        File dexDiffOut = getOutputPath(newDexFile).toFile();
+        ensureDirectoryExist(dexDiffOut.getParentFile());
+
+        try {
+            DexPatchGenerator dexPatchGen = new DexPatchGenerator(oldDexFile, newDexFile);
+            dexPatchGen.setAdditionalRemovingClassPatterns(config.mDexLoaderPattern);
+
+            logWriter.writeLineToInfoFile(
+                    String.format(
+                            "Start diff between [%s] as old and [%s] as new:",
+                            getRelativeStringBy(oldDexFile, config.mTempUnzipOldDir),
+                            getRelativeStringBy(newDexFile, config.mTempUnzipNewDir)
+                    )
+            );
+
+            dexPatchGen.executeAndSaveTo(dexDiffOut);
+        } catch (Exception e) {
+            throw new TinkerPatchException(e);
+        }
+
+        if (!dexDiffOut.exists()) {
+            throw new TinkerPatchException("can not find the diff file:" + dexDiffOut.getAbsolutePath());
+        }
+
+        relatedInfo.dexDiffFile = dexDiffOut;
+        relatedInfo.dexDiffMd5 = MD5.getMD5(dexDiffOut);
+        Logger.d("\nGen %s patch file:%s, size:%d, md5:%s", dexName, relatedInfo.dexDiffFile.getAbsolutePath(), relatedInfo.dexDiffFile.length(), relatedInfo.dexDiffMd5);
+
+        File tempFullPatchedDexFile = new File(tempFullPatchDexPath, dexName);
+        if (!tempFullPatchedDexFile.exists()) {
+            ensureDirectoryExist(tempFullPatchedDexFile.getParentFile());
+        }
+
+        try {
+            new DexPatchApplier(oldDexFile, dexDiffOut).executeAndSaveTo(tempFullPatchedDexFile);
+
+            Logger.d(
+                    String.format("Verifying if patched new dex is logically the same as original new dex: %s ...", getRelativeStringBy(newDexFile, config.mTempUnzipNewDir))
+            );
+
+            Dex origNewDex = new Dex(newDexFile);
+            Dex patchedNewDex = new Dex(tempFullPatchedDexFile);
+            checkDexChange(origNewDex, patchedNewDex);
+
+            relatedInfo.newOrFullPatchedFile = tempFullPatchedDexFile;
+            relatedInfo.newOrFullPatchedMd5 = MD5.getMD5(tempFullPatchedDexFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new TinkerPatchException(
+                    "Failed to generate temporary patched dex, which makes MD5 generating procedure of new dex failed, either.", e
+            );
+        }
+
+        if (!tempFullPatchedDexFile.exists()) {
+            throw new TinkerPatchException("can not find the temporary full patched dex file:" + tempFullPatchedDexFile.getAbsolutePath());
+        }
+        Logger.d("\nGen %s for dalvik full dex file:%s, size:%d, md5:%s", dexName, tempFullPatchedDexFile.getAbsolutePath(), tempFullPatchedDexFile.length(), relatedInfo.newOrFullPatchedMd5);
     }
 
     private void addTestDex() throws IOException {
