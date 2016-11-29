@@ -64,7 +64,7 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
             return false;
         }
         try {
-            // ActivityManagergetRunningAppProcesses()
+            // ActivityManager getRunningAppProcesses()
             List<ActivityManager.RunningAppProcessInfo> appProcessList = am
                 .getRunningAppProcesses();
 
@@ -122,7 +122,7 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
         ServiceInfo serviceInfo;
         try {
             serviceInfo = packageManager.getServiceInfo(component, 0);
-        } catch (PackageManager.NameNotFoundException ignored) {
+        } catch (Throwable ignored) {
             // Service is disabled.
             return null;
         }

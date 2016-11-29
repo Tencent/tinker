@@ -16,11 +16,9 @@
 
 package com.tencent.tinker.build.gradle.task
 
-import com.tencent.tinker.build.auxiliaryclass.AuxiliaryClassInjector
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
-
 
 /**
  * The configuration properties.

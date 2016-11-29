@@ -72,8 +72,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
     private static boolean patchDexExtractViaDexDiff(Context context, String patchVersionDirectory, String meta, final File patchFile, final boolean isUpgradePatch) {
         String dir = patchVersionDirectory + "/" + DEX_PATH + "/";
 
-        int dexType = ShareTinkerInternals.isVmArt() ? TYPE_DEX_FOR_ART : TYPE_DEX;
-        if (!extractDexDiffInternals(context, dir, meta, patchFile, dexType, isUpgradePatch)) {
+        if (!extractDexDiffInternals(context, dir, meta, patchFile, TYPE_DEX, isUpgradePatch)) {
             TinkerLog.w(TAG, "patch recover, extractDiffInternals fail");
             return false;
         }
