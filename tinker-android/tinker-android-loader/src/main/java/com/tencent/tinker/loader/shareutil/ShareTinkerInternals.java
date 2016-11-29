@@ -226,8 +226,6 @@ public class ShareTinkerInternals {
         switch (type) {
             case ShareConstants.TYPE_DEX:
                 return "dex";
-            case ShareConstants.TYPE_DEX_FOR_ART:
-                return "dex_art";
             case ShareConstants.TYPE_DEX_OPT:
                 return "dex_opt";
             case ShareConstants.TYPE_LIBRARY:
@@ -282,6 +280,9 @@ public class ShareTinkerInternals {
 
     public static void killAllOtherProcess(Context context) {
         final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am == null) {
+            return;
+        }
         // NOTE: getRunningAppProcess() ONLY GIVE YOU THE PROCESS OF YOUR OWN PACKAGE IN ANDROID M
         // BUT THAT'S ENOUGH HERE
         for (ActivityManager.RunningAppProcessInfo ai : am.getRunningAppProcesses()) {
