@@ -24,7 +24,7 @@ import com.tencent.tinker.build.util.TypedValue
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.UnknownTaskException
+import org.gradle.api.Task
 
 /**
  * Registers the plugin's tasks.
@@ -113,17 +113,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 def variantOutput = variant.outputs.first()
                 def variantName = variant.name.capitalize()
 
-                try {
-                    def instantRunTask = project.tasks.getByName("transformClassesWithInstantRunFor${variantName}")
-                    if (instantRunTask) {
-                        throw new GradleException(
-                                "Tinker does not support instant run mode, please trigger build"
-                                        + " by assemble${variantName} or disable instant run"
-                                        + " in 'File->Settings...'."
-                        )
-                    }
-                } catch (UnknownTaskException e) {
-                    // Not in instant run mode, continue.
+                def instantRunTask = getInstantRunTask(project, variantName)
+                if (instantRunTask != null) {
+                    throw new GradleException(
+                            "Tinker does not support instant run mode, please trigger build"
+                                    + " by assemble${variantName} or disable instant run"
+                                    + " in 'File->Settings...'."
+                    )
                 }
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
@@ -161,6 +157,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     TinkerProguardConfigTask proguardConfigTask = project.tasks.create("tinkerProcess${variantName}Proguard", TinkerProguardConfigTask)
                     proguardConfigTask.applicationVariant = variant
                     variantOutput.packageApplication.dependsOn proguardConfigTask
+
+                    def proguardTask = getProguardTask(project, variantName)
+                    if (proguardTask != null) {
+                        proguardTask.dependsOn proguardConfigTask
+                    }
+
                 }
 
                 // Add this multidex proguard settings file to the list
@@ -170,11 +172,31 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     TinkerMultidexConfigTask multidexConfigTask = project.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
                     variantOutput.packageApplication.dependsOn multidexConfigTask
+
+                    def multidexTask = getMultiDexTask(project, variantName)
+                    if (multidexTask != null) {
+                        multidexTask.dependsOn multidexConfigTask
+                    }
+
                 }
 
             }
         }
+    }
 
+    Task getMultiDexTask(Project project, String variantName) {
+        String multiDexTaskName = "transformClassesWithMultidexlistFor${variantName}"
+        return project.tasks.findByName(multiDexTaskName);
+    }
+
+    Task getProguardTask(Project project, String variantName) {
+        String proguardTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
+        return project.tasks.findByName(proguardTaskName)
+    }
+
+    Task getInstantRunTask(Project project, String variantName) {
+        String instantRunTask = "transformClassesWithInstantRunFor${variantName}"
+        return project.tasks.findByName(instantRunTask)
     }
 
 }

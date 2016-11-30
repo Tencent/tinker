@@ -124,6 +124,10 @@ public class Tinker {
         sInstance = tinker;
     }
 
+    public static boolean isTinkerInstalled() {
+        return sInstalled;
+    }
+
     /**
      * you must install tinker first!!
      *
@@ -164,7 +168,6 @@ public class Tinker {
         TinkerPatchService.setTinkerNotificationId(id);
     }
 
-
     /**
      * Nullable, should check the loaded flag first
      */
@@ -200,7 +203,6 @@ public class Tinker {
         return patchReporter;
     }
 
-
     public boolean isTinkerEnabled() {
         return ShareTinkerInternals.isTinkerEnabled(tinkerFlags);
     }
@@ -211,10 +213,6 @@ public class Tinker {
 
     public void setTinkerLoaded(boolean isLoaded) {
         loaded = isLoaded;
-    }
-
-    public boolean isTinkerInstalled() {
-        return sInstalled;
     }
 
     public boolean isTinkerLoadVerify() {
