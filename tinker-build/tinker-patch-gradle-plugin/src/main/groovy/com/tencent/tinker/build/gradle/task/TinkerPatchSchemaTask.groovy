@@ -55,7 +55,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
         InputParam.Builder builder = new InputParam.Builder()
         if (configuration.useSign) {
             if (signConfig == null) {
-                throw new GradleException("can't the get signConfig for ${taskName} build")
+                throw new GradleException("can't the get signConfig for this build")
             }
             builder.setSignFile(signConfig.storeFile)
                     .setKeypass(signConfig.keyPassword)
