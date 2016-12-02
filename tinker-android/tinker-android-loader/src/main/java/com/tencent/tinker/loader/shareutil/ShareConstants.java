@@ -98,13 +98,10 @@ public class ShareConstants {
     public static final int TYPE_PATCH_FILE  = 1;
     public static final int TYPE_PATCH_INFO  = 2;
     public static final int TYPE_DEX         = 3;
-    /**
-     * for art small dex
-     */
-    public static final int TYPE_DEX_FOR_ART = 4;
-    public static final int TYPE_DEX_OPT     = 5;
-    public static final int TYPE_LIBRARY     = 6;
-    public static final int TYPE_RESOURCE    = 7;
+
+    public static final int TYPE_DEX_OPT     = 4;
+    public static final int TYPE_LIBRARY     = 5;
+    public static final int TYPE_RESOURCE    = 6;
 
 
     public static final int TINKER_DISABLE             = 0x00;

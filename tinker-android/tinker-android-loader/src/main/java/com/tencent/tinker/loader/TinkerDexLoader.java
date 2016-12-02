@@ -142,7 +142,6 @@ public class TinkerDexLoader {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
             return false;
         }
-        Log.i(TAG, "after loaded classloader: " + application.getClassLoader().toString());
 
         return true;
     }

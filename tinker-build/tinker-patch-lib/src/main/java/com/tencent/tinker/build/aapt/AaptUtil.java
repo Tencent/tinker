@@ -105,8 +105,8 @@ public final class AaptUtil {
                 File xmlFile = new File(xmlFullFilename);
                 String parentFullFilename = xmlFile.getParent();
                 File parentFile = new File(parentFullFilename);
-                if (isAValuesDirectory(parentFile.getName())) {
-                    // Ignore files under values* directories.
+                if (isAValuesDirectory(parentFile.getName()) || parentFile.getName().startsWith("raw")) {
+                    // Ignore files under values* directories and raw*.
                     continue;
                 }
                 processXmlFile(xmlFullFilename, references, resourceCollector);

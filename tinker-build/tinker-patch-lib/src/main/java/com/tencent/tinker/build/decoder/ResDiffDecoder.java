@@ -421,7 +421,7 @@ public class ResDiffDecoder extends BaseDecoder {
             if (Utils.checkFileInPattern(config.mResFilePattern, patternKey)) {
                 //not contain in new path, is deleted
                 if (!newPath.toFile().exists()) {
-                    deletedFiles.add(relativePath.toString());
+                    deletedFiles.add(patternKey);
                     writeResLog(newPath.toFile(), file.toFile(), TypedValue.DEL);
                 }
                 return FileVisitResult.CONTINUE;
