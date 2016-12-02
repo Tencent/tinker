@@ -81,12 +81,8 @@ public class SampleTinkerReport {
     //extract error
     public static final int KEY_APPLIED_PATCH_FILE_EXTRACT                      = 181;
     public static final int KEY_APPLIED_DEX_EXTRACT                             = 182;
-    /**
-     * for art small dex
-     */
-    public static final int KEY_APPLIED_DEX_ART_EXTRACT                         = 183;
-    public static final int KEY_APPLIED_LIB_EXTRACT                             = 184;
-    public static final int KEY_APPLIED_RESOURCE_EXTRACT                        = 185;
+    public static final int KEY_APPLIED_LIB_EXTRACT                             = 183;
+    public static final int KEY_APPLIED_RESOURCE_EXTRACT                        = 184;
     //cost time
     public static final int KEY_APPLIED_SUCC_COST_5S_LESS                       = 200;
     public static final int KEY_APPLIED_SUCC_COST_10S_LESS                      = 201;
@@ -389,9 +385,6 @@ public class SampleTinkerReport {
         switch (fileType) {
             case ShareConstants.TYPE_DEX:
                 reporter.onReport(KEY_APPLIED_DEX_EXTRACT);
-                break;
-            case ShareConstants.TYPE_DEX_FOR_ART:
-                reporter.onReport(KEY_APPLIED_DEX_ART_EXTRACT);
                 break;
             case ShareConstants.TYPE_LIBRARY:
                 reporter.onReport(KEY_APPLIED_LIB_EXTRACT);
