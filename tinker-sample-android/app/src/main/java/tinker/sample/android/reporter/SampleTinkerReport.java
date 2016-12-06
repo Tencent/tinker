@@ -103,7 +103,7 @@ public class SampleTinkerReport {
     public static final int KEY_LOADED_EXCEPTION_DEX            = 252;
     public static final int KEY_LOADED_EXCEPTION_DEX_CHECK      = 253;
     public static final int KEY_LOADED_EXCEPTION_RESOURCE       = 254;
-    public static final int KEY_LOADED_EXCEPTION_RESOURCE_CEHCK = 255;
+    public static final int KEY_LOADED_EXCEPTION_RESOURCE_CHECK = 255;
 
 
     public static final int KEY_LOADED_MISMATCH_DEX       = 300;
@@ -328,7 +328,7 @@ public class SampleTinkerReport {
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE:
                 if (throwable.getMessage().contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
-                    reporter.onReport(KEY_LOADED_EXCEPTION_RESOURCE_CEHCK);
+                    reporter.onReport(KEY_LOADED_EXCEPTION_RESOURCE_CHECK);
                     isCheckFail = true;
                     TinkerLog.e(TAG, "tinker res check fail:" + throwable.getMessage());
                 } else {
