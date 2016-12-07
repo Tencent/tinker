@@ -235,8 +235,6 @@ public class ResDiffDecoder extends BaseDecoder {
             throw new TinkerPatchException("resource must contain AndroidManifest.xml pattern");
         }
 
-        addAssetsFileForTestResource();
-
         //check gradle build
         if (config.mUsingGradle) {
             final boolean ignoreWarning = config.mIgnoreWarning;
@@ -273,6 +271,9 @@ public class ResDiffDecoder extends BaseDecoder {
         removeIgnoreChangeFile(deletedSet);
         removeIgnoreChangeFile(addedSet);
         removeIgnoreChangeFile(largeModifiedSet);
+
+        // last add test res in assets for user cannot ignore it;
+        addAssetsFileForTestResource();
 
         File tempResZip = new File(config.mOutFolder + File.separator + TEMP_RES_ZIP);
         final File tempResFiles = config.mTempResultDir;
