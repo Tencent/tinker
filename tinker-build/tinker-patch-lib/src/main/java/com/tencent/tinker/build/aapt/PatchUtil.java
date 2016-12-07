@@ -20,8 +20,8 @@ import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -102,8 +102,8 @@ public final class PatchUtil {
         try {
             FileUtil.createFile(outputIdsXmlFullFilename);
             FileUtil.createFile(outputPublicXmlFullFilename);
-            idsWriter = new PrintWriter(new FileOutputStream(outputIdsXmlFullFilename));
-            publicWriter = new PrintWriter(new FileOutputStream(outputPublicXmlFullFilename));
+            idsWriter = new PrintWriter(new File(outputIdsXmlFullFilename), "UTF-8");
+            publicWriter = new PrintWriter(new File(outputPublicXmlFullFilename), "UTF-8");
             idsWriter.println("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             publicWriter.println("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             idsWriter.println("<resources>");
