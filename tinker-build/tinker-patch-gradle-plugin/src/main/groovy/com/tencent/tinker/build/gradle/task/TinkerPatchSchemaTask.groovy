@@ -44,8 +44,6 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
     @TaskAction
     def tinkerPatch() {
-//        println configuration.toString()
-
         configuration.checkParameter()
         configuration.buildConfig.checkParameter()
         configuration.res.checkParameter()
@@ -68,7 +66,6 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setNewApk(buildApkPath)
                .setOutBuilder(outputFolder)
                .setIgnoreWarning(configuration.ignoreWarning)
-               .setUsePreGeneratedPatchDex(configuration.dex.usePreGeneratedPatchDex)
                .setDexFilePattern(configuration.dex.pattern)
                .setDexLoaderPattern(configuration.dex.loader)
                .setDexMode(configuration.dex.dexMode)

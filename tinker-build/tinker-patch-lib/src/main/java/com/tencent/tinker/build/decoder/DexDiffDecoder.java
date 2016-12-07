@@ -17,18 +17,14 @@
 package com.tencent.tinker.build.decoder;
 
 
-import com.google.common.io.Files;
-
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
 import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
-import com.tencent.tinker.build.dexpatcher.util.SmallDexClassInfoCollector;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.DexClassesComparator;
 import com.tencent.tinker.build.util.DexClassesComparator.DexClassInfo;
-import com.tencent.tinker.build.util.DexClassesComparator.DexGroup;
 import com.tencent.tinker.build.util.ExcludedClassModifiedChecker;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.Logger;
@@ -38,18 +34,6 @@ import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
-
-import org.jf.dexlib2.Opcodes;
-import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
-import org.jf.dexlib2.dexbacked.DexBackedDexFile;
-import org.jf.dexlib2.iface.DexFile;
-import org.jf.dexlib2.iface.Field;
-import org.jf.dexlib2.iface.Method;
-import org.jf.dexlib2.iface.MethodImplementation;
-import org.jf.dexlib2.writer.builder.BuilderField;
-import org.jf.dexlib2.writer.builder.BuilderMethod;
-import org.jf.dexlib2.writer.builder.DexBuilder;
-import org.jf.dexlib2.writer.io.FileDataStore;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +53,6 @@ import java.util.zip.ZipEntry;
  */
 public class DexDiffDecoder extends BaseDecoder {
     private static final String TEST_DEX_NAME = "test.dex";
-    private static final String PREGENERATED_PATCH_DEX_NAME = "changed_classes.dex";
 
     private final InfoWriter logWriter;
     private final InfoWriter metaWriter;
@@ -163,10 +146,8 @@ public class DexDiffDecoder extends BaseDecoder {
         //new add file
         if (oldFile == null || !oldFile.exists() || oldFile.length() == 0) {
             hasDexChanged = true;
-            if (!config.mUsePreGeneratedPatchDex) {
-                copyNewDexAndLogToDexMeta(newFile, newMd5, dexDiffOut);
-                return true;
-            }
+            copyNewDexAndLogToDexMeta(newFile, newMd5, dexDiffOut);
+            return true;
         }
 
         final String oldMd5 = getRawOrWrappedDexMD5(oldFile);
@@ -197,126 +178,9 @@ public class DexDiffDecoder extends BaseDecoder {
             return;
         }
 
-        if (config.mUsePreGeneratedPatchDex) {
-            generateStubModePatchDex();
-        } else {
-            generatePatchInfoFile();
-        }
+        generatePatchInfoFile();
 
         addTestDex();
-    }
-
-    @SuppressWarnings("NewApi")
-    private void generateStubModePatchDex() throws IOException {
-        Logger.e("\n!!!! It's proved that pre-generated dex mode has the same problem"
-                + " when inline optimization is done in the OS whose version is equal to or larger than 5.0. !!!!"
-                + "\n!!!! We're strongly NOT recommend you to use this mode now. !!!!\n");
-
-        List<File> oldDexList = new ArrayList<>();
-        List<File> newDexList = new ArrayList<>();
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldDexFile = oldAndNewDexFilePair.getKey();
-            File newDexFile = oldAndNewDexFilePair.getValue();
-            if (oldDexFile != null) {
-                oldDexList.add(oldDexFile);
-            }
-            if (newDexFile != null) {
-                newDexList.add(newDexFile);
-            }
-        }
-
-        DexGroup oldDexGroup = DexGroup.wrap(oldDexList);
-        DexGroup newDexGroup = DexGroup.wrap(newDexList);
-
-        SmallDexClassInfoCollector smallDexClassInfoCollector = new SmallDexClassInfoCollector();
-        smallDexClassInfoCollector.setLoaderClassPatterns(config.mDexLoaderPattern);
-        smallDexClassInfoCollector.setLogger(this.dexPatcherLoggerBridge);
-
-        Set<DexClassInfo> classInfosInPatchedDex =
-                smallDexClassInfoCollector.doCollect(oldDexGroup, newDexGroup);
-
-        // So far we have got all infos of classes we need to include in stub mode patch dex.
-        // Now construct the stub mode patch dex.
-        final Set<String> classDescsInPatchedDex = new HashSet<>();
-        Set<Dex> newDexes = new HashSet<>();
-
-        DexBuilder dexBuilder = DexBuilder.makeDexBuilder(Opcodes.forApi(15));
-
-        for (DexClassInfo classInfo : classInfosInPatchedDex) {
-            classDescsInPatchedDex.add(classInfo.classDesc);
-            newDexes.add(classInfo.owner);
-        }
-
-        for (Dex newDex : newDexes) {
-            DexFile dexFile = new DexBackedDexFile(Opcodes.forApi(15), newDex.getBytes());
-            for (org.jf.dexlib2.iface.ClassDef parsedClassDef : dexFile.getClasses()) {
-                if (classDescsInPatchedDex.contains(parsedClassDef.getType())) {
-                    List<BuilderField> builderFields = new ArrayList<>();
-                    for (Field parsedField : parsedClassDef.getFields()) {
-                        BuilderField builderField = dexBuilder.internField(
-                                parsedField.getDefiningClass(),
-                                parsedField.getName(),
-                                parsedField.getType(),
-                                parsedField.getAccessFlags(),
-                                parsedField.getInitialValue(),
-                                parsedField.getAnnotations()
-                        );
-                        builderFields.add(builderField);
-                    }
-                    List<BuilderMethod> builderMethods = new ArrayList<>();
-                    for (Method parsedMethod : parsedClassDef.getMethods()) {
-                        MethodImplementation methodImpl = null;
-                        if (parsedMethod.getImplementation() != null) {
-                            methodImpl = new BuilderMutableMethodImplementation(
-                                    dexBuilder, parsedMethod.getImplementation()
-                            );
-                        }
-                        BuilderMethod builderMethod = dexBuilder.internMethod(
-                                parsedMethod.getDefiningClass(),
-                                parsedMethod.getName(),
-                                parsedMethod.getParameters(),
-                                parsedMethod.getReturnType(),
-                                parsedMethod.getAccessFlags(),
-                                parsedMethod.getAnnotations(),
-                                methodImpl
-                        );
-                        builderMethods.add(builderMethod);
-                    }
-
-                    dexBuilder.internClassDef(
-                            parsedClassDef.getType(),
-                            parsedClassDef.getAccessFlags(),
-                            parsedClassDef.getSuperclass(),
-                            parsedClassDef.getInterfaces(),
-                            parsedClassDef.getSourceFile(),
-                            parsedClassDef.getAnnotations(),
-                            builderFields,
-                            builderMethods
-                    );
-                }
-            }
-        }
-
-        // Write constructed stub mode patch dex to file and record it in meta file.
-        final String dexMode = config.mDexRaw ? "raw" : "jar";
-        final File dest = new File(config.mTempResultDir + "/" + PREGENERATED_PATCH_DEX_NAME);
-
-        FileDataStore fileDataStore = new FileDataStore(dest);
-        dexBuilder.writeTo(fileDataStore);
-
-        final File tempPreGeneratedPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "pre-generated");
-        ensureDirectoryExist(tempPreGeneratedPatchDexPath);
-        Files.copy(dest, new File(tempPreGeneratedPatchDexPath, PREGENERATED_PATCH_DEX_NAME));
-
-        final String md5 = MD5.getMD5(dest);
-
-        String meta = PREGENERATED_PATCH_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0
-                + "," + 0 + "," + dexMode;
-
-        Logger.d("\nPre-generated patch dex: %s, size:%d", dest.getAbsolutePath(), dest.length());
-        Logger.d("DexDecoder:write pre-generated patch dex meta file data: %s", meta);
-
-        metaWriter.writeLineToInfoFile(meta);
     }
 
     @SuppressWarnings("NewApi")

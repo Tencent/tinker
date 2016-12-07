@@ -18,7 +18,6 @@ package com.tencent.tinker.build.gradle
 
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
-import com.tencent.tinker.build.gradle.transform.AuxiliaryInjectTransform
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.build.util.TypedValue
 import org.gradle.api.GradleException
@@ -70,8 +69,6 @@ class TinkerPatchPlugin implements Plugin<Project> {
         } catch (Throwable e) {
             //no preDexLibraries field, just continue
         }
-
-        android.registerTransform(new AuxiliaryInjectTransform(project))
 
         project.afterEvaluate {
             project.logger.error("----------------------tinker build warning ------------------------------------")
