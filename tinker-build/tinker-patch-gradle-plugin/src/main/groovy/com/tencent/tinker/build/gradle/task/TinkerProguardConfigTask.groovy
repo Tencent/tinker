@@ -101,6 +101,7 @@ public class TinkerProguardConfigTask extends DefaultTask {
         // Add this proguard settings file to the list
         applicationVariant.getBuildType().buildType.proguardFiles(file)
         def files = applicationVariant.getBuildType().buildType.getProguardFiles()
+
         project.logger.error("now proguard files is ${files}")
     }
 }

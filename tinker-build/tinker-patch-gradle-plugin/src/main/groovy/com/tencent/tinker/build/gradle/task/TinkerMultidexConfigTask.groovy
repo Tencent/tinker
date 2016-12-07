@@ -49,20 +49,19 @@ public class TinkerMultidexConfigTask extends DefaultTask {
 
     @TaskAction
     def updateTinkerProguardConfig() {
-        def file = project.file(MULTIDEX_CONFIG_PATH)
+        File file = project.file(MULTIDEX_CONFIG_PATH)
         project.logger.error("try update tinker multidex keep proguard file with ${file}")
 
         // Create the directory if it doesn't exist already
         file.getParentFile().mkdirs()
 
-        // Write our recommended proguard settings to this file
-        FileWriter fr = new FileWriter(file.path)
+        StringBuffer lines = new StringBuffer()
+        lines.append("\n")
+             .append("#tinker multidex keep patterns:\n")
+             .append(MULTIDEX_CONFIG_SETTINGS)
+             .append("\n")
+             .append("#your dex.loader patterns here\n")
 
-        fr.write(MULTIDEX_CONFIG_SETTINGS)
-        fr.write("\n")
-
-        //unlike proguard, if loader endwith *, we must change to **
-        fr.write("#your dex.loader patterns here\n")
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
         for (String pattern : loader) {
             if (pattern.endsWith("*")) {
@@ -70,12 +69,44 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                     pattern += "*"
                 }
             }
-            fr.write("-keep class " + pattern + " {\n" +
+            lines.append("-keep class " + pattern + " {\n" +
                     "    *;\n" +
                     "}\n")
-            fr.write("\n")
+                    .append("\n")
         }
-        fr.close()
+
+        // Write our recommended proguard settings to this file
+        FileWriter fr = new FileWriter(file.path)
+        try {
+            for (String line : lines) {
+                fr.write(line)
+            }
+        } finally {
+            fr.close()
+        }
+
+        File multiDexKeepProguard = null
+        try {
+            multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
+        } catch (Throwable ignore) {
+            try {
+                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+            } catch (Throwable e) {
+                project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+            }
+        }
+        if (multiDexKeepProguard == null) {
+            project.logger.error("auto add multidex keep pattern fail, you can only copy ${file} to your own multiDex keep proguard file yourself.")
+            return
+        }
+        FileWriter manifestWriter = new FileWriter(multiDexKeepProguard, true)
+        try {
+            for (String line : lines) {
+                manifestWriter.write(line)
+            }
+        } finally {
+            manifestWriter.close()
+        }
     }
 
 

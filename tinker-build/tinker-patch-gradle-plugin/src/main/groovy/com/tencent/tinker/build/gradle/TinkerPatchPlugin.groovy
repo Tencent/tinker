@@ -93,7 +93,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
             project.logger.error("")
             project.logger.error("if multiDexEnabled is true")
             project.logger.error("you will find the gen multiDexKeepProguard file at ${TinkerMultidexConfigTask.MULTIDEX_CONFIG_PATH}")
-            project.logger.error("and you should copy it to your own multiDex keep proguard file yourself.")
+            project.logger.error("and we will help you to put it in the MultiDexKeepProguardFile.")
             project.logger.error("")
             project.logger.error("if applyResourceMapping file is exist")
             String tempResourceMappingPath = configuration.buildConfig.applyResourceMapping
@@ -153,7 +153,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 if (proguardEnable) {
                     TinkerProguardConfigTask proguardConfigTask = project.tasks.create("tinkerProcess${variantName}Proguard", TinkerProguardConfigTask)
                     proguardConfigTask.applicationVariant = variant
-                    variantOutput.packageApplication.dependsOn proguardConfigTask
+                    proguardConfigTask.mustRunAfter manifestTask
 
                     def proguardTask = getProguardTask(project, variantName)
                     if (proguardTask != null) {
@@ -168,13 +168,16 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 if (multiDexEnabled) {
                     TinkerMultidexConfigTask multidexConfigTask = project.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
-                    variantOutput.packageApplication.dependsOn multidexConfigTask
+                    multidexConfigTask.mustRunAfter manifestTask
 
                     def multidexTask = getMultiDexTask(project, variantName)
                     if (multidexTask != null) {
                         multidexTask.dependsOn multidexConfigTask
                     }
-
+                    def collectMultiDexComponentsTask = getCollectMultiDexComponentsTask(project, variantName)
+                    if (collectMultiDexComponentsTask != null) {
+                        multidexConfigTask.mustRunAfter collectMultiDexComponentsTask
+                    }
                 }
 
             }
@@ -183,7 +186,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
     Task getMultiDexTask(Project project, String variantName) {
         String multiDexTaskName = "transformClassesWithMultidexlistFor${variantName}"
-        return project.tasks.findByName(multiDexTaskName);
+        return project.tasks.findByName(multiDexTaskName)
     }
 
     Task getProguardTask(Project project, String variantName) {
@@ -194,6 +197,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
     Task getInstantRunTask(Project project, String variantName) {
         String instantRunTask = "transformClassesWithInstantRunFor${variantName}"
         return project.tasks.findByName(instantRunTask)
+    }
+
+    Task getCollectMultiDexComponentsTask(Project project, String variantName) {
+        String collectMultiDexComponents = "collect${variantName}MultiDexComponents"
+        return project.tasks.findByName(collectMultiDexComponents)
     }
 
 }

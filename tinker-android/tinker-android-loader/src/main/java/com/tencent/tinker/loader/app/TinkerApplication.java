@@ -28,6 +28,7 @@ import android.os.SystemClock;
 
 import com.tencent.tinker.loader.TinkerLoader;
 import com.tencent.tinker.loader.TinkerRuntimeException;
+import com.tencent.tinker.loader.TinkerUncaughtHandler;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -151,6 +152,7 @@ public abstract class TinkerApplication extends Application {
     @Override
     protected final void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        Thread.setDefaultUncaughtExceptionHandler(new TinkerUncaughtHandler());
         onBaseContextAttached(base);
     }
 

@@ -50,9 +50,20 @@ public class TinkerManifestTask extends DefaultTask {
 
         project.logger.error("tinker add ${tinkerValue} to your AndroidManifest.xml ${manifestPath}")
 
+        writeManifestMeta(manifestPath, TINKER_ID, tinkerValue)
+        addApplicationToLoaderPattern()
+        File manifestFile = new File(manifestPath)
+        if (manifestFile.exists()) {
+            FileOperation.copyFileUsingStream(manifestFile, project.file(MANIFEST_XML))
+            project.logger.error("tinker gen AndroidManifest.xml in ${MANIFEST_XML}")
+        }
+
+    }
+
+    void writeManifestMeta(String path, String name, String value) {
         def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
 
-        def xml = new XmlParser().parse(new InputStreamReader(new FileInputStream(manifestPath), "utf-8"))
+        def xml = new XmlParser().parse(new InputStreamReader(new FileInputStream(path), "utf-8"))
 
         def application = xml.application[0]
         if (application) {
@@ -60,25 +71,46 @@ public class TinkerManifestTask extends DefaultTask {
 
             // remove any old TINKER_ID elements
             def tinkerId = metaDataTags.findAll {
-                it.attributes()[ns.name].equals(TINKER_ID)
+                it.attributes()[ns.name].equals(name)
             }.each {
                 it.parent().remove(it)
             }
 
             // Add the new TINKER_ID element
-            application.appendNode('meta-data', [(ns.name): TINKER_ID, (ns.value): tinkerValue])
+            application.appendNode('meta-data', [(ns.name): name, (ns.value): value])
 
             // Write the manifest file
-            def printer = new XmlNodePrinter(new PrintWriter(manifestPath, "utf-8"))
+            def printer = new XmlNodePrinter(new PrintWriter(path, "utf-8"))
             printer.preserveWhitespace = true
             printer.print(xml)
         }
-        File manifestFile = new File(manifestPath)
-        if (manifestFile.exists()) {
-            FileOperation.copyFileUsingStream(manifestFile, project.file(MANIFEST_XML))
-            project.logger.error("tinker gen AndroidManifest.xml in ${MANIFEST_XML}")
+    }
+
+    void addApplicationToLoaderPattern() {
+        Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
+        String applicationName = readManifestApplicationName(manifestPath)
+
+        if (applicationName != null && !loader.contains(applicationName)) {
+            loader.add(applicationName)
+            project.logger.error("tinker add ${applicationName} to dex loader pattern")
+        }
+        String loaderClass = "com.tencent.tinker.loader.*"
+        if (!loader.contains(loaderClass)) {
+            loader.add(loaderClass)
+            project.logger.error("tinker add ${loaderClass} to dex loader pattern")
         }
 
+    }
+
+    String readManifestApplicationName(String path) {
+        def xml = new XmlParser().parse(new InputStreamReader(new FileInputStream(path), "utf-8"))
+        def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
+
+        def application = xml.application[0]
+        if (application) {
+            return application.attributes()[ns.name]
+        }
+        return null
     }
 }
 

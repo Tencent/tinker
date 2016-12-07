@@ -77,12 +77,7 @@ android {
          * you can use multiDex and install it in your ApplicationLifeCycle implement
          */
         multiDexEnabled true
-        /**
-         * not like proguard, multiDexKeepProguard is not a list, so we can't just
-         * add for you in our task. you can copy tinker keep rules at
-         * build/intermediates/tinker_intermediates/tinker_multidexkeep.pro
-         */
-        multiDexKeepProguard file("keep_in_main_dex.txt")
+
         /**
          * buildConfig can change during patch!
          * we can use the newly value when patch
@@ -267,9 +262,7 @@ if (buildWithTinker()) {
              * own tinkerLoader, and the classes you use in them
              *
              */
-            loader = ["com.tencent.tinker.loader.*",
-                      //warning, you must change it with your application
-                      "tinker.sample.android.app.SampleApplication",
+            loader = [
                       //use sample, let BaseBuildInfo unchangeable with tinker
                       "tinker.sample.android.app.BaseBuildInfo"
             ]
@@ -345,7 +338,7 @@ if (buildWithTinker()) {
              * optional，default '7za'
              * the 7zip artifact path, it will use the right 7za with your platform
              */
-            zipArtifact = "com.tencent.mm:SevenZip:1.1.10"
+           zipArtifact = "com.tencent.mm:SevenZip:1.1.10"
             /**
              * optional，default '7za'
              * you can specify the 7za path yourself, it will overwrite the zipArtifact value
