@@ -50,6 +50,8 @@ public class TinkerManifestTask extends DefaultTask {
 
         project.logger.error("tinker add ${tinkerValue} to your AndroidManifest.xml ${manifestPath}")
 
+        tinkerValue = "${TINKER_ID}_${tinkerValue}"
+
         def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
 
         def xml = new XmlParser().parse(new InputStreamReader(new FileInputStream(manifestPath), "utf-8"))

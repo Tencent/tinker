@@ -42,8 +42,9 @@ public class PatchInfoGen {
     private void addTinkerID() throws IOException, ParseException {
         if (!config.mPackageFields.containsKey(TypedValue.TINKER_ID)) {
             AndroidParser oldAndroidManifest = AndroidParser.getAndroidManifest(config.mOldApkFile);
-            String tinkerID = oldAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
+            String tinkerIdValue = oldAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
 
+            String tinkerID = tinkerIdValue.replace(TypedValue.TINKER_ID + "_", "");
             if (tinkerID == null) {
                 throw new TinkerPatchException("can't find TINKER_ID from the old apk manifest file, it must be set!");
             }
@@ -52,8 +53,9 @@ public class PatchInfoGen {
 
         if (!config.mPackageFields.containsKey(TypedValue.NEW_TINKER_ID)) {
             AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(config.mNewApkFile);
-            String tinkerID = newAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
+            String tinkerIdValue = newAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
 
+            String tinkerID = tinkerIdValue.replace(TypedValue.TINKER_ID + "_", "");
             if (tinkerID == null) {
                 throw new TinkerPatchException("can't find TINKER_ID from the new apk manifest file, it must be set!");
             }
