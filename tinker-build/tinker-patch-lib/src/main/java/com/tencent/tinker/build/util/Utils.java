@@ -24,9 +24,12 @@ import com.tencent.tinker.commons.ziputil.TinkerZipFile;
 import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -98,7 +101,7 @@ public class Utils {
 
     public static boolean checkFileInPattern(HashSet<Pattern> patterns, String key) {
         if (!patterns.isEmpty()) {
-            for (Iterator<Pattern> it = patterns.iterator(); it.hasNext();) {
+            for (Iterator<Pattern> it = patterns.iterator(); it.hasNext(); ) {
                 Pattern p = it.next();
                 if (p.matcher(key).matches()) {
                     return true;
@@ -109,8 +112,8 @@ public class Utils {
     }
 
     public static String genResOutputFile(File output, File newZipFile, Configuration config,
-                                    ArrayList<String> addedSet, ArrayList<String> modifiedSet, ArrayList<String> deletedSet,
-                                    ArrayList<String> largeModifiedSet, HashMap<String, ResDiffDecoder.LargeModeInfo> largeModifiedMap) throws IOException {
+                                          ArrayList<String> addedSet, ArrayList<String> modifiedSet, ArrayList<String> deletedSet,
+                                          ArrayList<String> largeModifiedSet, HashMap<String, ResDiffDecoder.LargeModeInfo> largeModifiedMap) throws IOException {
         TinkerZipFile oldApk = new TinkerZipFile(config.mOldApkFile);
         TinkerZipFile newApk = new TinkerZipFile(newZipFile);
         TinkerZipOutputStream out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(output)));
@@ -121,16 +124,16 @@ public class Utils {
                 TinkerZipEntry zipEntry = entries.nextElement();
                 if (zipEntry == null) {
                     throw new TinkerPatchException(
-                        String.format("zipEntry is null when get from oldApk")
+                            String.format("zipEntry is null when get from oldApk")
                     );
                 }
                 String name = zipEntry.getName();
                 if (Utils.checkFileInPattern(config.mResFilePattern, name)) {
                     //won't contain in add set.
                     if (!deletedSet.contains(name)
-                        && !modifiedSet.contains(name)
-                        && !largeModifiedSet.contains(name)
-                        && !name.equals(TypedValue.RES_MANIFEST)) {
+                            && !modifiedSet.contains(name)
+                            && !largeModifiedSet.contains(name)
+                            && !name.equals(TypedValue.RES_MANIFEST)) {
                         ResUtil.extractTinkerEntry(oldApk, zipEntry, out);
                     }
                 }
@@ -139,7 +142,7 @@ public class Utils {
             TinkerZipEntry manifestZipEntry = oldApk.getEntry(TypedValue.RES_MANIFEST);
             if (manifestZipEntry == null) {
                 throw new TinkerPatchException(
-                    String.format("can't found resource file %s from old apk file %s", TypedValue.RES_MANIFEST, config.mOldApkFile.getAbsolutePath())
+                        String.format("can't found resource file %s from old apk file %s", TypedValue.RES_MANIFEST, config.mOldApkFile.getAbsolutePath())
                 );
             }
             ResUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
@@ -148,7 +151,7 @@ public class Utils {
                 TinkerZipEntry largeZipEntry = oldApk.getEntry(name);
                 if (largeZipEntry == null) {
                     throw new TinkerPatchException(
-                        String.format("can't found resource file %s from old apk file %s", name, config.mOldApkFile.getAbsolutePath())
+                            String.format("can't found resource file %s from old apk file %s", name, config.mOldApkFile.getAbsolutePath())
                     );
                 }
                 ResDiffDecoder.LargeModeInfo largeModeInfo = largeModifiedMap.get(name);
@@ -159,7 +162,7 @@ public class Utils {
                 TinkerZipEntry addZipEntry = newApk.getEntry(name);
                 if (addZipEntry == null) {
                     throw new TinkerPatchException(
-                        String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
+                            String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
                     );
                 }
                 ResUtil.extractTinkerEntry(newApk, addZipEntry, out);
@@ -169,7 +172,7 @@ public class Utils {
                 TinkerZipEntry modZipEntry = newApk.getEntry(name);
                 if (modZipEntry == null) {
                     throw new TinkerPatchException(
-                        String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
+                            String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
                     );
                 }
                 ResUtil.extractTinkerEntry(newApk, modZipEntry, out);
@@ -188,6 +191,7 @@ public class Utils {
 
     /**
      * if bsDiff result is too larger, just treat it as newly file
+     *
      * @param bsDiffFile
      * @param newFile
      * @return
@@ -201,13 +205,42 @@ public class Utils {
         double ratio = bsDiffFile.length() / (double) newFile.length();
         if (ratio > TypedValue.BSDIFF_PATCH_MAX_RATIO) {
             Logger.e("bsDiff patch file:%s, size:%dk, new file:%s, size:%dk. patch file is too large, treat it as newly file to save patch time!",
-                bsDiffFile.getName(),
-                bsDiffFile.length() / 1024,
-                newFile.getName(),
-                newFile.length() / 1024
+                    bsDiffFile.getName(),
+                    bsDiffFile.length() / 1024,
+                    newFile.getName(),
+                    newFile.length() / 1024
             );
             return false;
         }
         return true;
     }
+
+    public static void closeQuietly(Closeable closeable) {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void exec(ArrayList<String> args, File path) throws RuntimeException, IOException, InterruptedException {
+        ProcessBuilder ps = new ProcessBuilder(args);
+        ps.redirectErrorStream(true);
+        if (path != null) {
+            ps.directory(path);
+        }
+        Process pr = ps.start();
+        BufferedReader ins = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+        String line;
+        while ((line = ins.readLine()) != null) {
+            System.out.println(line);
+        }
+        if (pr.waitFor() != 0) {
+            throw new RuntimeException("exec cmd failed! args: " + args);
+        }
+        ins.close();
+    }
+
 }
