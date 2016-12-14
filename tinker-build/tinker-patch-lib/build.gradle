@@ -11,6 +11,7 @@ dependencies {
     compile project(':tinker-commons')
     compile group: 'com.tencent.mm', name: 'apk-parser-lib', version: '1.0.0'
     compile group: 'com.google.guava', name: 'guava', version: '11.0.2'
+    compile group: 'org.ow2.asm', name: 'asm', version: '5.0.3'
 }
 
 sourceSets {

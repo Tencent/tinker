@@ -43,6 +43,14 @@ public class TinkerDexExtension {
      * such as [com.tencent.tinker.loader.*, com.tinker.sample.MyApplication]
      */
     Iterable<String> loader;
+
+    /**
+     * if immutable is true,class in which dex refer to the old apk.
+     * open this can reduce the dex diff file size.
+     */
+    boolean immutable = true
+
+
     private Project project;
 
     public TinkerDexExtension(Project project) {

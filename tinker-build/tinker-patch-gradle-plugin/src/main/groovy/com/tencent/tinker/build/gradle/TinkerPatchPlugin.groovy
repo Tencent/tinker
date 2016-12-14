@@ -184,6 +184,9 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     }
                 }
 
+                if (project.tinkerPatch.dex.immutable) {
+                    com.tencent.tinker.build.gradle.transform.ImmutableDexTransform.inject(project, variant)
+                }
             }
         }
     }
