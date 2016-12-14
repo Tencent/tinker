@@ -123,14 +123,14 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
             }
 
             SharedPreferences sp = applicationLike.getApplication().getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-            int fastCrashCount = sp.getInt(currentVersion, 0);
+            int fastCrashCount = sp.getInt(currentVersion, 0) + 1;
             if (fastCrashCount >= MAX_CRASH_COUNT) {
                 SampleTinkerReport.onFastCrashProtect();
                 TinkerApplicationHelper.cleanPatch(applicationLike);
                 TinkerLog.e(TAG, "tinker has fast crash more than %d, we just clean patch!", fastCrashCount);
                 return true;
             } else {
-                sp.edit().putInt(currentVersion, ++fastCrashCount).commit();
+                sp.edit().putInt(currentVersion, fastCrashCount).commit();
                 TinkerLog.e(TAG, "tinker has fast crash %d times", fastCrashCount);
             }
         }
