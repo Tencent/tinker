@@ -245,7 +245,7 @@ if (buildWithTinker()) {
              * if keepDexApply is true, class in which dex refer to the old apk.
              * open this can reduce the dex diff file size.
              */
-            keepDexApply = true
+            keepDexApply = false
         }
 
         dex {
