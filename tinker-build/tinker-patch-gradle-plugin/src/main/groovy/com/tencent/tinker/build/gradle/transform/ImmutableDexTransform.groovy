@@ -457,10 +457,7 @@ public class ImmutableDexTransform extends DexTransform {
             e.printStackTrace();
             Utils.closeQuietly(zipFile);
         }
-
     }
-
-
 }
 
 

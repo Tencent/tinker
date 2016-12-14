@@ -209,6 +209,12 @@ if (buildWithTinker()) {
         useSign = true
 
         /**
+         * optional，default 'true'
+         * whether use tinker to build
+         */
+        tinkerEnable = buildWithTinker()
+
+        /**
          * Warning, applyMapping will affect the normal android build!
          */
         buildConfig {
@@ -234,6 +240,12 @@ if (buildWithTinker()) {
              * we will gen the tinkerId in your manifest automatic
              */
             tinkerId = getTinkerIdValue()
+
+            /**
+             * if keepDexApply is true, class in which dex refer to the old apk.
+             * open this can reduce the dex diff file size.
+             */
+            keepDexApply = true
         }
 
         dex {
@@ -245,6 +257,7 @@ if (buildWithTinker()) {
              * or you want to save rom or check quicker, you can use raw mode also
              */
             dexMode = "jar"
+
             /**
              * necessary，default '[]'
              * what dexes in apk are expected to deal with tinkerPatch

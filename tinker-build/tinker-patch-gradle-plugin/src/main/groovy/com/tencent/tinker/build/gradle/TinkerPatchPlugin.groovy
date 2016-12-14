@@ -184,7 +184,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     }
                 }
 
-                if (project.tinkerPatch.dex.immutable) {
+                if (configuration.buildConfig.keepDexApply
+                    && FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
                     com.tencent.tinker.build.gradle.transform.ImmutableDexTransform.inject(project, variant)
                 }
             }
