@@ -1,3 +1,19 @@
+/*
+ * Tencent is pleased to support the open source community by making Tinker available.
+ *
+ * Copyright (C) 2016 THL A29 Limited, a Tencent company. All rights reserved.
+ *
+ * Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * https://opensource.org/licenses/BSD-3-Clause
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.tencent.tinker.build.gradle.transform
 
 import com.android.build.api.transform.Format
@@ -105,7 +121,7 @@ public class ImmutableDexTransform extends DexTransform {
         for (TransformInput input : transformInvocation.getInputs()) {
             jarInputs.addAll(input.getJarInputs());
         }
-        //因为开启了multi dex 所以理论上jarInputSize==1
+        //because the multi-dex is turned on,so the jarInput.size()==1 in theory.
         if (jarInputs.size() != 1) {
             project.logger.error("jar input size is ${jarInputs.size()}, expected is 1. we will skip immutable dex!")
             super.transform(transformInvocation)
@@ -114,7 +130,7 @@ public class ImmutableDexTransform extends DexTransform {
 
         //init
         initFileEnv(transformInvocation.getOutputProvider());
-        //先解压 得到所有的old dex
+        //get all old dex
         ArrayList<File> oldDexList = new ArrayList<>()
         traversal(new ZipFile(oldApkPath), { ZipEntry zipEntry, byte[] bytes ->
             if (zipEntry.name.startsWith("classes") && zipEntry.name.endsWith(".dex")) {
@@ -128,11 +144,11 @@ public class ImmutableDexTransform extends DexTransform {
             }
         })
 
-        //classPath <==> dexName
+        //hashmap:classPath <==> dexName
         HashMap<String, String> pathDexMap = new HashMap<>()
         project.logger.info("old dex list is : ${oldDexList}.")
 
-        //得到一张classPath<=>dexName 的hashmap
+        //hashmap:classPath<=>dexName
         oldDexList.each { dexFile ->
             Dex dex = new Dex(dexFile)
             dex.classDefs().each { ClassDef classDef ->
@@ -143,22 +159,21 @@ public class ImmutableDexTransform extends DexTransform {
                 pathDexMap.put(classPath, dexFile.name - ".dex")
             }
         }
-        //孤儿类存放的起始dex index
+        //the dex start index for orphan class
         int newDexIndex = oldDexList.size()
-        //得到mainDexSet
+        //a hashset for maindexlist
         HashSet<String> mainDexSets = initMainDexSet(mainDexListFile)
         project.logger.info("mainDexSets is ${mainDexSets}.")
-        //压缩包文件名 <==> 对应的zip流
+        //zip file name <==> ZipOutputStream
         HashMap<String, ZipOutputStream> osMap = new HashMap<>()
-        //压缩包文件名 <==> 对应的zip中方法数和字段数
+        //zip file name <==> mtd count and filed count in the zip
         HashMap<String, DexRefData> methodAndFieldsNum = new HashMap<>()
-        //孤儿类的 entry <==> 对应bytes
+        //orphan class's entry <==> orphan class's bytes
         HashMap<ZipEntry, ByteArrayOutputStream> orphanMap = new HashMap()
-        //for groovy
-        def that = this
+
         //all class  in allClass.jar
         HashSet<String> allClassSet = new HashSet<>()
-        //遍历all class jar
+        //process all-classes.jar
         processJar(jarInputs.get(0).file, allClassSet, pathDexMap, mainDexSets, methodAndFieldsNum, osMap, orphanMap)
 
         Iterator<Map.Entry<ZipEntry, ByteArrayOutputStream>> iterator = orphanMap.entrySet().iterator()
@@ -187,12 +202,11 @@ public class ImmutableDexTransform extends DexTransform {
             newDexIndex++
         }
 
-        //关闭所有的zip流
         osMap.each { key, value ->
             value.close()
         }
 
-        //存放了所有dex的路径,用于之后的校验
+        //a list for all dex's path,use for checkClassConsistence mtd
         ArrayList<String> dexPathList = new ArrayList<>()
         classPreDir.eachFile { classZip ->
             String classIndexName = classZip.name - ".jar"
@@ -210,7 +224,7 @@ public class ImmutableDexTransform extends DexTransform {
 
 
         ZipFile zipFile = new ZipFile(jarFile)
-        //先处理maindexlist中的类
+        //process class in maindexlist in first
         traversal(zipFile, { ZipEntry zipEntry, byte[] bytes ->
             if (zipEntry.name.endsWith(".class")) {
                 if (mainDexSets.contains(zipEntry.name)) {
@@ -231,9 +245,9 @@ public class ImmutableDexTransform extends DexTransform {
                     String classPath = rePathToClassPath(zipEntry.name)
                     if (!Utils.isBlank(classPath) && !allClassSet.contains(classPath)) {
                         allClassSet.add(classPath)
-                        //找到该类属于哪个old dex,返回对应dex文件名
+                        //get the old dex name which class be located
                         String belongDex = belongTo(pathDexMap, classPath)
-                        //如果是新增的类 或method|fields超出限制
+                        //the class is new or method|fields exceeds limit
                         if (Utils.isBlank(belongDex) ||
                                 !writeClassToZip(methodAndFieldsNum, osMap, belongDex, bytes, zipEntry)) {
                             if (Utils.isBlank(belongDex)) {
@@ -397,9 +411,9 @@ public class ImmutableDexTransform extends DexTransform {
 
     boolean writeClassToZipNoCheck(DexRefData mfData, ClassSimDef cf, ZipOutputStream zos, ZipEntry zipEntry, byte[] bytes) {
         /**
-         * 在ClassSimDef中只扫描了类定义的字段和方法中引用到的字段，而实际上在Annotation中也可能引用到某些字段，
-         * 所以ClassSimDef中的统计是不全的。因为要统计annotation中引用到的字段有些麻烦，所以在这里直接粗暴的将阈值降低。
-         * 留下1000个位置给annotation
+         * In ClassSimDef, only the fields  which  methods referenced or in the class definition are scanned.
+         * But in fact, some fields may be referenced in annotation. So the statistics in ClassSimDef is not complete.
+         * The threadsHold is adjusted lower in order to avoid the troubles to calculate the fields referred by annotations.
          */
         if (mfData.methodNum + cf.methodCount >= 65536 || mfData.fieldNum + cf.fieldCount >= 64536) {
             return false
