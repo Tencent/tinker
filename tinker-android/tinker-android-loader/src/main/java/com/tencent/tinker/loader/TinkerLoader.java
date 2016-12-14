@@ -253,12 +253,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
         int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0);
         Log.w(TAG, "tinker safe mode preferName:" + preferName + " count:" + count);
         if (count >= ShareConstants.TINKER_SAFE_MODE_MAX_COUNT) {
-            sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
+            sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).apply();
             return false;
         }
         application.setUseSafeMode(true);
         count++;
-        sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, count).commit();
+        sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, count).apply();
         Log.w(TAG, "after tinker safe mode count:" + count);
         return true;
     }
