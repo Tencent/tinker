@@ -16,8 +16,11 @@
 
 package com.tencent.tinker.build.gradle.transform
 
+import com.android.annotations.NonNull
 import com.android.build.api.transform.Format
 import com.android.build.api.transform.JarInput;
+import com.android.build.api.transform.QualifiedContent
+import com.android.build.api.transform.Transform;
 import com.android.build.api.transform.TransformException
 import com.android.build.api.transform.TransformInput
 import com.android.build.api.transform.TransformInvocation
@@ -49,7 +52,7 @@ import java.util.zip.ZipOutputStream
 /**
  * Created by wangzhi on 16/11/24.
  */
-public class ImmutableDexTransform extends DexTransform {
+public class ImmutableDexTransform extends Transform {
 
     public static final String TASK_WORK_DIR = "keep_dex"
 
@@ -73,12 +76,11 @@ public class ImmutableDexTransform extends DexTransform {
 
     def variant
 
+    DexTransform dexTransform
+
 
     ImmutableDexTransform(Project project, def variant, DexTransform dexTransform) {
-        super(dexTransform.dexOptions, dexTransform.debugMode,
-                dexTransform.multiDex, dexTransform.mainDexListFile,
-                dexTransform.intermediateFolder, dexTransform.androidBuilder,
-                Logging.getLogger(this.getClass()), dexTransform.instantRunBuildContext)
+        this.dexTransform = dexTransform
         this.project = project
         this.variant = variant
         this.varName = variant.name.capitalize()
@@ -113,6 +115,50 @@ public class ImmutableDexTransform extends DexTransform {
     }
 
 
+    @NonNull
+    @Override
+    public Set<QualifiedContent.ContentType> getOutputTypes() {
+        return dexTransform.getOutputTypes();
+    }
+
+    @NonNull
+    @Override
+    public Collection<File> getSecondaryFileInputs() {
+        return dexTransform.getSecondaryFileInputs()
+    }
+
+    @NonNull
+    @Override
+    public Collection<File> getSecondaryDirectoryOutputs() {
+        return dexTransform.getSecondaryDirectoryOutputs()
+    }
+
+    @NonNull
+    @Override
+    public Map<String, Object> getParameterInputs() {
+       return dexTransform.getParameterInputs()
+    }
+
+    @Override
+    String getName() {
+        return dexTransform.getName()
+    }
+
+    @Override
+    Set<QualifiedContent.ContentType> getInputTypes() {
+        return dexTransform.getInputTypes()
+    }
+
+    @Override
+    Set<QualifiedContent.Scope> getScopes() {
+        return dexTransform.getScopes()
+    }
+
+    @Override
+    boolean isIncremental() {
+        return dexTransform.isIncremental()
+    }
+
     @Override
     void transform(TransformInvocation transformInvocation) throws TransformException, IOException, InterruptedException {
 
@@ -124,7 +170,7 @@ public class ImmutableDexTransform extends DexTransform {
         //because the multi-dex is turned on,so the jarInput.size()==1 in theory.
         if (jarInputs.size() != 1) {
             project.logger.error("jar input size is ${jarInputs.size()}, expected is 1. we will skip immutable dex!")
-            super.transform(transformInvocation)
+            dexTransform.transform(transformInvocation)
             return
         }
 
@@ -413,7 +459,7 @@ public class ImmutableDexTransform extends DexTransform {
         /**
          * In ClassSimDef, only the fields  which  methods referenced or in the class definition are scanned.
          * But in fact, some fields may be referenced in annotation. So the statistics in ClassSimDef is not complete.
-         * The threadsHold is adjusted lower in order to avoid the troubles to calculate the fields referred by annotations.
+         * The threshold is adjusted lower in order to avoid the troubles to calculate the fields referred by annotations.
          */
         if (mfData.methodNum + cf.methodCount >= 65536 || mfData.fieldNum + cf.fieldCount >= 64536) {
             return false
