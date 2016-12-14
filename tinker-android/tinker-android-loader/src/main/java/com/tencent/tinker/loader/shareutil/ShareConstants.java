@@ -67,9 +67,10 @@ public class ShareConstants {
     public static final String DEXMODE_JAR = "jar";
     public static final String DEX_IN_JAR  = "classes.dex";
 
-    public static final String PATCH_DIRECTORY_NAME = "tinker";
-    public static final String PATCH_INFO_NAME      = "patch.info";
-    public static final String PATCH_INFO_LOCK_NAME = "info.lock";
+    public static final String PATCH_DIRECTORY_NAME  = "tinker";
+    public static final String PATCH_INFO_NAME       = "patch.info";
+    public static final String PATCH_INFO_LOCK_NAME  = "info.lock";
+    public static final String PATCH_LAST_CRASH_NAME = "tinker_last_crash";
 
     public static final String META_SUFFIX = "meta.txt";
 

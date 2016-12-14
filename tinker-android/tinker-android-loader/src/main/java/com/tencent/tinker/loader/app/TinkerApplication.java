@@ -152,7 +152,7 @@ public abstract class TinkerApplication extends Application {
     @Override
     protected final void attachBaseContext(Context base) {
         super.attachBaseContext(base);
-        Thread.setDefaultUncaughtExceptionHandler(new TinkerUncaughtHandler());
+        Thread.setDefaultUncaughtExceptionHandler(new TinkerUncaughtHandler(this));
         onBaseContextAttached(base);
     }
 

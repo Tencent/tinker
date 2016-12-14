@@ -21,12 +21,14 @@ import android.content.pm.ApplicationInfo;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -50,6 +52,15 @@ public class SharePatchFileUtil {
         }
 
         return new File(applicationInfo.dataDir, ShareConstants.PATCH_DIRECTORY_NAME);
+    }
+
+    public static File getPatchLastCrashFile(Context context) {
+        ApplicationInfo applicationInfo = context.getApplicationInfo();
+        if (applicationInfo == null) {
+            // Looks like running on a test Context, so just return without patching.
+            return null;
+        }
+        return new File(applicationInfo.dataDir, ShareConstants.PATCH_LAST_CRASH_NAME);
     }
 
     public static File getPatchInfoFile(String patchDirectory) {
@@ -83,16 +94,33 @@ public class SharePatchFileUtil {
         return true;
     }
 
-    public static final boolean fileExists(String filePath) {
-        if (filePath == null) {
-            return false;
+    public static String checkTinkerLastUncaughtCrash(Context context) {
+        File crashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
+        if (!SharePatchFileUtil.isLegalFile(crashFile)) {
+            return null;
+        }
+        StringBuffer buffer = new StringBuffer();
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(crashFile)));
+            String line;
+            while ((line = in.readLine()) != null) {
+                buffer.append(line);
+                buffer.append("\n");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "checkTinkerLastUncaughtCrash exception: " + e);
+            return null;
+        } finally {
+            closeQuietly(in);
         }
 
-        File file = new File(filePath);
-        if (file.exists()) {
-            return true;
-        }
-        return false;
+        return buffer.toString();
+
+    }
+
+    public static final boolean isLegalFile(File file) {
+        return file != null && file.exists() && file.isFile() && file.length() > 0;
     }
 
     /**

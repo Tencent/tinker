@@ -71,6 +71,10 @@ class TinkerPatchPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate {
+            if (!configuration.tinkerEnable) {
+                project.logger.error("tinker tasks are disabled.")
+                return
+            }
             project.logger.error("----------------------tinker build warning ------------------------------------")
             project.logger.error("tinker auto operation: ")
             project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")

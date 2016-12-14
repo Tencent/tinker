@@ -43,10 +43,11 @@ public class TinkerInstaller {
      *
      * @param applicationLike
      */
-    public static void install(ApplicationLike applicationLike) {
+    public static Tinker install(ApplicationLike applicationLike) {
         Tinker tinker = new Tinker.Builder(applicationLike.getApplication()).build();
         Tinker.create(tinker);
         tinker.install(applicationLike.getTinkerResultIntent());
+        return tinker;
     }
 
     /**
@@ -61,7 +62,7 @@ public class TinkerInstaller {
      * @param upgradePatchProcessor
      * @param repairPatchProcessor
      */
-    public static void install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter,
+    public static Tinker install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter,
                                PatchListener listener, Class<? extends AbstractResultService> resultServiceClass,
                                AbstractPatch upgradePatchProcessor, AbstractPatch repairPatchProcessor) {
 
@@ -74,8 +75,7 @@ public class TinkerInstaller {
 
         Tinker.create(tinker);
         tinker.install(applicationLike.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor, repairPatchProcessor);
-
-
+        return tinker;
     }
 
     /**

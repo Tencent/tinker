@@ -48,6 +48,9 @@ public class SharePatchInfo {
     }
 
     public static SharePatchInfo readAndCheckPropertyWithLock(File pathInfoFile, File lockFile) {
+        if (pathInfoFile == null || lockFile == null) {
+            return null;
+        }
         File lockParentFile = lockFile.getParentFile();
         if (!lockParentFile.exists()) {
             lockParentFile.mkdirs();
@@ -74,6 +77,9 @@ public class SharePatchInfo {
     }
 
     public static boolean rewritePatchInfoFileWithLock(File pathInfoFile, SharePatchInfo info, File lockFile) {
+        if (pathInfoFile == null || info == null || lockFile == null) {
+            return false;
+        }
         File lockParentFile = lockFile.getParentFile();
         if (!lockParentFile.exists()) {
             lockParentFile.mkdirs();
@@ -126,7 +132,8 @@ public class SharePatchInfo {
                 continue;
             }
             //oldVer may be "" or 32 md5
-            if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer)) || !SharePatchFileUtil.checkIfMd5Valid(newVer)) {
+            if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer))
+                || (!newVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(newVer))) {
                 Log.w(TAG, "path info file  corrupted:" + pathInfoFile.getAbsolutePath());
                 continue;
             } else {

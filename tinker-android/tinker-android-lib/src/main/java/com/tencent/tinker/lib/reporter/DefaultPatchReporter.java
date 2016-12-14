@@ -52,7 +52,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchServiceStart(Intent intent) {
-        TinkerLog.i(TAG, "patchReporter: patch service start");
+        TinkerLog.i(TAG, "patchReporter onPatchServiceStart: patch service start");
     }
 
     /**
@@ -73,7 +73,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchPackageCheckFail(File patchFile, boolean isUpgradePatch, int errorCode) {
-        TinkerLog.i(TAG, "patchReporter: package check failed. path:%s, isUpgrade:%b, code:%d", patchFile.getAbsolutePath(), isUpgradePatch, errorCode);
+        TinkerLog.i(TAG, "patchReporter onPatchPackageCheckFail: package check failed. path:%s, isUpgrade:%b, code:%d", patchFile.getAbsolutePath(), isUpgradePatch, errorCode);
         //only meta corrupted, need to delete temp files. others is just in the check time!
         if (errorCode == ShareConstants.ERROR_PACKAGE_CHECK_DEX_META_CORRUPTED
             || errorCode == ShareConstants.ERROR_PACKAGE_CHECK_LIB_META_CORRUPTED
@@ -94,7 +94,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion, boolean isUpgradePatch) {
-        TinkerLog.i(TAG, "patchReporter: patch version exist. path:%s, version:%s, isUpgrade:%b", patchFile.getAbsolutePath(), patchFileVersion, isUpgradePatch);
+        TinkerLog.i(TAG, "patchReporter onPatchVersionCheckFail: patch version exist. path:%s, version:%s, isUpgrade:%b", patchFile.getAbsolutePath(), patchFileVersion, isUpgradePatch);
         //no need to delete temp files, because it is only in the check time!
     }
 
@@ -114,7 +114,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType, boolean isUpgradePatch) {
-        TinkerLog.i(TAG, "patchReporter: file extract fail type:%s, path:%s, extractTo:%s, filename:%s, isUpgrade:%b",
+        TinkerLog.i(TAG, "patchReporter onPatchTypeExtractFail: file extract fail type:%s, path:%s, extractTo:%s, filename:%s, isUpgrade:%b",
             ShareTinkerInternals.getTypeString(fileType), patchFile.getPath(), extractTo.getPath(), filename, isUpgradePatch);
         //delete temp files
         Tinker.with(context).cleanPatchByVersion(patchFile);
@@ -131,7 +131,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t, boolean isUpgradePatch) {
-        TinkerLog.i(TAG, "patchReporter: dex opt fail path:%s, dexPath:%s, optDir:%s, dexName:%s, isUpgrade:%b",
+        TinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path:%s, dexPath:%s, optDir:%s, dexName:%s, isUpgrade:%b",
             patchFile.getAbsolutePath(), dexFile.getPath(), optDirectory, dexName, isUpgradePatch);
         TinkerLog.printErrStackTrace(TAG, t, "onPatchDexOptFail:");
         //delete temp files
@@ -148,7 +148,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchResult(File patchFile, boolean success, long cost, boolean isUpgradePatch) {
-        TinkerLog.i(TAG, "patchReporter: patch all result path:%s, success:%b, cost:%d, isUpgrade:%b", patchFile.getAbsolutePath(), success, cost, isUpgradePatch);
+        TinkerLog.i(TAG, "patchReporter onPatchResult: patch all result path:%s, success:%b, cost:%d, isUpgrade:%b", patchFile.getAbsolutePath(), success, cost, isUpgradePatch);
         //you can just report the result here
     }
 
@@ -163,7 +163,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion, boolean isUpgradePatch) {
-        TinkerLog.i(TAG, "patchReporter: patch info is corrupted. old:%s, new:%s, isUpgradeP:%b", oldVersion, newVersion, isUpgradePatch);
+        TinkerLog.i(TAG, "patchReporter onPatchInfoCorrupted: patch info is corrupted. old:%s, new:%s, isUpgradeP:%b", oldVersion, newVersion, isUpgradePatch);
         //patch.info is corrupted, just clean all patch
         Tinker.with(context).cleanPatch();
     }
@@ -179,7 +179,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchException(File patchFile, Throwable e, boolean isUpgradePatch) {
-        TinkerLog.i(TAG, "patchReporter: patch exception path:%s, throwable:%s, isUpgrade:%b", patchFile.getAbsolutePath(), e.getMessage(), isUpgradePatch);
+        TinkerLog.i(TAG, "patchReporter onPatchException: patch exception path:%s, throwable:%s, isUpgrade:%b", patchFile.getAbsolutePath(), e.getMessage(), isUpgradePatch);
         TinkerLog.e(TAG, "tinker patch exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
 //        if (e.getMessage().contains(ShareConstants.CHECK_VM_PROPERTY_FAIL)) {
 //            ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);

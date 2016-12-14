@@ -77,7 +77,6 @@ android {
          * you can use multiDex and install it in your ApplicationLifeCycle implement
          */
         multiDexEnabled true
-
         /**
          * buildConfig can change during patch!
          * we can use the newly value when patch

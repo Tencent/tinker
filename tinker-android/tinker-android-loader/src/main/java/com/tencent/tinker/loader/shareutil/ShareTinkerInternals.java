@@ -24,10 +24,12 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -387,4 +389,50 @@ public class ShareTinkerInternals {
         }
         return isArt;
     }
+
+    public static String getExceptionCauseString(final Throwable ex) {
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final PrintStream ps = new PrintStream(bos);
+
+        try {
+            // print directly
+            Throwable t = ex;
+            while (t.getCause() != null) {
+                t = t.getCause();
+            }
+            t.printStackTrace(ps);
+            return toVisualString(bos.toString());
+        } finally {
+            try {
+                bos.close();
+            } catch (IOException e) {
+            }
+        }
+    }
+
+    public static String toVisualString(String src) {
+        boolean cutFlg = false;
+        if (null == src) {
+            return null;
+        }
+        char[] chr = src.toCharArray();
+        if (null == chr) {
+            return null;
+        }
+        int i = 0;
+        for (; i < chr.length; i++) {
+            if (chr[i] > 127) {
+                chr[i] = 0;
+                cutFlg = true;
+                break;
+            }
+        }
+
+        if (cutFlg) {
+            return new String(chr, 0, i);
+        } else {
+            return src;
+        }
+    }
+
 }

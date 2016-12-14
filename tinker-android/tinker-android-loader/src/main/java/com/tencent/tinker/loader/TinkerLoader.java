@@ -128,7 +128,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //patch-641e634c
         String patchName = SharePatchFileUtil.getPatchVersionDirectory(version);
-
+        if (patchName == null) {
+            Log.w(TAG, "tryLoadPatchFiles:patchName is null");
+            //we may delete patch info file
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST);
+            return;
+        }
         //tinker/patch.info/patch-641e634c
         String patchVersionDirectory = patchDirectoryPath + "/" + patchName;
         File patchVersionDirectoryFile = new File(patchVersionDirectory);

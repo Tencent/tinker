@@ -58,6 +58,7 @@ public class Tinker {
     final LoadReporter  loadReporter;
     final PatchReporter patchReporter;
     final File          patchInfoFile;
+    final File          patchInfoLockFile;
     final boolean       isMainProcess;
     final boolean       isPatchProcess;
     /**
@@ -76,7 +77,7 @@ public class Tinker {
     private boolean loaded = false;
 
     private Tinker(Context context, int tinkerFlags, LoadReporter loadReporter, PatchReporter patchReporter,
-                   PatchListener listener, File patchDirectory, File patchInfoFile,
+                   PatchListener listener, File patchDirectory, File patchInfoFile, File patchInfoLockFile,
                    boolean isInMainProc, boolean isPatchProcess, boolean tinkerLoadVerifyFlag) {
         this.context = context;
         this.listener = listener;
@@ -85,6 +86,7 @@ public class Tinker {
         this.tinkerFlags = tinkerFlags;
         this.patchDirectory = patchDirectory;
         this.patchInfoFile = patchInfoFile;
+        this.patchInfoLockFile = patchInfoLockFile;
         this.isMainProcess = isInMainProc;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
         this.isPatchProcess = isPatchProcess;
@@ -239,6 +241,10 @@ public class Tinker {
         return patchInfoFile;
     }
 
+    public File getPatchInfoLockFile() {
+        return patchInfoLockFile;
+    }
+
     public PatchListener getPatchListener() {
         return listener;
     }
@@ -312,6 +318,7 @@ public class Tinker {
         private PatchListener listener;
         private File          patchDirectory;
         private File          patchInfoFile;
+        private File          patchInfoLockFile;
         private Boolean       tinkerLoadVerifyFlag;
 
         /**
@@ -330,6 +337,7 @@ public class Tinker {
                 return;
             }
             this.patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
+            this.patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
             TinkerLog.w(TAG, "tinker patch directory: %s", patchDirectory);
         }
 
@@ -407,7 +415,7 @@ public class Tinker {
             }
 
             return new Tinker(context, status, loadReporter, patchReporter, listener, patchDirectory,
-                patchInfoFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
+                patchInfoFile, patchInfoLockFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
         }
     }
 
