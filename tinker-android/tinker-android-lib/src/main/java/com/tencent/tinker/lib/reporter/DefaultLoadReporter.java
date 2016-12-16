@@ -21,7 +21,6 @@ import android.content.Context;
 
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -54,12 +53,11 @@ public class DefaultLoadReporter implements LoadReporter {
      *                  {@code ShareConstants.ERROR_PATCH_NOTEXIST}            the file of tempPatchPatch file is not exist
      *                  {@code ShareConstants.ERROR_PATCH_RUNNING}             the recover service is running now, try later
      *                  {@code ShareConstants.ERROR_PATCH_INSERVICE}           the recover service can't send patch request
-     *
-     * @param isUpgrade whether is a new patch, or just recover the old patch
      */
     @Override
-    public void onLoadPatchListenerReceiveFail(File patchFile, int errorCode, boolean isUpgrade) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail:%s, code:%d, isUpgrade:%b", patchFile.getAbsolutePath(), errorCode, isUpgrade);
+    public void onLoadPatchListenerReceiveFail(File patchFile, int errorCode) {
+        TinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail:%s, code:%d",
+            patchFile.getAbsolutePath(), errorCode);
     }
 
 
@@ -122,21 +120,10 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadFileNotFound(File file, int fileType, boolean isDirectory) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType:%d, isDirectory:%b", file.getAbsolutePath(), fileType, isDirectory);
-        if (fileType == ShareConstants.TYPE_DEX || fileType == ShareConstants.TYPE_DEX_OPT
-            || fileType == ShareConstants.TYPE_LIBRARY || fileType == ShareConstants.TYPE_RESOURCE) {
-            Tinker tinker = Tinker.with(context);
+        TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType:%d, isDirectory:%b",
+            file.getAbsolutePath(), fileType, isDirectory);
 
-            //we can recover at any process except recover process
-            if (!tinker.isPatchProcess()) {
-                File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
-                if (patchVersionFile != null) {
-                    TinkerInstaller.onReceiveRepairPatch(context, patchVersionFile.getAbsolutePath());
-                }
-            }
-        } else if (fileType == ShareConstants.TYPE_PATCH_FILE || fileType == ShareConstants.TYPE_PATCH_INFO) {
-            Tinker.with(context).cleanPatch();
-        }
+        Tinker.with(context).cleanPatch();
     }
 
     /**

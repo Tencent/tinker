@@ -54,13 +54,22 @@ public class SharePatchFileUtil {
         return new File(applicationInfo.dataDir, ShareConstants.PATCH_DIRECTORY_NAME);
     }
 
-    public static File getPatchLastCrashFile(Context context) {
+    public static File getPatchTempDirectory(Context context) {
         ApplicationInfo applicationInfo = context.getApplicationInfo();
         if (applicationInfo == null) {
             // Looks like running on a test Context, so just return without patching.
             return null;
         }
-        return new File(applicationInfo.dataDir, ShareConstants.PATCH_LAST_CRASH_NAME);
+
+        return new File(applicationInfo.dataDir, ShareConstants.PATCH_TEMP_DIRECTORY_NAME);
+    }
+
+    public static File getPatchLastCrashFile(Context context) {
+        File tempFile = getPatchTempDirectory(context);
+        if (tempFile == null) {
+            return null;
+        }
+        return new File(tempFile, ShareConstants.PATCH_TEMP_LAST_CRASH_NAME);
     }
 
     public static File getPatchInfoFile(String patchDirectory) {
@@ -242,7 +251,7 @@ public class SharePatchFileUtil {
                     return false;
                 }
                 fileMd5 = getMD5(dexJar.getInputStream(classesDex));
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 Log.e(TAG, "Bad dex jar file: " + file.getAbsolutePath(), e);
                 return false;
             } finally {

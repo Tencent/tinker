@@ -22,7 +22,6 @@ import android.content.Intent;
 import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
-import com.tencent.tinker.lib.patch.RepairPatch;
 import com.tencent.tinker.lib.patch.UpgradePatch;
 import com.tencent.tinker.lib.reporter.DefaultLoadReporter;
 import com.tencent.tinker.lib.reporter.DefaultPatchReporter;
@@ -136,13 +135,11 @@ public class Tinker {
      * @param intentResult
      * @param serviceClass
      * @param upgradePatch
-     * @param repairPatch
      */
     public void install(Intent intentResult, Class<? extends AbstractResultService> serviceClass,
-                        AbstractPatch upgradePatch, AbstractPatch repairPatch
-    ) {
+                        AbstractPatch upgradePatch) {
         sInstalled = true;
-        TinkerPatchService.setPatchProcessor(upgradePatch, repairPatch, serviceClass);
+        TinkerPatchService.setPatchProcessor(upgradePatch, serviceClass);
 
         if (!isTinkerEnabled()) {
             TinkerLog.e(TAG, "tinker is disabled");
@@ -178,7 +175,7 @@ public class Tinker {
     }
 
     public void install(Intent intentResult) {
-        install(intentResult, DefaultTinkerResultService.class, new UpgradePatch(), new RepairPatch());
+        install(intentResult, DefaultTinkerResultService.class, new UpgradePatch());
     }
 
     public Context getContext() {

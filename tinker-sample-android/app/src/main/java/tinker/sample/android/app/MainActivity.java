@@ -33,7 +33,6 @@ import android.widget.TextView;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
-import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import tinker.sample.android.R;
@@ -85,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         killSelfButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ShareTinkerInternals.killAllOtherProcess(getApplicationContext());
                 android.os.Process.killProcess(android.os.Process.myPid());
             }
         });

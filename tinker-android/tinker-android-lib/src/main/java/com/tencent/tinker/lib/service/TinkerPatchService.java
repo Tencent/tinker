@@ -41,11 +41,9 @@ public class TinkerPatchService extends IntentService {
     private static final String TAG = "Tinker.TinkerPatchService";
 
     private static final String        PATCH_PATH_EXTRA      = "patch_path_extra";
-    private static final String        PATCH_NEW_EXTRA       = "patch_new_extra";
     private static final String        RESULT_CLASS_EXTRA    = "patch_result_class";
 
     private static       AbstractPatch upgradePatchProcessor = null;
-    private static       AbstractPatch                          repairPatchProcessor = null;
     private static       int                                    notificationId       = ShareConstants.TINKER_PATCH_SERVICE_NOTIFICATION;
     private static       Class<? extends AbstractResultService> resultServiceClass   = null;
 
@@ -56,17 +54,15 @@ public class TinkerPatchService extends IntentService {
         super(TinkerPatchService.class.getSimpleName());
     }
 
-    public static void runPatchService(Context context, String path, boolean isUpgradePatch) {
+    public static void runPatchService(Context context, String path) {
         Intent intent = new Intent(context, TinkerPatchService.class);
         intent.putExtra(PATCH_PATH_EXTRA, path);
-        intent.putExtra(PATCH_NEW_EXTRA, isUpgradePatch);
         intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
         context.startService(intent);
     }
 
-    public static void setPatchProcessor(AbstractPatch upgradePatch, AbstractPatch repairPatch, Class<? extends AbstractResultService> serviceClass) {
+    public static void setPatchProcessor(AbstractPatch upgradePatch, Class<? extends AbstractResultService> serviceClass) {
         upgradePatchProcessor = upgradePatch;
-        repairPatchProcessor = repairPatch;
         resultServiceClass = serviceClass;
         //try to load
         try {
@@ -88,13 +84,6 @@ public class TinkerPatchService extends IntentService {
             throw new TinkerRuntimeException("getPatchResultExtra, but intent is null");
         }
         return ShareIntentUtil.getStringExtra(intent, RESULT_CLASS_EXTRA);
-    }
-
-    public static boolean getPatchUpgradeExtra(Intent intent) {
-        if (intent == null) {
-            throw new TinkerRuntimeException("getPatchUpgradeExtra, but intent is null");
-        }
-        return ShareIntentUtil.getBooleanExtra(intent, PATCH_NEW_EXTRA, false);
     }
 
     /**
@@ -122,8 +111,6 @@ public class TinkerPatchService extends IntentService {
         }
         File patchFile = new File(path);
 
-        boolean isUpgradePatch = getPatchUpgradeExtra(intent);
-
         long begin = SystemClock.elapsedRealtime();
         boolean result;
         long cost;
@@ -132,31 +119,21 @@ public class TinkerPatchService extends IntentService {
         increasingPriority();
         PatchResult patchResult = new PatchResult();
         try {
-            if (isUpgradePatch) {
-                if (upgradePatchProcessor == null) {
-                    throw new TinkerRuntimeException("upgradePatchProcessor is null.");
-                }
-                result = upgradePatchProcessor.tryPatch(context, path, patchResult);
-
-            } else {
-                //just recover from exist patch
-                if (repairPatchProcessor == null) {
-                    throw new TinkerRuntimeException("upgradePatchProcessor is null.");
-                }
-                result = repairPatchProcessor.tryPatch(context, path, patchResult);
+            if (upgradePatchProcessor == null) {
+                throw new TinkerRuntimeException("upgradePatchProcessor is null.");
             }
+            result = upgradePatchProcessor.tryPatch(context, path, patchResult);
         } catch (Throwable throwable) {
             e = throwable;
             result = false;
-            tinker.getPatchReporter().onPatchException(patchFile, e, isUpgradePatch);
+            tinker.getPatchReporter().onPatchException(patchFile, e);
         }
 
         cost = SystemClock.elapsedRealtime() - begin;
         tinker.getPatchReporter().
-            onPatchResult(patchFile, result, cost, isUpgradePatch);
+            onPatchResult(patchFile, result, cost);
 
         patchResult.isSuccess = result;
-        patchResult.isUpgradePatch = isUpgradePatch;
         patchResult.rawPatchFilePath = path;
         patchResult.costTime = cost;
         patchResult.e = e;

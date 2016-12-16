@@ -60,11 +60,10 @@ public class TinkerInstaller {
      * @param listener
      * @param resultServiceClass
      * @param upgradePatchProcessor
-     * @param repairPatchProcessor
      */
     public static Tinker install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter,
                                PatchListener listener, Class<? extends AbstractResultService> resultServiceClass,
-                               AbstractPatch upgradePatchProcessor, AbstractPatch repairPatchProcessor) {
+                               AbstractPatch upgradePatchProcessor) {
 
         Tinker tinker = new Tinker.Builder(applicationLike.getApplication())
             .tinkerFlags(applicationLike.getTinkerFlags())
@@ -74,7 +73,7 @@ public class TinkerInstaller {
             .tinkerLoadVerifyFlag(applicationLike.getTinkerLoadVerifyFlag()).build();
 
         Tinker.create(tinker);
-        tinker.install(applicationLike.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor, repairPatchProcessor);
+        tinker.install(applicationLike.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor);
         return tinker;
     }
 
@@ -94,18 +93,7 @@ public class TinkerInstaller {
      * @param patchLocation
      */
     public static void onReceiveUpgradePatch(Context context, String patchLocation) {
-        Tinker.with(context).getPatchListener().onPatchReceived(patchLocation, true);
-    }
-
-    /**
-     * some file does not exist, repair them with :patch process
-     * Generally you will not use it
-     *
-     * @param context
-     * @param patchLocation
-     */
-    public static void onReceiveRepairPatch(Context context, String patchLocation) {
-        Tinker.with(context).getPatchListener().onPatchReceived(patchLocation, false);
+        Tinker.with(context).getPatchListener().onPatchReceived(patchLocation);
     }
 
     /**

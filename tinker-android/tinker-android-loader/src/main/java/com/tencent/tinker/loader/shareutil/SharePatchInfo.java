@@ -133,7 +133,7 @@ public class SharePatchInfo {
             }
             //oldVer may be "" or 32 md5
             if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer))
-                || (!newVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(newVer))) {
+                || !SharePatchFileUtil.checkIfMd5Valid(newVer)) {
                 Log.w(TAG, "path info file  corrupted:" + pathInfoFile.getAbsolutePath());
                 continue;
             } else {

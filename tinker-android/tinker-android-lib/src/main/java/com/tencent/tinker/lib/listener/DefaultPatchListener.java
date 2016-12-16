@@ -41,24 +41,23 @@ public class DefaultPatchListener implements PatchListener {
      * you can overwrite it
      *
      * @param path
-     * @param isUpgrade
      * @return
      */
     @Override
-    public int onPatchReceived(String path, boolean isUpgrade) {
+    public int onPatchReceived(String path) {
 
-        int returnCode = patchCheck(path, isUpgrade);
+        int returnCode = patchCheck(path);
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
-            TinkerPatchService.runPatchService(context, path, isUpgrade);
+            TinkerPatchService.runPatchService(context, path);
         } else {
-            Tinker.with(context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode, isUpgrade);
+            Tinker.with(context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode);
         }
         return returnCode;
 
     }
 
-    protected int patchCheck(String path, boolean isUpgrade) {
+    protected int patchCheck(String path) {
         Tinker manager = Tinker.with(context);
         //check SharePreferences also
         if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {

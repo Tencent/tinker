@@ -43,24 +43,21 @@ public class SampleTinkerReport {
     public static final int KEY_APPLY_WITH_RETRY          = 10;
 
     //Key -- try apply detail
-    public static final int KEY_TRY_APPLY_REPAIR                  = 70;
-    public static final int KEY_TRY_APPLY_UPGRADE                 = 71;
-    public static final int KEY_TRY_APPLY_DISABLE                 = 72;
-    public static final int KEY_TRY_APPLY_RUNNING                 = 73;
-    public static final int KEY_TRY_APPLY_INSERVICE               = 74;
-    public static final int KEY_TRY_APPLY_NOT_EXIST               = 75;
-    public static final int KEY_TRY_APPLY_GOOGLEPLAY              = 76;
-    public static final int KEY_TRY_APPLY_ROM_SPACE               = 77;
-    public static final int KEY_TRY_APPLY_ALREADY_APPLY           = 78;
-    public static final int KEY_TRY_APPLY_MEMORY_LIMIT            = 79;
-    public static final int KEY_TRY_APPLY_CRASH_LIMIT             = 80;
-    public static final int KEY_TRY_APPLY_CONDITION_NOT_SATISFIED = 81;
+    public static final int KEY_TRY_APPLY_UPGRADE                 = 70;
+    public static final int KEY_TRY_APPLY_DISABLE                 = 71;
+    public static final int KEY_TRY_APPLY_RUNNING                 = 72;
+    public static final int KEY_TRY_APPLY_INSERVICE               = 73;
+    public static final int KEY_TRY_APPLY_NOT_EXIST               = 74;
+    public static final int KEY_TRY_APPLY_GOOGLEPLAY              = 75;
+    public static final int KEY_TRY_APPLY_ROM_SPACE               = 76;
+    public static final int KEY_TRY_APPLY_ALREADY_APPLY           = 77;
+    public static final int KEY_TRY_APPLY_MEMORY_LIMIT            = 78;
+    public static final int KEY_TRY_APPLY_CRASH_LIMIT             = 79;
+    public static final int KEY_TRY_APPLY_CONDITION_NOT_SATISFIED = 80;
 
     //Key -- apply detail
-    public static final int KEY_APPLIED_REPAIR       = 100;
-    public static final int KEY_APPLIED_UPGRADE      = 101;
-    public static final int KEY_APPLIED_REPAIR_FAIL  = 102;
-    public static final int KEY_APPLIED_UPGRADE_FAIL = 103;
+    public static final int KEY_APPLIED_UPGRADE      = 100;
+    public static final int KEY_APPLIED_UPGRADE_FAIL = 101;
 
     public static final int KEY_APPLIED_EXCEPTION                               = 120;
     public static final int KEY_APPLIED_DEXOPT                                  = 121;
@@ -147,16 +144,14 @@ public class SampleTinkerReport {
         this.reporter = reporter;
     }
 
-    public static void onTryApply(boolean upgrade, boolean success) {
+    public static void onTryApply(boolean success) {
         if (reporter == null) {
             return;
         }
         reporter.onReport(KEY_TRY_APPLY);
-        if (upgrade) {
-            reporter.onReport(KEY_TRY_APPLY_UPGRADE);
-        } else {
-            reporter.onReport(KEY_TRY_APPLY_REPAIR);
-        }
+
+        reporter.onReport(KEY_TRY_APPLY_UPGRADE);
+
         if (success) {
             reporter.onReport(KEY_TRY_APPLY_SUCCESS);
         }
@@ -398,7 +393,7 @@ public class SampleTinkerReport {
         }
     }
 
-    public static void onApplied(boolean isUpgrade, long cost, boolean success) {
+    public static void onApplied(long cost, boolean success) {
         if (reporter == null) {
             return;
         }
@@ -406,19 +401,10 @@ public class SampleTinkerReport {
             reporter.onReport(KEY_APPLIED);
         }
 
-        if (isUpgrade) {
-            if (success) {
-                reporter.onReport(KEY_APPLIED_UPGRADE);
-            } else {
-                reporter.onReport(KEY_APPLIED_UPGRADE_FAIL);
-            }
-
+        if (success) {
+            reporter.onReport(KEY_APPLIED_UPGRADE);
         } else {
-            if (success) {
-                reporter.onReport(KEY_APPLIED_REPAIR);
-            } else {
-                reporter.onReport(KEY_APPLIED_REPAIR_FAIL);
-            }
+            reporter.onReport(KEY_APPLIED_UPGRADE_FAIL);
         }
 
         TinkerLog.i(TAG, "hp_report report apply cost = %d", cost);

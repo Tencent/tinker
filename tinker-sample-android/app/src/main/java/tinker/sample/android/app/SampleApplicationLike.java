@@ -26,6 +26,7 @@ import android.os.Build;
 import android.support.multidex.MultiDex;
 
 import com.tencent.tinker.anno.DefaultLifeCycle;
+import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.app.ApplicationLifeCycle;
 import com.tencent.tinker.loader.app.DefaultApplicationLike;
@@ -85,6 +86,7 @@ public class SampleApplicationLike extends DefaultApplicationLike {
         SampleApplicationContext.application = getApplication();
         SampleApplicationContext.context = getApplication();
         TinkerManager.setTinkerApplicationLike(this);
+
         TinkerManager.initFastCrashProtect();
         //should set before tinker is installed
         TinkerManager.setUpgradeRetryEnable(true);
@@ -95,6 +97,7 @@ public class SampleApplicationLike extends DefaultApplicationLike {
         //installTinker after load multiDex
         //or you can put com.tencent.tinker.** to main dex
         TinkerManager.installTinker(this);
+        Tinker tinker = Tinker.with(getApplication());
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)

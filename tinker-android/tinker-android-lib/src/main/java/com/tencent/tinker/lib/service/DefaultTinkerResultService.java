@@ -49,7 +49,7 @@ public class DefaultTinkerResultService extends AbstractResultService {
 
         // if success and newPatch, it is nice to delete the raw file, and restart at once
         // only main process can load an upgrade patch!
-        if (result.isSuccess && result.isUpgradePatch) {
+        if (result.isSuccess) {
             File rawFile = new File(result.rawPatchFilePath);
             if (rawFile.exists()) {
                 TinkerLog.i(TAG, "save delete raw patch file");
@@ -60,11 +60,6 @@ public class DefaultTinkerResultService extends AbstractResultService {
             } else {
                 TinkerLog.i(TAG, "I have already install the newly patch version!");
             }
-        }
-
-        //repair current patch fail, just clean!
-        if (!result.isSuccess && !result.isUpgradePatch) {
-            Tinker.with(getApplicationContext()).cleanPatch();
         }
     }
 

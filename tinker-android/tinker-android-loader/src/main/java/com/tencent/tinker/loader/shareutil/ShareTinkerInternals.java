@@ -189,6 +189,7 @@ public class ShareTinkerInternals {
             SharePatchFileUtil.closeZip(zipFile);
         }
     }
+
     public static String getManifestTinkerID(Context context) {
         if (tinkerID != null) {
             return tinkerID;

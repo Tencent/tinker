@@ -95,6 +95,7 @@ public final class TinkerParallelDexOptimizer {
     }
 
     public interface ResultCallback {
+        void onStart(File dexFile, File optimizedDir);
         void onSuccess(File dexFile, File optimizedDir);
         void onFailed(File dexFile, File optimizedDir, Throwable thr);
     }
@@ -122,6 +123,9 @@ public final class TinkerParallelDexOptimizer {
                         callback.onFailed(dexFile, optimizedDir,
                             new IOException("dex file " + dexFile.getAbsolutePath() + " is not exist!"));
                     }
+                }
+                if (callback != null) {
+                    callback.onStart(dexFile, optimizedDir);
                 }
                 DexFile.loadDex(dexFile.getAbsolutePath(), SharePatchFileUtil.optimizedPathFor(this.dexFile, this.optimizedDir), 0);
                 successCount.incrementAndGet();

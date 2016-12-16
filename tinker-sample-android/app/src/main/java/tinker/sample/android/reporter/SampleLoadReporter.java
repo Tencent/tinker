@@ -20,17 +20,13 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.MessageQueue;
-import android.widget.Toast;
 
 import com.tencent.tinker.lib.reporter.DefaultLoadReporter;
-import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 
 import java.io.File;
 
 import tinker.sample.android.util.UpgradePatchRetry;
-import tinker.sample.android.util.Utils;
 
 /**
  * optional, you can just use DefaultLoadReporter
@@ -44,28 +40,8 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     }
 
     @Override
-    public void onLoadPatchListenerReceiveFail(final File patchFile, int errorCode, final boolean isUpgrade) {
-        super.onLoadPatchListenerReceiveFail(patchFile, errorCode, isUpgrade);
-        switch (errorCode) {
-            case ShareConstants.ERROR_PATCH_NOTEXIST:
-                Toast.makeText(context, "patch file is not exist", Toast.LENGTH_LONG).show();
-                break;
-            case ShareConstants.ERROR_PATCH_RUNNING:
-                // try later
-                // only retry for upgrade patch
-                if (isUpgrade) {
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            TinkerInstaller.onReceiveUpgradePatch(context, patchFile.getAbsolutePath());
-                        }
-                    }, 60 * 1000);
-                }
-                break;
-            case Utils.ERROR_PATCH_ROM_SPACE:
-                Toast.makeText(context, "rom space is not enough", Toast.LENGTH_LONG).show();
-                break;
-        }
+    public void onLoadPatchListenerReceiveFail(final File patchFile, int errorCode) {
+        super.onLoadPatchListenerReceiveFail(patchFile, errorCode);
         SampleTinkerReport.onTryApplyFail(errorCode);
     }
 

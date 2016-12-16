@@ -115,14 +115,24 @@ public class TinkerDexLoader {
             TinkerParallelDexOptimizer.optimizeAll(
                 legalFiles, optimizeDir,
                 new TinkerParallelDexOptimizer.ResultCallback() {
+                    long start;
+
+                    @Override
+                    public void onStart(File dexFile, File optimizedDir) {
+                        start = System.currentTimeMillis();
+                        Log.i(TAG, "start to optimize dex:" + dexFile.getPath());
+                    }
+
                     @Override
                     public void onSuccess(File dexFile, File optimizedDir) {
                         // Do nothing.
+                        Log.i(TAG, "success to optimize dex " + dexFile.getPath() + "use time " + (System.currentTimeMillis() - start));
                     }
                     @Override
                     public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
                         parallelOTAResult = false;
                         parallelOTAThrowable = thr;
+                        Log.i(TAG, "fail to optimize dex " + dexFile.getPath() + "use time " + (System.currentTimeMillis() - start));
                     }
                 }
             );

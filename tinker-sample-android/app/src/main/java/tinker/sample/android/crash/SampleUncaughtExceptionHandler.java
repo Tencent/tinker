@@ -19,7 +19,6 @@ package tinker.sample.android.crash;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
-import android.widget.Toast;
 
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.lib.util.TinkerLog;
@@ -78,10 +77,8 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
             }
             boolean isCausedByXposed = false;
             //for art, we can't know the actually crash type
-            //art's xposed has not much people
-            if (ShareTinkerInternals.isVmArt()) {
-                isCausedByXposed = true;
-            } else if (ex instanceof IllegalAccessError && ex.getMessage().contains(DALVIK_XPOSED_CRASH)) {
+            //just ignore art
+            if (ex instanceof IllegalAccessError && ex.getMessage().contains(DALVIK_XPOSED_CRASH)) {
                 //for dalvik, we know the actual crash type
                 isCausedByXposed = true;
             }
@@ -94,9 +91,6 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
 
                 TinkerApplicationHelper.cleanPatch(applicationLike);
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(applicationLike.getApplication());
-                //method 2
-                //or you can mention user to uninstall Xposed!
-                Toast.makeText(applicationLike.getApplication(), "please uninstall Xposed, illegal modify the app", Toast.LENGTH_LONG).show();
             }
         }
     }

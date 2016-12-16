@@ -60,7 +60,7 @@ public class UpgradePatch extends AbstractPatch {
         int returnCode = ShareTinkerInternals.checkTinkerPackage(context, manager.getTinkerFlags(), patchFile, signatureCheck);
         if (returnCode != ShareConstants.ERROR_PACKAGE_CHECK_OK) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:onPatchPackageCheckFail");
-            manager.getPatchReporter().onPatchPackageCheckFail(patchFile, true, returnCode);
+            manager.getPatchReporter().onPatchPackageCheckFail(patchFile, returnCode);
             return false;
         }
 
@@ -82,13 +82,13 @@ public class UpgradePatch extends AbstractPatch {
         if (oldInfo != null) {
             if (oldInfo.oldVersion == null || oldInfo.newVersion == null) {
                 TinkerLog.e(TAG, "UpgradePatch tryPatch:onPatchInfoCorrupted");
-                manager.getPatchReporter().onPatchInfoCorrupted(patchFile, oldInfo.oldVersion, oldInfo.newVersion, true);
+                manager.getPatchReporter().onPatchInfoCorrupted(patchFile, oldInfo.oldVersion, oldInfo.newVersion);
                 return false;
             }
 
             if (oldInfo.oldVersion.equals(patchMd5) || oldInfo.newVersion.equals(patchMd5)) {
                 TinkerLog.e(TAG, "UpgradePatch tryPatch:onPatchVersionCheckFail");
-                manager.getPatchReporter().onPatchVersionCheckFail(patchFile, oldInfo, patchMd5, true);
+                manager.getPatchReporter().onPatchVersionCheckFail(patchFile, oldInfo, patchMd5);
                 return false;
             }
             newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, Build.FINGERPRINT);
@@ -120,22 +120,22 @@ public class UpgradePatch extends AbstractPatch {
         } catch (IOException e) {
 //            e.printStackTrace();
             TinkerLog.e(TAG, "UpgradePatch tryPatch:copy patch file fail from %s to %s", patchFile.getPath(), destPatchFile.getPath());
-            manager.getPatchReporter().onPatchTypeExtractFail(patchFile, destPatchFile, patchFile.getName(), ShareConstants.TYPE_PATCH_FILE, true);
+            manager.getPatchReporter().onPatchTypeExtractFail(patchFile, destPatchFile, patchFile.getName(), ShareConstants.TYPE_PATCH_FILE);
             return false;
         }
 
         //we use destPatchFile instead of patchFile, because patchFile may be deleted during the patch process
-        if (!DexDiffPatchInternal.tryRecoverDexFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile, true)) {
+        if (!DexDiffPatchInternal.tryRecoverDexFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile)) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch dex failed");
             return false;
         }
 
-        if (!BsDiffPatchInternal.tryRecoverLibraryFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile, true)) {
+        if (!BsDiffPatchInternal.tryRecoverLibraryFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile)) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch library failed");
             return false;
         }
 
-        if (!ResDiffPatchInternal.tryRecoverResourceFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile, true)) {
+        if (!ResDiffPatchInternal.tryRecoverResourceFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile)) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch resource failed");
             return false;
         }
@@ -144,7 +144,7 @@ public class UpgradePatch extends AbstractPatch {
 
         if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, newInfo, SharePatchFileUtil.getPatchInfoLockFile(patchDirectory))) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, rewrite patch info failed");
-            manager.getPatchReporter().onPatchInfoCorrupted(patchFile, newInfo.oldVersion, newInfo.newVersion, true);
+            manager.getPatchReporter().onPatchInfoCorrupted(patchFile, newInfo.oldVersion, newInfo.newVersion);
             return false;
         }
 
