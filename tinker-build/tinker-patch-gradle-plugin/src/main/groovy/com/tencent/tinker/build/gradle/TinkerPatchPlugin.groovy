@@ -36,7 +36,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.apply plugin: 'com.google.osdetector'
+        //osdetector change its plugin name in 1.4.0
+        try {
+            project.apply plugin: 'osdetector'
+        } catch (Throwable e) {
+            project.apply plugin: 'com.google.osdetector'
+        }
 
         project.extensions.create('tinkerPatch', TinkerPatchExtension)
 

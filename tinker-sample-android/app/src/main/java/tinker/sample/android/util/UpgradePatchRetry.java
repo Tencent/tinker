@@ -214,6 +214,7 @@ public class UpgradePatchRetry {
         try {
             SharePatchFileUtil.copyFileUsingStream(patchFile, tempPatchFile);
         } catch (IOException e) {
+            TinkerLog.e(TAG, "fail to copy file: %s to %s", patchFile.getAbsolutePath(), tempPatchFile.getAbsolutePath());
         }
     }
 
@@ -238,7 +239,7 @@ public class UpgradePatchRetry {
                 md5 = properties.getProperty(RETRY_FILE_MD5_PROPERTY);
                 times = properties.getProperty(RETRY_COUNT_PROPERTY);
             } catch (IOException e) {
-                e.printStackTrace();
+                TinkerLog.e(TAG, "fail to readRetryProperty:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(inputStream);
             }

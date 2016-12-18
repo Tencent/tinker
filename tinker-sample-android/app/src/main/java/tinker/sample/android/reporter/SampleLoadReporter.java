@@ -17,12 +17,14 @@
 package tinker.sample.android.reporter;
 
 import android.content.Context;
-import android.os.Handler;
 import android.os.Looper;
 import android.os.MessageQueue;
 
 import com.tencent.tinker.lib.reporter.DefaultLoadReporter;
+import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 
@@ -33,7 +35,7 @@ import tinker.sample.android.util.UpgradePatchRetry;
  * Created by zhangshaowen on 16/4/13.
  */
 public class SampleLoadReporter extends DefaultLoadReporter {
-    private Handler handler = new Handler();
+    private final static String TAG = "Tinker.SampleLoadReporter";
 
     public SampleLoadReporter(Context context) {
         super(context);
@@ -63,6 +65,17 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     @Override
     public void onLoadException(Throwable e, int errorCode) {
         super.onLoadException(e, errorCode);
+        switch (errorCode) {
+            case ShareConstants.ERROR_LOAD_EXCEPTION_UNCAUGHT:
+                String uncaughtString = SharePatchFileUtil.checkTinkerLastUncaughtCrash(context);
+                if (!ShareTinkerInternals.isNullOrNil(uncaughtString)) {
+                    File laseCrashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
+                    SharePatchFileUtil.safeDeleteFile(laseCrashFile);
+                    // found really crash reason
+                    TinkerLog.e(TAG, "tinker uncaught real exception:" + uncaughtString);
+                }
+                break;
+        }
         SampleTinkerReport.onLoadException(e, errorCode);
     }
 

@@ -55,10 +55,14 @@ public class TinkerPatchService extends IntentService {
     }
 
     public static void runPatchService(Context context, String path) {
-        Intent intent = new Intent(context, TinkerPatchService.class);
-        intent.putExtra(PATCH_PATH_EXTRA, path);
-        intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
-        context.startService(intent);
+        try {
+            Intent intent = new Intent(context, TinkerPatchService.class);
+            intent.putExtra(PATCH_PATH_EXTRA, path);
+            intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
+            context.startService(intent);
+        } catch (Throwable throwable) {
+            TinkerLog.e(TAG, "start patch service fail, exception:" + throwable);
+        }
     }
 
     public static void setPatchProcessor(AbstractPatch upgradePatch, Class<? extends AbstractResultService> serviceClass) {
