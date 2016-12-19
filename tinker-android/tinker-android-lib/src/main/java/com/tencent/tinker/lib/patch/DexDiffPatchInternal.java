@@ -31,6 +31,8 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
+import dalvik.system.DexFile;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -42,8 +44,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import dalvik.system.DexFile;
 
 /**
  * Created by zhangshaowen on 16/4/12.
@@ -419,8 +419,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         InputStream oldDexStream = null;
         InputStream patchFileStream = null;
         try {
-            oldDexStream = baseApk.getInputStream(oldDexEntry);
-            patchFileStream = (patchFileEntry != null ? patchPkg.getInputStream(patchFileEntry) : null);
+            oldDexStream = new BufferedInputStream(baseApk.getInputStream(oldDexEntry));
+            patchFileStream = (patchFileEntry != null ? new BufferedInputStream(patchPkg.getInputStream(patchFileEntry)) : null);
 
             final boolean isRawDexFile = SharePatchFileUtil.isRawDexFile(patchInfo.rawName);
             if (!isRawDexFile || patchInfo.isJarMode) {
