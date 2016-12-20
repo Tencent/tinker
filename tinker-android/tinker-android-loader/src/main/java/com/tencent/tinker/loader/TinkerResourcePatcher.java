@@ -147,7 +147,7 @@ class TinkerResourcePatcher {
         } else {
             Field fMActiveResources = activityThread.getDeclaredField("mActiveResources");
             fMActiveResources.setAccessible(true);
-            Object thread = getActivityThread(context, activityThread);
+            Object thread = ShareReflectUtil.getActivityThread(context, activityThread);
             @SuppressWarnings("unchecked")
             HashMap<?, WeakReference<Resources>> map =
                 (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(thread);
@@ -173,7 +173,7 @@ class TinkerResourcePatcher {
         }
         // Find the ActivityThread instance for the current thread
         Class<?> activityThread = Class.forName("android.app.ActivityThread");
-        Object currentActivityThread = getActivityThread(context, activityThread);
+        Object currentActivityThread = ShareReflectUtil.getActivityThread(context, activityThread);
 
         for (Field field : new Field[]{packagesFiled, resourcePackagesFiled}) {
             Object value = field.get(currentActivityThread);
@@ -233,31 +233,5 @@ class TinkerResourcePatcher {
             return false;
         }
         return true;
-    }
-
-    private static Object getActivityThread(Context context,
-                                            Class<?> activityThread) {
-        try {
-            if (activityThread == null) {
-                activityThread = Class.forName("android.app.ActivityThread");
-            }
-            Method m = activityThread.getMethod("currentActivityThread");
-            m.setAccessible(true);
-            Object currentActivityThread = m.invoke(null);
-            if (currentActivityThread == null && context != null) {
-                // In older versions of Android (prior to frameworks/base 66a017b63461a22842)
-                // the currentActivityThread was built on thread locals, so we'll need to try
-                // even harder
-                Field mLoadedApk = context.getClass().getField("mLoadedApk");
-                mLoadedApk.setAccessible(true);
-                Object apk = mLoadedApk.get(context);
-                Field mActivityThreadField = apk.getClass().getDeclaredField("mActivityThread");
-                mActivityThreadField.setAccessible(true);
-                currentActivityThread = mActivityThreadField.get(apk);
-            }
-            return currentActivityThread;
-        } catch (Throwable ignore) {
-            return null;
-        }
     }
 }

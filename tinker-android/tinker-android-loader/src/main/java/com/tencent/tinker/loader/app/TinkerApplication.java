@@ -150,7 +150,7 @@ public abstract class TinkerApplication extends Application {
     }
 
     @Override
-    protected final void attachBaseContext(Context base) {
+    protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         Thread.setDefaultUncaughtExceptionHandler(new TinkerUncaughtHandler(this));
         onBaseContextAttached(base);
@@ -188,20 +188,20 @@ public abstract class TinkerApplication extends Application {
     }
 
     @Override
-    public final void onCreate() {
+    public void onCreate() {
         super.onCreate();
         ensureDelegate();
         delegateMethod("onCreate");
     }
 
     @Override
-    public final void onTerminate() {
+    public void onTerminate() {
         super.onTerminate();
         delegateMethod("onTerminate");
     }
 
     @Override
-    public final void onLowMemory() {
+    public void onLowMemory() {
         super.onLowMemory();
         delegateMethod("onLowMemory");
     }
@@ -219,7 +219,7 @@ public abstract class TinkerApplication extends Application {
 
     @TargetApi(14)
     @Override
-    public final void onTrimMemory(int level) {
+    public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         delegateTrimMemory(level);
     }

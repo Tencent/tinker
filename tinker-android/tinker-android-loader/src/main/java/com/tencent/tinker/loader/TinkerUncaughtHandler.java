@@ -45,12 +45,17 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
-        Log.e(TAG, "catch exception when loading tinker:" + ex);
+        Log.e(TAG, "catch exception when loading tinker:" + Log.getStackTraceString(ex));
         if (crashFile != null) {
             Thread.UncaughtExceptionHandler handler = Thread.getDefaultUncaughtExceptionHandler();
 
             //only catch real uncaught Exception
             if (handler instanceof TinkerUncaughtHandler) {
+                File parentFile = crashFile.getParentFile();
+                if (!parentFile.exists() && !parentFile.mkdirs()) {
+                    Log.e(TAG, "print crash file error: create directory fail!");
+                    return;
+                }
                 PrintWriter pw = null;
                 try {
                     pw = new PrintWriter(new FileWriter(crashFile, false));
@@ -58,7 +63,7 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
                     pw.println(ShareTinkerInternals.getExceptionCauseString(ex));
                 } catch (IOException e) {
                     //ignore
-                    Log.e(TAG, "print crash file error:" + ex);
+                    Log.e(TAG, "print crash file error:" + Log.getStackTraceString(e));
                 } finally {
                     SharePatchFileUtil.closeQuietly(pw);
                 }

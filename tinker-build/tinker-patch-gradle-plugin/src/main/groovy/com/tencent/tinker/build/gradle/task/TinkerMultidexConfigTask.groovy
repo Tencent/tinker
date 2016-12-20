@@ -36,7 +36,7 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                     "    *;\n" +
                     "}\n" +
                     "\n" +
-                    "-keep public class * extends com.tencent.tinker.loader.app.TinkerApplication {\n" +
+                    "-keep public class * extends android.app.Application {\n" +
                     "    *;\n" +
                     "}\n"
 

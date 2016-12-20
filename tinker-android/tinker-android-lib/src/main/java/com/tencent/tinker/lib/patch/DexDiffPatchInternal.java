@@ -88,8 +88,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             final String optimizeDexDirectory = patchVersionDirectory + "/" + DEX_OPTIMIZE_PATH + "/";
             File optimizeDexDirectoryFile = new File(optimizeDexDirectory);
 
-            if (!optimizeDexDirectoryFile.exists()) {
-                optimizeDexDirectoryFile.mkdirs();
+            if (!optimizeDexDirectoryFile.exists() && !optimizeDexDirectoryFile.mkdirs()) {
+                TinkerLog.w(TAG, "patch recover, make optimizeDexDirectoryFile fail");
+                return false;
             }
 
             TinkerLog.w(TAG, "patch recover, try to optimize dex file count:%d", files.length);

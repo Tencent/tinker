@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 
 public final class TinkerParallelDexOptimizer {
-    private static final String TAG = "ParallelDexOptimizer";
+    private static final String TAG = "Tinker.ParallelDex";
 
     /**
      * Optimize (trigger dexopt or dex2oat) dexes.

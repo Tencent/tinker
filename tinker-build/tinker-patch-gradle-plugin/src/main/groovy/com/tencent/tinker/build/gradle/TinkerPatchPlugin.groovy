@@ -53,33 +53,34 @@ class TinkerPatchPlugin implements Plugin<Project> {
         project.tinkerPatch.extensions.create('packageConfig', TinkerPackageConfigExtension, project)
         project.tinkerPatch.extensions.create('sevenZip', TinkerSevenZipExtension, project)
 
-        def configuration = project.tinkerPatch
-
         if (!project.plugins.hasPlugin('com.android.application')) {
             throw new GradleException('generateTinkerApk: Android Application plugin required')
         }
 
-        def android = project.extensions.android
-
-        //add the tinker anno resource to the package exclude option
-        android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
-        android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
-
-        //open jumboMode
-        android.dexOptions.jumboMode = true
-
-        //close preDexLibraries
-        try {
-            android.dexOptions.preDexLibraries = false
-        } catch (Throwable e) {
-            //no preDexLibraries field, just continue
-        }
-
         project.afterEvaluate {
+            def configuration = project.tinkerPatch
+
             if (!configuration.tinkerEnable) {
                 project.logger.error("tinker tasks are disabled.")
                 return
             }
+
+            def android = project.extensions.android
+
+            //add the tinker anno resource to the package exclude option
+            android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
+            android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
+
+            //open jumboMode
+            android.dexOptions.jumboMode = true
+
+            //close preDexLibraries
+            try {
+                android.dexOptions.preDexLibraries = false
+            } catch (Throwable e) {
+                //no preDexLibraries field, just continue
+            }
+
             project.logger.error("----------------------tinker build warning ------------------------------------")
             project.logger.error("tinker auto operation: ")
             project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")
