@@ -136,6 +136,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             long start = System.currentTimeMillis();
                             DexFile.loadDex(file.getAbsolutePath(), outputPathName, 0);
                             TinkerLog.i(TAG, "success single dex optimize file, path: %s, use time: %d", file.getPath(), (System.currentTimeMillis() - start));
+                            if (!SharePatchFileUtil.isLegalFile(outputFile)) {
+                                manager.getPatchReporter()
+                                    .onPatchDexOptFail(patchFile, file, optimizeDexDirectory,
+                                        file.getName(), new TinkerRuntimeException("dexOpt file:" + outputPathName + " is not exist"));
+                                return false;
+                            }
                         }
                     } catch (Throwable e) {
                         TinkerLog.e(TAG, "dex optimize or load failed, path:" + file.getPath());

@@ -259,6 +259,9 @@ public class ShareTinkerInternals {
      * @return
      */
     public static boolean isTinkerEnableWithSharedPreferences(Context context) {
+        if (context == null) {
+            return false;
+        }
         SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
         return sp.getBoolean(ShareConstants.TINKER_ENABLE_CONFIG, true);
     }

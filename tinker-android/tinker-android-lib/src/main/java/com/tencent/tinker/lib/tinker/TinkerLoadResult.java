@@ -313,9 +313,7 @@ public class TinkerLoadResult {
 
                 if (isMainProcess && versionChanged) {
                     //change the old version to new
-                    patchInfo.oldVersion = currentVersion;
                     tinker.getLoadReporter().onLoadPatchVersionChanged(oldVersion, newVersion, patchDirectory, patchVersionDirectory.getName());
-
                 }
                 return true;
         }

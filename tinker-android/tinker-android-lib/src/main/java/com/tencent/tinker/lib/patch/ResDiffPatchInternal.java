@@ -137,6 +137,9 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                         throw new TinkerRuntimeException("zipEntry is null when get from oldApk");
                     }
                     String name = zipEntry.getName();
+                    if (name.contains("../")) {
+                        continue;
+                    }
                     if (ShareResPatchInfo.checkFileInPattern(resPatchInfo.patterns, name)) {
                         //won't contain in add set.
                         if (!resPatchInfo.deleteRes.contains(name)

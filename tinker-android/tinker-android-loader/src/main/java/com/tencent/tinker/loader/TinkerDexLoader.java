@@ -199,9 +199,8 @@ public class TinkerDexLoader {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST);
             return false;
         }
-        //don't check oat file
-//        String optimizeDexDirectory = directory + "/" + DEX_OPTIMIZE_PATH + "/";
-//        File optimizeDexDirectoryFile = new File(optimizeDexDirectory);
+        String optimizeDexDirectory = directory + "/" + DEX_OPTIMIZE_PATH + "/";
+        File optimizeDexDirectoryFile = new File(optimizeDexDirectory);
 
         //fast check whether there is any dex files missing
         for (String name : dexes.keySet()) {
@@ -211,13 +210,13 @@ public class TinkerDexLoader {
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
                 return false;
             }
-//            //check dex opt whether complete also
-//            File dexOptFile = new File(SharePatchFileUtil.optimizedPathFor(dexFile, optimizeDexDirectoryFile));
-//            if (!dexOptFile.exists()) {
-//                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexOptFile.getAbsolutePath());
-//                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
-//                return false;
-//            }
+            //check dex opt whether complete also
+            File dexOptFile = new File(SharePatchFileUtil.optimizedPathFor(dexFile, optimizeDexDirectoryFile));
+            if (!dexOptFile.exists()) {
+                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexOptFile.getAbsolutePath());
+                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
+                return false;
+            }
         }
 
         //if is ok, add to result intent

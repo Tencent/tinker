@@ -21,9 +21,11 @@ import android.content.Context;
 
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
+import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
@@ -87,7 +89,7 @@ public class DefaultLoadReporter implements LoadReporter {
         if (!Tinker.with(context).isMainProcess()) {
             return;
         }
-        TinkerLog.i(TAG, "try kill all other process");
+        TinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
         //kill all other process to ensure that all process's code is the same.
         ShareTinkerInternals.killAllOtherProcess(context);
 
@@ -123,7 +125,7 @@ public class DefaultLoadReporter implements LoadReporter {
         TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType:%d, isDirectory:%b",
             file.getAbsolutePath(), fileType, isDirectory);
 
-        Tinker.with(context).cleanPatch();
+        checkAndCleanPatch();
     }
 
     /**
@@ -142,7 +144,7 @@ public class DefaultLoadReporter implements LoadReporter {
     public void onLoadFileMd5Mismatch(File file, int fileType) {
         TinkerLog.i(TAG, "patch load Reporter onLoadFileMd5Mismatch: patch file md5 mismatch file: %s, fileType:%d", file.getAbsolutePath(), fileType);
         //clean patch for safety
-        Tinker.with(context).cleanPatch();
+        checkAndCleanPatch();
     }
 
     /**
@@ -159,7 +161,7 @@ public class DefaultLoadReporter implements LoadReporter {
         TinkerLog.i(TAG, "patch loadReporter onLoadPatchInfoCorrupted: patch info file damage: %s, from version: %s to version: %s",
             patchInfoFile.getAbsolutePath(), oldVersion, newVersion);
 
-        Tinker.with(context).cleanPatch();
+        checkAndCleanPatch();
     }
 
     /**
@@ -228,7 +230,7 @@ public class DefaultLoadReporter implements LoadReporter {
         TinkerLog.printErrStackTrace(TAG, e, "tinker load exception");
 
         Tinker.with(context).setTinkerDisable();
-        Tinker.with(context).cleanPatch();
+        checkAndCleanPatch();
     }
     /**
      * check patch signature, TINKER_ID and meta files
@@ -250,6 +252,31 @@ public class DefaultLoadReporter implements LoadReporter {
     public void onLoadPackageCheckFail(File patchFile, int errorCode) {
         TinkerLog.i(TAG, "patch loadReporter onLoadPackageCheckFail: "
             + "load patch package check fail file path:%s, errorCode:%d", patchFile.getAbsolutePath(), errorCode);
-        Tinker.with(context).cleanPatch();
+        checkAndCleanPatch();
+    }
+
+    /**
+     * other process may have installed old patch version,
+     * if we try to clean patch, we should kill other process first
+     */
+    private void checkAndCleanPatch() {
+        Tinker tinker = Tinker.with(context);
+        //only main process can load a new patch
+        if (tinker.isMainProcess()) {
+            TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
+            //if versionChange and the old patch version is not ""
+            if (tinkerLoadResult.versionChanged) {
+                SharePatchInfo sharePatchInfo = tinkerLoadResult.patchInfo;
+                if (sharePatchInfo != null && !ShareTinkerInternals.isNullOrNil(sharePatchInfo.oldVersion)) {
+                    TinkerLog.w(TAG, "checkAndCleanPatch, oldVersion %s is not null, try kill all other process",
+                        sharePatchInfo.oldVersion);
+
+                    ShareTinkerInternals.killAllOtherProcess(context);
+                }
+            }
+
+        }
+        tinker.cleanPatch();
+
     }
 }

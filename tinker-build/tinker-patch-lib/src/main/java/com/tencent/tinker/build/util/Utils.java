@@ -128,6 +128,9 @@ public class Utils {
                     );
                 }
                 String name = zipEntry.getName();
+                if (name.contains("../")) {
+                    continue;
+                }
                 if (Utils.checkFileInPattern(config.mResFilePattern, name)) {
                     //won't contain in add set.
                     if (!deletedSet.contains(name)
