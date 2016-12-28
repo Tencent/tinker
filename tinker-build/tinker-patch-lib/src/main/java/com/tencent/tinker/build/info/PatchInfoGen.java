@@ -71,5 +71,8 @@ public class PatchInfoGen {
         String comment = "base package config field";
         newProperties.store(new FileOutputStream(packageInfoFile, false), comment);
 
+        // reset tinkerId to resolve when build all flavor patch one time has same tinkerId
+        config.mPackageFields.remove(TypedValue.TINKER_ID);
+        config.mPackageFields.remove(TypedValue.NEW_TINKER_ID);
     }
 }
