@@ -22,7 +22,6 @@ import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -35,44 +34,9 @@ public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Clas
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            final SmallPatchedDexItemFile extraInfoFile
+            IndexMap oldToFullPatchedIndexMap
     ) {
-        this(
-                patchFile,
-                oldDex,
-                patchedDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                new SmallPatchedDexItemChooser() {
-                    @Override
-                    public boolean isPatchedItemInSmallPatchedDex(
-                            String oldDexSign, int patchedItemIndex
-                    ) {
-                        return extraInfoFile.isClassDefInSmallPatchedDex(
-                                oldDexSign, patchedItemIndex
-                        );
-                    }
-                }
-        );
-    }
-
-    public ClassDefSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            SmallPatchedDexItemChooser spdItemChooser
-    ) {
-        super(
-                patchFile,
-                oldDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                spdItemChooser
-        );
+        super(patchFile, oldDex, oldToFullPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedClassDefTocSec = patchedDex.getTableOfContents().classDefs;
@@ -94,15 +58,6 @@ public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Clas
     @Override
     protected int getItemSize(ClassDef item) {
         return item.byteCountInDex();
-    }
-
-    @Override
-    protected int getFullPatchSectionBase() {
-        if (this.patchFile != null) {
-            return this.patchFile.getPatchedClassDefSectionOffset();
-        } else {
-            return getTocSection(this.oldDex).off;
-        }
     }
 
     @Override

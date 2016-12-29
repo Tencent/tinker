@@ -17,10 +17,8 @@
 package com.tencent.tinker.commons.dexpatcher.algorithms.patch;
 
 import com.tencent.tinker.android.dex.Dex;
-import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.Hex;
 import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 
@@ -35,43 +33,14 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     protected final Dex oldDex;
 
     /**
-     * IndexMap for mapping old item to corresponding one in full patch.
+     * IndexMap for mapping old item to corresponding one in patched item.
      */
-    private final IndexMap oldToFullPatchedIndexMap;
+    private final IndexMap oldToPatchedIndexMap;
 
-    /**
-     * IndexMap for mapping item in full patch to corresponding one in small patch.
-     */
-    private final IndexMap fullPatchedToSmallPatchedIndexMap;
-
-    /**
-     * Signature string of dex we're processing. For extra info file usage.
-     */
-    private final String oldDexSignStr;
-    private SmallPatchedDexItemChooser smallPatchedDexItemChooser = null;
-
-    public DexSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap
-    ) {
-        this(patchFile, oldDex, oldToFullPatchedIndexMap, fullPatchedToSmallPatchedIndexMap, null);
-    }
-
-    public DexSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            SmallPatchedDexItemChooser smallPatchedDexItemChooser
-    ) {
+    public DexSectionPatchAlgorithm(DexPatchFile patchFile, Dex oldDex, IndexMap oldToPatchedIndexMap) {
         this.patchFile = patchFile;
         this.oldDex = oldDex;
-        this.oldToFullPatchedIndexMap = oldToFullPatchedIndexMap;
-        this.fullPatchedToSmallPatchedIndexMap = fullPatchedToSmallPatchedIndexMap;
-        this.oldDexSignStr = Hex.toHexString(oldDex.computeSignature(false));
-        this.smallPatchedDexItemChooser = smallPatchedDexItemChooser;
+        this.oldToPatchedIndexMap = oldToPatchedIndexMap;
     }
 
     /**
@@ -121,23 +90,6 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     }
 
     /**
-     * Judge if item on index {@code patchedIndex} should be kept in small dex.
-     */
-    protected final boolean isPatchedItemInSmallPatchedDex(String oldDexSignStr, int patchedIndex) {
-        if (this.smallPatchedDexItemChooser != null) {
-            return this.smallPatchedDexItemChooser
-                    .isPatchedItemInSmallPatchedDex(oldDexSignStr, patchedIndex);
-        } else {
-            return true;
-        }
-    }
-
-    /**
-     * Return base offset of current section in full patched dex.
-     */
-    protected abstract int getFullPatchSectionBase();
-
-    /**
      * Output patched item. This method should be overrided by subclass
      * so that patched item can be written to right place.
      * <p/>
@@ -171,36 +123,16 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     }
 
     public void execute() {
-        int deletedItemCount;
-        int[] deletedIndices;
+        final int deletedItemCount = patchFile.getBuffer().readUleb128();
+        final int[] deletedIndices = readDeltaIndiciesOrOffsets(deletedItemCount);
 
-        int addedItemCount;
-        int[] addedIndices;
+        final int addedItemCount = patchFile.getBuffer().readUleb128();
+        final int[] addedIndices = readDeltaIndiciesOrOffsets(addedItemCount);
 
-        int replacedItemCount;
-        int[] replacedIndices;
+        final int replacedItemCount = patchFile.getBuffer().readUleb128();
+        final int[] replacedIndices = readDeltaIndiciesOrOffsets(replacedItemCount);
 
-        if (patchFile != null) {
-            deletedItemCount = patchFile.getBuffer().readUleb128();
-            deletedIndices = readDeltaIndiciesOrOffsets(deletedItemCount);
-
-            addedItemCount = patchFile.getBuffer().readUleb128();
-            addedIndices = readDeltaIndiciesOrOffsets(addedItemCount);
-
-            replacedItemCount = patchFile.getBuffer().readUleb128();
-            replacedIndices = readDeltaIndiciesOrOffsets(replacedItemCount);
-        } else {
-            deletedItemCount = 0;
-            deletedIndices = new int[deletedItemCount];
-
-            addedItemCount = 0;
-            addedIndices = new int[addedItemCount];
-
-            replacedItemCount = 0;
-            replacedIndices = new int[replacedItemCount];
-        }
-
-        TableOfContents.Section tocSec = getTocSection(this.oldDex);
+        final TableOfContents.Section tocSec = getTocSection(this.oldDex);
         Dex.Section oldSection = null;
 
         int oldItemCount = 0;
@@ -211,17 +143,9 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
 
         // Now rest data are added and replaced items arranged in the order of
         // added indices and replaced indices.
-        boolean genFullPatchDex = (fullPatchedToSmallPatchedIndexMap == null);
-
-        if (genFullPatchDex) {
-            doFullPatch(
-                    oldSection, oldItemCount, deletedIndices, addedIndices, replacedIndices
-            );
-        } else {
-            doSmallPatch(
-                    oldSection, oldItemCount, deletedIndices, addedIndices, replacedIndices
-            );
-        }
+        doFullPatch(
+                oldSection, oldItemCount, deletedIndices, addedIndices, replacedIndices
+        );
     }
 
     private void doFullPatch(
@@ -258,7 +182,7 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
             if (Arrays.binarySearch(deletedIndices, oldIndex) >= 0) {
                 T skippedOldItem = nextItem(oldSection); // skip old item.
                 markDeletedIndexOrOffset(
-                        oldToFullPatchedIndexMap,
+                        oldToPatchedIndexMap,
                         oldIndex,
                         getItemOffsetOrIndex(oldIndex, skippedOldItem)
                 );
@@ -268,19 +192,19 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
             if (Arrays.binarySearch(replacedIndices, oldIndex) >= 0) {
                 T skippedOldItem = nextItem(oldSection); // skip old item.
                 markDeletedIndexOrOffset(
-                        oldToFullPatchedIndexMap,
+                        oldToPatchedIndexMap,
                         oldIndex,
                         getItemOffsetOrIndex(oldIndex, skippedOldItem)
                 );
                 ++oldIndex;
             } else
             if (oldIndex < oldItemCount) {
-                T oldItem = adjustItem(this.oldToFullPatchedIndexMap, nextItem(oldSection));
+                T oldItem = adjustItem(this.oldToPatchedIndexMap, nextItem(oldSection));
 
                 int patchedOffset = writePatchedItem(oldItem);
 
                 updateIndexOrOffset(
-                        this.oldToFullPatchedIndexMap,
+                        this.oldToPatchedIndexMap,
                         oldIndex,
                         getItemOffsetOrIndex(oldIndex, oldItem),
                         patchedIndex,
@@ -309,158 +233,5 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
                     )
             );
         }
-    }
-
-    private void doSmallPatch(
-            Dex.Section oldSection,
-            int oldItemCount,
-            int[] deletedIndices,
-            int[] addedIndices,
-            int[] replacedIndices
-    ) {
-        int deletedItemCount = deletedIndices.length;
-        int addedItemCount = addedIndices.length;
-        int replacedItemCount = replacedIndices.length;
-        int newItemCount = oldItemCount + addedItemCount - deletedItemCount;
-
-        int deletedItemCounter = 0;
-        int addActionCursor = 0;
-        int replaceActionCursor = 0;
-
-        int oldIndex = 0;
-        int fullPatchedIndex = 0;
-        int fullPatchedOffset = getFullPatchSectionBase();
-        int smallPatchedIndex = 0;
-        while (oldIndex < oldItemCount || fullPatchedIndex < newItemCount) {
-            if (addActionCursor < addedItemCount && addedIndices[addActionCursor] == fullPatchedIndex) {
-                T addedItem = nextItem(patchFile.getBuffer());
-                ++addActionCursor;
-
-                if (getTocSection(oldDex).isElementFourByteAligned) {
-                    fullPatchedOffset = SizeOf.roundToTimesOfFour(fullPatchedOffset);
-                }
-
-                if (isPatchedItemInSmallPatchedDex(this.oldDexSignStr, fullPatchedIndex)) {
-                    T adjustedItem = adjustItem(fullPatchedToSmallPatchedIndexMap, addedItem);
-                    int smallPatchedOffset = writePatchedItem(adjustedItem);
-                    updateIndexOrOffset(
-                            fullPatchedToSmallPatchedIndexMap,
-                            fullPatchedIndex,
-                            fullPatchedOffset,
-                            smallPatchedIndex,
-                            smallPatchedOffset
-                    );
-                    ++smallPatchedIndex;
-                }
-
-                ++fullPatchedIndex;
-                fullPatchedOffset += getItemSize(addedItem);
-            } else
-            if (replaceActionCursor < replacedItemCount && replacedIndices[replaceActionCursor] == fullPatchedIndex) {
-                T replacedItem = nextItem(patchFile.getBuffer());
-                ++replaceActionCursor;
-
-                if (getTocSection(oldDex).isElementFourByteAligned) {
-                    fullPatchedOffset = SizeOf.roundToTimesOfFour(fullPatchedOffset);
-                }
-
-                if (isPatchedItemInSmallPatchedDex(this.oldDexSignStr, fullPatchedIndex)) {
-                    T adjustedItem = adjustItem(fullPatchedToSmallPatchedIndexMap, replacedItem);
-                    int smallPatchedOffset = writePatchedItem(adjustedItem);
-                    updateIndexOrOffset(
-                            fullPatchedToSmallPatchedIndexMap,
-                            fullPatchedIndex,
-                            fullPatchedOffset,
-                            smallPatchedIndex,
-                            smallPatchedOffset
-                    );
-                    ++smallPatchedIndex;
-                }
-
-                ++fullPatchedIndex;
-                fullPatchedOffset += getItemSize(replacedItem);
-            } else
-            if (Arrays.binarySearch(deletedIndices, oldIndex) >= 0) {
-                T skippedOldItem = nextItem(oldSection); // skip old item.
-                markDeletedIndexOrOffset(
-                        oldToFullPatchedIndexMap,
-                        oldIndex,
-                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
-                );
-                ++oldIndex;
-                ++deletedItemCounter;
-            } else
-            if (Arrays.binarySearch(replacedIndices, oldIndex) >= 0) {
-                T skippedOldItem = nextItem(oldSection); // skip old item.
-                markDeletedIndexOrOffset(
-                        oldToFullPatchedIndexMap,
-                        oldIndex,
-                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
-                );
-                ++oldIndex;
-            } else
-            if (oldIndex < oldItemCount) {
-                T oldItem = nextItem(oldSection);
-                T oldItemInFullPatch = adjustItem(this.oldToFullPatchedIndexMap, oldItem);
-
-                if (getTocSection(oldDex).isElementFourByteAligned) {
-                    fullPatchedOffset = SizeOf.roundToTimesOfFour(fullPatchedOffset);
-                }
-
-                if (isPatchedItemInSmallPatchedDex(this.oldDexSignStr, fullPatchedIndex)) {
-                    T patchedItemInSmallPatch = adjustItem(
-                            this.fullPatchedToSmallPatchedIndexMap, oldItemInFullPatch
-                    );
-                    int smallPatchedOffset = writePatchedItem(patchedItemInSmallPatch);
-                    updateIndexOrOffset(
-                            fullPatchedToSmallPatchedIndexMap,
-                            fullPatchedIndex,
-                            fullPatchedOffset,
-                            smallPatchedIndex,
-                            smallPatchedOffset
-                    );
-                    ++smallPatchedIndex;
-                }
-
-                updateIndexOrOffset(
-                        oldToFullPatchedIndexMap,
-                        oldIndex,
-                        getItemOffsetOrIndex(oldIndex, oldItem),
-                        fullPatchedIndex,
-                        fullPatchedOffset
-                );
-
-                ++fullPatchedIndex;
-                fullPatchedOffset += getItemSize(oldItemInFullPatch);
-
-                ++oldIndex;
-            }
-        }
-
-        if (addActionCursor != addedItemCount || deletedItemCounter != deletedItemCount
-                || replaceActionCursor != replacedItemCount
-        ) {
-            throw new IllegalStateException(
-                    String.format(
-                            "bad patch operation sequence. addCounter: %d, addCount: %d, "
-                                    + "delCounter: %d, delCount: %d, "
-                                    + "replaceCounter: %d, replaceCount:%d",
-                            addActionCursor,
-                            addedItemCount,
-                            deletedItemCounter,
-                            deletedItemCount,
-                            replaceActionCursor,
-                            replacedItemCount
-                    )
-            );
-        }
-    }
-
-    /**
-     * Indicates if an item in full patched dex with specific index
-     * should be kept in small patched dex of current old dex.
-     */
-    public interface SmallPatchedDexItemChooser {
-        boolean isPatchedItemInSmallPatchedDex(String oldDexSign, int patchedItemIndex);
     }
 }

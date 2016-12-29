@@ -22,7 +22,6 @@ import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -33,48 +32,14 @@ public class StringDataSectionPatchAlgorithm extends DexSectionPatchAlgorithm<St
     private Dex.Section patchedStringDataSec = null;
     private Dex.Section patchedStringIdSec = null;
 
-    public StringDataSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            final SmallPatchedDexItemFile extraInfoFile
-    ) {
-        this(
-                patchFile,
-                oldDex,
-                patchedDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                new SmallPatchedDexItemChooser() {
-                    @Override
-                    public boolean isPatchedItemInSmallPatchedDex(
-                            String oldDexSign, int patchedItemIndex
-                    ) {
-                        return extraInfoFile.isStringInSmallPatchedDex(
-                                oldDexSign, patchedItemIndex
-                        );
-                    }
-                }
-        );
-    }
 
     public StringDataSectionPatchAlgorithm(
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            SmallPatchedDexItemChooser spdItemChooser
+            IndexMap oldToFullPatchedIndexMap
     ) {
-        super(
-                patchFile,
-                oldDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                spdItemChooser
-        );
+        super(patchFile, oldDex, oldToFullPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedStringDataTocSec = patchedDex.getTableOfContents().stringDatas;
@@ -97,15 +62,6 @@ public class StringDataSectionPatchAlgorithm extends DexSectionPatchAlgorithm<St
     @Override
     protected int getItemSize(StringData item) {
         return item.byteCountInDex();
-    }
-
-    @Override
-    protected int getFullPatchSectionBase() {
-        if (this.patchFile != null) {
-            return this.patchFile.getPatchedStringDataSectionOffset();
-        } else {
-            return getTocSection(this.oldDex).off;
-        }
     }
 
     @Override

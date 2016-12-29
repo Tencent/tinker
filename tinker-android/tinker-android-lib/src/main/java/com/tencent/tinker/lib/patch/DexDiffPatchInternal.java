@@ -447,19 +447,19 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             if (entry == null) {
                                 throw new TinkerRuntimeException("can't recognize zip dex format file:" + patchedDexFile.getAbsolutePath());
                             }
-                            new DexPatchApplier(zis, (int) entry.getSize(), patchFileStream).executeAndSaveTo(zos);
+                            new DexPatchApplier(zis, patchFileStream).executeAndSaveTo(zos);
                         } finally {
                             SharePatchFileUtil.closeQuietly(zis);
                         }
                     } else {
-                        new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream).executeAndSaveTo(zos);
+                        new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(zos);
                     }
                     zos.closeEntry();
                 } finally {
                     SharePatchFileUtil.closeQuietly(zos);
                 }
             } else {
-                new DexPatchApplier(oldDexStream, (int) oldDexEntry.getSize(), patchFileStream).executeAndSaveTo(patchedDexFile);
+                new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(patchedDexFile);
             }
         } finally {
             SharePatchFileUtil.closeQuietly(oldDexStream);

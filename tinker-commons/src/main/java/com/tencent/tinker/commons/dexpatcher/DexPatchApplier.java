@@ -33,7 +33,6 @@ import com.tencent.tinker.android.dex.StringData;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.util.CompareUtils;
-import com.tencent.tinker.android.dx.util.Hex;
 import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSetRefListSectionPatchAlgorithm;
@@ -52,7 +51,6 @@ import com.tencent.tinker.commons.dexpatcher.algorithms.patch.StringDataSectionP
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.TypeIdSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.TypeListSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -69,14 +67,9 @@ public class DexPatchApplier {
     private final Dex oldDex;
     private final Dex patchedDex;
 
-    /** May be null if we need to generate small patch. **/
     private final DexPatchFile patchFile;
 
-    private final SmallPatchedDexItemFile extraInfoFile;
-    private final IndexMap oldToFullPatchedIndexMap;
-    private final IndexMap patchedToSmallPatchedIndexMap;
-
-    private final String oldDexSignStr;
+    private final IndexMap oldToPatchedIndexMap;
 
     private DexSectionPatchAlgorithm<StringData> stringDataSectionPatchAlg;
     private DexSectionPatchAlgorithm<Integer> typeIdSectionPatchAlg;
@@ -95,93 +88,21 @@ public class DexPatchApplier {
     private DexSectionPatchAlgorithm<AnnotationsDirectory> annotationsDirectorySectionPatchAlg;
 
     public DexPatchApplier(File oldDexIn, File patchFileIn) throws IOException {
-        this(
-                new Dex(oldDexIn),
-                (patchFileIn != null ? new DexPatchFile(patchFileIn) : null),
-                null
-        );
+        this(new Dex(oldDexIn), new DexPatchFile(patchFileIn));
     }
 
     public DexPatchApplier(InputStream oldDexIn, InputStream patchFileIn) throws IOException {
-        this(
-                new Dex(oldDexIn),
-                (patchFileIn != null ? new DexPatchFile(patchFileIn) : null),
-                null
-        );
-    }
-
-    public DexPatchApplier(InputStream oldDexIn, int initDexSize, InputStream patchFileIn) throws IOException {
-        this(
-                new Dex(oldDexIn, initDexSize),
-                (patchFileIn != null ? new DexPatchFile(patchFileIn) : null),
-                null
-        );
-    }
-
-    public DexPatchApplier(
-            File oldDexIn,
-            File patchFileIn,
-            SmallPatchedDexItemFile extraInfoFile
-    ) throws IOException {
-        this(
-                new Dex(oldDexIn),
-                (patchFileIn != null ? new DexPatchFile(patchFileIn) : null),
-                extraInfoFile
-        );
-    }
-
-    public DexPatchApplier(
-            InputStream oldDexIn,
-            InputStream patchFileIn,
-            SmallPatchedDexItemFile extraInfoFile
-    ) throws IOException {
-        this(
-                new Dex(oldDexIn),
-                (patchFileIn != null ? new DexPatchFile(patchFileIn) : null),
-                extraInfoFile
-        );
-    }
-
-    public DexPatchApplier(
-            InputStream oldDexIn,
-            int initDexSize,
-            InputStream patchFileIn,
-            SmallPatchedDexItemFile extraInfoFile
-    ) throws IOException {
-        this(
-                new Dex(oldDexIn, initDexSize),
-                (patchFileIn != null ? new DexPatchFile(patchFileIn) : null),
-                extraInfoFile
-        );
+        this(new Dex(oldDexIn), new DexPatchFile(patchFileIn));
     }
 
     public DexPatchApplier(
             Dex oldDexIn,
-            DexPatchFile patchFileIn,
-            SmallPatchedDexItemFile extraAddedDexElementsFile
+            DexPatchFile patchFileIn
     ) {
         this.oldDex = oldDexIn;
-        this.oldDexSignStr = Hex.toHexString(oldDexIn.computeSignature(false));
         this.patchFile = patchFileIn;
-        if (extraAddedDexElementsFile == null) {
-            this.patchedDex = new Dex(patchFileIn.getPatchedDexSize());
-        } else {
-            this.patchedDex = new Dex(
-                    extraAddedDexElementsFile.getPatchedDexSizeByOldDexSign(this.oldDexSignStr)
-            );
-        }
-        this.oldToFullPatchedIndexMap = new IndexMap();
-        this.patchedToSmallPatchedIndexMap = (extraAddedDexElementsFile != null ? new IndexMap() : null);
-        this.extraInfoFile = extraAddedDexElementsFile;
-
-        if ((patchFileIn == null) && (extraAddedDexElementsFile == null
-                || !extraAddedDexElementsFile.isAffectedOldDex(this.oldDexSignStr))) {
-            throw new UnsupportedOperationException(
-                    "patchFileIn is null, and extraAddedDexElementFile"
-                            + "(smallPatchInfo) is null or does not mention "
-                            + "oldDexIn."
-            );
-        }
+        this.patchedDex = new Dex(patchFileIn.getPatchedDexSize());
+        this.oldToPatchedIndexMap = new IndexMap();
     }
 
     public void executeAndSaveTo(OutputStream out) throws IOException {
@@ -205,8 +126,6 @@ public class DexPatchApplier {
             }
         }
 
-        String oldDexSignStr = Hex.toHexString(oldDexSign);
-
         // Firstly, set sections' offset after patched, sort according to their offset so that
         // the dex lib of aosp can calculate section size.
         TableOfContents patchedToc = this.patchedDex.getTableOfContents();
@@ -215,81 +134,42 @@ public class DexPatchApplier {
         patchedToc.header.size = 1;
         patchedToc.mapList.size = 1;
 
-        if (extraInfoFile == null || !extraInfoFile.isAffectedOldDex(this.oldDexSignStr)) {
-            patchedToc.stringIds.off
-                    = this.patchFile.getPatchedStringIdSectionOffset();
-            patchedToc.typeIds.off
-                    = this.patchFile.getPatchedTypeIdSectionOffset();
-            patchedToc.typeLists.off
-                    = this.patchFile.getPatchedTypeListSectionOffset();
-            patchedToc.protoIds.off
-                    = this.patchFile.getPatchedProtoIdSectionOffset();
-            patchedToc.fieldIds.off
-                    = this.patchFile.getPatchedFieldIdSectionOffset();
-            patchedToc.methodIds.off
-                    = this.patchFile.getPatchedMethodIdSectionOffset();
-            patchedToc.classDefs.off
-                    = this.patchFile.getPatchedClassDefSectionOffset();
-            patchedToc.mapList.off
-                    = this.patchFile.getPatchedMapListSectionOffset();
-            patchedToc.stringDatas.off
-                    = this.patchFile.getPatchedStringDataSectionOffset();
-            patchedToc.annotations.off
-                    = this.patchFile.getPatchedAnnotationSectionOffset();
-            patchedToc.annotationSets.off
-                    = this.patchFile.getPatchedAnnotationSetSectionOffset();
-            patchedToc.annotationSetRefLists.off
-                    = this.patchFile.getPatchedAnnotationSetRefListSectionOffset();
-            patchedToc.annotationsDirectories.off
-                    = this.patchFile.getPatchedAnnotationsDirectorySectionOffset();
-            patchedToc.encodedArrays.off
-                    = this.patchFile.getPatchedEncodedArraySectionOffset();
-            patchedToc.debugInfos.off
-                    = this.patchFile.getPatchedDebugInfoSectionOffset();
-            patchedToc.codes.off
-                    = this.patchFile.getPatchedCodeSectionOffset();
-            patchedToc.classDatas.off
-                    = this.patchFile.getPatchedClassDataSectionOffset();
-            patchedToc.fileSize
-                    = this.patchFile.getPatchedDexSize();
-        } else {
-            patchedToc.stringIds.off
-                    = this.extraInfoFile.getPatchedStringIdOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.typeIds.off
-                    = this.extraInfoFile.getPatchedTypeIdOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.typeLists.off
-                    = this.extraInfoFile.getPatchedTypeListOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.protoIds.off
-                    = this.extraInfoFile.getPatchedProtoIdOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.fieldIds.off
-                    = this.extraInfoFile.getPatchedFieldIdOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.methodIds.off
-                    = this.extraInfoFile.getPatchedMethodIdOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.classDefs.off
-                    = this.extraInfoFile.getPatchedClassDefOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.mapList.off
-                    = this.extraInfoFile.getPatchedMapListOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.stringDatas.off
-                    = this.extraInfoFile.getPatchedStringDataOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.annotations.off
-                    = this.extraInfoFile.getPatchedAnnotationOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.annotationSets.off
-                    = this.extraInfoFile.getPatchedAnnotationSetOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.annotationSetRefLists.off
-                    = this.extraInfoFile.getPatchedAnnotationSetRefListOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.annotationsDirectories.off
-                    = this.extraInfoFile.getPatchedAnnotationsDirectoryOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.encodedArrays.off
-                    = this.extraInfoFile.getPatchedEncodedArrayOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.debugInfos.off
-                    = this.extraInfoFile.getPatchedDebugInfoOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.codes.off
-                    = this.extraInfoFile.getPatchedCodeOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.classDatas.off
-                    = this.extraInfoFile.getPatchedClassDataOffsetByOldDexSign(oldDexSignStr);
-            patchedToc.fileSize
-                    = this.extraInfoFile.getPatchedDexSizeByOldDexSign(oldDexSignStr);
-        }
+        patchedToc.stringIds.off
+                = this.patchFile.getPatchedStringIdSectionOffset();
+        patchedToc.typeIds.off
+                = this.patchFile.getPatchedTypeIdSectionOffset();
+        patchedToc.typeLists.off
+                = this.patchFile.getPatchedTypeListSectionOffset();
+        patchedToc.protoIds.off
+                = this.patchFile.getPatchedProtoIdSectionOffset();
+        patchedToc.fieldIds.off
+                = this.patchFile.getPatchedFieldIdSectionOffset();
+        patchedToc.methodIds.off
+                = this.patchFile.getPatchedMethodIdSectionOffset();
+        patchedToc.classDefs.off
+                = this.patchFile.getPatchedClassDefSectionOffset();
+        patchedToc.mapList.off
+                = this.patchFile.getPatchedMapListSectionOffset();
+        patchedToc.stringDatas.off
+                = this.patchFile.getPatchedStringDataSectionOffset();
+        patchedToc.annotations.off
+                = this.patchFile.getPatchedAnnotationSectionOffset();
+        patchedToc.annotationSets.off
+                = this.patchFile.getPatchedAnnotationSetSectionOffset();
+        patchedToc.annotationSetRefLists.off
+                = this.patchFile.getPatchedAnnotationSetRefListSectionOffset();
+        patchedToc.annotationsDirectories.off
+                = this.patchFile.getPatchedAnnotationsDirectorySectionOffset();
+        patchedToc.encodedArrays.off
+                = this.patchFile.getPatchedEncodedArraySectionOffset();
+        patchedToc.debugInfos.off
+                = this.patchFile.getPatchedDebugInfoSectionOffset();
+        patchedToc.codes.off
+                = this.patchFile.getPatchedCodeSectionOffset();
+        patchedToc.classDatas.off
+                = this.patchFile.getPatchedClassDataSectionOffset();
+        patchedToc.fileSize
+                = this.patchFile.getPatchedDexSize();
 
         Arrays.sort(patchedToc.sections);
 
@@ -297,64 +177,49 @@ public class DexPatchApplier {
 
         // Secondly, run patch algorithms according to sections' dependencies.
         this.stringDataSectionPatchAlg = new StringDataSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.typeIdSectionPatchAlg = new TypeIdSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.protoIdSectionPatchAlg = new ProtoIdSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.fieldIdSectionPatchAlg = new FieldIdSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.methodIdSectionPatchAlg = new MethodIdSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.classDefSectionPatchAlg = new ClassDefSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.typeListSectionPatchAlg = new TypeListSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.annotationSetRefListSectionPatchAlg = new AnnotationSetRefListSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.annotationSetSectionPatchAlg = new AnnotationSetSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.classDataSectionPatchAlg = new ClassDataSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.codeSectionPatchAlg = new CodeSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.debugInfoSectionPatchAlg = new DebugInfoItemSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.annotationSectionPatchAlg = new AnnotationSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.encodedArraySectionPatchAlg = new StaticValueSectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
         this.annotationsDirectorySectionPatchAlg = new AnnotationsDirectorySectionPatchAlgorithm(
-                patchFile, oldDex, patchedDex, oldToFullPatchedIndexMap,
-                patchedToSmallPatchedIndexMap, extraInfoFile
+                patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
 
         this.stringDataSectionPatchAlg.execute();
@@ -363,19 +228,15 @@ public class DexPatchApplier {
         this.protoIdSectionPatchAlg.execute();
         this.fieldIdSectionPatchAlg.execute();
         this.methodIdSectionPatchAlg.execute();
-        Runtime.getRuntime().gc();
         this.annotationSectionPatchAlg.execute();
         this.annotationSetSectionPatchAlg.execute();
         this.annotationSetRefListSectionPatchAlg.execute();
         this.annotationsDirectorySectionPatchAlg.execute();
-        Runtime.getRuntime().gc();
         this.debugInfoSectionPatchAlg.execute();
         this.codeSectionPatchAlg.execute();
-        Runtime.getRuntime().gc();
         this.classDataSectionPatchAlg.execute();
         this.encodedArraySectionPatchAlg.execute();
         this.classDefSectionPatchAlg.execute();
-        Runtime.getRuntime().gc();
 
         // Thirdly, write header, mapList. Calculate and write patched dex's sign and checksum.
         Dex.Section headerOut = this.patchedDex.openSection(patchedToc.header.off);
