@@ -17,9 +17,9 @@
 package com.tencent.tinker.android.utils;
 
 /**
- * SparseIntArrays map integers to integers.  Unlike a normal array of integers,
+ * SparseBoolArrays map integers to booleans.  Unlike a normal array of booleans,
  * there can be gaps in the indices.  It is intended to be more memory efficient
- * than using a HashMap to map Integers to Integers, both because it avoids
+ * than using a HashMap to map Integers to Booleans, both because it avoids
  * auto-boxing keys and values and its data structure doesn't rely on an extra entry object
  * for each mapping.
  *
@@ -37,16 +37,27 @@ package com.tencent.tinker.android.utils;
  * keys in ascending order, or the values corresponding to the keys in ascending
  * order in the case of <code>valueAt(int)</code>.</p>
  */
-public class SparseIntArray implements Cloneable {
+public class SparseBoolArray implements Cloneable {
     private static final int[] EMPTY_INT_ARRAY = new int[0];
+    private static final boolean[] EMPTY_BOOL_ARRAY = new boolean[0];
     private int[] mKeys;
-    private int[] mValues;
+    private boolean[] mValues;
     private int   mSize;
+
+    public static class KeyNotFoundException extends Exception {
+        public KeyNotFoundException() {
+            super();
+        }
+
+        public KeyNotFoundException(String msg) {
+            super(msg);
+        }
+    }
 
     /**
      * Creates a new SparseIntArray containing no mappings.
      */
-    public SparseIntArray() {
+    public SparseBoolArray() {
         this(10);
     }
 
@@ -57,13 +68,13 @@ public class SparseIntArray implements Cloneable {
      * sparse array will be initialized with a light-weight representation
      * not requiring any additional array allocations.
      */
-    public SparseIntArray(int initialCapacity) {
+    public SparseBoolArray(int initialCapacity) {
         if (initialCapacity == 0) {
-            mKeys = SparseIntArray.EMPTY_INT_ARRAY;
-            mValues = SparseIntArray.EMPTY_INT_ARRAY;
+            mKeys = SparseBoolArray.EMPTY_INT_ARRAY;
+            mValues = SparseBoolArray.EMPTY_BOOL_ARRAY;
         } else {
             mKeys = new int[initialCapacity];
-            mValues = new int[mKeys.length];
+            mValues = new boolean[initialCapacity];
         }
         mSize = 0;
     }
@@ -73,15 +84,15 @@ public class SparseIntArray implements Cloneable {
      * This is typically double the given size, but should not be relied upon to do so in the
      * future.
      */
-    public static int growSize(int currentSize) {
+    private static int growSize(int currentSize) {
         return currentSize <= 4 ? 8 : currentSize + (currentSize >> 1);
     }
 
     @Override
-    public SparseIntArray clone() {
-        SparseIntArray clone = null;
+    public SparseBoolArray clone() {
+        SparseBoolArray clone = null;
         try {
-            clone = (SparseIntArray) super.clone();
+            clone = (SparseBoolArray) super.clone();
             clone.mKeys = mKeys.clone();
             clone.mValues = mValues.clone();
         } catch (CloneNotSupportedException cnse) {
@@ -91,22 +102,14 @@ public class SparseIntArray implements Cloneable {
     }
 
     /**
-     * Gets the int mapped from the specified key, or <code>0</code>
+     * Gets the int mapped from the specified key, or a {@code KeyNotFoundException} is thrown
      * if no such mapping has been made.
      */
-    public int get(int key) {
-        return get(key, 0);
-    }
-
-    /**
-     * Gets the int mapped from the specified key, or the specified value
-     * if no such mapping has been made.
-     */
-    public int get(int key, int valueIfKeyNotFound) {
+    public boolean get(int key) throws KeyNotFoundException {
         int i = binarySearch(mKeys, mSize, key);
 
         if (i < 0) {
-            return valueIfKeyNotFound;
+            throw new KeyNotFoundException("" + key);
         } else {
             return mValues[i];
         }
@@ -137,7 +140,7 @@ public class SparseIntArray implements Cloneable {
      * replacing the previous mapping from the specified key if there
      * was one.
      */
-    public void put(int key, int value) {
+    public void put(int key, boolean value) {
         int i = binarySearch(mKeys, mSize, key);
 
         if (i >= 0) {
@@ -145,7 +148,7 @@ public class SparseIntArray implements Cloneable {
         } else {
             i = ~i;
             mKeys = insertElementIntoIntArray(mKeys, mSize, i, key);
-            mValues = insertElementIntoIntArray(mValues, mSize, i, value);
+            mValues = insertElementIntoBoolArray(mValues, mSize, i, value);
             ++mSize;
         }
     }
@@ -183,7 +186,7 @@ public class SparseIntArray implements Cloneable {
      * smallest key and <code>valueAt(size()-1)</code> will return the value
      * associated with the largest key.</p>
      */
-    public int valueAt(int index) {
+    public boolean valueAt(int index) {
         return mValues[index];
     }
 
@@ -211,7 +214,7 @@ public class SparseIntArray implements Cloneable {
      * and that multiple keys can map to the same value and this will
      * find only one of them.
      */
-    public int indexOfValue(int value) {
+    public int indexOfValue(boolean value) {
         for (int i = 0; i < mSize; ++i) {
             if (mValues[i] == value) {
                 return i;
@@ -231,14 +234,14 @@ public class SparseIntArray implements Cloneable {
      * Puts a key/value pair into the array, optimizing for the case where
      * the key is greater than all existing keys in the array.
      */
-    public void append(int key, int value) {
+    public void append(int key, boolean value) {
         if (mSize != 0 && key <= mKeys[mSize - 1]) {
             put(key, value);
             return;
         }
 
         mKeys = appendElementIntoIntArray(mKeys, mSize, key);
-        mValues = appendElementIntoIntArray(mValues, mSize, value);
+        mValues = appendElementIntoBoolArray(mValues, mSize, value);
         mSize++;
     }
 
@@ -266,7 +269,20 @@ public class SparseIntArray implements Cloneable {
             throw new IllegalArgumentException("Bad currentSize, originalSize: " + array.length + " currentSize: " + currentSize);
         }
         if (currentSize + 1 > array.length) {
-            int[] newArray = new int[SparseIntArray.growSize(currentSize)];
+            int[] newArray = new int[SparseBoolArray.growSize(currentSize)];
+            System.arraycopy(array, 0, newArray, 0, currentSize);
+            array = newArray;
+        }
+        array[currentSize] = element;
+        return array;
+    }
+
+    private boolean[] appendElementIntoBoolArray(boolean[] array, int currentSize, boolean element) {
+        if (currentSize > array.length) {
+            throw new IllegalArgumentException("Bad currentSize, originalSize: " + array.length + " currentSize: " + currentSize);
+        }
+        if (currentSize + 1 > array.length) {
+            boolean[] newArray = new boolean[SparseBoolArray.growSize(currentSize)];
             System.arraycopy(array, 0, newArray, 0, currentSize);
             array = newArray;
         }
@@ -285,7 +301,25 @@ public class SparseIntArray implements Cloneable {
             return array;
         }
 
-        int[] newArray = new int[SparseIntArray.growSize(currentSize)];
+        int[] newArray = new int[SparseBoolArray.growSize(currentSize)];
+        System.arraycopy(array, 0, newArray, 0, index);
+        newArray[index] = element;
+        System.arraycopy(array, index, newArray, index + 1, array.length - index);
+        return newArray;
+    }
+
+    private boolean[] insertElementIntoBoolArray(boolean[] array, int currentSize, int index, boolean element) {
+        if (currentSize > array.length) {
+            throw new IllegalArgumentException("Bad currentSize, originalSize: " + array.length + " currentSize: " + currentSize);
+        }
+
+        if (currentSize + 1 <= array.length) {
+            System.arraycopy(array, index, array, index + 1, currentSize - index);
+            array[index] = element;
+            return array;
+        }
+
+        boolean[] newArray = new boolean[SparseBoolArray.growSize(currentSize)];
         System.arraycopy(array, 0, newArray, 0, index);
         newArray[index] = element;
         System.arraycopy(array, index, newArray, index + 1, array.length - index);
@@ -312,7 +346,7 @@ public class SparseIntArray implements Cloneable {
             int key = keyAt(i);
             buffer.append(key);
             buffer.append('=');
-            int value = valueAt(i);
+            boolean value = valueAt(i);
             buffer.append(value);
         }
         buffer.append('}');
