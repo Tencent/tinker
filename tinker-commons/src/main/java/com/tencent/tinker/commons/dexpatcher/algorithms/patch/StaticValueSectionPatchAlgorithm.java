@@ -20,8 +20,9 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.EncodedValue;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -34,9 +35,9 @@ public class StaticValueSectionPatchAlgorithm extends DexSectionPatchAlgorithm<E
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        super(patchFile, oldDex, oldToFullPatchedIndexMap);
+        super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedEncodedValueTocSec = patchedDex.getTableOfContents().encodedArrays;
@@ -60,7 +61,7 @@ public class StaticValueSectionPatchAlgorithm extends DexSectionPatchAlgorithm<E
     }
 
     @Override
-    protected EncodedValue adjustItem(IndexMap indexMap, EncodedValue item) {
+    protected EncodedValue adjustItem(AbstractIndexMap indexMap, EncodedValue item) {
         return indexMap.adjust(item);
     }
 
@@ -71,14 +72,14 @@ public class StaticValueSectionPatchAlgorithm extends DexSectionPatchAlgorithm<E
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldOffset != newOffset) {
-            indexMap.mapStaticValuesOffset(oldOffset, newOffset);
+            sparseIndexMap.mapStaticValuesOffset(oldOffset, newOffset);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markStaticValuesDeleted(deletedOffset);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markStaticValuesDeleted(deletedOffset);
     }
 }

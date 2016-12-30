@@ -20,8 +20,9 @@ import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -34,9 +35,9 @@ public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Clas
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        super(patchFile, oldDex, oldToFullPatchedIndexMap);
+        super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedClassDefTocSec = patchedDex.getTableOfContents().classDefs;
@@ -61,7 +62,7 @@ public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Clas
     }
 
     @Override
-    protected ClassDef adjustItem(IndexMap indexMap, ClassDef item) {
+    protected ClassDef adjustItem(AbstractIndexMap indexMap, ClassDef item) {
         return indexMap.adjust(item);
     }
 

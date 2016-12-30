@@ -19,8 +19,9 @@ package com.tencent.tinker.commons.dexpatcher.algorithms.patch;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 import java.util.Arrays;
 
@@ -33,11 +34,11 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     protected final Dex oldDex;
 
     /**
-     * IndexMap for mapping old item to corresponding one in patched item.
+     * SparseIndexMap for mapping old item to corresponding one in patched item.
      */
-    private final IndexMap oldToPatchedIndexMap;
+    private final SparseIndexMap oldToPatchedIndexMap;
 
-    public DexSectionPatchAlgorithm(DexPatchFile patchFile, Dex oldDex, IndexMap oldToPatchedIndexMap) {
+    public DexSectionPatchAlgorithm(DexPatchFile patchFile, Dex oldDex, SparseIndexMap oldToPatchedIndexMap) {
         this.patchFile = patchFile;
         this.oldDex = oldDex;
         this.oldToPatchedIndexMap = oldToPatchedIndexMap;
@@ -59,33 +60,33 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     protected abstract int getItemSize(T item);
 
     /**
-     * Adjust {@code item} using specific {@code indexMap}
+     * Adjust {@code item} using specific {@code sparseIndexMap}
      */
-    protected T adjustItem(IndexMap indexMap, T item) {
+    protected T adjustItem(AbstractIndexMap indexMap, T item) {
         return item;
     }
 
     /**
-     * Update index or offset mapping in {@code indexMap}.
+     * Update index or offset mapping in {@code sparseIndexMap}.
      */
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         // Should override by subclass if needed.
     }
 
     /**
-     * Mark deleted index or offset in {@code indexMap}.
+     * Mark deleted index or offset in {@code sparseIndexMap}.
      *
      * Here we mark deleted item for such a case like this:
      *   Item in DebugInfo section reference a string in StringData section
      *   by index X, while in patched dex, the referenced string is removed.
      *
-     * The {@code indexMap} must be aware of this case and return -1
+     * The {@code sparseIndexMap} must be aware of this case and return -1
      * instead of the original value X.
      *
      * Further more, the special value -1 is not chosen by our inspiration but
      * the definition of NO_INDEX in document of dex file format.
      */
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
         // Should override by subclass if needed.
     }
 

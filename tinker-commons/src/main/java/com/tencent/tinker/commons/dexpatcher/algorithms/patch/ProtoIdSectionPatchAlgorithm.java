@@ -20,8 +20,9 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -34,9 +35,9 @@ public class ProtoIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Proto
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        super(patchFile, oldDex, oldToFullPatchedIndexMap);
+        super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedProtoIdTocSec = patchedDex.getTableOfContents().protoIds;
@@ -60,7 +61,7 @@ public class ProtoIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Proto
     }
 
     @Override
-    protected ProtoId adjustItem(IndexMap indexMap, ProtoId item) {
+    protected ProtoId adjustItem(AbstractIndexMap indexMap, ProtoId item) {
         return indexMap.adjust(item);
     }
 
@@ -71,14 +72,14 @@ public class ProtoIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Proto
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldIndex != newIndex) {
-            indexMap.mapProtoIds(oldIndex, newIndex);
+            sparseIndexMap.mapProtoIds(oldIndex, newIndex);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markProtoIdDeleted(deletedIndex);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markProtoIdDeleted(deletedIndex);
     }
 }

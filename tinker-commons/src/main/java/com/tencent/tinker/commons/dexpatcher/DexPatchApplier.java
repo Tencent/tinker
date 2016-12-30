@@ -33,7 +33,7 @@ import com.tencent.tinker.android.dex.StringData;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.util.CompareUtils;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSetRefListSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSetSectionPatchAlgorithm;
@@ -69,7 +69,7 @@ public class DexPatchApplier {
 
     private final DexPatchFile patchFile;
 
-    private final IndexMap oldToPatchedIndexMap;
+    private final SparseIndexMap oldToPatchedIndexMap;
 
     private DexSectionPatchAlgorithm<StringData> stringDataSectionPatchAlg;
     private DexSectionPatchAlgorithm<Integer> typeIdSectionPatchAlg;
@@ -102,7 +102,7 @@ public class DexPatchApplier {
         this.oldDex = oldDexIn;
         this.patchFile = patchFileIn;
         this.patchedDex = new Dex(patchFileIn.getPatchedDexSize());
-        this.oldToPatchedIndexMap = new IndexMap();
+        this.oldToPatchedIndexMap = new SparseIndexMap();
     }
 
     public void executeAndSaveTo(OutputStream out) throws IOException {

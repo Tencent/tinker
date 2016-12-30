@@ -20,7 +20,7 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.StringData;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 
 /**
@@ -37,9 +37,9 @@ public class StringDataSectionPatchAlgorithm extends DexSectionPatchAlgorithm<St
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        super(patchFile, oldDex, oldToFullPatchedIndexMap);
+        super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedStringDataTocSec = patchedDex.getTableOfContents().stringDatas;
@@ -74,14 +74,14 @@ public class StringDataSectionPatchAlgorithm extends DexSectionPatchAlgorithm<St
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldIndex != newIndex) {
-            indexMap.mapStringIds(oldIndex, newIndex);
+            sparseIndexMap.mapStringIds(oldIndex, newIndex);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markStringIdDeleted(deletedIndex);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markStringIdDeleted(deletedIndex);
     }
 }

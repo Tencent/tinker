@@ -21,13 +21,14 @@ import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/6/30.
  */
 public class MethodIdSectionDiffAlgorithm extends DexSectionDiffAlgorithm<MethodId> {
-    public MethodIdSectionDiffAlgorithm(Dex oldDex, Dex newDex, IndexMap oldToNewIndexMap, IndexMap oldToPatchedIndexMap, IndexMap newToPatchedIndexMap, IndexMap selfIndexMapForSkip) {
+    public MethodIdSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {
         super(oldDex, newDex, oldToNewIndexMap, oldToPatchedIndexMap, newToPatchedIndexMap, selfIndexMapForSkip);
     }
 
@@ -47,19 +48,19 @@ public class MethodIdSectionDiffAlgorithm extends DexSectionDiffAlgorithm<Method
     }
 
     @Override
-    protected MethodId adjustItem(IndexMap indexMap, MethodId item) {
+    protected MethodId adjustItem(AbstractIndexMap indexMap, MethodId item) {
         return indexMap.adjust(item);
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldIndex != newIndex) {
-            indexMap.mapMethodIds(oldIndex, newIndex);
+            sparseIndexMap.mapMethodIds(oldIndex, newIndex);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markMethodIdDeleted(deletedIndex);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markMethodIdDeleted(deletedIndex);
     }
 }

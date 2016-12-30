@@ -20,8 +20,9 @@ import com.tencent.tinker.android.dex.Code;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -34,9 +35,9 @@ public class CodeSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Code> {
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        super(patchFile, oldDex, oldToFullPatchedIndexMap);
+        super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedCodeTocSec = patchedDex.getTableOfContents().codes;
@@ -60,7 +61,7 @@ public class CodeSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Code> {
     }
 
     @Override
-    protected Code adjustItem(IndexMap indexMap, Code item) {
+    protected Code adjustItem(AbstractIndexMap indexMap, Code item) {
         return indexMap.adjust(item);
     }
 
@@ -71,14 +72,14 @@ public class CodeSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Code> {
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldOffset != newOffset) {
-            indexMap.mapCodeOffset(oldOffset, newOffset);
+            sparseIndexMap.mapCodeOffset(oldOffset, newOffset);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markCodeDeleted(deletedOffset);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markCodeDeleted(deletedOffset);
     }
 }

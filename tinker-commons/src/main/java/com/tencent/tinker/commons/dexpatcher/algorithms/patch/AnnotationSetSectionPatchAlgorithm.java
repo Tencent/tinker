@@ -20,8 +20,9 @@ import com.tencent.tinker.android.dex.AnnotationSet;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -34,9 +35,9 @@ public class AnnotationSetSectionPatchAlgorithm extends DexSectionPatchAlgorithm
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        super(patchFile, oldDex, oldToFullPatchedIndexMap);
+        super(patchFile, oldDex, oldToPatchedIndexMap);
         if (patchedDex != null) {
             this.patchedAnnotationSetTocSec = patchedDex.getTableOfContents().annotationSets;
             this.patchedAnnotationSetSec = patchedDex.openSection(this.patchedAnnotationSetTocSec);
@@ -59,7 +60,7 @@ public class AnnotationSetSectionPatchAlgorithm extends DexSectionPatchAlgorithm
     }
 
     @Override
-    protected AnnotationSet adjustItem(IndexMap indexMap, AnnotationSet item) {
+    protected AnnotationSet adjustItem(AbstractIndexMap indexMap, AnnotationSet item) {
         return indexMap.adjust(item);
     }
 
@@ -70,14 +71,14 @@ public class AnnotationSetSectionPatchAlgorithm extends DexSectionPatchAlgorithm
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldOffset != newOffset) {
-            indexMap.mapAnnotationSetOffset(oldOffset, newOffset);
+            sparseIndexMap.mapAnnotationSetOffset(oldOffset, newOffset);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markAnnotationSetDeleted(deletedOffset);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markAnnotationSetDeleted(deletedOffset);
     }
 }
