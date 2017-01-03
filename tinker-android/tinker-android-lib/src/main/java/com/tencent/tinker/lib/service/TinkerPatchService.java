@@ -22,6 +22,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
 
@@ -41,6 +42,7 @@ public class TinkerPatchService extends IntentService {
     private static final String TAG = "Tinker.TinkerPatchService";
 
     private static final String        PATCH_PATH_EXTRA      = "patch_path_extra";
+    private static final String        CUSTOM_BUNDLE_EXTRA   = "custom_bundle_extra";
     private static final String        RESULT_CLASS_EXTRA    = "patch_result_class";
 
     private static       AbstractPatch upgradePatchProcessor = null;
@@ -59,6 +61,18 @@ public class TinkerPatchService extends IntentService {
             Intent intent = new Intent(context, TinkerPatchService.class);
             intent.putExtra(PATCH_PATH_EXTRA, path);
             intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
+            context.startService(intent);
+        } catch (Throwable throwable) {
+            TinkerLog.e(TAG, "start patch service fail, exception:" + throwable);
+        }
+    }
+
+    public static void runPatchService(Context context, String path, Bundle customBundle) {
+        try {
+            Intent intent = new Intent(context, TinkerPatchService.class);
+            intent.putExtra(PATCH_PATH_EXTRA, path);
+            intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
+            intent.putExtra(CUSTOM_BUNDLE_EXTRA, customBundle);
             context.startService(intent);
         } catch (Throwable throwable) {
             TinkerLog.e(TAG, "start patch service fail, exception:" + throwable);
@@ -141,6 +155,7 @@ public class TinkerPatchService extends IntentService {
         patchResult.rawPatchFilePath = path;
         patchResult.costTime = cost;
         patchResult.e = e;
+        patchResult.customBundle = intent.getBundleExtra(CUSTOM_BUNDLE_EXTRA);
 
         AbstractResultService.runResultService(context, patchResult, getPatchResultExtra(intent));
 

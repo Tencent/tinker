@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.lib.service;
 
+import android.os.Bundle;
+
 import java.io.Serializable;
 
 /**
@@ -33,6 +35,8 @@ public class PatchResult implements Serializable {
     //@Nullable
     public String patchVersion;
 
+    public Bundle customBundle;
+
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
@@ -44,6 +48,9 @@ public class PatchResult implements Serializable {
             sb.append("patchVersion:" + patchVersion + "\n");
         }
 
+        if (customBundle != null) {
+            sb.append("hasCustomBundle: " + customBundle != null + "\n");
+        }
         if (e != null) {
             sb.append("Throwable:" + e.getMessage() + "\n");
         }
