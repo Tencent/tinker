@@ -110,7 +110,7 @@ public class SystemClassLoaderAdder {
     }
 
     /**
-     * Installer for platform versions 19.
+     * Installer for platform versions 23.
      */
     private static final class V23 {
 

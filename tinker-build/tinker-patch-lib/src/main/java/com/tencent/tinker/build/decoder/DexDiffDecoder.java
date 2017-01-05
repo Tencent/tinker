@@ -279,7 +279,7 @@ public class DexDiffDecoder extends BaseDecoder {
     }
 
     private void diffDexPairAndFillRelatedInfo(File oldDexFile, File newDexFile, RelatedInfo relatedInfo) {
-        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "full");
+        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR);
         final String dexName = getRelativeDexName(oldDexFile, newDexFile);
 
         File dexDiffOut = getOutputPath(newDexFile).toFile();

@@ -204,6 +204,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
         //only work for art platform oat
         boolean isSystemOTA = ShareTinkerInternals.isVmArt() && ShareTinkerInternals.isSystemOTA(patchInfo.fingerPrint);
+        resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 
         //we should first try rewrite patch info file, if there is a error, we can't load jar
         if (isSystemOTA

@@ -67,10 +67,6 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             def android = project.extensions.android
 
-            //add the tinker anno resource to the package exclude option
-            android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
-            android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
-
             //open jumboMode
             android.dexOptions.jumboMode = true
 

@@ -140,6 +140,12 @@ public class UpgradePatch extends AbstractPatch {
             return false;
         }
 
+        // check dex opt file at last, some phone such as ViVo like to change dex2oat to interpreted
+        if (!DexDiffPatchInternal.checkDexOptFile(context, destPatchFile)) {
+            TinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, check dex opt file failed");
+            return false;
+        }
+
         final File patchInfoFile = manager.getPatchInfoFile();
 
         if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, newInfo, SharePatchFileUtil.getPatchInfoLockFile(patchDirectory))) {

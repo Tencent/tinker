@@ -44,11 +44,15 @@ public abstract class AbstractResultService extends IntentService {
         if (resultServiceClass == null) {
             throw new TinkerRuntimeException("resultServiceClass is null.");
         }
-        Intent intent = new Intent();
-        intent.setClassName(context, resultServiceClass);
-        intent.putExtra(RESULT_EXTRA, result);
+        try {
+            Intent intent = new Intent();
+            intent.setClassName(context, resultServiceClass);
+            intent.putExtra(RESULT_EXTRA, result);
 
-        context.startService(intent);
+            context.startService(intent);
+        } catch (Throwable throwable) {
+            TinkerLog.e(TAG, "run result service fail, exception:" + throwable);
+        }
     }
 
     @Override

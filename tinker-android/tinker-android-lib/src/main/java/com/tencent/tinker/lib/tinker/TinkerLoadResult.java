@@ -42,6 +42,9 @@ public class TinkerLoadResult {
     public String         currentVersion;
 
     public boolean                 versionChanged;
+
+    public boolean                 systemOTA;
+
     //@Nullable
     public File                    patchVersionDirectory;
     //@Nullable
@@ -68,9 +71,11 @@ public class TinkerLoadResult {
     public boolean parseTinkerResult(Context context, Intent intentResult) {
         Tinker tinker = Tinker.with(context);
         loadCode = ShareIntentUtil.getIntentReturnCode(intentResult);
-        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d", loadCode);
 
         costTime = ShareIntentUtil.getIntentPatchCostTime(intentResult);
+        systemOTA = ShareIntentUtil.getBooleanExtra(intentResult, ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, false);
+
+        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, systemOTA:%b", loadCode, systemOTA);
         //@Nullable
         final String oldVersion = ShareIntentUtil.getStringExtra(intentResult, ShareIntentUtil.INTENT_PATCH_OLD_VERSION);
         //@Nullable
