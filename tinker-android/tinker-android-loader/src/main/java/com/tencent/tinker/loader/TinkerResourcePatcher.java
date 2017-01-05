@@ -16,12 +16,16 @@
 
 package com.tencent.tinker.loader;
 
+import android.app.Instrumentation;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.os.Build;
 import android.util.ArrayMap;
 import android.util.Log;
 
+import com.tencent.tinker.loader.shareutil.ActivityResFixInstrumentation;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
@@ -49,6 +53,9 @@ class TinkerResourcePatcher {
     private static Field        resDir                   = null;
     private static Field        packagesFiled            = null;
     private static Field        resourcePackagesFiled    = null;
+
+    private static Field        instrumentationField     = null;
+    private static Field        publicSourceDirField     = null;
 
     public static void isResourceCanPatch(Context context) throws Throwable {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
@@ -165,6 +172,20 @@ class TinkerResourcePatcher {
             resourcesImplFiled = Resources.class.getDeclaredField("mResourcesImpl");
             resourcesImplFiled.setAccessible(true);
         }
+
+        try {
+            instrumentationField = activityThread.getDeclaredField("mInstrumentation");
+            instrumentationField.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalStateException("cannot find 'mInstrumentation' field");
+        }
+
+        try {
+            publicSourceDirField = ApplicationInfo.class.getDeclaredField("publicSourceDir");
+            publicSourceDirField.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalStateException("cannot find 'mInstrumentation' field");
+        }
     }
 
     public static void monkeyPatchExistingResources(Context context, String externalResourceFile) throws Throwable {
@@ -218,6 +239,23 @@ class TinkerResourcePatcher {
                 resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
             }
         }
+
+        try {
+            final Instrumentation origInstrumentation = (Instrumentation) instrumentationField.get(currentActivityThread);
+            final Instrumentation activityResFixInstrumentation = new ActivityResFixInstrumentation(context, origInstrumentation);
+            instrumentationField.set(currentActivityThread, activityResFixInstrumentation);
+        } catch (NoSuchFieldException e) {
+            // Version below api 17 has no mResources field in ContextThemeWrapper,
+            // so just ignore this exception. Otherwise we should rethrow it.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                throw e;
+            }
+        }
+
+        // Handle issues caused by WebView on Android N.
+        // Issue: On Andorid N, if an activity contains a webview, when screen rotates
+        // our resource patch may lost effects.
+        publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
 
         if (!checkResUpdate(context)) {
             throw new TinkerRuntimeException(ShareConstants.CHECK_RES_INSTALL_FAIL);
