@@ -65,9 +65,16 @@ public class MainActivity extends AppCompatActivity {
         loadLibraryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //for lib/armeabi, just use TinkerInstaller.loadLibrary
-                TinkerInstaller.loadArmLibrary(getApplicationContext(), "stlport_shared");
+                // #method 1, hack classloader library path
+                TinkerLoadLibrary.installNavitveLibraryABI(getApplicationContext(), "armeabi");
+                System.loadLibrary("stlport_shared");
+
+                // #method 2, for lib/armeabi, just use TinkerInstaller.loadLibrary
+//                TinkerLoadLibrary.loadArmLibrary(getApplicationContext(), "stlport_shared");
+
+                // #method 3, load tinker patch library directly
 //                TinkerInstaller.loadLibraryFromTinker(getApplicationContext(), "assets/x86", "stlport_shared");
+
             }
         });
 
