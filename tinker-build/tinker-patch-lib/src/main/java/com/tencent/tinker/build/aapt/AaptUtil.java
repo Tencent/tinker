@@ -353,7 +353,7 @@ public final class AaptUtil {
                     if (rDotTxtEntry.idType.equals(IdType.INT)) {
                         aaptResourceCollector.addIntResourceIfNotPresent(rType, rDotTxtEntry.name);
                     } else if (rDotTxtEntry.idType.equals(IdType.INT_ARRAY)) {
-                        aaptResourceCollector.addResource(rType, rDotTxtEntry.idType, rDotTxtEntry.name, rDotTxtEntry.idValue);
+                        aaptResourceCollector.addResource(rType, rDotTxtEntry.idType, rDotTxtEntry.name, rDotTxtEntry.idValue.trim());
                     }
                 }
             }
@@ -388,7 +388,7 @@ public final class AaptUtil {
                 for (com.tencent.tinker.build.aapt.RDotTxtEntry rDotTxtEntry : rTypeResourceMap.get(rType)) {
                     // Write out the resource.
                     // Write as an int.
-                    writer.format("    public static%s%s %s=%s;\n", isFinal ? " final " : " ", rDotTxtEntry.idType, rDotTxtEntry.name, rDotTxtEntry.idValue);
+                    writer.format("    public static%s%s %s=%s;\n", isFinal ? " final " : " ", rDotTxtEntry.idType, rDotTxtEntry.name, rDotTxtEntry.idValue.trim());
                 }
                 writer.println("  }\n");
             }

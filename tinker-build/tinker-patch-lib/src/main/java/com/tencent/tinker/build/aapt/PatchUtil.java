@@ -122,7 +122,7 @@ public final class PatchUtil {
 //                                System.err.println("Blank?" + rDotTxtEntry.name);
                                 rawName = rDotTxtEntry.name;
                             }
-                            publicWriter.println("<public type=\"" + rType + "\" name=\"" + rawName + "\" id=\"" + rDotTxtEntry.idValue + "\" />");
+                            publicWriter.println("<public type=\"" + rType + "\" name=\"" + rawName + "\" id=\"" + rDotTxtEntry.idValue.trim() + "\" />");
 //                        } else {
 //                            publicWriter.println("<public type=\"" + rType + "\" name=\"" + rDotTxtEntry.name + "\" id=\"" + rDotTxtEntry.idValue + "\" />");
 //                        }

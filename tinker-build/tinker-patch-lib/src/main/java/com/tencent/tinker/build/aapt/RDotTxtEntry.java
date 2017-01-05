@@ -110,7 +110,7 @@ public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(RDotTxtEntry.class).add("idType", idType).add("type", type).add("name", name).add("idValue", idValue).toString();
+        return Objects.toStringHelper(RDotTxtEntry.class).add("idType", idType).add("type", type).add("name", name).add("idValue", idValue.trim()).toString();
     }
 
     // Taken from http://developer.android.com/reference/android/R.html
