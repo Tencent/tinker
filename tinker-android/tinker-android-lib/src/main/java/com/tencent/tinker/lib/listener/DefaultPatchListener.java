@@ -22,6 +22,7 @@ import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
@@ -65,7 +66,7 @@ public class DefaultPatchListener implements PatchListener {
         }
         File file = new File(path);
 
-        if (!file.isFile() || !file.exists() || file.length() == 0) {
+        if (!SharePatchFileUtil.isLegalFile(file)) {
             return ShareConstants.ERROR_PATCH_NOTEXIST;
         }
 

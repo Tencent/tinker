@@ -259,7 +259,7 @@ public class DefaultLoadReporter implements LoadReporter {
      * other process may have installed old patch version,
      * if we try to clean patch, we should kill other process first
      */
-    private void checkAndCleanPatch() {
+    public void checkAndCleanPatch() {
         Tinker tinker = Tinker.with(context);
         //only main process can load a new patch
         if (tinker.isMainProcess()) {

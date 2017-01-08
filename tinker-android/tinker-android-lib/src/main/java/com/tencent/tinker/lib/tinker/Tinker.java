@@ -141,6 +141,8 @@ public class Tinker {
         sInstalled = true;
         TinkerPatchService.setPatchProcessor(upgradePatch, serviceClass);
 
+        TinkerLog.i(TAG, "try to install tinker, isEnable: %b, version: %s", isTinkerEnabled(), ShareConstants.TINKER_VERSION);
+
         if (!isTinkerEnabled()) {
             TinkerLog.e(TAG, "tinker is disabled");
             return;

@@ -124,7 +124,7 @@ public class TinkerDexLoader {
                     }
 
                     @Override
-                    public void onSuccess(File dexFile, File optimizedDir) {
+                    public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
                         // Do nothing.
                         Log.i(TAG, "success to optimize dex " + dexFile.getPath() + "use time " + (System.currentTimeMillis() - start));
                     }
@@ -205,14 +205,14 @@ public class TinkerDexLoader {
         //fast check whether there is any dex files missing
         for (String name : dexes.keySet()) {
             File dexFile = new File(dexDirectory + name);
-            if (!dexFile.exists()) {
+            if (!SharePatchFileUtil.isLegalFile(dexFile)) {
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexFile.getAbsolutePath());
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
                 return false;
             }
             //check dex opt whether complete also
             File dexOptFile = new File(SharePatchFileUtil.optimizedPathFor(dexFile, optimizeDexDirectoryFile));
-            if (!dexOptFile.exists()) {
+            if (!SharePatchFileUtil.isLegalFile(dexOptFile)) {
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexOptFile.getAbsolutePath());
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
                 return false;

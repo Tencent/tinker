@@ -21,6 +21,8 @@ import android.os.Looper;
 import android.os.MessageQueue;
 
 import com.tencent.tinker.lib.reporter.DefaultLoadReporter;
+import com.tencent.tinker.lib.tinker.Tinker;
+import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -85,9 +87,37 @@ public class SampleLoadReporter extends DefaultLoadReporter {
         SampleTinkerReport.onLoadFileMisMatch(fileType);
     }
 
+    /**
+     * try to recover patch oat file
+     * @param file
+     * @param fileType
+     * @param isDirectory
+     */
     @Override
     public void onLoadFileNotFound(File file, int fileType, boolean isDirectory) {
-        super.onLoadFileNotFound(file, fileType, isDirectory);
+        TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType:%d, isDirectory:%b",
+            file.getAbsolutePath(), fileType, isDirectory);
+
+        // only try to recover opt file
+        // check dex opt file at last, some phone such as VIVO/OPPO like to change dex2oat to interpreted
+        if (fileType == ShareConstants.TYPE_DEX_OPT) {
+            Tinker tinker = Tinker.with(context);
+            //we can recover at any process except recover process
+            if (tinker.isMainProcess()) {
+                File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
+                if (patchVersionFile != null) {
+                    if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
+                        TinkerLog.i(TAG, "try to repair oat file on patch process");
+                        TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
+                    } else {
+                        TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+                        checkAndCleanPatch();
+                    }
+                }
+            }
+        } else {
+            checkAndCleanPatch();
+        }
         SampleTinkerReport.onLoadFileNotFound(fileType);
     }
 

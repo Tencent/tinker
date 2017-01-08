@@ -96,7 +96,7 @@ public final class TinkerParallelDexOptimizer {
 
     public interface ResultCallback {
         void onStart(File dexFile, File optimizedDir);
-        void onSuccess(File dexFile, File optimizedDir);
+        void onSuccess(File dexFile, File optimizedDir, File optimizedFile);
         void onFailed(File dexFile, File optimizedDir, Throwable thr);
     }
 
@@ -118,7 +118,7 @@ public final class TinkerParallelDexOptimizer {
         @Override
         public void run() {
             try {
-                if (dexFile == null || !dexFile.exists()) {
+                if (!SharePatchFileUtil.isLegalFile(dexFile)) {
                     if (callback != null) {
                         callback.onFailed(dexFile, optimizedDir,
                             new IOException("dex file " + dexFile.getAbsolutePath() + " is not exist!"));
@@ -127,12 +127,13 @@ public final class TinkerParallelDexOptimizer {
                 if (callback != null) {
                     callback.onStart(dexFile, optimizedDir);
                 }
-                DexFile.loadDex(dexFile.getAbsolutePath(), SharePatchFileUtil.optimizedPathFor(this.dexFile, this.optimizedDir), 0);
+                String optimizedPath = SharePatchFileUtil.optimizedPathFor(this.dexFile, this.optimizedDir);
+                DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
                 successCount.incrementAndGet();
                 if (callback != null) {
-                    callback.onSuccess(dexFile, optimizedDir);
+                    callback.onSuccess(dexFile, optimizedDir, new File(optimizedPath));
                 }
-            } catch (final Exception e) {
+            } catch (final Throwable e) {
                 Log.e(TAG, "Failed to optimize dex: " + dexFile.getAbsolutePath(), e);
                 if (callback != null) {
                     callback.onFailed(dexFile, optimizedDir, e);

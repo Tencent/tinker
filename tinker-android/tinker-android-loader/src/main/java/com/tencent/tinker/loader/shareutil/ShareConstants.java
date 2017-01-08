@@ -20,6 +20,8 @@ package com.tencent.tinker.loader.shareutil;
  * Created by zhangshaowen on 16/3/24.
  */
 public class ShareConstants {
+    public static final String TINKER_VERSION = "1.7.7";
+
     public static final int BUFFER_SIZE         = 16384;
     public static final int MD5_LENGTH          = 32;
     public static final int MD5_FILE_BUF_LENGTH = 1024 * 100;
@@ -80,7 +82,7 @@ public class ShareConstants {
      * multi process share
      */
     public static final String TINKER_SHARE_PREFERENCE_CONFIG = "tinker_share_config";
-    public static final String TINKER_ENABLE_CONFIG           = "tinker_enable";
+    public static final String TINKER_ENABLE_CONFIG           = "tinker_enable_";
 
     /**
      * only for each process
@@ -154,7 +156,7 @@ public class ShareConstants {
     public static final int ERROR_LOAD_EXCEPTION_DEX_OPT  = -5;
 
 
-    //recover error code
+    //patch listener error code
     public static final int ERROR_PATCH_OK        = 0;
     public static final int ERROR_PATCH_DISABLE   = -1;
     public static final int ERROR_PATCH_NOTEXIST  = -2;

@@ -250,7 +250,7 @@ public class ShareTinkerInternals {
      */
     public static void setTinkerDisableWithSharedPreferences(Context context) {
         SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-        sp.edit().putBoolean(ShareConstants.TINKER_ENABLE_CONFIG, false).commit();
+        sp.edit().putBoolean(getTinkerSharedPreferencesName(), false).commit();
     }
 
     /**
@@ -263,7 +263,11 @@ public class ShareTinkerInternals {
             return false;
         }
         SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-        return sp.getBoolean(ShareConstants.TINKER_ENABLE_CONFIG, true);
+        return sp.getBoolean(getTinkerSharedPreferencesName(), true);
+    }
+
+    private static String getTinkerSharedPreferencesName() {
+        return ShareConstants.TINKER_ENABLE_CONFIG + ShareConstants.TINKER_VERSION;
     }
 
     public static boolean isTinkerEnabled(int flag) {

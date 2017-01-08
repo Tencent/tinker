@@ -68,11 +68,8 @@ public class SampleResultService extends DefaultTinkerResultService {
         // is success and newPatch, it is nice to delete the raw file, and restart at once
         // for old patch, you can't delete the patch file
         if (result.isSuccess) {
-            File rawFile = new File(result.rawPatchFilePath);
-            if (rawFile.exists()) {
-                TinkerLog.i(TAG, "save delete raw patch file");
-                SharePatchFileUtil.safeDeleteFile(rawFile);
-            }
+            deleteRawPatchFile(new File(result.rawPatchFilePath));
+
             //not like TinkerResultService, I want to restart just when I am at background!
             //if you have not install tinker this moment, you can use TinkerApplicationHelper api
             if (checkIfNeedKill(result)) {

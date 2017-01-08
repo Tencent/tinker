@@ -161,8 +161,8 @@ class TinkerResourcePatcher {
             references = map.values();
         }
         // check resource
-        if (references == null || references.isEmpty()) {
-            throw new IllegalStateException("resource references is null or empty");
+        if (references == null) {
+            throw new IllegalStateException("resource references is null");
         }
         try {
             assetsFiled = Resources.class.getDeclaredField("mAssets");
@@ -174,15 +174,13 @@ class TinkerResourcePatcher {
         }
 
         try {
-            instrumentationField = activityThread.getDeclaredField("mInstrumentation");
-            instrumentationField.setAccessible(true);
+            instrumentationField = ShareReflectUtil.findField(activityThread, "mInstrumentation");
         } catch (NoSuchFieldException e) {
             throw new IllegalStateException("cannot find 'mInstrumentation' field");
         }
 
         try {
-            publicSourceDirField = ApplicationInfo.class.getDeclaredField("publicSourceDir");
-            publicSourceDirField.setAccessible(true);
+            publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
         } catch (NoSuchFieldException e) {
             throw new IllegalStateException("cannot find 'mInstrumentation' field");
         }

@@ -39,8 +39,7 @@ public class ActivityResFixInstrumentation extends InstrumentationProxy {
     public ActivityResFixInstrumentation(Context context, Instrumentation base) throws NoSuchFieldException {
         super(base);
         this.mContext = context;
-        mResourcesField = ContextThemeWrapper.class.getDeclaredField("mResources");
-        mResourcesField.setAccessible(true);
+        mResourcesField = ShareReflectUtil.findField(ContextThemeWrapper.class, "mResources");
     }
 
     @Override
