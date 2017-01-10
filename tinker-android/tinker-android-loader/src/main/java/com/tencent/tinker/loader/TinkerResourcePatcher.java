@@ -55,7 +55,7 @@ class TinkerResourcePatcher {
     private static Field        resourcePackagesFiled    = null;
 
     private static Field        instrumentationField     = null;
-    private static Field        publicSourceDirField     = null;
+//    private static Field        publicSourceDirField     = null;
 
     public static void isResourceCanPatch(Context context) throws Throwable {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
@@ -179,11 +179,11 @@ class TinkerResourcePatcher {
             throw new IllegalStateException("cannot find 'mInstrumentation' field");
         }
 
-        try {
-            publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
-        } catch (NoSuchFieldException e) {
-            throw new IllegalStateException("cannot find 'mInstrumentation' field");
-        }
+//        try {
+//            publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
+//        } catch (NoSuchFieldException e) {
+//            throw new IllegalStateException("cannot find 'mInstrumentation' field");
+//        }
     }
 
     public static void monkeyPatchExistingResources(Context context, String externalResourceFile) throws Throwable {
@@ -253,7 +253,7 @@ class TinkerResourcePatcher {
         // Handle issues caused by WebView on Android N.
         // Issue: On Andorid N, if an activity contains a webview, when screen rotates
         // our resource patch may lost effects.
-        publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
+//        publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
 
         if (!checkResUpdate(context)) {
             throw new TinkerRuntimeException(ShareConstants.CHECK_RES_INSTALL_FAIL);
