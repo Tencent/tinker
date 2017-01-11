@@ -40,8 +40,9 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.KITKAT;
 
 class TinkerResourcePatcher {
-    private static final String TAG               = "Tinker.ResourcePatcher";
-    private static final String TEST_ASSETS_VALUE = "only_use_to_test_tinker_resource.txt";
+    private static final String TAG                     = "Tinker.ResourcePatcher";
+    private static final String TEST_ASSETS_VALUE       = "only_use_to_test_tinker_resource.txt";
+    private static final String MIUI_RESOURCE_CLASSNAME = "android.content.res.MiuiResources";
 
     // original value
     private static Collection<WeakReference<Resources>> references;
@@ -51,12 +52,15 @@ class TinkerResourcePatcher {
     private static Field        assetsFiled              = null;
     private static Field        resourcesImplFiled       = null;
     private static Field        typedArrayPoolField      = null;
+    private static Field        poolField                = null;
     private static Field        resDir                   = null;
     private static Field        packagesFiled            = null;
     private static Field        resourcePackagesFiled    = null;
 
     private static Field        instrumentationField     = null;
 //    private static Field        publicSourceDirField     = null;
+
+    private static boolean      isMiuiSystem             = false;
 
     public static void isResourceCanPatch(Context context) throws Throwable {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
@@ -174,6 +178,21 @@ class TinkerResourcePatcher {
             resourcesImplFiled.setAccessible(true);
         }
 
+        final Resources resources = context.getResources();
+        isMiuiSystem = resources != null && MIUI_RESOURCE_CLASSNAME.equals(resources.getClass().getName());
+
+        if (isMiuiSystem) {
+            Log.w(TAG, "Miui system found, collect some additional fields.");
+            try {
+                typedArrayPoolField = Resources.class.getDeclaredField("mTypedArrayPool");
+                typedArrayPoolField.setAccessible(true);
+                final Class<?> simplePoolClazz = Class.forName("android.util.Pools$SimplePool");
+                poolField = simplePoolClazz.getDeclaredField("mPool");
+                poolField.setAccessible(true);
+            } catch (Throwable ignored) {
+            }
+        }
+
         try {
             typedArrayPoolField = Resources.class.getDeclaredField("mTypedArrayPool");
             typedArrayPoolField.setAccessible(true);
@@ -249,6 +268,21 @@ class TinkerResourcePatcher {
                     final Object newTypedArrayPool = ctor.newInstance(5);
                     typedArrayPoolField.set(resources, newTypedArrayPool);
                 } catch (Throwable ignored) {
+                }
+
+                if (isMiuiSystem) {
+                    Log.w(TAG, "Miui system found, do additional tricks.");
+
+                    // Clear typedArray cache.
+                    try {
+                        final Object origTypedArrayPool = typedArrayPoolField.get(resources);
+                        final Constructor<?> ctor = origTypedArrayPool.getClass().getConstructor(int.class);
+                        ctor.setAccessible(true);
+                        final int poolSize = ((Object[]) poolField.get(origTypedArrayPool)).length;
+                        final Object newTypedArrayPool = ctor.newInstance(poolSize);
+                        typedArrayPoolField.set(resources, newTypedArrayPool);
+                    } catch (Throwable ignored) {
+                    }
                 }
 
                 resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
