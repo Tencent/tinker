@@ -18,7 +18,6 @@ package com.tencent.tinker.loader;
 
 import android.app.Instrumentation;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.os.Build;
@@ -30,6 +29,7 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -50,6 +50,7 @@ class TinkerResourcePatcher {
     private static Method       ensureStringBlocksMethod = null;
     private static Field        assetsFiled              = null;
     private static Field        resourcesImplFiled       = null;
+    private static Field        typedArrayPoolField      = null;
     private static Field        resDir                   = null;
     private static Field        packagesFiled            = null;
     private static Field        resourcePackagesFiled    = null;
@@ -174,6 +175,12 @@ class TinkerResourcePatcher {
         }
 
         try {
+            typedArrayPoolField = Resources.class.getDeclaredField("mTypedArrayPool");
+            typedArrayPoolField.setAccessible(true);
+        } catch (Throwable ignored) {
+        }
+
+        try {
             instrumentationField = ShareReflectUtil.findField(activityThread, "mInstrumentation");
         } catch (NoSuchFieldException e) {
             throw new IllegalStateException("cannot find 'mInstrumentation' field");
@@ -232,6 +239,16 @@ class TinkerResourcePatcher {
                     Field implAssets = ShareReflectUtil.findField(resourceImpl, "mAssets");
                     implAssets.setAccessible(true);
                     implAssets.set(resourceImpl, newAssetManager);
+                }
+                // Clear typedArray cache.
+                try {
+                    final Object origTypedArrayPool = typedArrayPoolField.get(resources);
+                    final Constructor<?> ctor = origTypedArrayPool.getClass().getConstructor(int.class);
+                    ctor.setAccessible(true);
+                    // 5 is the harcoded value in AOSP
+                    final Object newTypedArrayPool = ctor.newInstance(5);
+                    typedArrayPoolField.set(resources, newTypedArrayPool);
+                } catch (Throwable ignored) {
                 }
 
                 resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
