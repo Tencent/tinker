@@ -36,6 +36,7 @@ import java.util.List;
 
 /**
  * Created by zhangshaowen on 17/1/5.
+ * Thanks for Android Fragmentation
  */
 
 public class TinkerLoadLibrary {
