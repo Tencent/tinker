@@ -233,9 +233,11 @@ class TinkerResourcePatcher {
      * MiuiResource change TypedArray to MiuiTypedArray, but it get string block from offset instead of assetManager
      */
     private static void fixMiuiTypedArrayIssue(Resources resources) {
-        if (!isMiuiSystem) {
-            return;
-        }
+        // Perform this trick not only in Miui system since we can't predict if any other
+        // manufacturer would do the same modification to Android.
+//        if (!isMiuiSystem) {
+//            return;
+//        }
         Log.w(TAG, "Miui system found, try to clear MiuiTypedArray cache!");
         // Clear typedArray cache.
         try {
