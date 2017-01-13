@@ -53,7 +53,7 @@ import dalvik.system.DexFile;
 public class DexDiffPatchInternal extends BasePatchInternal {
     protected static final String TAG = "Tinker.DexDiffPatchInternal";
 
-    protected static final int WAIT_ASYN_OAT_TIME = 6 * 1000;
+    protected static final int WAIT_ASYN_OAT_TIME = 8 * 1000;
     protected static final int MAX_WAIT_COUNT     = 30;
 
     private static ArrayList<File> optFiles = new ArrayList<>();

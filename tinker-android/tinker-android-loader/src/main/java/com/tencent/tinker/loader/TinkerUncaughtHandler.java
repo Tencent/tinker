@@ -37,15 +37,19 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
 
     private final File crashFile;
     private final Context context;
+    private final Thread.UncaughtExceptionHandler ueh;
 
     public TinkerUncaughtHandler(Context context) {
         this.context = context;
+        ueh = Thread.getDefaultUncaughtExceptionHandler();
         crashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
     }
 
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
         Log.e(TAG, "catch exception when loading tinker:" + Log.getStackTraceString(ex));
+        ueh.uncaughtException(thread, ex);
+
         if (crashFile != null) {
             Thread.UncaughtExceptionHandler handler = Thread.getDefaultUncaughtExceptionHandler();
 
@@ -67,8 +71,8 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
                 } finally {
                     SharePatchFileUtil.closeQuietly(pw);
                 }
+                android.os.Process.killProcess(android.os.Process.myPid());
             }
         }
-        android.os.Process.killProcess(android.os.Process.myPid());
     }
 }

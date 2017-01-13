@@ -18,10 +18,11 @@ package com.tencent.tinker.loader;
 
 /**
  * Created by zhangshaowen on 17/1/12.
+ *
+ * TODO:
  * Thanks for Android Fragmentation
  * hold the issue https://github.com/Tencent/tinker/issues/302
  */
-
 public class TinkerResourcesKey {
 
     private static final class V24 {

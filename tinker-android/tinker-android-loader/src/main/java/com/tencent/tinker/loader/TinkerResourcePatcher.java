@@ -43,15 +43,14 @@ import static android.os.Build.VERSION_CODES.KITKAT;
 class TinkerResourcePatcher {
     private static final String TAG                     = "Tinker.ResourcePatcher";
     private static final String TEST_ASSETS_VALUE       = "only_use_to_test_tinker_resource.txt";
-    private static final String MIUI_RESOURCE_CLASSNAME = "android.content.res.MiuiResources";
+//    private static final String MIUI_RESOURCE_CLASSNAME = "android.content.res.MiuiResources";
 
     // original object
     private static Collection<WeakReference<Resources>>  references               = null;
     private static Object                                currentActivityThread    = null;
     private static AssetManager                          newAssetManager          = null;
-    private static ArrayMap<?, WeakReference<Resources>> activeResources19        = null;
     //    private static ArrayMap<?, WeakReference<?>>         resourceImpls            = null;
-    private static HashMap<?, WeakReference<Resources>>  activeResources7         = null;
+
     // method
     private static Method                                addAssetPathMethod       = null;
     private static Method                                ensureStringBlocksMethod = null;
@@ -64,7 +63,7 @@ class TinkerResourcePatcher {
     private static Field resourcePackagesFiled = null;
 //    private static Field        publicSourceDirField     = null;
 
-    private static boolean isMiuiSystem = false;
+//    private static boolean isMiuiSystem = false;
 
     public static void isResourceCanPatch(Context context) throws Throwable {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
@@ -121,7 +120,7 @@ class TinkerResourcePatcher {
             try {
                 Field fMActiveResources = resourcesManagerClass.getDeclaredField("mActiveResources");
                 fMActiveResources.setAccessible(true);
-                activeResources19 =
+                ArrayMap<?, WeakReference<Resources>> activeResources19 =
                     (ArrayMap<?, WeakReference<Resources>>) fMActiveResources.get(resourcesManager);
                 references = activeResources19.values();
             } catch (NoSuchFieldException ignore) {
@@ -135,7 +134,7 @@ class TinkerResourcePatcher {
         } else {
             Field fMActiveResources = activityThread.getDeclaredField("mActiveResources");
             fMActiveResources.setAccessible(true);
-            activeResources7 =
+            HashMap<?, WeakReference<Resources>> activeResources7 =
                 (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
             references = activeResources7.values();
         }
@@ -152,8 +151,8 @@ class TinkerResourcePatcher {
             resourcesImplFiled.setAccessible(true);
         }
 
-        final Resources resources = context.getResources();
-        isMiuiSystem = resources != null && MIUI_RESOURCE_CLASSNAME.equals(resources.getClass().getName());
+//        final Resources resources = context.getResources();
+//        isMiuiSystem = resources != null && MIUI_RESOURCE_CLASSNAME.equals(resources.getClass().getName());
 
 //        try {
 //            publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
@@ -211,7 +210,7 @@ class TinkerResourcePatcher {
                     implAssets.set(resourceImpl, newAssetManager);
                 }
 
-                fixMiuiTypedArrayIssue(resources);
+                clearPreloadTypedArrayIssue(resources);
 
                 resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
             }
@@ -232,13 +231,14 @@ class TinkerResourcePatcher {
      * Resource has mTypedArrayPool field, which just like Message Poll to reduce gc
      * MiuiResource change TypedArray to MiuiTypedArray, but it get string block from offset instead of assetManager
      */
-    private static void fixMiuiTypedArrayIssue(Resources resources) {
+    private static void clearPreloadTypedArrayIssue(Resources resources) {
         // Perform this trick not only in Miui system since we can't predict if any other
         // manufacturer would do the same modification to Android.
 //        if (!isMiuiSystem) {
 //            return;
 //        }
-        Log.w(TAG, "Miui system found, try to clear MiuiTypedArray cache!");
+
+        Log.w(TAG, "try to clear typedArray cache!");
         // Clear typedArray cache.
         try {
             Field typedArrayPoolField = ShareReflectUtil.findField(Resources.class, "mTypedArrayPool");
@@ -253,6 +253,7 @@ class TinkerResourcePatcher {
             final Object newTypedArrayPool = typedArrayConstructor.newInstance(poolSize);
             typedArrayPoolField.set(resources, newTypedArrayPool);
         } catch (Throwable ignored) {
+            Log.e(TAG, "clearPreloadTypedArrayIssue failed, ignore error: " + ignored);
         }
     }
 
