@@ -21,6 +21,7 @@ import android.content.Intent;
 import com.tencent.tinker.loader.shareutil.ShareBsDiffPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 
 import java.io.File;
@@ -89,7 +90,7 @@ public class TinkerSoLoader {
         //fast check whether there is any dex files missing
         for (String relative : libs.keySet()) {
             File libFile = new File(libraryPath + relative);
-            if (!libFile.exists()) {
+            if (!SharePatchFileUtil.isLegalFile(libFile)) {
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_LIB_FILE_NOT_EXIST);
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_LIB_PATH, libFile.getAbsolutePath());
                 return false;

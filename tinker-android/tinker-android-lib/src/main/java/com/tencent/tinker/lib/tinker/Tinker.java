@@ -22,7 +22,6 @@ import android.content.Intent;
 import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
-import com.tencent.tinker.lib.patch.RepairPatch;
 import com.tencent.tinker.lib.patch.UpgradePatch;
 import com.tencent.tinker.lib.reporter.DefaultLoadReporter;
 import com.tencent.tinker.lib.reporter.DefaultPatchReporter;
@@ -58,6 +57,7 @@ public class Tinker {
     final LoadReporter  loadReporter;
     final PatchReporter patchReporter;
     final File          patchInfoFile;
+    final File          patchInfoLockFile;
     final boolean       isMainProcess;
     final boolean       isPatchProcess;
     /**
@@ -76,7 +76,7 @@ public class Tinker {
     private boolean loaded = false;
 
     private Tinker(Context context, int tinkerFlags, LoadReporter loadReporter, PatchReporter patchReporter,
-                   PatchListener listener, File patchDirectory, File patchInfoFile,
+                   PatchListener listener, File patchDirectory, File patchInfoFile, File patchInfoLockFile,
                    boolean isInMainProc, boolean isPatchProcess, boolean tinkerLoadVerifyFlag) {
         this.context = context;
         this.listener = listener;
@@ -85,6 +85,7 @@ public class Tinker {
         this.tinkerFlags = tinkerFlags;
         this.patchDirectory = patchDirectory;
         this.patchInfoFile = patchInfoFile;
+        this.patchInfoLockFile = patchInfoLockFile;
         this.isMainProcess = isInMainProc;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
         this.isPatchProcess = isPatchProcess;
@@ -124,20 +125,23 @@ public class Tinker {
         sInstance = tinker;
     }
 
+    public static boolean isTinkerInstalled() {
+        return sInstalled;
+    }
+
     /**
      * you must install tinker first!!
      *
      * @param intentResult
      * @param serviceClass
      * @param upgradePatch
-     * @param repairPatch
      */
     public void install(Intent intentResult, Class<? extends AbstractResultService> serviceClass,
-                        AbstractPatch upgradePatch, AbstractPatch repairPatch
-    ) {
+                        AbstractPatch upgradePatch) {
         sInstalled = true;
-        AbstractResultService.setResultServiceClass(serviceClass);
-        TinkerPatchService.setPatchProcessor(upgradePatch, repairPatch);
+        TinkerPatchService.setPatchProcessor(upgradePatch, serviceClass);
+
+        TinkerLog.i(TAG, "try to install tinker, isEnable: %b, version: %s", isTinkerEnabled(), ShareConstants.TINKER_VERSION);
 
         if (!isTinkerEnabled()) {
             TinkerLog.e(TAG, "tinker is disabled");
@@ -165,7 +169,6 @@ public class Tinker {
         TinkerPatchService.setTinkerNotificationId(id);
     }
 
-
     /**
      * Nullable, should check the loaded flag first
      */
@@ -174,7 +177,7 @@ public class Tinker {
     }
 
     public void install(Intent intentResult) {
-        install(intentResult, DefaultTinkerResultService.class, new UpgradePatch(), new RepairPatch());
+        install(intentResult, DefaultTinkerResultService.class, new UpgradePatch());
     }
 
     public Context getContext() {
@@ -201,7 +204,6 @@ public class Tinker {
         return patchReporter;
     }
 
-
     public boolean isTinkerEnabled() {
         return ShareTinkerInternals.isTinkerEnabled(tinkerFlags);
     }
@@ -212,10 +214,6 @@ public class Tinker {
 
     public void setTinkerLoaded(boolean isLoaded) {
         loaded = isLoaded;
-    }
-
-    public boolean isTinkerInstalled() {
-        return sInstalled;
     }
 
     public boolean isTinkerLoadVerify() {
@@ -240,6 +238,10 @@ public class Tinker {
 
     public File getPatchInfoFile() {
         return patchInfoFile;
+    }
+
+    public File getPatchInfoLockFile() {
+        return patchInfoLockFile;
     }
 
     public PatchListener getPatchListener() {
@@ -315,6 +317,7 @@ public class Tinker {
         private PatchListener listener;
         private File          patchDirectory;
         private File          patchInfoFile;
+        private File          patchInfoLockFile;
         private Boolean       tinkerLoadVerifyFlag;
 
         /**
@@ -333,6 +336,7 @@ public class Tinker {
                 return;
             }
             this.patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
+            this.patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
             TinkerLog.w(TAG, "tinker patch directory: %s", patchDirectory);
         }
 
@@ -410,7 +414,7 @@ public class Tinker {
             }
 
             return new Tinker(context, status, loadReporter, patchReporter, listener, patchDirectory,
-                patchInfoFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
+                patchInfoFile, patchInfoLockFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
         }
     }
 

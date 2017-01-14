@@ -32,7 +32,6 @@ public abstract class AbstractResultService extends IntentService {
 
     private static final String RESULT_EXTRA = "result_extra";
 
-    private static Class<? extends AbstractResultService> resultServiceClass = null;
 
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
@@ -41,25 +40,19 @@ public abstract class AbstractResultService extends IntentService {
         super(AbstractResultService.class.getSimpleName());
     }
 
-    public static void runResultService(Context context, PatchResult result) {
+    public static void runResultService(Context context, PatchResult result, String resultServiceClass) {
         if (resultServiceClass == null) {
             throw new TinkerRuntimeException("resultServiceClass is null.");
         }
-        Intent intent = new Intent(context, resultServiceClass);
-        intent.putExtra(RESULT_EXTRA, result);
-
-        context.startService(intent);
-    }
-
-    public static void setResultServiceClass(Class<? extends AbstractResultService> serviceClass) {
-        resultServiceClass = serviceClass;
-        //try to load
         try {
-            Class.forName(serviceClass.getName());
-        } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
-        }
+            Intent intent = new Intent();
+            intent.setClassName(context, resultServiceClass);
+            intent.putExtra(RESULT_EXTRA, result);
 
+            context.startService(intent);
+        } catch (Throwable throwable) {
+            TinkerLog.e(TAG, "run result service fail, exception:" + throwable);
+        }
     }
 
     @Override

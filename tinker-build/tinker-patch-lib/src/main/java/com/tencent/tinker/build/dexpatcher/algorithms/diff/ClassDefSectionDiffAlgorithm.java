@@ -21,7 +21,8 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -33,7 +34,7 @@ import java.util.Set;
 public class ClassDefSectionDiffAlgorithm extends DexSectionDiffAlgorithm<ClassDef> {
     private Set<Integer> typeIdOfClassDefToRemoveSet = new HashSet<>();
 
-    public ClassDefSectionDiffAlgorithm(Dex oldDex, Dex newDex, IndexMap oldToNewIndexMap, IndexMap oldToPatchedIndexMap, IndexMap newToPatchedIndexMap, IndexMap selfIndexMapForSkip) {
+    public ClassDefSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {
         super(oldDex, newDex, oldToNewIndexMap, oldToPatchedIndexMap, newToPatchedIndexMap, selfIndexMapForSkip);
     }
 
@@ -67,7 +68,7 @@ public class ClassDefSectionDiffAlgorithm extends DexSectionDiffAlgorithm<ClassD
     }
 
     @Override
-    protected ClassDef adjustItem(IndexMap indexMap, ClassDef item) {
+    protected ClassDef adjustItem(AbstractIndexMap indexMap, ClassDef item) {
         return indexMap.adjust(item);
     }
 }

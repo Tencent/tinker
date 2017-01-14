@@ -22,8 +22,9 @@ import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dex.util.CompareUtils;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.PatchOperation;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -43,24 +44,24 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
     protected final Dex oldDex;
     protected final Dex newDex;
     /**
-     * IndexMap for mapping items between old dex and new dex.
+     * SparseIndexMap for mapping items between old dex and new dex.
      * e.g. item.oldIndex => item.newIndex
      */
-    private final IndexMap oldToNewIndexMap;
+    private final SparseIndexMap oldToNewIndexMap;
     /**
-     * IndexMap for mapping items between old dex and patched dex.
+     * SparseIndexMap for mapping items between old dex and patched dex.
      * e.g. item.oldIndex => item.patchedIndex
      */
-    private final IndexMap oldToPatchedIndexMap;
+    private final SparseIndexMap oldToPatchedIndexMap;
     /**
-     * IndexMap for mapping items between new dex and patched dex.
+     * SparseIndexMap for mapping items between new dex and patched dex.
      * e.g. item.newIndex => item.newIndexInPatchedDex
      */
-    private final IndexMap newToPatchedIndexMap;
+    private final SparseIndexMap newToPatchedIndexMap;
     /**
-     * IndexMap for mapping items in new dex when skip items.
+     * SparseIndexMap for mapping items in new dex when skip items.
      */
-    private final IndexMap selfIndexMapForSkip;
+    private final SparseIndexMap selfIndexMapForSkip;
     private final List<PatchOperation<T>> patchOperationList;
     private final Map<Integer, PatchOperation<T>> indexToDelOperationMap = new HashMap<>();
     private final Map<Integer, PatchOperation<T>> indexToAddOperationMap = new HashMap<>();
@@ -118,10 +119,10 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
     public DexSectionDiffAlgorithm(
             Dex oldDex,
             Dex newDex,
-            IndexMap oldToNewIndexMap,
-            IndexMap oldToPatchedIndexMap,
-            IndexMap newToPatchedIndexMap,
-            IndexMap selfIndexMapForSkip
+            SparseIndexMap oldToNewIndexMap,
+            SparseIndexMap oldToPatchedIndexMap,
+            SparseIndexMap newToPatchedIndexMap,
+            SparseIndexMap selfIndexMapForSkip
     ) {
         this.oldDex = oldDex;
         this.newDex = newDex;
@@ -157,9 +158,9 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
     protected abstract int getItemSize(T item);
 
     /**
-     * Adjust {@code item} using specific {@code indexMap}
+     * Adjust {@code item} using specific {@code sparseIndexMap}
      */
-    protected T adjustItem(IndexMap indexMap, T item) {
+    protected T adjustItem(AbstractIndexMap indexMap, T item) {
         return item;
     }
 
@@ -171,26 +172,26 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
     }
 
     /**
-     * Update index or offset mapping in {@code indexMap}.
+     * Update index or offset mapping in {@code sparseIndexMap}.
      */
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         // Should override by subclass if needed.
     }
 
     /**
-     * Mark deleted index or offset in {@code indexMap}.
+     * Mark deleted index or offset in {@code sparseIndexMap}.
      *
      * Here we mark deleted item for such a case like this:
      *   Item in DebugInfo section reference a string in StringData section
      *   by index X, while in patched dex, the referenced string is removed.
      *
-     * The {@code indexMap} must be aware of this case and return -1
+     * The {@code sparseIndexMap} must be aware of this case and return -1
      * instead of the original value X.
      *
      * Further more, the special value -1 is not chosen by our inspiration but
      * the definition of NO_INDEX in document of dex file format.
      */
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
         // Should override by subclass if needed.
     }
 

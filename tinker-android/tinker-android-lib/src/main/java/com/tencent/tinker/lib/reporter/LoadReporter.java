@@ -36,9 +36,8 @@ public interface LoadReporter {
      *                  {@code ShareConstants.ERROR_PATCH_NOTEXIST}            the file of tempPatchPatch file is not exist
      *                  {@code ShareConstants.ERROR_PATCH_RUNNING}             the recover service is running now, try later
      *                  {@code ShareConstants.ERROR_PATCH_INSERVICE}           the recover service can't send patch request
-     * @param isUpgrade whether is a new patch, or just recover the old patch
      */
-    void onLoadPatchListenerReceiveFail(File patchFile, int errorCode, boolean isUpgrade);
+    void onLoadPatchListenerReceiveFail(File patchFile, int errorCode);
 
     /**
      * we can only handle patch version change in the main process,

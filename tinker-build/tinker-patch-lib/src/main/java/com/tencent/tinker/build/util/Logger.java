@@ -51,6 +51,7 @@ public class Logger {
         }
         //add \n
         System.out.printf(log + "\n");
+        System.out.flush();
 
         logWriter.writeLineToInfoFile(log);
     }
@@ -66,8 +67,9 @@ public class Logger {
         }
         //add \n
         System.err.printf(log + "\n");
-        logWriter.writeLineToInfoFile(log);
+        System.err.flush();
 
+        logWriter.writeLineToInfoFile(log);
     }
 
 }

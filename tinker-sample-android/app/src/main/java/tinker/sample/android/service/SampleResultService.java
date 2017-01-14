@@ -26,13 +26,11 @@ import android.widget.Toast;
 
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.lib.service.PatchResult;
-import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
 import java.io.File;
-import java.util.zip.ZipFile;
 
 import tinker.sample.android.util.Utils;
 
@@ -69,12 +67,9 @@ public class SampleResultService extends DefaultTinkerResultService {
         });
         // is success and newPatch, it is nice to delete the raw file, and restart at once
         // for old patch, you can't delete the patch file
-        if (result.isSuccess && result.isUpgradePatch) {
-            File rawFile = new File(result.rawPatchFilePath);
-            if (rawFile.exists()) {
-                TinkerLog.i(TAG, "save delete raw patch file");
-                SharePatchFileUtil.safeDeleteFile(rawFile);
-            }
+        if (result.isSuccess) {
+            deleteRawPatchFile(new File(result.rawPatchFilePath));
+
             //not like TinkerResultService, I want to restart just when I am at background!
             //if you have not install tinker this moment, you can use TinkerApplicationHelper api
             if (checkIfNeedKill(result)) {
@@ -95,12 +90,6 @@ public class SampleResultService extends DefaultTinkerResultService {
             } else {
                 TinkerLog.i(TAG, "I have already install the newly patch version!");
             }
-        }
-
-        //repair current patch fail, just clean!
-        if (!result.isSuccess && !result.isUpgradePatch) {
-            //if you have not install tinker this moment, you can use TinkerApplicationHelper api
-            Tinker.with(getApplicationContext()).cleanPatch();
         }
     }
 

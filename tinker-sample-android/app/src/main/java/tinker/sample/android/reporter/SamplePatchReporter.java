@@ -43,45 +43,45 @@ public class SamplePatchReporter extends DefaultPatchReporter {
     }
 
     @Override
-    public void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t, boolean isUpgradePatch) {
-        super.onPatchDexOptFail(patchFile, dexFile, optDirectory, dexName, t, isUpgradePatch);
+    public void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t) {
+        super.onPatchDexOptFail(patchFile, dexFile, optDirectory, dexName, t);
         SampleTinkerReport.onApplyDexOptFail(t);
     }
 
     @Override
-    public void onPatchException(File patchFile, Throwable e, boolean isUpgradePatch) {
-        super.onPatchException(patchFile, e, isUpgradePatch);
+    public void onPatchException(File patchFile, Throwable e) {
+        super.onPatchException(patchFile, e);
         SampleTinkerReport.onApplyCrash(e);
     }
 
     @Override
-    public void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion, boolean isUpgradePatch) {
-        super.onPatchInfoCorrupted(patchFile, oldVersion, newVersion, isUpgradePatch);
+    public void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion) {
+        super.onPatchInfoCorrupted(patchFile, oldVersion, newVersion);
         SampleTinkerReport.onApplyInfoCorrupted();
     }
 
     @Override
-    public void onPatchPackageCheckFail(File patchFile, boolean isUpgradePatch, int errorCode) {
-        super.onPatchPackageCheckFail(patchFile, isUpgradePatch, errorCode);
+    public void onPatchPackageCheckFail(File patchFile, int errorCode) {
+        super.onPatchPackageCheckFail(patchFile, errorCode);
         SampleTinkerReport.onApplyPackageCheckFail(errorCode);
     }
 
     @Override
-    public void onPatchResult(File patchFile, boolean success, long cost, boolean isUpgradePatch) {
-        super.onPatchResult(patchFile, success, cost, isUpgradePatch);
-        SampleTinkerReport.onApplied(isUpgradePatch, cost, success);
-        UpgradePatchRetry.getInstance(context).onPatchServiceResult(isUpgradePatch);
+    public void onPatchResult(File patchFile, boolean success, long cost) {
+        super.onPatchResult(patchFile, success, cost);
+        SampleTinkerReport.onApplied(cost, success);
+        UpgradePatchRetry.getInstance(context).onPatchServiceResult();
     }
 
     @Override
-    public void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType, boolean isUpgradePatch) {
-        super.onPatchTypeExtractFail(patchFile, extractTo, filename, fileType, isUpgradePatch);
+    public void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType) {
+        super.onPatchTypeExtractFail(patchFile, extractTo, filename, fileType);
         SampleTinkerReport.onApplyExtractFail(fileType);
     }
 
     @Override
-    public void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion, boolean isUpgradePatch) {
-        super.onPatchVersionCheckFail(patchFile, oldPatchInfo, patchFileVersion, isUpgradePatch);
+    public void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion) {
+        super.onPatchVersionCheckFail(patchFile, oldPatchInfo, patchFileVersion);
         SampleTinkerReport.onApplyVersionCheckFail();
     }
 }

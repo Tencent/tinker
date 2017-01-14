@@ -82,6 +82,12 @@
         <!--or TinkerLoadResult.getPackageConfigByName-->
         <!--you must add TINKER_ID with the old apk manifest's meta TINKER_ID value-->
         <!--other config files (such as patchMessage below)is not necessary-->
+
+        <!--For sample project or any projects that copy SamplePatchListener directory,-->
+        <!--platform config field is necessary, or an error code ERROR_PATCH_CONDITION_NOT_SATISFIED(-10)-->
+        <!--will be thrown.-->
+        <configField name="platform" value="all"/>
+
         <configField name="patchMessage" value="classes.dex"/>
     </issue>
 

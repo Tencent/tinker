@@ -6,7 +6,7 @@
     *;
 }
 
--keep public class * extends com.tencent.tinker.loader.app.TinkerApplication {
+-keep public class * extends android.app.Application {
     *;
 }
 

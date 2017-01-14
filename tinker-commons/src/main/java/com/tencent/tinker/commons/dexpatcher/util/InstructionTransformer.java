@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.android.dx.util;
+package com.tencent.tinker.commons.dexpatcher.util;
 
 import com.tencent.tinker.android.dex.DexException;
 import com.tencent.tinker.android.dx.instruction.InstructionCodec;
@@ -31,9 +31,9 @@ import java.io.EOFException;
  * Created by tangyinsheng on 2016/6/29.
  */
 public final class InstructionTransformer {
-    private final com.tencent.tinker.android.dx.util.IndexMap indexMap;
+    private final AbstractIndexMap indexMap;
 
-    public InstructionTransformer(com.tencent.tinker.android.dx.util.IndexMap indexMap) {
+    public InstructionTransformer(AbstractIndexMap indexMap) {
         this.indexMap = indexMap;
     }
 

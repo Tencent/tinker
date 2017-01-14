@@ -5,7 +5,8 @@ apply plugin: 'java'
 version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
 
-task buildSdk(type: Copy, dependsOn: [build]) {
+task buildTinkerSdk(type: Copy, dependsOn: [build]) {
+    group = "tinker"
     from('build/libs') {
         include '*.jar'
         exclude '*javadoc.jar'

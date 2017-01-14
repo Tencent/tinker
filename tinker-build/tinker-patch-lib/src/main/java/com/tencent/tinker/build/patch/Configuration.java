@@ -83,7 +83,7 @@ public class Configuration {
     public File             mOldApkFile;
     public File             mNewApkFile;
     public boolean          mIgnoreWarning;
-    public boolean          mUsePreGeneratedPatchDex;
+
     /**
      * lib config
      */
@@ -214,7 +214,6 @@ public class Configuration {
         mOutFolder = param.outFolder;
 
         mIgnoreWarning = param.ignoreWarning;
-        mUsePreGeneratedPatchDex = param.usePreGeneratedPatchDex;
 
         mSevenZipPath = param.sevenZipPath;
         mPackageFields = param.configFields;
@@ -237,7 +236,6 @@ public class Configuration {
         sb.append("newApk:" + mNewApkPath + "\n");
         sb.append("outputFolder:" + mOutFolder + "\n");
         sb.append("isIgnoreWarning:" + mIgnoreWarning + "\n");
-        sb.append("isInsertStubMode:" + mUsePreGeneratedPatchDex + "\n");
         sb.append("7-ZipPath:" + mSevenZipPath + "\n");
         sb.append("useSignAPk:" + mUseSignAPk + "\n");
 
@@ -303,7 +301,8 @@ public class Configuration {
 
         String tempNewName = newApkName.substring(0, newApkName.indexOf(TypedValue.FILE_APK));
 
-        if (tempNewName.equals(tempOldName)) {
+        // Bugfix: For windows user, filename is case-insensitive.
+        if (tempNewName.equalsIgnoreCase(tempOldName)) {
             tempOldName += "-old";
             tempNewName += "-new";
         }

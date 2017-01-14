@@ -58,20 +58,16 @@ public abstract class BaseDecoder {
         return config.mTempResultDir.toPath().resolve(getRelativePath(file));
     }
 
-    public String getRelativeString(File file) {
-        return config.mTempUnzipNewDir.toPath().relativize(file.toPath()).toString().replace("\\", "/");
+    public String getRelativePathStringToOldFile(File oldFile) {
+        return config.mTempUnzipOldDir.toPath().relativize(oldFile.toPath()).toString().replace("\\", "/");
     }
 
-    public String getParentRelativeString(File file) {
-        return config.mTempUnzipNewDir.toPath().relativize(file.getParentFile().toPath()).toString().replace("\\", "/");
+    public String getRelativePathStringToNewFile(File newFile) {
+        return config.mTempUnzipNewDir.toPath().relativize(newFile.toPath()).toString().replace("\\", "/");
     }
 
-    public String getRelativeStringByOldDir(File file) {
-        return config.mTempUnzipOldDir.toPath().relativize(file.toPath()).toString().replace("\\", "/");
-    }
-
-    public String getParentRelativeStringByOldDir(File file) {
-        return config.mTempUnzipOldDir.toPath().relativize(file.getParentFile().toPath()).toString().replace("\\", "/");
+    public String getParentRelativePathStringToNewFile(File newFile) {
+        return config.mTempUnzipNewDir.toPath().relativize(newFile.getParentFile().toPath()).toString().replace("\\", "/");
     }
 
     /**

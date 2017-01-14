@@ -19,7 +19,6 @@ package com.tencent.tinker.lib.reporter;
 
 import android.content.Intent;
 
-import com.tencent.tinker.lib.patch.RepairPatch;
 import com.tencent.tinker.lib.patch.UpgradePatch;
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
@@ -29,12 +28,8 @@ import java.io.File;
 /**
  * Created by zhangshaowen on 16/3/14.
  *
- * isUpgradePatch:
- * true: means that it is a newly patch, we would default use {@link UpgradePatch}
+ * means that it is a newly patch, we would default use {@link UpgradePatch}
  * to do the job
- *
- * false: means that there are some files missing in current patch, we want to repair them,
- * we would default use {@link RepairPatch} to do the recover patch job
  */
 public interface PatchReporter {
 
@@ -61,7 +56,7 @@ public interface PatchReporter {
      *                  {@code ShareConstants.ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED}         resource meta file's format check fail
      *                  {@code ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT}          some patch file type is not supported for current tinkerFlag
      */
-    void onPatchPackageCheckFail(File patchFile, boolean isUpgradePatch, int errorCode);
+    void onPatchPackageCheckFail(File patchFile, int errorCode);
 
     /**
      * for upgrade patch, patchFileVersion can't equal oldVersion or newVersion in oldPatchInfo
@@ -70,9 +65,8 @@ public interface PatchReporter {
      * @param patchFile        the input patch file to recover
      * @param oldPatchInfo     the current patch info
      * @param patchFileVersion it is the md5 of the input patchFile
-     * @param isUpgradePatch   whether it is a new patch file, or just recover some of the current patch files
      */
-    void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion, boolean isUpgradePatch);
+    void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion);
 
 
     /**
@@ -87,9 +81,8 @@ public interface PatchReporter {
      *                       {@code ShareConstants.TYPE_LIBRARY}     extract patch library fail
      *                       {@code ShareConstants.TYPE_PATCH_FILE}  copy patch file fail
      *                       {@code ShareConstants.TYPE_RESOURCE}    extract patch resource fail
-     * @param isUpgradePatch whether it is a new patch file, or just recover some of the current patch files
      */
-    void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType, boolean isUpgradePatch);
+    void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType);
 
 
     /**
@@ -100,9 +93,8 @@ public interface PatchReporter {
      * @param optDirectory
      * @param dexName        dexName try to dexOpt
      * @param t              throwable
-     * @param isUpgradePatch whether it is a new patch file, or just recover some of the current patch files
      */
-    void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t, boolean isUpgradePatch);
+    void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t);
 
 
     /**
@@ -111,9 +103,8 @@ public interface PatchReporter {
      * @param patchFile      the input patch file to recover
      * @param success        if it is success
      * @param cost           cost time in ms
-     * @param isUpgradePatch whether it is a new patch file, or just recover some of the current patch files
      */
-    void onPatchResult(File patchFile, boolean success, long cost, boolean isUpgradePatch);
+    void onPatchResult(File patchFile, boolean success, long cost);
 
     /**
      * recover patch occur unknown exception that we have wrap try catch for you!
@@ -122,9 +113,8 @@ public interface PatchReporter {
      *
      * @param patchFile      the input file to patch
      * @param e
-     * @param isUpgradePatch whether it is a new patch file, or just recover some of the current patch files
      */
-    void onPatchException(File patchFile, Throwable e, boolean isUpgradePatch);
+    void onPatchException(File patchFile, Throwable e);
 
     /**
      * when we load a new patch, we need to rewrite the patch.info file.
@@ -133,8 +123,7 @@ public interface PatchReporter {
      * @param patchFile      the input patch file to recover
      * @param oldVersion     old patch version
      * @param newVersion     new patch version
-     * @param isUpgradePatch whether it is a new patch file, or just recover some of the current patch files
      */
-    void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion, boolean isUpgradePatch);
+    void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion);
 
 }

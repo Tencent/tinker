@@ -118,8 +118,8 @@ public class BsDiffDecoder extends BaseDecoder {
         if (metaWriter == null && logWriter == null) {
             return;
         }
-        String parentRelative = getParentRelativeString(newFile);
-        String relative = getRelativeString(newFile);
+        String parentRelative = getParentRelativePathStringToNewFile(newFile);
+        String relative = getRelativePathStringToNewFile(newFile);
 
         if (metaWriter != null) {
             String fileName = newFile.getName();

@@ -39,7 +39,8 @@ publishing {
     }
 }
 
-task buildAndPublishLocalMaven(dependsOn: ['build', 'publishTinkerPatchPublicationToMavenLocal']) {}
+task buildAndPublishTinkerToLocalMaven(dependsOn: ['build', 'publishTinkerPatchPublicationToMavenLocal']) {
+    group = 'tinker'
+}
 
-//depend checkstyle
-project.tasks.getByName("check").dependsOn tasks.getByName("checkstyle")
+apply from: rootProject.file('gradle/check.gradle')

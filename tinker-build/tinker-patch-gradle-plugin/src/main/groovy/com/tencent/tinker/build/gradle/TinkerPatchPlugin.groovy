@@ -18,13 +18,12 @@ package com.tencent.tinker.build.gradle
 
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
-import com.tencent.tinker.build.gradle.transform.AuxiliaryInjectTransform
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.build.util.TypedValue
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.UnknownTaskException
+import org.gradle.api.Task
 
 /**
  * Registers the plugin's tasks.
@@ -37,7 +36,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.apply plugin: 'osdetector'
+        //osdetector change its plugin name in 1.4.0
+        try {
+            project.apply plugin: 'osdetector'
+        } catch (Throwable e) {
+            project.apply plugin: 'com.google.osdetector'
+        }
 
         project.extensions.create('tinkerPatch', TinkerPatchExtension)
 
@@ -49,23 +53,36 @@ class TinkerPatchPlugin implements Plugin<Project> {
         project.tinkerPatch.extensions.create('packageConfig', TinkerPackageConfigExtension, project)
         project.tinkerPatch.extensions.create('sevenZip', TinkerSevenZipExtension, project)
 
-        def configuration = project.tinkerPatch
-
-        project.android.registerTransform(new AuxiliaryInjectTransform(project))
+        if (!project.plugins.hasPlugin('com.android.application')) {
+            throw new GradleException('generateTinkerApk: Android Application plugin required')
+        }
 
         project.afterEvaluate {
-            if (!project.plugins.hasPlugin('com.android.application')) {
-                throw new GradleException('generateTinkerApk: Android Application plugin required')
+            def configuration = project.tinkerPatch
+
+            if (!configuration.tinkerEnable) {
+                project.logger.error("tinker tasks are disabled.")
+                return
             }
 
             def android = project.extensions.android
-            //add the tinker anno resource to the package exclude option
-            android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
-            android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
+
             //open jumboMode
             android.dexOptions.jumboMode = true
 
+            //close preDexLibraries
+            try {
+                android.dexOptions.preDexLibraries = false
+            } catch (Throwable e) {
+                //no preDexLibraries field, just continue
+            }
+
             project.logger.error("----------------------tinker build warning ------------------------------------")
+            project.logger.error("tinker auto operation: ")
+            project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")
+            project.logger.error("enable dx jumboMode to reduce package size.")
+            project.logger.error("disable preDexLibraries to prevent ClassDefNotFoundException when your app is booting.")
+            project.logger.error("")
             project.logger.error("tinker will change your build configs:")
             project.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
             project.logger.error("")
@@ -82,7 +99,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
             project.logger.error("")
             project.logger.error("if multiDexEnabled is true")
             project.logger.error("you will find the gen multiDexKeepProguard file at ${TinkerMultidexConfigTask.MULTIDEX_CONFIG_PATH}")
-            project.logger.error("and you should copy it to your own multiDex keep proguard file yourself.")
+            project.logger.error("and we will help you to put it in the MultiDexKeepProguardFile.")
             project.logger.error("")
             project.logger.error("if applyResourceMapping file is exist")
             String tempResourceMappingPath = configuration.buildConfig.applyResourceMapping
@@ -99,17 +116,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 def variantOutput = variant.outputs.first()
                 def variantName = variant.name.capitalize()
 
-                try {
-                    def instantRunTask = project.tasks.getByName("transformClassesWithInstantRunFor${variantName}")
-                    if (instantRunTask) {
-                        throw new GradleException(
-                                "Tinker does not support instant run mode, please trigger build"
-                                        + " by assemble${variantName} or disable instant run"
-                                        + " in 'File->Settings...'."
-                        )
-                    }
-                } catch (UnknownTaskException e) {
-                    // Not in instant run mode, continue.
+                def instantRunTask = getInstantRunTask(project, variantName)
+                if (instantRunTask != null) {
+                    throw new GradleException(
+                            "Tinker does not support instant run mode, please trigger build"
+                                    + " by assemble${variantName} or disable instant run"
+                                    + " in 'File->Settings...'."
+                    )
                 }
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
@@ -146,7 +159,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 if (proguardEnable) {
                     TinkerProguardConfigTask proguardConfigTask = project.tasks.create("tinkerProcess${variantName}Proguard", TinkerProguardConfigTask)
                     proguardConfigTask.applicationVariant = variant
-                    variantOutput.packageApplication.dependsOn proguardConfigTask
+                    proguardConfigTask.mustRunAfter manifestTask
+
+                    def proguardTask = getProguardTask(project, variantName)
+                    if (proguardTask != null) {
+                        proguardTask.dependsOn proguardConfigTask
+                    }
+
                 }
 
                 // Add this multidex proguard settings file to the list
@@ -155,12 +174,44 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 if (multiDexEnabled) {
                     TinkerMultidexConfigTask multidexConfigTask = project.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
-                    variantOutput.packageApplication.dependsOn multidexConfigTask
+                    multidexConfigTask.mustRunAfter manifestTask
+
+                    def multidexTask = getMultiDexTask(project, variantName)
+                    if (multidexTask != null) {
+                        multidexTask.dependsOn multidexConfigTask
+                    }
+                    def collectMultiDexComponentsTask = getCollectMultiDexComponentsTask(project, variantName)
+                    if (collectMultiDexComponentsTask != null) {
+                        multidexConfigTask.mustRunAfter collectMultiDexComponentsTask
+                    }
                 }
 
+                if (configuration.buildConfig.keepDexApply
+                    && FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
+                    com.tencent.tinker.build.gradle.transform.ImmutableDexTransform.inject(project, variant)
+                }
             }
         }
+    }
 
+    Task getMultiDexTask(Project project, String variantName) {
+        String multiDexTaskName = "transformClassesWithMultidexlistFor${variantName}"
+        return project.tasks.findByName(multiDexTaskName)
+    }
+
+    Task getProguardTask(Project project, String variantName) {
+        String proguardTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
+        return project.tasks.findByName(proguardTaskName)
+    }
+
+    Task getInstantRunTask(Project project, String variantName) {
+        String instantRunTask = "transformClassesWithInstantRunFor${variantName}"
+        return project.tasks.findByName(instantRunTask)
+    }
+
+    Task getCollectMultiDexComponentsTask(Project project, String variantName) {
+        String collectMultiDexComponents = "collect${variantName}MultiDexComponents"
+        return project.tasks.findByName(collectMultiDexComponents)
     }
 
 }

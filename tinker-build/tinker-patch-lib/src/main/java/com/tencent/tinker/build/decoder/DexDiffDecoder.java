@@ -17,20 +17,14 @@
 package com.tencent.tinker.build.decoder;
 
 
-import com.google.common.io.Files;
-
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
-import com.tencent.tinker.android.dx.util.Hex;
 import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
-import com.tencent.tinker.build.dexpatcher.util.SmallDexClassInfoCollector;
-import com.tencent.tinker.build.dexpatcher.util.SmallDexPatchGenerator;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.DexClassesComparator;
 import com.tencent.tinker.build.util.DexClassesComparator.DexClassInfo;
-import com.tencent.tinker.build.util.DexClassesComparator.DexGroup;
 import com.tencent.tinker.build.util.ExcludedClassModifiedChecker;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.Logger;
@@ -40,18 +34,6 @@ import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
-
-import org.jf.dexlib2.Opcodes;
-import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
-import org.jf.dexlib2.dexbacked.DexBackedDexFile;
-import org.jf.dexlib2.iface.DexFile;
-import org.jf.dexlib2.iface.Field;
-import org.jf.dexlib2.iface.Method;
-import org.jf.dexlib2.writer.builder.BuilderField;
-import org.jf.dexlib2.writer.builder.BuilderMethod;
-import org.jf.dexlib2.writer.builder.DexBuilder;
-import org.jf.dexlib2.writer.io.FileDataStore;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +53,6 @@ import java.util.zip.ZipEntry;
  */
 public class DexDiffDecoder extends BaseDecoder {
     private static final String TEST_DEX_NAME = "test.dex";
-    private static final String PREGENERATED_PATCH_DEX_NAME = "changed_classes.dex";
 
     private final InfoWriter logWriter;
     private final InfoWriter metaWriter;
@@ -121,13 +102,21 @@ public class DexDiffDecoder extends BaseDecoder {
 
     }
 
+    /**
+     * Provide /oldFileRoot/dir/to/oldDex, /newFileRoot/dir/to/newDex,
+     * return dir/to/oldDex or dir/to/newDex if any one is not null.
+     */
+    protected String getRelativeDexName(File oldDexFile, File newDexFile) {
+        return oldDexFile != null ? getRelativePathStringToOldFile(oldDexFile) : getRelativePathStringToNewFile(newDexFile);
+    }
+
     @SuppressWarnings("NewApi")
     @Override
     public boolean patch(final File oldFile, final File newFile) throws IOException, TinkerPatchException {
+        final String dexName = getRelativeDexName(oldFile, newFile);
+
         // first of all, we should check input files if excluded classes were modified.
-        Logger.d("Check for loader classes in dex: %s",
-            (oldFile == null ? getRelativeString(newFile) : getRelativeString(oldFile))
-        );
+        Logger.d("Check for loader classes in dex: %s", dexName);
 
         try {
             excludedClassModifiedChecker.checkIfExcludedClassWasModifiedInNewDex(oldFile, newFile);
@@ -152,23 +141,21 @@ public class DexDiffDecoder extends BaseDecoder {
 
         File dexDiffOut = getOutputPath(newFile).toFile();
 
-        final String newMd5 = MD5.getMD5(newFile);
+        final String newMd5 = getRawOrWrappedDexMD5(newFile);
 
         //new add file
         if (oldFile == null || !oldFile.exists() || oldFile.length() == 0) {
             hasDexChanged = true;
-            if (!config.mUsePreGeneratedPatchDex) {
-                copyNewDexAndMarkInMeta(newFile, newMd5, dexDiffOut);
-                return true;
-            }
+            copyNewDexAndLogToDexMeta(newFile, newMd5, dexDiffOut);
+            return true;
         }
 
-        final String oldMd5 = MD5.getMD5(oldFile);
+        final String oldMd5 = getRawOrWrappedDexMD5(oldFile);
 
         if ((oldMd5 != null && !oldMd5.equals(newMd5)) || (oldMd5 == null && newMd5 != null)) {
             hasDexChanged = true;
             if (oldMd5 != null) {
-                checkAddedOrDeletedClasses(oldFile, newFile);
+                collectAddedOrDeletedClasses(oldFile, newFile);
             }
         }
 
@@ -179,7 +166,6 @@ public class DexDiffDecoder extends BaseDecoder {
         // collect current old dex file and corresponding new dex file for further processing.
         oldAndNewDexFilePairList.add(new AbstractMap.SimpleEntry<>(oldFile, newFile));
 
-        final String dexName = (oldFile != null ? oldFile.getName() : newFile.getName());
         dexNameToRelatedInfoMap.put(dexName, relatedInfo);
 
         return true;
@@ -192,189 +178,96 @@ public class DexDiffDecoder extends BaseDecoder {
             return;
         }
 
-        if (config.mUsePreGeneratedPatchDex) {
-            generateStubModePatchDex();
-        } else {
-            generatePatchInfoFile();
-        }
-    }
-
-    @SuppressWarnings("NewApi")
-    private void generateStubModePatchDex() throws IOException {
-        List<File> oldDexList = new ArrayList<>();
-        List<File> newDexList = new ArrayList<>();
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldDexFile = oldAndNewDexFilePair.getKey();
-            File newDexFile = oldAndNewDexFilePair.getValue();
-            if (oldDexFile != null) {
-                oldDexList.add(oldDexFile);
-            }
-            if (newDexFile != null) {
-                newDexList.add(newDexFile);
-            }
-        }
-
-        DexGroup oldDexGroup = DexGroup.wrap(oldDexList);
-        DexGroup newDexGroup = DexGroup.wrap(newDexList);
-
-        SmallDexClassInfoCollector smallDexClassInfoCollector = new SmallDexClassInfoCollector();
-        smallDexClassInfoCollector.setLoaderClassPatterns(config.mDexLoaderPattern);
-        smallDexClassInfoCollector.setLogger(this.dexPatcherLoggerBridge);
-
-        Set<DexClassInfo> classInfosInPatchedDex =
-                smallDexClassInfoCollector.doCollect(oldDexGroup, newDexGroup);
-
-        // So far we have got all infos of classes we need to include in stub mode patch dex.
-        // Now construct the stub mode patch dex.
-        final Set<String> classDescsInPatchedDex = new HashSet<>();
-        Set<Dex> newDexes = new HashSet<>();
-
-        DexBuilder dexBuilder = DexBuilder.makeDexBuilder(Opcodes.forApi(15));
-
-        for (DexClassInfo classInfo : classInfosInPatchedDex) {
-            classDescsInPatchedDex.add(classInfo.classDesc);
-            newDexes.add(classInfo.owner);
-        }
-
-        for (Dex newDex : newDexes) {
-            DexFile dexFile = new DexBackedDexFile(Opcodes.forApi(15), newDex.getBytes());
-            for (org.jf.dexlib2.iface.ClassDef parsedClassDef : dexFile.getClasses()) {
-                if (classDescsInPatchedDex.contains(parsedClassDef.getType())) {
-                    List<BuilderField> builderFields = new ArrayList<>();
-                    for (Field parsedField : parsedClassDef.getFields()) {
-                        BuilderField builderField = dexBuilder.internField(
-                                parsedField.getDefiningClass(),
-                                parsedField.getName(),
-                                parsedField.getType(),
-                                parsedField.getAccessFlags(),
-                                parsedField.getInitialValue(),
-                                parsedField.getAnnotations()
-                        );
-                        builderFields.add(builderField);
-                    }
-                    List<BuilderMethod> builderMethods = new ArrayList<>();
-                    for (Method parsedMethod : parsedClassDef.getMethods()) {
-                        BuilderMethod builderMethod = dexBuilder.internMethod(
-                                parsedMethod.getDefiningClass(),
-                                parsedMethod.getName(),
-                                parsedMethod.getParameters(),
-                                parsedMethod.getReturnType(),
-                                parsedMethod.getAccessFlags(),
-                                parsedMethod.getAnnotations(),
-                                new BuilderMutableMethodImplementation(
-                                        dexBuilder, parsedMethod.getImplementation()
-                                )
-                        );
-                        builderMethods.add(builderMethod);
-                    }
-
-                    dexBuilder.internClassDef(
-                            parsedClassDef.getType(),
-                            parsedClassDef.getAccessFlags(),
-                            parsedClassDef.getSuperclass(),
-                            parsedClassDef.getInterfaces(),
-                            parsedClassDef.getSourceFile(),
-                            parsedClassDef.getAnnotations(),
-                            builderFields,
-                            builderMethods
-                    );
-                }
-            }
-        }
-
-        // Write constructed stub mode patch dex to file and record it in meta file.
-        final String dexMode = config.mDexRaw ? "raw" : "jar";
-        final File dest = new File(config.mTempResultDir + "/" + PREGENERATED_PATCH_DEX_NAME);
-
-        FileDataStore fileDataStore = new FileDataStore(dest);
-        dexBuilder.writeTo(fileDataStore);
-
-        final File tempPreGeneratedPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "pre-generated");
-        ensureDirectoryExist(tempPreGeneratedPatchDexPath);
-        Files.copy(dest, new File(tempPreGeneratedPatchDexPath, PREGENERATED_PATCH_DEX_NAME));
-
-        final String md5 = MD5.getMD5(dest);
-
-        String meta = PREGENERATED_PATCH_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0
-                        + "," + 0 + "," + dexMode;
-
-        Logger.d("\nPre-generated patch dex: %s, size:%d", dest.getAbsolutePath(), dest.length());
-        Logger.d("DexDecoder:write pre-generated patch dex meta file data: %s", meta);
-
-        metaWriter.writeLineToInfoFile(meta);
+        generatePatchInfoFile();
 
         addTestDex();
     }
 
     @SuppressWarnings("NewApi")
     private void generatePatchInfoFile() throws IOException {
-        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "full");
-        ensureDirectoryExist(tempFullPatchDexPath);
-        File tempSmallPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR + File.separator + "small");
-        ensureDirectoryExist(tempSmallPatchDexPath);
+        generatePatchedDexInfoFile();
 
+        // generateSmallPatchedDexInfoFile is blocked by issue we found in ART environment
+        // which indicates that if inline optimization is done on patched class, some error
+        // such as crash, ClassCastException, mistaken string fetching, etc. would happen.
+        //
+        // Instead, we will log all classN dexes as 'copy directly' in dex-meta, so that
+        // tinker patch applying procedure will copy them out and load them in ART environment.
+
+        //generateSmallPatchedDexInfoFile();
+
+        logDexesToDexMeta();
+
+        checkCrossDexMovingClasses();
+    }
+
+    @SuppressWarnings("NewApi")
+    private void logDexesToDexMeta() throws IOException {
+        Map<String, File> dexNameToClassNOldDexFileMap = new HashMap<>();
+        Set<File> realClassNDexFiles = new HashSet<>();
+
+        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
+            File oldFile = oldAndNewDexFilePair.getKey();
+            final String dexName = getRelativeDexName(oldFile, null);
+            if (isDexNameMatchesClassNPattern(dexName)) {
+                dexNameToClassNOldDexFileMap.put(dexName, oldFile);
+            }
+        }
+
+        // If we meet a case like:
+        // classes.dex, classes2.dex, classes4.dex, classes5.dex
+        // Since classes3.dex is missing, according to the logic in AOSP, we should not treat
+        // rest dexes as part of class N dexes.
+        for (int i = 0; i < dexNameToClassNOldDexFileMap.size(); ++i) {
+            final String expectedDexName = (i == 0 ? DexFormat.DEX_IN_JAR_NAME : "classes" + (i + 1) + ".dex");
+            if (dexNameToClassNOldDexFileMap.containsKey(expectedDexName)) {
+                File oldDexFile = dexNameToClassNOldDexFileMap.get(expectedDexName);
+                realClassNDexFiles.add(oldDexFile);
+            } else {
+                break;
+            }
+        }
+
+        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
+            final File oldDexFile = oldAndNewDexFilePair.getKey();
+            final File newDexFile = oldAndNewDexFilePair.getValue();
+            final String dexName = getRelativeDexName(oldDexFile, newDexFile);
+            final RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
+            if (!relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
+                //logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.smallPatchedMd5, relatedInfo.dexDiffMd5);
+                logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.newOrFullPatchedMd5, relatedInfo.dexDiffMd5);
+            } else {
+                // For class N dexes, if new dex is the same as old dex, we should log it as 'copy directly'
+                // in dex meta to fix problems in Art environment.
+                if (realClassNDexFiles.contains(oldDexFile)) {
+                    //if (!"0".equals(relatedInfo.smallPatchedMd5)) {
+                    //    logToDexMeta(newDexFile, oldDexFile, null, "0", relatedInfo.smallPatchedMd5, "0");
+                    //}
+
+                    // Bugfix: However, if what we would copy directly is main dex, we should do an additional diff operation
+                    // so that patch applier would help us remove all loader classes of it in runtime.
+                    if (dexName.equals(DexFormat.DEX_IN_JAR_NAME)) {
+                        Logger.d("\nDo additional diff on main dex to remove loader classes in it.");
+                        diffDexPairAndFillRelatedInfo(oldDexFile, newDexFile, relatedInfo);
+                        logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.newOrFullPatchedMd5, relatedInfo.dexDiffMd5);
+                    } else {
+                        logToDexMeta(newDexFile, oldDexFile, null, "0", relatedInfo.oldMd5, "0");
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("NewApi")
+    private void generatePatchedDexInfoFile() {
         // Generate dex diff out and full patched dex if a pair of dex is different.
         for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
             File oldFile = oldAndNewDexFilePair.getKey();
             File newFile = oldAndNewDexFilePair.getValue();
-            final String dexName = oldFile.getName();
+            final String dexName = getRelativeDexName(oldFile, newFile);
             RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
-
             if (!relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
-                File dexDiffOut = getOutputPath(newFile).toFile();
-                ensureDirectoryExist(dexDiffOut.getParentFile());
-
-                try {
-                    DexPatchGenerator dexPatchGen = new DexPatchGenerator(oldFile, newFile);
-                    dexPatchGen.setAdditionalRemovingClassPatterns(config.mDexLoaderPattern);
-
-                    logWriter.writeLineToInfoFile(
-                            String.format(
-                                    "Start diff between [%s] as old and [%s] as new:",
-                                    getRelativeStringBy(oldFile, config.mTempUnzipOldDir),
-                                    getRelativeStringBy(newFile, config.mTempUnzipNewDir)
-                            )
-                    );
-
-                    dexPatchGen.executeAndSaveTo(dexDiffOut);
-                } catch (Exception e) {
-                    throw new TinkerPatchException(e);
-                }
-
-                if (!dexDiffOut.exists()) {
-                    throw new TinkerPatchException("can not find the diff file:" + dexDiffOut.getAbsolutePath());
-                }
-
-                relatedInfo.dexDiffFile = dexDiffOut;
-                relatedInfo.dexDiffMd5 = MD5.getMD5(dexDiffOut);
-                Logger.d("\nGen %s patch file:%s, size:%d, md5:%s", dexName, relatedInfo.dexDiffFile.getAbsolutePath(), relatedInfo.dexDiffFile.length(), relatedInfo.dexDiffMd5);
-
-                File tempFullPatchedDexFile = new File(tempFullPatchDexPath, dexName);
-
-                try {
-                    new DexPatchApplier(oldFile, dexDiffOut).executeAndSaveTo(tempFullPatchedDexFile);
-
-                    Logger.d(
-                            String.format("Verifying if patched new dex is logically the same as original new dex: %s ...", getRelativeStringBy(newFile, config.mTempUnzipNewDir))
-                    );
-
-                    Dex origNewDex = new Dex(newFile);
-                    Dex patchedNewDex = new Dex(tempFullPatchedDexFile);
-                    checkDexChange(origNewDex, patchedNewDex);
-
-                    relatedInfo.newOrFullPatchedFile = tempFullPatchedDexFile;
-                    relatedInfo.newOrFullPatchedMd5 = MD5.getMD5(tempFullPatchedDexFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new TinkerPatchException(
-                            "Failed to generate temporary patched dex, which makes MD5 generating procedure of new dex failed, either.", e
-                    );
-                }
-
-                if (!tempFullPatchedDexFile.exists()) {
-                    throw new TinkerPatchException("can not find the temporary full patched dex file:" + tempFullPatchedDexFile.getAbsolutePath());
-                }
-                Logger.d("\nGen %s for dalvik full dex file:%s, size:%d, md5:%s", dexName, tempFullPatchedDexFile.getAbsolutePath(), tempFullPatchedDexFile.length(), relatedInfo.newOrFullPatchedMd5);
+                diffDexPairAndFillRelatedInfo(oldFile, newFile, relatedInfo);
             } else {
                 // In this case newDexFile is the same as oldDexFile, but we still
                 // need to treat it as patched dex file so that the SmallPatchGenerator
@@ -383,129 +276,93 @@ public class DexDiffDecoder extends BaseDecoder {
                 relatedInfo.newOrFullPatchedMd5 = relatedInfo.newMd5;
             }
         }
+    }
 
-        Set<File> classNOldDexFiles = new HashSet<>();
+    private void diffDexPairAndFillRelatedInfo(File oldDexFile, File newDexFile, RelatedInfo relatedInfo) {
+        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR);
+        final String dexName = getRelativeDexName(oldDexFile, newDexFile);
 
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldFile = oldAndNewDexFilePair.getKey();
-            final String dexName = oldFile.getName();
+        File dexDiffOut = getOutputPath(newDexFile).toFile();
+        ensureDirectoryExist(dexDiffOut.getParentFile());
 
-            if (isDexNameMatchesClassNPattern(dexName)) {
-                classNOldDexFiles.add(oldFile);
-            }
+        try {
+            DexPatchGenerator dexPatchGen = new DexPatchGenerator(oldDexFile, newDexFile);
+            dexPatchGen.setAdditionalRemovingClassPatterns(config.mDexLoaderPattern);
+
+            logWriter.writeLineToInfoFile(
+                    String.format(
+                            "Start diff between [%s] as old and [%s] as new:",
+                            getRelativeStringBy(oldDexFile, config.mTempUnzipOldDir),
+                            getRelativeStringBy(newDexFile, config.mTempUnzipNewDir)
+                    )
+            );
+
+            dexPatchGen.executeAndSaveTo(dexDiffOut);
+        } catch (Exception e) {
+            throw new TinkerPatchException(e);
         }
 
-        // If we meet a case like:
-        // classes.dex, classes2.dex, classes4.dex, classes5.dex
-        // Since classes3.dex is missing, according to the logic in AOSP, we should not treat
-        // rest dexes as part of class N dexes.
-        Map<String, File> dexNameToClassNOldDexFileMap = new HashMap<>();
-        for (File classNOldDex : classNOldDexFiles) {
-            dexNameToClassNOldDexFileMap.put(classNOldDex.getName(), classNOldDex);
+        if (!dexDiffOut.exists()) {
+            throw new TinkerPatchException("can not find the diff file:" + dexDiffOut.getAbsolutePath());
         }
 
-        boolean isRestDexNotInClassN = false;
-        for (int i = 0; i < classNOldDexFiles.size(); ++i) {
-            final String expectedDexName = (i == 0 ? DexFormat.DEX_IN_JAR_NAME : "classes" + (i + 1) + ".dex");
-            if (!dexNameToClassNOldDexFileMap.containsKey(expectedDexName)) {
-                isRestDexNotInClassN = true;
-            } else {
-                if (isRestDexNotInClassN) {
-                    File mistakenClassNOldDexFile = dexNameToClassNOldDexFileMap.get(expectedDexName);
-                    classNOldDexFiles.remove(mistakenClassNOldDexFile);
-                }
-            }
-        }
+        relatedInfo.dexDiffFile = dexDiffOut;
+        relatedInfo.dexDiffMd5 = MD5.getMD5(dexDiffOut);
+        Logger.d("\nGen %s patch file:%s, size:%d, md5:%s", dexName, relatedInfo.dexDiffFile.getAbsolutePath(), relatedInfo.dexDiffFile.length(), relatedInfo.dexDiffMd5);
 
-        File tempSmallPatchInfoFile = new File(config.mTempResultDir, TypedValue.DEX_SMALLPATCH_INFO_FILE);
-        ensureDirectoryExist(tempSmallPatchInfoFile.getParentFile());
-
-        // So far we know whether a pair of dex is belong to class N dexes or other dexes.
-        // Then we collect class N dex pairs and other dex pairs by separate their old dex
-        // and full patched dex into different list.
-        SmallDexPatchGenerator smallDexPatchGenerator = new SmallDexPatchGenerator();
-        smallDexPatchGenerator.setLoaderClassPatterns(config.mDexLoaderPattern);
-        smallDexPatchGenerator.setLogger(dexPatcherLoggerBridge);
-
-        logWriter.writeLineToInfoFile("\nStart collecting old dex and full patched dex...");
-
-        List<File> classNOldDexFileList = new ArrayList<>();
-        List<File> classNFullPatchedDexFileList = new ArrayList<>();
-        List<File> otherOldDexFileList = new ArrayList<>();
-        List<File> otherFullPatchedDexFileList = new ArrayList<>();
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldFile = oldAndNewDexFilePair.getKey();
-            final String dexName = oldFile.getName();
-            File fullPatchedFile = dexNameToRelatedInfoMap.get(dexName).newOrFullPatchedFile;
-            if (classNOldDexFiles.contains(oldFile)) {
-                classNOldDexFileList.add(oldFile);
-                classNFullPatchedDexFileList.add(fullPatchedFile);
-            } else {
-                otherOldDexFileList.add(oldFile);
-                otherFullPatchedDexFileList.add(fullPatchedFile);
-            }
-        }
-
-        logWriter.writeLineToInfoFile(String.format("\nCollected class N old dexes: %s", classNOldDexFileList));
-        logWriter.writeLineToInfoFile(String.format("Collected class N full patched dexes: %s", classNFullPatchedDexFileList));
-        logWriter.writeLineToInfoFile(String.format("\nCollected other old dexes: %s", otherOldDexFileList));
-        logWriter.writeLineToInfoFile(String.format("Collected other full patched dexes: %s", otherFullPatchedDexFileList));
-
-        smallDexPatchGenerator.appendDexGroup(DexGroup.wrap(classNOldDexFileList), DexGroup.wrap(classNFullPatchedDexFileList));
-
-        if (!otherOldDexFileList.isEmpty()) {
-            smallDexPatchGenerator.appendDexGroup(DexGroup.wrap(otherOldDexFileList), DexGroup.wrap(otherFullPatchedDexFileList));
+        File tempFullPatchedDexFile = new File(tempFullPatchDexPath, dexName);
+        if (!tempFullPatchedDexFile.exists()) {
+            ensureDirectoryExist(tempFullPatchedDexFile.getParentFile());
         }
 
         try {
-            Logger.d("Start generating small patch info file...");
-            smallDexPatchGenerator.executeAndSaveTo(tempSmallPatchInfoFile);
+            new DexPatchApplier(oldDexFile, dexDiffOut).executeAndSaveTo(tempFullPatchedDexFile);
+
+            Logger.d(
+                    String.format("Verifying if patched new dex is logically the same as original new dex: %s ...", getRelativeStringBy(newDexFile, config.mTempUnzipNewDir))
+            );
+
+            Dex origNewDex = new Dex(newDexFile);
+            Dex patchedNewDex = new Dex(tempFullPatchedDexFile);
+            checkDexChange(origNewDex, patchedNewDex);
+
+            relatedInfo.newOrFullPatchedFile = tempFullPatchedDexFile;
+            relatedInfo.newOrFullPatchedMd5 = MD5.getMD5(tempFullPatchedDexFile);
         } catch (Exception e) {
-            throw new TinkerPatchException("\nFailed to generate small patch info file.", e);
-        }
-        if (!tempSmallPatchInfoFile.exists()) {
-            throw new TinkerPatchException("can not find the small patch info file:" + tempSmallPatchInfoFile.getAbsolutePath());
-        }
-
-        SmallPatchedDexItemFile smallPatchedDexItemFile = new SmallPatchedDexItemFile(tempSmallPatchInfoFile);
-
-        // Generate small patched dex and write meta.
-        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
-            File oldFile = oldAndNewDexFilePair.getKey();
-            File newFile = oldAndNewDexFilePair.getValue();
-            final String dexName = oldFile.getName();
-            final String oldDexSignStr = Hex.toHexString(new Dex(oldFile).computeSignature(false));
-            File tempSmallPatchedFile = new File(tempSmallPatchDexPath, dexName);
-            RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
-            File dexDiffFile = relatedInfo.dexDiffFile;
-
-            if (!smallPatchedDexItemFile.isSmallPatchedDexEmpty(oldDexSignStr)) {
-                try {
-                    new DexPatchApplier(oldFile, dexDiffFile, smallPatchedDexItemFile).executeAndSaveTo(tempSmallPatchedFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new TinkerPatchException(
-                            "Failed to generate temporary small patched dex, which makes MD5 generating procedure of small patched dex failed, either.", e
-                    );
-                }
-                if (!tempSmallPatchedFile.exists()) {
-                    throw new TinkerPatchException("can not find the temporary small patched dex file:" + tempSmallPatchInfoFile.getAbsolutePath());
-                }
-                relatedInfo.smallPatchedMd5 = MD5.getMD5(tempSmallPatchedFile);
-                Logger.d("\nGen %s for art small dex file:%s, size:%d, md5:%s", dexName, tempSmallPatchedFile.getAbsolutePath(), tempSmallPatchedFile.length(), relatedInfo.smallPatchedMd5);
-
-                if (relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
-                    // Unmodified dex, which has no dexDiffFile, and is ignored in dvm environment.
-                    // So we pass zero string to destMd5InDvm and dexDiffMd5.
-                    writeLogFiles(newFile, oldFile, relatedInfo.dexDiffFile, "0", relatedInfo.smallPatchedMd5, "0");
-                } else {
-                    writeLogFiles(newFile, oldFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.smallPatchedMd5, relatedInfo.dexDiffMd5);
-                }
-            }
+            e.printStackTrace();
+            throw new TinkerPatchException(
+                    "Failed to generate temporary patched dex, which makes MD5 generating procedure of new dex failed, either.", e
+            );
         }
 
-        addTestDex();
+        if (!tempFullPatchedDexFile.exists()) {
+            throw new TinkerPatchException("can not find the temporary full patched dex file:" + tempFullPatchedDexFile.getAbsolutePath());
+        }
+        Logger.d("\nGen %s for dalvik full dex file:%s, size:%d, md5:%s", dexName, tempFullPatchedDexFile.getAbsolutePath(), tempFullPatchedDexFile.length(), relatedInfo.newOrFullPatchedMd5);
+    }
 
+    private void addTestDex() throws IOException {
+        //write test dex
+        String dexMode = "jar";
+        if (config.mDexRaw) {
+            dexMode = "raw";
+        }
+
+        final InputStream is = DexDiffDecoder.class.getResourceAsStream("/" + TEST_DEX_NAME);
+        String md5 = MD5.getMD5(is, 1024);
+        is.close();
+
+        String meta = TEST_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0 + "," + 0 + "," + dexMode;
+
+        File dest = new File(config.mTempResultDir + "/" + TEST_DEX_NAME);
+        FileOperation.copyResourceUsingStream(TEST_DEX_NAME, dest);
+        Logger.d("\nAdd test install result dex: %s, size:%d", dest.getAbsolutePath(), dest.length());
+        Logger.d("DexDecoder:write test dex meta file data: %s", meta);
+
+        metaWriter.writeLineToInfoFile(meta);
+    }
+
+    private void checkCrossDexMovingClasses() {
         // Here we will check if any classes that were deleted in one dex
         // would be added to another dex. e.g. classA is deleted in dex0 and
         // added in dex1.
@@ -535,33 +392,11 @@ public class DexDiffDecoder extends BaseDecoder {
         }
     }
 
-    @Override
-    public void clean() {
-        metaWriter.close();
-        logWriter.close();
-    }
-
-    private void ensureDirectoryExist(File dir) {
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) {
-                throw new TinkerPatchException("failed to create directory: " + dir);
-            }
-        }
-    }
-
-    private boolean isDexNameMatchesClassNPattern(String dexName) {
-        return (dexName.matches("^classes[0-9]*\\.dex$"));
-    }
-
-    private void copyNewDexAndMarkInMeta(File newFile, String newMd5, File output) throws IOException {
-        newMd5 = checkNewDexAndMd5(newMd5, newFile);
-        FileOperation.copyFileUsingStream(newFile, output);
-        writeLogFiles(newFile, null, null, newMd5, newMd5, "0");
-    }
-
-    private void checkAddedOrDeletedClasses(File oldFile, File newFile) throws IOException {
-        // Before starting real diff works, we collect added class descriptor
-        // and deleted class descriptor for further analysing.
+    /**
+     * Before starting real diff works, we collect added class descriptor
+     * and deleted class descriptor for further analysing in {@code checkCrossDexMovingClasses}.
+     */
+    private void collectAddedOrDeletedClasses(File oldFile, File newFile) throws IOException {
         Dex oldDex = new Dex(oldFile);
         Dex newDex = new Dex(newFile);
 
@@ -612,6 +447,15 @@ public class DexDiffDecoder extends BaseDecoder {
         }
     }
 
+    private boolean isDexNameMatchesClassNPattern(String dexName) {
+        return (dexName.matches("^classes[0-9]*\\.dex$"));
+    }
+
+    private void copyNewDexAndLogToDexMeta(File newFile, String newMd5, File output) throws IOException {
+        FileOperation.copyFileUsingStream(newFile, output);
+        logToDexMeta(newFile, null, null, newMd5, newMd5, "0");
+    }
+
     private void checkDexChange(Dex originDex, Dex newDex) {
         DexClassesComparator classesCmptor = new DexClassesComparator("*");
         classesCmptor.setIgnoredRemovedClassDescPattern(config.mDexLoaderPattern);
@@ -652,59 +496,6 @@ public class DexDiffDecoder extends BaseDecoder {
         }
     }
 
-    private void addTestDex() throws IOException {
-        //write test dex
-        String dexMode = "jar";
-        if (config.mDexRaw) {
-            dexMode = "raw";
-        }
-
-        final InputStream is = DexDiffDecoder.class.getResourceAsStream("/" + TEST_DEX_NAME);
-        String md5 = MD5.getMD5(is, 1024);
-        is.close();
-
-        String meta = TEST_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0 + "," + 0 + "," + dexMode;
-
-        File dest = new File(config.mTempResultDir + "/" + TEST_DEX_NAME);
-        FileOperation.copyResourceUsingStream(TEST_DEX_NAME, dest);
-        Logger.d("\nAdd test install result dex: %s, size:%d", dest.getAbsolutePath(), dest.length());
-        Logger.d("DexDecoder:write test dex meta file data: %s", meta);
-
-        metaWriter.writeLineToInfoFile(meta);
-    }
-
-    private String checkNewDexAndMd5(String md5, File dexFile) {
-        String name = dexFile.getName();
-        if (name.endsWith(".dex")) {
-            return md5;
-        } else {
-            try {
-                final JarFile dexJar = new JarFile(dexFile);
-                ZipEntry classesDex = dexJar.getEntry(DexFormat.DEX_IN_JAR_NAME);
-                // no code
-                if (null == classesDex) {
-                    throw new TinkerPatchException(
-                        String.format("dex jar file %s do not contain 'classes.dex', it is not a correct dex jar file!", dexFile.getAbsolutePath())
-                    );
-                }
-
-                return MD5.getMD5(dexJar.getInputStream(classesDex), 1024 * 100);
-            } catch (IOException e) {
-                throw new TinkerPatchException(
-                    String.format("dex file %s is not end with '.dex', but it is not a correct dex jar file also!", dexFile.getAbsolutePath()), e
-                );
-            }
-        }
-    }
-
-    private String getRelativeStringBy(File file, File reference) {
-        File actualReference = reference.getParentFile();
-        if (actualReference == null) {
-            actualReference = reference;
-        }
-        return actualReference.toPath().relativize(file.toPath()).toString().replace("\\", "/");
-    }
-
     /**
      * Construct dex meta-info and write it to meta file and log.
      *
@@ -723,12 +514,12 @@ public class DexDiffDecoder extends BaseDecoder {
      *
      * @throws IOException
      */
-    protected void writeLogFiles(File newOrFullPatchedFile, File oldFile, File dexDiffFile, String destMd5InDvm, String destMd5InArt, String dexDiffMd5) throws IOException {
+    protected void logToDexMeta(File newOrFullPatchedFile, File oldFile, File dexDiffFile, String destMd5InDvm, String destMd5InArt, String dexDiffMd5) throws IOException {
         if (metaWriter == null && logWriter == null) {
             return;
         }
-        String parentRelative = getParentRelativeString(newOrFullPatchedFile);
-        String relative = getRelativeString(newOrFullPatchedFile);
+        String parentRelative = getParentRelativePathStringToNewFile(newOrFullPatchedFile);
+        String relative = getRelativePathStringToNewFile(newOrFullPatchedFile);
 
         if (metaWriter != null) {
             String fileName = newOrFullPatchedFile.getName();
@@ -765,6 +556,60 @@ public class DexDiffDecoder extends BaseDecoder {
         }
     }
 
+    @Override
+    public void clean() {
+        metaWriter.close();
+        logWriter.close();
+    }
+
+    private String getRawOrWrappedDexMD5(File dexOrJarFile) {
+        final String name = dexOrJarFile.getName();
+        if (name.endsWith(".dex")) {
+            return MD5.getMD5(dexOrJarFile);
+        } else {
+            JarFile dexJar = null;
+            try {
+                dexJar = new JarFile(dexOrJarFile);
+                ZipEntry classesDex = dexJar.getEntry(DexFormat.DEX_IN_JAR_NAME);
+                // no code
+                if (classesDex == null) {
+                    throw new TinkerPatchException(
+                            String.format("Jar file %s do not contain 'classes.dex', it is not a correct dex jar file!", dexOrJarFile.getAbsolutePath())
+                    );
+                }
+                return MD5.getMD5(dexJar.getInputStream(classesDex), 1024 * 100);
+            } catch (IOException e) {
+                throw new TinkerPatchException(
+                        String.format("File %s is not end with '.dex', but it is not a correct dex jar file !", dexOrJarFile.getAbsolutePath()), e
+                );
+            } finally {
+                if (dexJar != null) {
+                    try {
+                        dexJar.close();
+                    } catch (Exception e) {
+                        // Ignored.
+                    }
+                }
+            }
+        }
+    }
+
+    private String getRelativeStringBy(File file, File reference) {
+        File actualReference = reference.getParentFile();
+        if (actualReference == null) {
+            actualReference = reference;
+        }
+        return actualReference.toPath().relativize(file.toPath()).toString().replace("\\", "/");
+    }
+
+    private void ensureDirectoryExist(File dir) {
+        if (!dir.exists()) {
+            if (!dir.mkdirs()) {
+                throw new TinkerPatchException("failed to create directory: " + dir);
+            }
+        }
+    }
+
     private final class RelatedInfo {
         File newOrFullPatchedFile = null;
         /**
@@ -781,39 +626,38 @@ public class DexDiffDecoder extends BaseDecoder {
          *  newDex md5, if new dex is marked to be copied directly;
          */
         String newOrFullPatchedMd5 = "0";
-        String smallPatchedMd5 = "0";
     }
 
     private final class DexPatcherLoggerBridge implements IDexPatcherLogger {
-        private final InfoWriter logWritter;
+        private final InfoWriter logWriter;
 
         DexPatcherLoggerBridge(InfoWriter logWritter) {
-            this.logWritter = logWritter;
+            this.logWriter = logWritter;
         }
 
         @Override
         public void v(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void d(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void i(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void w(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
 
         @Override
         public void e(String msg) {
-            this.logWritter.writeLineToInfoFile(msg);
+            this.logWriter.writeLineToInfoFile(msg);
         }
     }
 }

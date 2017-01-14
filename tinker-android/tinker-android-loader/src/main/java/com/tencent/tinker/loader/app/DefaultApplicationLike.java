@@ -23,9 +23,7 @@ package com.tencent.tinker.loader.app;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.AssetManager;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.util.Log;
 
 /**
@@ -35,9 +33,8 @@ public class DefaultApplicationLike extends ApplicationLike {
     private static final String TAG = "Tinker.DefaultAppLike";
 
     public DefaultApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
-                                  long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent,
-                                  Resources[] resources, ClassLoader[] classLoader, AssetManager[] assetManager) {
-        super(application, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent, resources, classLoader, assetManager);
+                                  long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent) {
+        super(application, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent);
     }
 
     @Override

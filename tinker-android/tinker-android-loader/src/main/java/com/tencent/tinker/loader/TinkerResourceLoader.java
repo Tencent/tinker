@@ -113,7 +113,7 @@ public class TinkerResourceLoader {
         }
 
         File resourceFile = new File(resourcePath + RESOURCE_FILE);
-        if (!resourceFile.exists()) {
+        if (!SharePatchFileUtil.isLegalFile(resourceFile)) {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST);
             return false;
         }

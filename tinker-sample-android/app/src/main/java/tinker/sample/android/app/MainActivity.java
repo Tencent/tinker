@@ -30,6 +30,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.tencent.tinker.lib.library.TinkerLoadLibrary;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -64,9 +65,16 @@ public class MainActivity extends AppCompatActivity {
         loadLibraryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //for lib/armeabi, just use TinkerInstaller.loadLibrary
-                TinkerInstaller.loadArmLibrary(getApplicationContext(), "stlport_shared");
+                // #method 1, hack classloader library path
+                TinkerLoadLibrary.installNavitveLibraryABI(getApplicationContext(), "armeabi");
+                System.loadLibrary("stlport_shared");
+
+                // #method 2, for lib/armeabi, just use TinkerInstaller.loadLibrary
+//                TinkerLoadLibrary.loadArmLibrary(getApplicationContext(), "stlport_shared");
+
+                // #method 3, load tinker patch library directly
 //                TinkerInstaller.loadLibraryFromTinker(getApplicationContext(), "assets/x86", "stlport_shared");
+
             }
         });
 
@@ -84,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         killSelfButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ShareTinkerInternals.killAllOtherProcess(getApplicationContext());
                 android.os.Process.killProcess(android.os.Process.myPid());
             }
         });
@@ -104,16 +113,19 @@ public class MainActivity extends AppCompatActivity {
         Tinker tinker = Tinker.with(getApplicationContext());
         if (tinker.isTinkerLoaded()) {
             sb.append(String.format("[patch is loaded] \n"));
-            sb.append(String.format("[buildConfig CLIENTVERSION] %s \n", BuildInfo.CLIENTVERSION));
+            sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
+            sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
+
             sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
             sb.append(String.format("[TINKER_ID] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName(ShareConstants.TINKER_ID)));
-            sb.append(String.format("[REAL TINKER_ID] %s \n", tinker.getTinkerLoadResultIfPresent().getTinkerID()));
             sb.append(String.format("[packageConfig patchMessage] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName("patchMessage")));
             sb.append(String.format("[TINKER_ID Rom Space] %d k \n", tinker.getTinkerRomSpace()));
 
         } else {
             sb.append(String.format("[patch is not loaded] \n"));
-            sb.append(String.format("[buildConfig CLIENTVERSION] %s \n", BuildInfo.CLIENTVERSION));
+            sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
+            sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
+
             sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
             sb.append(String.format("[TINKER_ID] %s \n", ShareTinkerInternals.getManifestTinkerID(getApplicationContext())));
         }

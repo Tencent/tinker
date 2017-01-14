@@ -41,6 +41,8 @@ public class ShareIntentUtil {
     public static final  String INTENT_PATCH_EXCEPTION           = "intent_patch_exception";
     public static final  String INTENT_PATCH_PACKAGE_PATCH_CHECK = "intent_patch_package_patch_check";
     public static final  String INTENT_PATCH_PACKAGE_CONFIG      = "intent_patch_package_config";
+    public static final  String INTENT_PATCH_SYSTEM_OTA          = "intent_patch_system_ota";
+
     private static final String TAG                              = "ShareIntentUtil";
 
     public static void setIntentReturnCode(Intent intent, int code) {
