@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.android.dx.util;
+package com.tencent.tinker.commons.dexpatcher.util;
 
 import com.tencent.tinker.android.dex.Annotation;
 import com.tencent.tinker.android.dex.AnnotationSet;
@@ -35,297 +35,45 @@ import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.util.ByteInput;
 import com.tencent.tinker.android.dex.util.ByteOutput;
-import com.tencent.tinker.android.utils.SparseIntArray;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.BitSet;
 
 /**
  * Created by tangyinsheng on 2016/6/29.
+ *
+ * *** This file is renamed from IndexMap in dx project. ***
  */
-public class IndexMap {
-    private final SparseIntArray stringIdsMap = new SparseIntArray();
-    private final SparseIntArray typeIdsMap = new SparseIntArray();
-    private final SparseIntArray protoIdsMap = new SparseIntArray();
-    private final SparseIntArray fieldIdsMap = new SparseIntArray();
-    private final SparseIntArray methodIdsMap = new SparseIntArray();
-    private final SparseIntArray typeListOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationSetOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationSetRefListOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationsDirectoryOffsetsMap = new SparseIntArray();
-    private final SparseIntArray staticValuesOffsetsMap = new SparseIntArray();
-    private final SparseIntArray classDataOffsetsMap = new SparseIntArray();
-    private final SparseIntArray debugInfoItemOffsetsMap = new SparseIntArray();
-    private final SparseIntArray codeOffsetsMap = new SparseIntArray();
 
-    private final BitSet deletedStringIds = new BitSet();
-    private final BitSet deletedTypeIds = new BitSet();
-    private final BitSet deletedProtoIds = new BitSet();
-    private final BitSet deletedFieldIds = new BitSet();
-    private final BitSet deletedMethodIds = new BitSet();
-    private final BitSet deletedTypeListOffsets = new BitSet();
-    private final BitSet deletedAnnotationOffsets = new BitSet();
-    private final BitSet deletedAnnotationSetOffsets = new BitSet();
-    private final BitSet deletedAnnotationSetRefListOffsets = new BitSet();
-    private final BitSet deletedAnnotationsDirectoryOffsets = new BitSet();
-    private final BitSet deletedStaticValuesOffsets = new BitSet();
-    private final BitSet deletedClassDataOffsets = new BitSet();
-    private final BitSet deletedDebugInfoItemOffsets = new BitSet();
-    private final BitSet deletedCodeOffsets = new BitSet();
+public abstract class AbstractIndexMap {
 
-    public void mapStringIds(int oldIndex, int newIndex) {
-        stringIdsMap.put(oldIndex, newIndex);
-    }
+    public abstract int adjustStringIndex(int stringIndex);
 
-    public void markStringIdDeleted(int index) {
-        if (index < 0) return;
-        deletedStringIds.set(index);
-    }
+    public abstract int adjustTypeIdIndex(int typeIdIndex);
 
-    public void mapTypeIds(int oldIndex, int newIndex) {
-        typeIdsMap.put(oldIndex, newIndex);
-    }
+    public abstract int adjustProtoIdIndex(int protoIndex);
 
-    public void markTypeIdDeleted(int index) {
-        if (index < 0) return;
-        deletedTypeIds.set(index);
-    }
+    public abstract int adjustFieldIdIndex(int fieldIndex);
 
-    public void mapProtoIds(int oldIndex, int newIndex) {
-        protoIdsMap.put(oldIndex, newIndex);
-    }
+    public abstract int adjustMethodIdIndex(int methodIndex);
 
-    public void markProtoIdDeleted(int index) {
-        if (index < 0) return;
-        deletedProtoIds.set(index);
-    }
+    public abstract int adjustTypeListOffset(int typeListOffset);
 
-    public void mapFieldIds(int oldIndex, int newIndex) {
-        fieldIdsMap.put(oldIndex, newIndex);
-    }
+    public abstract int adjustAnnotationOffset(int annotationOffset);
 
-    public void markFieldIdDeleted(int index) {
-        if (index < 0) return;
-        deletedFieldIds.set(index);
-    }
+    public abstract int adjustAnnotationSetOffset(int annotationSetOffset);
 
-    public void mapMethodIds(int oldIndex, int newIndex) {
-        methodIdsMap.put(oldIndex, newIndex);
-    }
+    public abstract int adjustAnnotationSetRefListOffset(int annotationSetRefListOffset);
 
-    public void markMethodIdDeleted(int index) {
-        if (index < 0) return;
-        deletedMethodIds.set(index);
-    }
+    public abstract int adjustAnnotationsDirectoryOffset(int annotationsDirectoryOffset);
 
-    public void mapTypeListOffset(int oldOffset, int newOffset) {
-        typeListOffsetsMap.put(oldOffset, newOffset);
-    }
+    public abstract int adjustStaticValuesOffset(int staticValuesOffset);
 
-    public void markTypeListDeleted(int offset) {
-        if (offset < 0) return;
-        deletedTypeListOffsets.set(offset);
-    }
+    public abstract int adjustClassDataOffset(int classDataOffset);
 
-    public void mapAnnotationOffset(int oldOffset, int newOffset) {
-        annotationOffsetsMap.put(oldOffset, newOffset);
-    }
+    public abstract int adjustDebugInfoItemOffset(int debugInfoItemOffset);
 
-    public void markAnnotationDeleted(int offset) {
-        if (offset < 0) return;
-        deletedAnnotationOffsets.set(offset);
-    }
-
-    public void mapAnnotationSetOffset(int oldOffset, int newOffset) {
-        annotationSetOffsetsMap.put(oldOffset, newOffset);
-    }
-
-    public void markAnnotationSetDeleted(int offset) {
-        if (offset < 0) return;
-        deletedAnnotationSetOffsets.set(offset);
-    }
-
-    public void mapAnnotationSetRefListOffset(int oldOffset, int newOffset) {
-        annotationSetRefListOffsetsMap.put(oldOffset, newOffset);
-    }
-
-    public void markAnnotationSetRefListDeleted(int offset) {
-        if (offset < 0) return;
-        deletedAnnotationSetRefListOffsets.set(offset);
-    }
-
-    public void mapAnnotationsDirectoryOffset(int oldOffset, int newOffset) {
-        annotationsDirectoryOffsetsMap.put(oldOffset, newOffset);
-    }
-
-    public void markAnnotationsDirectoryDeleted(int offset) {
-        if (offset < 0) return;
-        deletedAnnotationsDirectoryOffsets.set(offset);
-    }
-
-    public void mapStaticValuesOffset(int oldOffset, int newOffset) {
-        staticValuesOffsetsMap.put(oldOffset, newOffset);
-    }
-
-    public void markStaticValuesDeleted(int offset) {
-        if (offset < 0) return;
-        deletedStaticValuesOffsets.set(offset);
-    }
-
-    public void mapClassDataOffset(int oldOffset, int newOffset) {
-        classDataOffsetsMap.put(oldOffset, newOffset);
-    }
-
-    public void markClassDataDeleted(int offset) {
-        if (offset < 0) return;
-        deletedClassDataOffsets.set(offset);
-    }
-
-    public void mapDebugInfoItemOffset(int oldOffset, int newOffset) {
-        debugInfoItemOffsetsMap.put(oldOffset, newOffset);
-    }
-
-    public void markDebugInfoItemDeleted(int offset) {
-        if (offset < 0) return;
-        deletedDebugInfoItemOffsets.set(offset);
-    }
-
-    public void mapCodeOffset(int oldOffset, int newOffset) {
-        codeOffsetsMap.put(oldOffset, newOffset);
-    }
-
-    public void markCodeDeleted(int offset) {
-        if (offset < 0) return;
-        deletedCodeOffsets.set(offset);
-    }
-
-    public int adjustStringIndex(int stringIndex) {
-        int index = stringIdsMap.indexOfKey(stringIndex);
-        if (index < 0) {
-            return (stringIndex >= 0 && deletedStringIds.get(stringIndex) ? -1 : stringIndex);
-        } else {
-            return stringIdsMap.valueAt(index);
-        }
-    }
-
-    public int adjustTypeIdIndex(int typeIdIndex) {
-        int index = typeIdsMap.indexOfKey(typeIdIndex);
-        if (index < 0) {
-            return (typeIdIndex >= 0 && deletedTypeIds.get(typeIdIndex) ? -1 : typeIdIndex);
-        } else {
-            return typeIdsMap.valueAt(index);
-        }
-    }
-
-    public int adjustProtoIdIndex(int protoIndex) {
-        int index = protoIdsMap.indexOfKey(protoIndex);
-        if (index < 0) {
-            return (protoIndex >= 0 && deletedProtoIds.get(protoIndex) ? -1 : protoIndex);
-        } else {
-            return protoIdsMap.valueAt(index);
-        }
-    }
-
-    public int adjustFieldIdIndex(int fieldIndex) {
-        int index = fieldIdsMap.indexOfKey(fieldIndex);
-        if (index < 0) {
-            return (fieldIndex >= 0 && deletedFieldIds.get(fieldIndex) ? -1 : fieldIndex);
-        } else {
-            return fieldIdsMap.valueAt(index);
-        }
-    }
-
-    public int adjustMethodIdIndex(int methodIndex) {
-        int index = methodIdsMap.indexOfKey(methodIndex);
-        if (index < 0) {
-            return (methodIndex >= 0 && deletedMethodIds.get(methodIndex) ? -1 : methodIndex);
-        } else {
-            return methodIdsMap.valueAt(index);
-        }
-    }
-
-    public int adjustTypeListOffset(int typeListOffset) {
-        int index = typeListOffsetsMap.indexOfKey(typeListOffset);
-        if (index < 0) {
-            return (typeListOffset >= 0 && deletedTypeListOffsets.get(typeListOffset) ? -1 : typeListOffset);
-        } else {
-            return typeListOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustAnnotationOffset(int annotationOffset) {
-        int index = annotationOffsetsMap.indexOfKey(annotationOffset);
-        if (index < 0) {
-            return (annotationOffset >= 0 && deletedAnnotationOffsets.get(annotationOffset) ? -1 : annotationOffset);
-        } else {
-            return annotationOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustAnnotationSetOffset(int annotationSetOffset) {
-        int index = annotationSetOffsetsMap.indexOfKey(annotationSetOffset);
-        if (index < 0) {
-            return (annotationSetOffset >= 0 && deletedAnnotationSetOffsets.get(annotationSetOffset) ? -1 : annotationSetOffset);
-        } else {
-            return annotationSetOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustAnnotationSetRefListOffset(int annotationSetRefListOffset) {
-        int index = annotationSetRefListOffsetsMap.indexOfKey(annotationSetRefListOffset);
-        if (index < 0) {
-            return (annotationSetRefListOffset >= 0 && deletedAnnotationSetRefListOffsets.get(annotationSetRefListOffset) ? -1 : annotationSetRefListOffset);
-        } else {
-            return annotationSetRefListOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustAnnotationsDirectoryOffset(int annotationsDirectoryOffset) {
-        int index = annotationsDirectoryOffsetsMap.indexOfKey(annotationsDirectoryOffset);
-        if (index < 0) {
-            return (annotationsDirectoryOffset >= 0 && deletedAnnotationsDirectoryOffsets.get(annotationsDirectoryOffset) ? -1 : annotationsDirectoryOffset);
-        } else {
-            return annotationsDirectoryOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustStaticValuesOffset(int staticValuesOffset) {
-        int index = staticValuesOffsetsMap.indexOfKey(staticValuesOffset);
-        if (index < 0) {
-            return (staticValuesOffset >= 0 && deletedStaticValuesOffsets.get(staticValuesOffset) ? -1 : staticValuesOffset);
-        } else {
-            return staticValuesOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustClassDataOffset(int classDataOffset) {
-        int index = classDataOffsetsMap.indexOfKey(classDataOffset);
-        if (index < 0) {
-            return (classDataOffset >= 0 && deletedClassDataOffsets.get(classDataOffset) ? -1 : classDataOffset);
-        } else {
-            return classDataOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustDebugInfoItemOffset(int debugInfoItemOffset) {
-        int index = debugInfoItemOffsetsMap.indexOfKey(debugInfoItemOffset);
-        if (index < 0) {
-            return (debugInfoItemOffset >= 0 && deletedDebugInfoItemOffsets.get(debugInfoItemOffset) ? -1 : debugInfoItemOffset);
-        } else {
-            return debugInfoItemOffsetsMap.valueAt(index);
-        }
-    }
-
-    public int adjustCodeOffset(int codeOffset) {
-        int index = codeOffsetsMap.indexOfKey(codeOffset);
-        if (index < 0) {
-            return (codeOffset >= 0 && deletedCodeOffsets.get(codeOffset) ? -1 : codeOffset);
-        } else {
-            return codeOffsetsMap.valueAt(index);
-        }
-    }
+    public abstract int adjustCodeOffset(int codeOffset);
 
     public TypeList adjust(TypeList typeList) {
         if (typeList == TypeList.EMPTY) {

@@ -116,7 +116,7 @@ public class ApkDecoder extends BaseDecoder {
         for (File duplicateRes : resDuplicateFiles) {
 //            resPatchDecoder.patch(duplicateRes, null);
             Logger.e("Warning: res file %s is also match at dex or library pattern, "
-                + "we treat it as unchanged in the new resource_out.zip", getRelativeStringByOldDir(duplicateRes));
+                + "we treat it as unchanged in the new resource_out.zip", getRelativePathStringToOldFile(duplicateRes));
         }
 
         soPatchDecoder.onAllPatchesEnd();

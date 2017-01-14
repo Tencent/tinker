@@ -418,7 +418,7 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         sb.append("\ncrc:" + crc);
         sb.append("\ncompressionMethod:" + compressionMethod);
         sb.append("\nmodDate:" + modDate);
-        sb.append("\nextra:" + extra);
+        sb.append("\nextra length:" + extra.length);
         sb.append("\nlocalHeaderRelOffset:" + localHeaderRelOffset);
         sb.append("\ndataOffset:" + dataOffset);
         return sb.toString();

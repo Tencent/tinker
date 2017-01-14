@@ -7,7 +7,8 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile "com.android.support:appcompat-v7:23.1.1"
     compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
-    compile("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+    provided("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+
     compile "com.android.support:multidex:1.0.1"
 
     //use to test multiDex
@@ -77,12 +78,6 @@ android {
          */
         multiDexEnabled true
         /**
-         * not like proguard, multiDexKeepProguard is not a list, so we can't just
-         * add for you in our task. you can copy tinker keep rules at
-         * build/intermediates/tinker_intermediates/tinker_multidexkeep.pro
-         */
-        multiDexKeepProguard file("keep_in_main_dex.txt")
-        /**
          * buildConfig can change during patch!
          * we can use the newly value when patch
          */
@@ -92,9 +87,14 @@ android {
          * client version would update with patch
          * so we can get the newly git version easily!
          */
-        buildConfigField "String", "CLIENTVERSION", "\"${getTinkerIdValue()}\""
+        buildConfigField "String", "TINKER_ID", "\"${getTinkerIdValue()}\""
         buildConfigField "String", "PLATFORM",  "\"all\""
     }
+
+//    aaptOptions{
+//        cruncherEnabled false
+//    }
+
 //    //use to test flavors support
 //    productFlavors {
 //        flavor1 {
@@ -209,6 +209,12 @@ if (buildWithTinker()) {
         useSign = true
 
         /**
+         * optional，default 'true'
+         * whether use tinker to build
+         */
+        tinkerEnable = buildWithTinker()
+
+        /**
          * Warning, applyMapping will affect the normal android build!
          */
         buildConfig {
@@ -234,6 +240,12 @@ if (buildWithTinker()) {
              * we will gen the tinkerId in your manifest automatic
              */
             tinkerId = getTinkerIdValue()
+
+            /**
+             * if keepDexApply is true, class in which dex refer to the old apk.
+             * open this can reduce the dex diff file size.
+             */
+            keepDexApply = false
         }
 
         dex {
@@ -245,20 +257,7 @@ if (buildWithTinker()) {
              * or you want to save rom or check quicker, you can use raw mode also
              */
             dexMode = "jar"
-            /**
-             * optional，default 'false'
-             * if usePreGeneratedPatchDex is true, tinker framework will generate auxiliary class
-             * and insert auxiliary instruction when compiling base package using
-             * assemble{Debug/Release} task to prevent class pre-verified issue in dvm.
-             * Besides, a real dex file contains necessary class will be generated and packed into
-             * patch package instead of any patch info files.
-             *
-             * Use this mode if you have to use any dex encryption solutions.
-             *
-             * Notice: If you change this value, please trigger clean task
-             * and regenerate base package.
-             */
-            usePreGeneratedPatchDex = false
+
             /**
              * necessary，default '[]'
              * what dexes in apk are expected to deal with tinkerPatch
@@ -275,9 +274,7 @@ if (buildWithTinker()) {
              * own tinkerLoader, and the classes you use in them
              *
              */
-            loader = ["com.tencent.tinker.loader.*",
-                      //warning, you must change it with your application
-                      "tinker.sample.android.app.SampleApplication",
+            loader = [
                       //use sample, let BaseBuildInfo unchangeable with tinker
                       "tinker.sample.android.app.BaseBuildInfo"
             ]
@@ -353,7 +350,7 @@ if (buildWithTinker()) {
              * optional，default '7za'
              * the 7zip artifact path, it will use the right 7za with your platform
              */
-            zipArtifact = "com.tencent.mm:SevenZip:1.1.10"
+           zipArtifact = "com.tencent.mm:SevenZip:1.1.10"
             /**
              * optional，default '7za'
              * you can specify the 7za path yourself, it will overwrite the zipArtifact value

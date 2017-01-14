@@ -20,9 +20,9 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -35,44 +35,9 @@ public class TypeIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Intege
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            final SmallPatchedDexItemFile extraInfoFile
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        this(
-                patchFile,
-                oldDex,
-                patchedDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                new SmallPatchedDexItemChooser() {
-                    @Override
-                    public boolean isPatchedItemInSmallPatchedDex(
-                            String oldDexSign, int patchedItemIndex
-                    ) {
-                        return extraInfoFile.isTypeIdInSmallPatchedDex(
-                                oldDexSign, patchedItemIndex
-                        );
-                    }
-                }
-        );
-    }
-
-    public TypeIdSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            SmallPatchedDexItemChooser spdItemChooser
-    ) {
-        super(
-                patchFile,
-                oldDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                spdItemChooser
-        );
+        super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedTypeIdTocSec = patchedDex.getTableOfContents().typeIds;
@@ -96,16 +61,7 @@ public class TypeIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Intege
     }
 
     @Override
-    protected int getFullPatchSectionBase() {
-        if (this.patchFile != null) {
-            return this.patchFile.getPatchedTypeIdSectionOffset();
-        } else {
-            return getTocSection(this.oldDex).off;
-        }
-    }
-
-    @Override
-    protected Integer adjustItem(IndexMap indexMap, Integer item) {
+    protected Integer adjustItem(AbstractIndexMap indexMap, Integer item) {
         return indexMap.adjustStringIndex(item);
     }
 
@@ -118,14 +74,14 @@ public class TypeIdSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Intege
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldIndex != newIndex) {
-            indexMap.mapTypeIds(oldIndex, newIndex);
+            sparseIndexMap.mapTypeIds(oldIndex, newIndex);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markTypeIdDeleted(deletedIndex);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markTypeIdDeleted(deletedIndex);
     }
 }

@@ -19,7 +19,8 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
-task buildSdk(type: Copy, dependsOn: [build]) {
+task buildTinkerSdk(type: Copy, dependsOn: [build]) {
+    group = "tinker"
     from("$buildDir/outputs/aar/") {
         include "${project.getName()}-release.aar"
     }

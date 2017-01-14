@@ -21,12 +21,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -47,7 +50,26 @@ public class ShareTinkerInternals {
     private static String tinkerID = null;
 
     public static boolean isVmArt() {
-        return VM_IS_ART;
+        return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
+    }
+
+    public static boolean isSystemOTA(String lastFingerPrint) {
+        String currentFingerprint = Build.FINGERPRINT;
+        if (lastFingerPrint == null
+            || lastFingerPrint.equals("")
+            || currentFingerprint == null
+            || currentFingerprint.equals("")) {
+            Log.d(TAG, "fingerprint empty:" + lastFingerPrint + ",current:" + currentFingerprint);
+            return false;
+        } else {
+            if (lastFingerPrint.equals(currentFingerprint)) {
+                Log.d(TAG, "same fingerprint:" + currentFingerprint);
+                return false;
+            } else {
+                Log.d(TAG, "system OTA,fingerprint not equal:" + lastFingerPrint + "," + currentFingerprint);
+                return true;
+            }
+        }
     }
 
     public static boolean isNullOrNil(final String object) {
@@ -101,6 +123,7 @@ public class ShareTinkerInternals {
             return ShareConstants.ERROR_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND;
         }
         if (!oldTinkerId.equals(patchTinkerId)) {
+            Log.e(TAG, "tinkerId is not equal, base is " + oldTinkerId + ", but patch is " + patchTinkerId);
             return ShareConstants.ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL;
         }
         return ShareConstants.ERROR_PACKAGE_CHECK_OK;
@@ -166,6 +189,7 @@ public class ShareTinkerInternals {
             SharePatchFileUtil.closeZip(zipFile);
         }
     }
+
     public static String getManifestTinkerID(Context context) {
         if (tinkerID != null) {
             return tinkerID;
@@ -205,8 +229,6 @@ public class ShareTinkerInternals {
         switch (type) {
             case ShareConstants.TYPE_DEX:
                 return "dex";
-            case ShareConstants.TYPE_DEX_FOR_ART:
-                return "dex_art";
             case ShareConstants.TYPE_DEX_OPT:
                 return "dex_opt";
             case ShareConstants.TYPE_LIBRARY:
@@ -228,7 +250,7 @@ public class ShareTinkerInternals {
      */
     public static void setTinkerDisableWithSharedPreferences(Context context) {
         SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-        sp.edit().putBoolean(ShareConstants.TINKER_ENABLE_CONFIG, false).commit();
+        sp.edit().putBoolean(getTinkerSharedPreferencesName(), false).commit();
     }
 
     /**
@@ -237,8 +259,15 @@ public class ShareTinkerInternals {
      * @return
      */
     public static boolean isTinkerEnableWithSharedPreferences(Context context) {
+        if (context == null) {
+            return false;
+        }
         SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-        return sp.getBoolean(ShareConstants.TINKER_ENABLE_CONFIG, true);
+        return sp.getBoolean(getTinkerSharedPreferencesName(), true);
+    }
+
+    private static String getTinkerSharedPreferencesName() {
+        return ShareConstants.TINKER_ENABLE_CONFIG + ShareConstants.TINKER_VERSION;
     }
 
     public static boolean isTinkerEnabled(int flag) {
@@ -261,6 +290,9 @@ public class ShareTinkerInternals {
 
     public static void killAllOtherProcess(Context context) {
         final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am == null) {
+            return;
+        }
         // NOTE: getRunningAppProcess() ONLY GIVE YOU THE PROCESS OF YOUR OWN PACKAGE IN ANDROID M
         // BUT THAT'S ENOUGH HERE
         for (ActivityManager.RunningAppProcessInfo ai : am.getRunningAppProcesses()) {
@@ -365,4 +397,50 @@ public class ShareTinkerInternals {
         }
         return isArt;
     }
+
+    public static String getExceptionCauseString(final Throwable ex) {
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final PrintStream ps = new PrintStream(bos);
+
+        try {
+            // print directly
+            Throwable t = ex;
+            while (t.getCause() != null) {
+                t = t.getCause();
+            }
+            t.printStackTrace(ps);
+            return toVisualString(bos.toString());
+        } finally {
+            try {
+                bos.close();
+            } catch (IOException e) {
+            }
+        }
+    }
+
+    public static String toVisualString(String src) {
+        boolean cutFlg = false;
+        if (null == src) {
+            return null;
+        }
+        char[] chr = src.toCharArray();
+        if (null == chr) {
+            return null;
+        }
+        int i = 0;
+        for (; i < chr.length; i++) {
+            if (chr[i] > 127) {
+                chr[i] = 0;
+                cutFlg = true;
+                break;
+            }
+        }
+
+        if (cutFlg) {
+            return new String(chr, 0, i);
+        } else {
+            return src;
+        }
+    }
+
 }

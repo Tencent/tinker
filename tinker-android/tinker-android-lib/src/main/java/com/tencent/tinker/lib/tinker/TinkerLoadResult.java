@@ -18,6 +18,7 @@ package com.tencent.tinker.lib.tinker;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -41,6 +42,9 @@ public class TinkerLoadResult {
     public String         currentVersion;
 
     public boolean                 versionChanged;
+
+    public boolean                 systemOTA;
+
     //@Nullable
     public File                    patchVersionDirectory;
     //@Nullable
@@ -67,9 +71,11 @@ public class TinkerLoadResult {
     public boolean parseTinkerResult(Context context, Intent intentResult) {
         Tinker tinker = Tinker.with(context);
         loadCode = ShareIntentUtil.getIntentReturnCode(intentResult);
-        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d", loadCode);
 
         costTime = ShareIntentUtil.getIntentPatchCostTime(intentResult);
+        systemOTA = ShareIntentUtil.getBooleanExtra(intentResult, ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, false);
+
+        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, systemOTA:%b", loadCode, systemOTA);
         //@Nullable
         final String oldVersion = ShareIntentUtil.getStringExtra(intentResult, ShareIntentUtil.INTENT_PATCH_OLD_VERSION);
         //@Nullable
@@ -100,7 +106,7 @@ public class TinkerLoadResult {
                 resourceDirectory = new File(patchVersionDirectory, ShareConstants.RES_PATH);
                 resourceFile = new File(resourceDirectory, ShareConstants.RES_NAME);
             }
-            patchInfo = new SharePatchInfo(oldVersion, newVersion);
+            patchInfo = new SharePatchInfo(oldVersion, newVersion, Build.FINGERPRINT);
             versionChanged = !(oldVersion.equals(newVersion));
         }
 
@@ -115,6 +121,9 @@ public class TinkerLoadResult {
                     break;
                 case ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION:
                     errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_DEX;
+                    break;
+                case ShareConstants.ERROR_LOAD_PATCH_VERSION_PARALLEL_DEX_OPT_EXCEPTION:
+                    errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_DEX_OPT;
                     break;
                 case ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION:
                     errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE;
@@ -309,41 +318,12 @@ public class TinkerLoadResult {
 
                 if (isMainProcess && versionChanged) {
                     //change the old version to new
-                    patchInfo.oldVersion = currentVersion;
                     tinker.getLoadReporter().onLoadPatchVersionChanged(oldVersion, newVersion, patchDirectory, patchVersionDirectory.getName());
-
                 }
                 return true;
         }
         return false;
 
-    }
-
-    /**
-     * get the base tinkerId
-     *
-     * @return
-     */
-    public String getTinkerID() {
-        if (packageConfig != null) {
-            String tinkerId = packageConfig.get(ShareConstants.TINKER_ID);
-            return tinkerId;
-        }
-        return null;
-    }
-
-    /**
-     * get the new tinkerId
-     *
-     * @return
-     */
-    public String getNewTinkerID() {
-        if (packageConfig != null) {
-            String tinkerId = packageConfig.get(ShareConstants.NEW_TINKER_ID);
-
-            return tinkerId;
-        }
-        return null;
     }
 
     /**

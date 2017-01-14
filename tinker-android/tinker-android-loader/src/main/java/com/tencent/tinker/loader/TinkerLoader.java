@@ -128,7 +128,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //patch-641e634c
         String patchName = SharePatchFileUtil.getPatchVersionDirectory(version);
-
+        if (patchName == null) {
+            Log.w(TAG, "tryLoadPatchFiles:patchName is null");
+            //we may delete patch info file
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST);
+            return;
+        }
         //tinker/patch.info/patch-641e634c
         String patchVersionDirectory = patchDirectoryPath + "/" + patchName;
         File patchVersionDirectoryFile = new File(patchVersionDirectory);
@@ -143,7 +148,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         //tinker/patch.info/patch-641e634c/patch-641e634c.apk
         File patchVersionFile = new File(patchVersionDirectoryFile.getAbsolutePath(), SharePatchFileUtil.getPatchVersionFile(version));
 
-        if (!patchVersionFile.exists()) {
+        if (!SharePatchFileUtil.isLegalFile(patchVersionFile)) {
             Log.w(TAG, "tryLoadPatchFiles:onPatchVersionFileNotFound");
             //we may delete patch info file
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_VERSION_FILE_NOT_EXIST);
@@ -197,8 +202,13 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 return;
             }
         }
+        //only work for art platform oat
+        boolean isSystemOTA = ShareTinkerInternals.isVmArt() && ShareTinkerInternals.isSystemOTA(patchInfo.fingerPrint);
+        resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
+
         //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if (mainProcess && versionChanged) {
+        if (isSystemOTA
+            || (mainProcess && versionChanged)) {
             patchInfo.oldVersion = version;
             //update old version to new
             if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
@@ -215,7 +225,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
         //now we can load patch jar
         if (isEnabledForDex) {
-            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent);
+            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent, isSystemOTA);
             if (!loadTinkerJars) {
                 Log.w(TAG, "tryLoadPatchFiles:onPatchLoadDexesFail");
                 return;
@@ -241,16 +251,14 @@ public class TinkerLoader extends AbstractTinkerLoader {
         String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG + processName;
         //each process have its own SharedPreferences file
         SharedPreferences sp = application.getSharedPreferences(preferName, Context.MODE_PRIVATE);
-        int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0);
+        int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0) + 1;
         Log.w(TAG, "tinker safe mode preferName:" + preferName + " count:" + count);
         if (count >= ShareConstants.TINKER_SAFE_MODE_MAX_COUNT) {
             sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
             return false;
         }
         application.setUseSafeMode(true);
-        count++;
         sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, count).commit();
-        Log.w(TAG, "after tinker safe mode count:" + count);
         return true;
     }
 

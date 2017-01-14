@@ -38,7 +38,7 @@ public class AaptResourceCollector {
     private final Map<RType, Set<RDotTxtEntry>>                   rTypeResourceMap;
     private final Map<RType, Set<RDotTxtEntry>>                   rTypeIncreaseResourceMap;
     private final Map<String, Set<String>>                        duplicateResourceMap;
-    private final Map<String, String>                             sanitizeNameMap;
+    private final Map<RType, HashMap<String, String>>             sanitizeTypeMap;
     private final Set<String>                                     ignoreIdSet;
     private       int                                             currentTypeId;
 
@@ -50,7 +50,7 @@ public class AaptResourceCollector {
         this.rTypeResourceMap = new HashMap<RType, Set<RDotTxtEntry>>();
         this.rTypeIncreaseResourceMap = new HashMap<RType, Set<RDotTxtEntry>>();
         this.duplicateResourceMap = new HashMap<String, Set<String>>();
-        this.sanitizeNameMap = new HashMap<String, String>();
+        this.sanitizeTypeMap = new HashMap<RType, HashMap<String, String>>();
         this.originalResourceMap = new HashMap<RDotTxtEntry, RDotTxtEntry>();
         this.ignoreIdSet = new HashSet<String>();
         //attr type must 1
@@ -70,7 +70,7 @@ public class AaptResourceCollector {
                     originalResourceMap.put(rDotTxtEntry, rDotTxtEntry);
                     ResourceIdEnumerator resourceIdEnumerator = null;
                     if (!rDotTxtEntry.idType.equals(IdType.INT_ARRAY)) {
-                        int resourceId = Integer.decode(rDotTxtEntry.idValue).intValue();
+                        int resourceId = Integer.decode(rDotTxtEntry.idValue.trim()).intValue();
                         int typeId = ((resourceId & 0x00FF0000) / 0x00010000);
                         if (typeId >= currentTypeId) {
                             currentTypeId = typeId + 1;
@@ -260,9 +260,16 @@ public class AaptResourceCollector {
         }
     }
 
-    void putSanitizeName(String sanitizeName, String rawName) {
-        if (!this.sanitizeNameMap.containsKey(sanitizeName)) {
-            this.sanitizeNameMap.put(sanitizeName, rawName);
+    void putSanitizeName(RType rType, String sanitizeName, String rawName) {
+        HashMap<String, String> sanitizeNameMap;
+        if (!sanitizeTypeMap.containsKey(rType)) {
+            sanitizeNameMap = new HashMap<>();
+            sanitizeTypeMap.put(rType, sanitizeNameMap);
+        } else {
+            sanitizeNameMap = sanitizeTypeMap.get(rType);
+        }
+        if (!sanitizeNameMap.containsKey(sanitizeName)) {
+            sanitizeNameMap.put(sanitizeName, rawName);
         }
     }
 
@@ -272,8 +279,11 @@ public class AaptResourceCollector {
      * @param sanitizeName
      * @return String
      */
-    public String getRawName(String sanitizeName) {
-        return this.sanitizeNameMap.get(sanitizeName);
+    public String getRawName(RType rType, String sanitizeName) {
+        if (!sanitizeTypeMap.containsKey(rType)) {
+            return null;
+        }
+        return this.sanitizeTypeMap.get(rType).get(sanitizeName);
     }
 
     /**

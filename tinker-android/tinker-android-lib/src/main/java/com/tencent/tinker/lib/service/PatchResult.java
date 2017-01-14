@@ -22,8 +22,6 @@ import java.io.Serializable;
  * Created by zhangshaowen on 16/3/19.
  */
 public class PatchResult implements Serializable {
-    public boolean isUpgradePatch;
-
     public boolean isSuccess;
 
     public String rawPatchFilePath;
@@ -35,28 +33,15 @@ public class PatchResult implements Serializable {
     //@Nullable
     public String patchVersion;
 
-    //@Nullable
-    public String patchTinkerID;
-
-    //@Nullable
-    public String baseTinkerID;
-
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append("\nPatchResult: \n");
-        sb.append("isUpgradePatch:" + isUpgradePatch + "\n");
         sb.append("isSuccess:" + isSuccess + "\n");
         sb.append("rawPatchFilePath:" + rawPatchFilePath + "\n");
         sb.append("costTime:" + costTime + "\n");
         if (patchVersion != null) {
             sb.append("patchVersion:" + patchVersion + "\n");
-        }
-        if (patchTinkerID != null) {
-            sb.append("patchTinkerID:" + patchTinkerID + "\n");
-        }
-        if (baseTinkerID != null) {
-            sb.append("baseTinkerID:" + baseTinkerID + "\n");
         }
 
         if (e != null) {

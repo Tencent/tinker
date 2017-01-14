@@ -29,11 +29,11 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
-import dalvik.system.PathClassLoader;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import dalvik.system.PathClassLoader;
 
 /**
  * Created by zhangshaowen on 16/3/8.
@@ -49,6 +49,9 @@ public class TinkerDexLoader {
     private static final String                           DEX_OPTIMIZE_PATH = ShareConstants.DEX_OPTIMIZE_PATH;
     private static final ArrayList<ShareDexDiffPatchInfo> dexList           = new ArrayList<>();
 
+    private static boolean   parallelOTAResult;
+    private static Throwable parallelOTAThrowable;
+
     private TinkerDexLoader() {
     }
 
@@ -59,7 +62,7 @@ public class TinkerDexLoader {
      * @param application The application.
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    public static boolean loadTinkerJars(Application application, boolean tinkerLoadVerifyFlag, String directory, Intent intentResult) {
+    public static boolean loadTinkerJars(Application application, boolean tinkerLoadVerifyFlag, String directory, Intent intentResult, boolean isSystemOTA) {
         if (dexList.isEmpty()) {
             Log.w(TAG, "there is no dex to load");
             return true;
@@ -103,6 +106,43 @@ public class TinkerDexLoader {
             }
             legalFiles.add(file);
         }
+
+        if (isSystemOTA) {
+            parallelOTAResult = true;
+            parallelOTAThrowable = null;
+            Log.w(TAG, "systemOTA, try parallel oat dexes!!!!!");
+
+            TinkerParallelDexOptimizer.optimizeAll(
+                legalFiles, optimizeDir,
+                new TinkerParallelDexOptimizer.ResultCallback() {
+                    long start;
+
+                    @Override
+                    public void onStart(File dexFile, File optimizedDir) {
+                        start = System.currentTimeMillis();
+                        Log.i(TAG, "start to optimize dex:" + dexFile.getPath());
+                    }
+
+                    @Override
+                    public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                        // Do nothing.
+                        Log.i(TAG, "success to optimize dex " + dexFile.getPath() + "use time " + (System.currentTimeMillis() - start));
+                    }
+                    @Override
+                    public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                        parallelOTAResult = false;
+                        parallelOTAThrowable = thr;
+                        Log.i(TAG, "fail to optimize dex " + dexFile.getPath() + "use time " + (System.currentTimeMillis() - start));
+                    }
+                }
+            );
+            if (!parallelOTAResult) {
+                Log.e(TAG, "parallel oat dexes failed");
+                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, parallelOTAThrowable);
+                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_PARALLEL_DEX_OPT_EXCEPTION);
+                return false;
+            }
+        }
         try {
             SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles);
         } catch (Throwable e) {
@@ -112,7 +152,6 @@ public class TinkerDexLoader {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
             return false;
         }
-        Log.i(TAG, "after loaded classloader: " + application.getClassLoader().toString());
 
         return true;
     }
@@ -160,21 +199,20 @@ public class TinkerDexLoader {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST);
             return false;
         }
-
         String optimizeDexDirectory = directory + "/" + DEX_OPTIMIZE_PATH + "/";
         File optimizeDexDirectoryFile = new File(optimizeDexDirectory);
 
         //fast check whether there is any dex files missing
         for (String name : dexes.keySet()) {
             File dexFile = new File(dexDirectory + name);
-            if (!dexFile.exists()) {
+            if (!SharePatchFileUtil.isLegalFile(dexFile)) {
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexFile.getAbsolutePath());
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
                 return false;
             }
             //check dex opt whether complete also
             File dexOptFile = new File(SharePatchFileUtil.optimizedPathFor(dexFile, optimizeDexDirectoryFile));
-            if (!dexOptFile.exists()) {
+            if (!SharePatchFileUtil.isLegalFile(dexOptFile)) {
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexOptFile.getAbsolutePath());
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
                 return false;

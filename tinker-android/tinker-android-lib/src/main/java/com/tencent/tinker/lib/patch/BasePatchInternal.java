@@ -43,7 +43,6 @@ public class BasePatchInternal {
     protected static final String RES_META_FILE        = ShareConstants.RES_META_FILE;
 
     protected static final int TYPE_DEX         = ShareConstants.TYPE_DEX;
-    protected static final int TYPE_DEX_FOR_ART = ShareConstants.TYPE_DEX_FOR_ART;
     protected static final int TYPE_Library     = ShareConstants.TYPE_LIBRARY;
     protected static final int TYPE_RESOURCE    = ShareConstants.TYPE_RESOURCE;
 
@@ -89,7 +88,7 @@ public class BasePatchInternal {
     }
 
     public static int getMetaCorruptedCode(int type) {
-        if (type == TYPE_DEX || type == TYPE_DEX_FOR_ART) {
+        if (type == TYPE_DEX) {
             return ShareConstants.ERROR_PACKAGE_CHECK_DEX_META_CORRUPTED;
         } else if (type == TYPE_Library) {
             return ShareConstants.ERROR_PACKAGE_CHECK_LIB_META_CORRUPTED;

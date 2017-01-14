@@ -44,8 +44,6 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
     @TaskAction
     def tinkerPatch() {
-//        println configuration.toString()
-
         configuration.checkParameter()
         configuration.buildConfig.checkParameter()
         configuration.res.checkParameter()
@@ -55,7 +53,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
         InputParam.Builder builder = new InputParam.Builder()
         if (configuration.useSign) {
             if (signConfig == null) {
-                throw new GradleException("can't the get signConfig for ${taskName} build")
+                throw new GradleException("can't the get signConfig for this build")
             }
             builder.setSignFile(signConfig.storeFile)
                     .setKeypass(signConfig.keyPassword)
@@ -68,16 +66,15 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setNewApk(buildApkPath)
                .setOutBuilder(outputFolder)
                .setIgnoreWarning(configuration.ignoreWarning)
-               .setUsePreGeneratedPatchDex(configuration.dex.usePreGeneratedPatchDex)
-               .setDexFilePattern(configuration.dex.pattern)
-               .setDexLoaderPattern(configuration.dex.loader)
+               .setDexFilePattern(new ArrayList<String>(configuration.dex.pattern))
+               .setDexLoaderPattern(new ArrayList<String>(configuration.dex.loader))
                .setDexMode(configuration.dex.dexMode)
-               .setSoFilePattern(configuration.lib.pattern)
-               .setResourceFilePattern(configuration.res.pattern)
-               .setResourceIgnoreChangePattern(configuration.res.ignoreChange)
+               .setSoFilePattern(new ArrayList<String>(configuration.lib.pattern))
+               .setResourceFilePattern(new ArrayList<String>(configuration.res.pattern))
+               .setResourceIgnoreChangePattern(new ArrayList<String>(configuration.res.ignoreChange))
                .setResourceLargeModSize(configuration.res.largeModSize)
                .setUseApplyResource(configuration.buildConfig.usingResourceMapping)
-               .setConfigFields(configuration.packageConfig.getFields())
+               .setConfigFields(new HashMap<String, String>(configuration.packageConfig.getFields()))
                .setSevenZipPath(configuration.sevenZip.path)
                .setUseSign(configuration.useSign)
 

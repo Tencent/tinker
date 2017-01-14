@@ -197,6 +197,13 @@ public class SparseIntArray implements Cloneable {
     }
 
     /**
+     * Returns whether the {@code key} is exists.
+     */
+    public boolean containsKey(int key) {
+        return indexOfKey(key) >= 0;
+    }
+
+    /**
      * Returns an index for which {@link #valueAt} would return the
      * specified key, or a negative number if no keys map to the
      * specified value.

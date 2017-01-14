@@ -49,12 +49,19 @@ public class TinkerBuildConfigExtension {
 
     boolean usingResourceMapping
 
+    /**
+     * if keepDexApply is true,class in which dex refer to the old apk.
+     * open this can reduce the dex diff file size.
+     */
+    boolean keepDexApply;
+
     public TinkerBuildConfigExtension(Project project) {
         this.project = project
         applyMapping = ""
         applyResourceMapping = ""
         tinkerId = null
         usingResourceMapping = false
+        keepDexApply = false
     }
 
     void checkParameter() {
@@ -68,6 +75,7 @@ public class TinkerBuildConfigExtension {
     public String toString() {
         """| applyMapping = ${applyMapping}
            | applyResourceMapping = ${applyResourceMapping}
+           | keepDexApply = ${keepDexApply}
            | tinkerId = ${tinkerId}
         """.stripMargin()
     }

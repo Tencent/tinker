@@ -44,10 +44,17 @@ public class TinkerPatchExtension {
      */
     boolean useSign
 
+    /**
+     * whether use tinker
+     * default: true
+     */
+    boolean tinkerEnable
+
     public TinkerPatchExtension() {
         oldApk = ""
         ignoreWarning = false
         useSign = true
+        tinkerEnable = true
     }
 
     void checkParameter() {
@@ -67,6 +74,7 @@ public class TinkerPatchExtension {
     public String toString() {
         """| oldApk = ${oldApk}
            | ignoreWarning = ${ignoreWarning}
+           | tinkerEnable = ${tinkerEnable}
            | useSign = ${useSign}
         """.stripMargin()
     }

@@ -20,13 +20,14 @@ import com.tencent.tinker.android.dex.DebugInfoItem;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/6/30.
  */
 public class DebugInfoItemSectionDiffAlgorithm extends DexSectionDiffAlgorithm<DebugInfoItem> {
-    public DebugInfoItemSectionDiffAlgorithm(Dex oldDex, Dex newDex, IndexMap oldToNewIndexMap, IndexMap oldToPatchedIndexMap, IndexMap newToPatchedIndexMap, IndexMap selfIndexMapForSkip) {
+    public DebugInfoItemSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {
         super(oldDex, newDex, oldToNewIndexMap, oldToPatchedIndexMap, newToPatchedIndexMap, selfIndexMapForSkip);
     }
 
@@ -46,19 +47,19 @@ public class DebugInfoItemSectionDiffAlgorithm extends DexSectionDiffAlgorithm<D
     }
 
     @Override
-    protected DebugInfoItem adjustItem(IndexMap indexMap, DebugInfoItem item) {
+    protected DebugInfoItem adjustItem(AbstractIndexMap indexMap, DebugInfoItem item) {
         return indexMap.adjust(item);
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldOffset != newOffset) {
-            indexMap.mapDebugInfoItemOffset(oldOffset, newOffset);
+            sparseIndexMap.mapDebugInfoItemOffset(oldOffset, newOffset);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markDebugInfoItemDeleted(deletedOffset);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markDebugInfoItemDeleted(deletedOffset);
     }
 }

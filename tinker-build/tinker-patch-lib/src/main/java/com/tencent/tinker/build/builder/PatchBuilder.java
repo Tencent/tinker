@@ -98,7 +98,7 @@ public class PatchBuilder {
             signatureAlgorithm = "SHA1withECDSA";
         } else {
             throw new RuntimeException("private key is not a DSA or "
-                + "RSA key");
+                    + "RSA key");
         }
         return signatureAlgorithm;
     }
