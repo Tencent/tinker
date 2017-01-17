@@ -288,7 +288,7 @@ if (buildWithTinker()) {
              * for library in assets, we would just recover them in the patch directory
              * you can get them in TinkerLoadResult with Tinker
              */
-            pattern = ["lib/armeabi/*.so"]
+            pattern = ["lib/*/*.so"]
         }
 
         res {
