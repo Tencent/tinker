@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -293,9 +294,15 @@ public class ShareTinkerInternals {
         if (am == null) {
             return;
         }
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = am
+            .getRunningAppProcesses();
+
+        if (appProcessList == null) {
+            return;
+        }
         // NOTE: getRunningAppProcess() ONLY GIVE YOU THE PROCESS OF YOUR OWN PACKAGE IN ANDROID M
         // BUT THAT'S ENOUGH HERE
-        for (ActivityManager.RunningAppProcessInfo ai : am.getRunningAppProcesses()) {
+        for (ActivityManager.RunningAppProcessInfo ai : appProcessList) {
             // KILL OTHER PROCESS OF MINE
             if (ai.uid == android.os.Process.myUid() && ai.pid != android.os.Process.myPid()) {
                 android.os.Process.killProcess(ai.pid);
@@ -331,19 +338,24 @@ public class ShareTinkerInternals {
         ActivityManager activityManager =
             (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
 
-        try {
-            for (ActivityManager.RunningAppProcessInfo process : activityManager.getRunningAppProcesses()) {
-                if (process.pid == myPid) {
-                    myProcess = process;
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-        }
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
+            .getRunningAppProcesses();
 
-        if (myProcess != null) {
-            return myProcess.processName;
+        if (appProcessList != null) {
+            try {
+                for (ActivityManager.RunningAppProcessInfo process : appProcessList) {
+                    if (process.pid == myPid) {
+                        myProcess = process;
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
+            }
+
+            if (myProcess != null) {
+                return myProcess.processName;
+            }
         }
 
         byte[] b = new byte[128];
@@ -362,7 +374,7 @@ public class ShareTinkerInternals {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
         } finally {
             try {
                 if (in != null) {
