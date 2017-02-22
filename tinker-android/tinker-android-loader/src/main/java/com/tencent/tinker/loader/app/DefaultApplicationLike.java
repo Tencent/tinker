@@ -66,4 +66,9 @@ public class DefaultApplicationLike extends ApplicationLike {
     public void onBaseContextAttached(Context base) {
         Log.d(TAG, "onBaseContextAttached:");
     }
+
+    @Override
+    public Context getBaseContext(Context base) {
+        return base;
+    }
 }
