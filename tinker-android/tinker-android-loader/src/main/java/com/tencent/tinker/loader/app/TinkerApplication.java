@@ -201,6 +201,15 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
+    @Override
+    public Context getBaseContext() {
+        Context context = super.getBaseContext();
+        if (applicationLike != null) {
+            return applicationLike.getBaseContext(context);
+        }
+        return context;
+    }
+
     @TargetApi(14)
     @Override
     public void onTrimMemory(int level) {
