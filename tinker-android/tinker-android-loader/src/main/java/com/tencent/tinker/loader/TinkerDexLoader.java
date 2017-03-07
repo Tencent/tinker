@@ -17,11 +17,11 @@
 package com.tencent.tinker.loader;
 
 import android.annotation.TargetApi;
-import android.app.Application;
 import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
 
+import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareDexDiffPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
@@ -62,7 +62,7 @@ public class TinkerDexLoader {
      * @param application The application.
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    public static boolean loadTinkerJars(Application application, boolean tinkerLoadVerifyFlag, String directory, Intent intentResult, boolean isSystemOTA) {
+    public static boolean loadTinkerJars(final TinkerApplication application, String directory, Intent intentResult, boolean isSystemOTA) {
         if (dexList.isEmpty()) {
             Log.w(TAG, "there is no dex to load");
             return true;
@@ -92,7 +92,7 @@ public class TinkerDexLoader {
             String path = dexPath + info.realName;
             File file = new File(path);
 
-            if (tinkerLoadVerifyFlag) {
+            if (application.isTinkerLoadVerifyFlag()) {
                 long start = System.currentTimeMillis();
                 String checkMd5 = isArtPlatForm ? info.destMd5InArt : info.destMd5InDvm;
                 if (!SharePatchFileUtil.verifyDexFileMd5(file, checkMd5)) {
@@ -108,9 +108,12 @@ public class TinkerDexLoader {
         }
 
         if (isSystemOTA) {
+            boolean launchSuccess = ShareTinkerInternals.launcherSplashProcess(application,
+                application.getSplashActivity(), legalFiles.size());
+
             parallelOTAResult = true;
             parallelOTAThrowable = null;
-            Log.w(TAG, "systemOTA, try parallel oat dexes!!!!!");
+            Log.w(TAG, "systemOTA, try parallel oat dexes, launch result:" + launchSuccess);
 
             TinkerParallelDexOptimizer.optimizeAll(
                 legalFiles, optimizeDir,
@@ -136,6 +139,9 @@ public class TinkerDexLoader {
                     }
                 }
             );
+
+            ShareTinkerInternals.sendSplashEndBroadcast(application);
+
             if (!parallelOTAResult) {
                 Log.e(TAG, "parallel oat dexes failed");
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, parallelOTAThrowable);

@@ -18,13 +18,6 @@ package com.tencent.tinker.build.apkparser;
 
 import com.tencent.tinker.build.patch.Configuration;
 
-import net.dongliu.apk.parser.ApkParser;
-import net.dongliu.apk.parser.bean.ApkMeta;
-import net.dongliu.apk.parser.exception.ParserException;
-import net.dongliu.apk.parser.struct.StringPool;
-import net.dongliu.apk.parser.struct.resource.ResourceTable;
-import net.dongliu.apk.parser.utils.ParseUtils;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -42,6 +35,13 @@ import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import tinker.net.dongliu.apk.parser.ApkParser;
+import tinker.net.dongliu.apk.parser.bean.ApkMeta;
+import tinker.net.dongliu.apk.parser.exception.ParserException;
+import tinker.net.dongliu.apk.parser.struct.StringPool;
+import tinker.net.dongliu.apk.parser.struct.resource.ResourceTable;
+import tinker.net.dongliu.apk.parser.utils.ParseUtils;
 
 /**
  * Created by zhangshaowen on 16/5/5.

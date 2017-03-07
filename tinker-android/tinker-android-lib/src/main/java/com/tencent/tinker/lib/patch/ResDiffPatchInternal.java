@@ -195,6 +195,8 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     ResUtil.extractTinkerEntry(newApk, modZipEntry, out);
                     totalEntryCount++;
                 }
+                // set comment back
+                out.setComment(oldApk.getComment());
             } finally {
                 if (out != null) {
                     out.close();

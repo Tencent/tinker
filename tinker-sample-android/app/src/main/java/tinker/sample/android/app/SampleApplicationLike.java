@@ -58,7 +58,8 @@ import tinker.sample.android.util.TinkerManager;
 @SuppressWarnings("unused")
 @DefaultLifeCycle(application = "tinker.sample.android.app.SampleApplication",
                   flags = ShareConstants.TINKER_ENABLE_ALL,
-                  loadVerifyFlag = false)
+                  loadVerifyFlag = false,
+                  otaSplashActivity = true)
 public class SampleApplicationLike extends DefaultApplicationLike {
     private static final String TAG = "Tinker.SampleApplicationLike";
 

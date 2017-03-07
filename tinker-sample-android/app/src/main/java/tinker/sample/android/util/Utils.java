@@ -42,6 +42,8 @@ public class Utils {
     public static final int ERROR_PATCH_CRASH_LIMIT             = -9;
     public static final int ERROR_PATCH_RETRY_COUNT_LIMIT       = -10;
     public static final int ERROR_PATCH_CONDITION_NOT_SATISFIED = -11;
+    public static final int ERROR_PATCH_JIT                     = -12;
+
 
     public static final String PLATFORM = "platform";
 

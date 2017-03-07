@@ -17,6 +17,7 @@
 package com.tencent.tinker.loader;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.util.ArrayMap;
@@ -41,19 +42,19 @@ import static android.os.Build.VERSION_CODES.KITKAT;
  * Thanks for Android Fragmentation
  */
 class TinkerResourcePatcher {
-    private static final String TAG                     = "Tinker.ResourcePatcher";
-    private static final String TEST_ASSETS_VALUE       = "only_use_to_test_tinker_resource.txt";
+    private static final String TAG               = "Tinker.ResourcePatcher";
+    private static final String TEST_ASSETS_VALUE = "only_use_to_test_tinker_resource.txt";
 //    private static final String MIUI_RESOURCE_CLASSNAME = "android.content.res.MiuiResources";
 
     // original object
-    private static Collection<WeakReference<Resources>>  references               = null;
-    private static Object                                currentActivityThread    = null;
-    private static AssetManager                          newAssetManager          = null;
+    private static Collection<WeakReference<Resources>> references            = null;
+    private static Object                               currentActivityThread = null;
+    private static AssetManager                         newAssetManager       = null;
     //    private static ArrayMap<?, WeakReference<?>>         resourceImpls            = null;
 
     // method
-    private static Method                                addAssetPathMethod       = null;
-    private static Method                                ensureStringBlocksMethod = null;
+    private static Method addAssetPathMethod       = null;
+    private static Method ensureStringBlocksMethod = null;
 
     // field
     private static Field assetsFiled           = null;
@@ -61,7 +62,7 @@ class TinkerResourcePatcher {
     private static Field resDir                = null;
     private static Field packagesFiled         = null;
     private static Field resourcePackagesFiled = null;
-//    private static Field        publicSourceDirField     = null;
+    private static Field publicSourceDirField  = null;
 
 //    private static boolean isMiuiSystem = false;
 
@@ -152,11 +153,10 @@ class TinkerResourcePatcher {
 //        final Resources resources = context.getResources();
 //        isMiuiSystem = resources != null && MIUI_RESOURCE_CLASSNAME.equals(resources.getClass().getName());
 
-//        try {
-//            publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
-//        } catch (NoSuchFieldException e) {
-//            throw new IllegalStateException("cannot find 'mInstrumentation' field");
-//        }
+        try {
+            publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
+        } catch (NoSuchFieldException ignore) {
+        }
     }
 
     /**
@@ -217,7 +217,12 @@ class TinkerResourcePatcher {
         // Handle issues caused by WebView on Android N.
         // Issue: On Android N, if an activity contains a webview, when screen rotates
         // our resource patch may lost effects.
-//        publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
+        try {
+            if (publicSourceDirField != null) {
+                publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
+            }
+        } catch (Throwable ignore) {
+        }
 
         if (!checkResUpdate(context)) {
             throw new TinkerRuntimeException(ShareConstants.CHECK_RES_INSTALL_FAIL);

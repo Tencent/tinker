@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -44,7 +45,7 @@ public class TinkerResourceLoader {
     /**
      * Load tinker resources
      */
-    public static boolean loadTinkerResources(Context context, boolean tinkerLoadVerifyFlag, String directory, Intent intentResult) {
+    public static boolean loadTinkerResources(TinkerApplication application, String directory, Intent intentResult) {
         if (resPatchInfo == null || resPatchInfo.resArscMd5 == null) {
             return true;
         }
@@ -52,7 +53,7 @@ public class TinkerResourceLoader {
         File resourceFile = new File(resourceString);
         long start = System.currentTimeMillis();
 
-        if (tinkerLoadVerifyFlag) {
+        if (application.isTinkerLoadVerifyFlag()) {
             if (!SharePatchFileUtil.checkResourceArscMd5(resourceFile, resPatchInfo.resArscMd5)) {
                 Log.e(TAG, "Failed to load resource file, path: " + resourceFile.getPath() + ", expect md5: " + resPatchInfo.resArscMd5);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH);
@@ -61,13 +62,13 @@ public class TinkerResourceLoader {
             Log.i(TAG, "verify resource file:" + resourceFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
         }
         try {
-            TinkerResourcePatcher.monkeyPatchExistingResources(context, resourceString);
+            TinkerResourcePatcher.monkeyPatchExistingResources(application, resourceString);
             Log.i(TAG, "monkeyPatchExistingResources resource file:" + resourceString + ", use time: " + (System.currentTimeMillis() - start));
         } catch (Throwable e) {
             Log.e(TAG, "install resources failed");
             //remove patch dex if resource is installed failed
             try {
-                SystemClassLoaderAdder.uninstallPatchDex(context.getClassLoader());
+                SystemClassLoaderAdder.uninstallPatchDex(application.getClassLoader());
             } catch (Throwable throwable) {
                 Log.e(TAG, "uninstallPatchDex failed", e);
             }

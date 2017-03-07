@@ -18,11 +18,16 @@ package com.tencent.tinker.loader.shareutil;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Log;
+
+import com.tencent.tinker.loader.splash.TinkerOTASplashActivity;
+import com.tencent.tinker.loader.splash.TinkerSplashBroadCast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -30,6 +35,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -42,16 +48,70 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
+    public static final String INTENT_SPLASH_BEGIN    = "splash_begin";
+    public static final String INTENT_SPLASH_DEX_SIZE = "splash_dex_size";
     private static final String TAG = "Tinker.TinkerInternals";
+    private static final String OTA_PROCESS_NAME = ":otasplash";
     private static final boolean VM_IS_ART = isVmArt(System.getProperty("java.vm.version"));
+    private static final boolean VM_IS_JIT = isVmJitInternal();
+    private static Boolean isSplashProcess = null;
     /**
      * or you may just hardcode them in your app
      */
     private static String processName = null;
-    private static String tinkerID = null;
+    private static String tinkerID    = null;
 
     public static boolean isVmArt() {
         return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
+    }
+
+    public static boolean isVmJit() {
+        return VM_IS_JIT && Build.VERSION.SDK_INT < 24;
+    }
+
+    /**
+     * use handler to delay
+     *
+     * @param context
+     * @return
+     */
+    public static boolean launcherSplashProcess(Context context, boolean splash, int dexSize) {
+        if (!splash) {
+            Log.w(TAG, "disable ota splash activity");
+            return false;
+        }
+        if (!isInMainProcess(context)) {
+            Log.w(TAG, "ota splash activity can be launched only by main process");
+            return false;
+        }
+
+        Intent intent = new Intent(context, TinkerOTASplashActivity.class);
+        intent.putExtra(INTENT_SPLASH_BEGIN, SystemClock.elapsedRealtime());
+        intent.putExtra(INTENT_SPLASH_DEX_SIZE, dexSize);
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+        return true;
+    }
+
+    public static boolean sendSplashEndBroadcast(Context context) {
+        if (!isInMainProcess(context)) {
+            Log.w(TAG, "ota splash activity can be launched only by main process");
+            return false;
+        }
+        Intent intent = new Intent(context, TinkerSplashBroadCast.class);
+        intent.putExtra(INTENT_SPLASH_BEGIN, SystemClock.elapsedRealtime());
+        context.sendBroadcast(intent);
+        return true;
+    }
+
+    public static boolean isOTASplashProcess(Context context) {
+        if (isSplashProcess != null) {
+            return isSplashProcess;
+        }
+
+        isSplashProcess = getProcessName(context).contains(OTA_PROCESS_NAME);
+        return isSplashProcess;
     }
 
     public static boolean isSystemOTA(String lastFingerPrint) {
@@ -82,6 +142,7 @@ public class ShareTinkerInternals {
 
     /**
      * thinker package check
+     *
      * @param context
      * @param tinkerFlag
      * @param patchFile
@@ -95,6 +156,7 @@ public class ShareTinkerInternals {
         }
         return returnCode;
     }
+
     /**
      * check patch file signature and TINKER_ID
      *
@@ -158,6 +220,7 @@ public class ShareTinkerInternals {
     /**
      * not like {@cod ShareSecurityCheck.getPackagePropertiesIfPresent}
      * we don't check Signatures or other files, we just get the package meta's properties directly
+     *
      * @param patchFile
      * @return
      */
@@ -247,6 +310,7 @@ public class ShareTinkerInternals {
 
     /**
      * you can set Tinker disable in runtime at some times!
+     *
      * @param context
      */
     public static void setTinkerDisableWithSharedPreferences(Context context) {
@@ -256,6 +320,7 @@ public class ShareTinkerInternals {
 
     /**
      * can't load or receive any patch!
+     *
      * @param context
      * @return
      */
@@ -389,6 +454,7 @@ public class ShareTinkerInternals {
 
     /**
      * vm whether it is art
+     *
      * @return
      */
     private static boolean isVmArt(String versionString) {
@@ -408,6 +474,24 @@ public class ShareTinkerInternals {
             }
         }
         return isArt;
+    }
+
+    private static boolean isVmJitInternal() {
+        try {
+            Class<?> clazz = Class.forName("android.os.SystemProperties");
+            Method mthGet = clazz.getDeclaredMethod("get", String.class);
+
+            String jit = (String) mthGet.invoke(null, "dalvik.vm.usejit");
+            String jitProfile = (String) mthGet.invoke(null, "dalvik.vm.usejitprofiles");
+
+            //usejit is true and usejitprofiles is null
+            if (!isNullOrNil(jit) && isNullOrNil(jitProfile) && jit.equals("true")) {
+                return true;
+            }
+        } catch (Throwable e) {
+            Log.e(TAG, "isVmJitInternal ex:" + e);
+        }
+        return false;
     }
 
     public static String getExceptionCauseString(final Throwable ex) {

@@ -19,6 +19,7 @@ package com.tencent.tinker.loader;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -49,18 +50,21 @@ public class TinkerLoader extends AbstractTinkerLoader {
      * only main process can handle patch version change or incomplete
      */
     @Override
-    public Intent tryLoad(TinkerApplication app, int tinkerFlag, boolean tinkerLoadVerifyFlag) {
+    public Intent tryLoad(TinkerApplication app) {
         Intent resultIntent = new Intent();
 
         long begin = SystemClock.elapsedRealtime();
-        tryLoadPatchFilesInternal(app, tinkerFlag, tinkerLoadVerifyFlag, resultIntent);
+        tryLoadPatchFilesInternal(app, resultIntent);
         long cost = SystemClock.elapsedRealtime() - begin;
         ShareIntentUtil.setIntentPatchCostTime(resultIntent, cost);
         return resultIntent;
     }
 
-    private void tryLoadPatchFilesInternal(TinkerApplication app, int tinkerFlag, boolean tinkerLoadVerifyFlag, Intent resultIntent) {
-        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
+    private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent) {
+        final int tinkerFlag = app.getTinkerFlags();
+
+        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)
+            || ShareTinkerInternals.isOTASplashProcess(app)) {
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
             return;
         }
@@ -207,8 +211,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 
         //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if (isSystemOTA
-            || (mainProcess && versionChanged)) {
+        if (mainProcess && versionChanged) {
             patchInfo.oldVersion = version;
             //update old version to new
             if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
@@ -223,9 +226,20 @@ public class TinkerLoader extends AbstractTinkerLoader {
             Log.w(TAG, "tryLoadPatchFiles:checkSafeModeCount fail");
             return;
         }
+
         //now we can load patch jar
         if (isEnabledForDex) {
-            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent, isSystemOTA);
+            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, patchVersionDirectory, resultIntent, isSystemOTA);
+
+            if (isSystemOTA) {
+                // update fingerprint after load success
+                patchInfo.fingerPrint = Build.FINGERPRINT;
+                if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
+                    ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
+                    Log.w(TAG, "tryLoadPatchFiles:onReWritePatchInfoCorrupted");
+                    return;
+                }
+            }
             if (!loadTinkerJars) {
                 Log.w(TAG, "tryLoadPatchFiles:onPatchLoadDexesFail");
                 return;
@@ -234,7 +248,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //now we can load patch resource
         if (isEnabledForResource) {
-            boolean loadTinkerResources = TinkerResourceLoader.loadTinkerResources(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent);
+            boolean loadTinkerResources = TinkerResourceLoader.loadTinkerResources(app, patchVersionDirectory, resultIntent);
             if (!loadTinkerResources) {
                 Log.w(TAG, "tryLoadPatchFiles:onPatchLoadResourcesFail");
                 return;
