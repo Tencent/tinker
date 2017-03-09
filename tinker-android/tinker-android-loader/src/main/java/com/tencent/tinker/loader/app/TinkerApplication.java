@@ -254,6 +254,15 @@ public abstract class TinkerApplication extends Application {
         return service;
     }
 
+    @Override
+    public Context getBaseContext() {
+        Context base = super.getBaseContext();
+        if (applicationLike != null) {
+            return applicationLike.getBaseContext(base);
+        }
+        return base;
+    }
+
     public void setUseSafeMode(boolean useSafeMode) {
         this.useSafeMode = useSafeMode;
     }
