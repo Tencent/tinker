@@ -39,6 +39,15 @@ public class TinkerPatchExtension {
     boolean ignoreWarning
 
     /**
+     * Whether tinker should treat the base apk as the one being protected by app
+     * protection tools.
+     * If this attribute is true, the generated patch package will contain a
+     * dex including all changed classes instead of any dexdiff patch-info files.
+     * default: false
+     */
+    boolean isProtectedApp
+
+    /**
      * If sign the patch file with the android signConfig
      * default: true
      */
@@ -53,6 +62,7 @@ public class TinkerPatchExtension {
     public TinkerPatchExtension() {
         oldApk = ""
         ignoreWarning = false
+        isProtectedApp = false
         useSign = true
         tinkerEnable = true
     }
@@ -74,6 +84,7 @@ public class TinkerPatchExtension {
     public String toString() {
         """| oldApk = ${oldApk}
            | ignoreWarning = ${ignoreWarning}
+           | isProtectedApp = ${isProtectedApp}
            | tinkerEnable = ${tinkerEnable}
            | useSign = ${useSign}
         """.stripMargin()
