@@ -201,15 +201,6 @@ if (buildWithTinker()) {
         ignoreWarning = false
 
         /**
-         * optional, default 'false'
-         * Whether tinker should treat the base apk as the one being protected by app
-         * protection tools.
-         * If this attribute is true, the generated patch package will contain a
-         * dex including all changed classes instead of any dexdiff patch-info files.
-         */
-        isProtectedApp = false
-
-        /**
          * optional，default 'true'
          * whether sign the patch file
          * if not, you must do yourself. otherwise it can't check success during the patch loading
@@ -255,6 +246,15 @@ if (buildWithTinker()) {
              * open this can reduce the dex diff file size.
              */
             keepDexApply = false
+
+            /**
+             * optional, default 'false'
+             * Whether tinker should treat the base apk as the one being protected by app
+             * protection tools.
+             * If this attribute is true, the generated patch package will contain a
+             * dex including all changed classes instead of any dexdiff patch-info files.
+             */
+            isProtectedApp = true
         }
 
         dex {

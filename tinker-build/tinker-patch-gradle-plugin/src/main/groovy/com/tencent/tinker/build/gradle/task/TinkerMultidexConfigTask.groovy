@@ -62,7 +62,15 @@ public class TinkerMultidexConfigTask extends DefaultTask {
              .append("#tinker multidex keep patterns:\n")
              .append(MULTIDEX_CONFIG_SETTINGS)
              .append("\n")
-             .append("#your dex.loader patterns here\n")
+
+        // This class must be placed in main dex so that we can use it to check if new pathList
+        // in AndroidNClassLoader is fine when under the protected app (whose main dex is always encrypted).
+        lines.append("-keep class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {\n" +
+                "    <init>();\n" +
+                "}\n")
+             .append("\n")
+
+        lines.append("#your dex.loader patterns here\n")
 
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
         for (String pattern : loader) {
@@ -77,11 +85,7 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                     .append("\n")
         }
 
-        // This class must be placed in main dex so that we can use it to check if new pathList
-        // in AndroidNClassLoader is fine when under the protected app (whose main dex is always encrypted).
-        lines.append("-keep class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {\n" +
-                "    <init>();\n" +
-                "}\n").append("\n");
+
 
         // Write our recommended proguard settings to this file
         FileWriter fr = new FileWriter(file.path)

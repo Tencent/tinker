@@ -157,7 +157,7 @@ public class PatchBuilder {
             throw new IOException(String.format(
                 "Missing patch unzip files, path=%s\n", tempOutDir.getAbsolutePath()));
         }
-        FileOperation.zipInputDir(tempOutDir, output);
+        FileOperation.zipInputDir(tempOutDir, output, null);
 
         if (!output.exists()) {
             throw new IOException(String.format(

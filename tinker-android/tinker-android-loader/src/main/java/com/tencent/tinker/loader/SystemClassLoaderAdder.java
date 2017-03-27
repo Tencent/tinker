@@ -43,11 +43,9 @@ import dalvik.system.PathClassLoader;
  * Created by zhangshaowen on 16/3/18.
  */
 public class SystemClassLoaderAdder {
+    public static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
+    public static final String CHECK_DEX_FIELD = "isPatch";
     private static final String TAG = "Tinker.ClassLoaderAdder";
-
-    private static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
-    private static final String CHECK_DEX_FIELD = "isPatch";
-
     private static int sPatchDexCount = 0;
 
     @SuppressLint("NewApi")

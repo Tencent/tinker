@@ -39,7 +39,6 @@ import java.util.List;
  */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 class AndroidNClassLoader extends PathClassLoader {
-    private static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
     private static final String CHECK_CLASSLOADER_CLASS = "com.tencent.tinker.loader.TinkerTestAndroidNClassLoader";
 
     private static ArrayList<DexFile> oldDexFiles = new ArrayList<>();
@@ -74,6 +73,9 @@ class AndroidNClassLoader extends PathClassLoader {
         Object[] originDexElements = (Object[]) dexElement.get(originPathListObject);
         for (Object element : originDexElements) {
             DexFile dexFile = (DexFile) ShareReflectUtil.findField(element, "dexFile").get(element);
+            if (dexFile == null) {
+                continue;
+            }
             additionalClassPathEntries.add(new File(dexFile.getName()));
             //protect for java.lang.AssertionError: Failed to close dex file in finalizer.
             oldDexFiles.add(dexFile);
@@ -166,7 +168,7 @@ class AndroidNClassLoader extends PathClassLoader {
         // loader class use default pathClassloader to load
         if ((name != null
                 && name.startsWith("com.tencent.tinker.loader.")
-                && !name.equals(CHECK_DEX_CLASS))
+                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS))
                 && !name.equals(CHECK_CLASSLOADER_CLASS)
                 || (applicationClassName != null && TextUtils.equals(applicationClassName, name))) {
             return originClassLoader.loadClass(name);

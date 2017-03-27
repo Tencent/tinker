@@ -25,6 +25,10 @@
     *;
 }
 
+-keep public class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {
+    *;
+}
+
 #your dex.loader pattern here
 -keep class com.tencent.tinker.loader.**
 -keep class tinker.sample.android.app.SampleApplication

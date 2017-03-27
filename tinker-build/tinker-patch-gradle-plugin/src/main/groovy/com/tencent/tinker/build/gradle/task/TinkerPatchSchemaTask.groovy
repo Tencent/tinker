@@ -67,7 +67,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setOutBuilder(outputFolder)
                .setIgnoreWarning(configuration.ignoreWarning)
                .setDexFilePattern(new ArrayList<String>(configuration.dex.pattern))
-               .setIsProtectedApp(configuration.isProtectedApp)
+               .setIsProtectedApp(configuration.buildConfig.isProtectedApp)
                .setDexLoaderPattern(new ArrayList<String>(configuration.dex.loader))
                .setDexMode(configuration.dex.dexMode)
                .setSoFilePattern(new ArrayList<String>(configuration.lib.pattern))
