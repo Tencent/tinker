@@ -61,10 +61,10 @@ public class ShareIntentUtil {
         return intent.getLongExtra(INTENT_PATCH_COST_TIME, 0);
     }
 
-    public static Exception getIntentPatchException(Intent intent) {
+    public static Throwable getIntentPatchException(Intent intent) {
         Serializable serializable = getSerializableExtra(intent, INTENT_PATCH_EXCEPTION);
         if (serializable != null) {
-            return (Exception) serializable;
+            return (Throwable) serializable;
         }
         return null;
     }
