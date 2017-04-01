@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<resources>
-    <string name="ota_notice">系统升级</string>
-
-    <string name="ota_notice_update">正在更新数据...</string>
-</resources>

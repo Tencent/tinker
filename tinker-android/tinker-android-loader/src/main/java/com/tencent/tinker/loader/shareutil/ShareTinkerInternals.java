@@ -18,16 +18,11 @@ package com.tencent.tinker.loader.shareutil;
 
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.SystemClock;
 import android.util.Log;
-
-import com.tencent.tinker.loader.splash.TinkerOTASplashActivity;
-import com.tencent.tinker.loader.splash.TinkerSplashBroadCast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -48,13 +43,12 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
-    public static final String INTENT_SPLASH_BEGIN    = "splash_begin";
-    public static final String INTENT_SPLASH_DEX_SIZE = "splash_dex_size";
     private static final String TAG = "Tinker.TinkerInternals";
-    private static final String OTA_PROCESS_NAME = ":otasplash";
     private static final boolean VM_IS_ART = isVmArt(System.getProperty("java.vm.version"));
     private static final boolean VM_IS_JIT = isVmJitInternal();
-    private static Boolean isSplashProcess = null;
+
+    private static final String PATCH_PROCESS_NAME = ":patch";
+    private static Boolean isPatchProcess = null;
     /**
      * or you may just hardcode them in your app
      */
@@ -67,51 +61,6 @@ public class ShareTinkerInternals {
 
     public static boolean isVmJit() {
         return VM_IS_JIT && Build.VERSION.SDK_INT < 24;
-    }
-
-    /**
-     * use handler to delay
-     *
-     * @param context
-     * @return
-     */
-    public static boolean launcherSplashProcess(Context context, boolean splash, int dexSize) {
-        if (!splash) {
-            Log.w(TAG, "disable ota splash activity");
-            return false;
-        }
-        if (!isInMainProcess(context)) {
-            Log.w(TAG, "ota splash activity can be launched only by main process");
-            return false;
-        }
-
-        Intent intent = new Intent(context, TinkerOTASplashActivity.class);
-        intent.putExtra(INTENT_SPLASH_BEGIN, SystemClock.elapsedRealtime());
-        intent.putExtra(INTENT_SPLASH_DEX_SIZE, dexSize);
-
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
-        return true;
-    }
-
-    public static boolean sendSplashEndBroadcast(Context context) {
-        if (!isInMainProcess(context)) {
-            Log.w(TAG, "ota splash activity can be launched only by main process");
-            return false;
-        }
-        Intent intent = new Intent(context, TinkerSplashBroadCast.class);
-        intent.putExtra(INTENT_SPLASH_BEGIN, SystemClock.elapsedRealtime());
-        context.sendBroadcast(intent);
-        return true;
-    }
-
-    public static boolean isOTASplashProcess(Context context) {
-        if (isSplashProcess != null) {
-            return isSplashProcess;
-        }
-
-        isSplashProcess = getProcessName(context).contains(OTA_PROCESS_NAME);
-        return isSplashProcess;
     }
 
     public static boolean isSystemOTA(String lastFingerPrint) {
@@ -352,6 +301,26 @@ public class ShareTinkerInternals {
         }
 
         return pkgName.equals(processName);
+    }
+
+    public static boolean isInPatchProcess(Context context) {
+        if (isPatchProcess != null) {
+            return isPatchProcess;
+        }
+
+        isPatchProcess = getProcessName(context).endsWith(PATCH_PROCESS_NAME);
+        return isPatchProcess;
+    }
+
+    public static String getCurrentOatMode(Context context, String current) {
+        if (current.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH)) {
+            if (isInMainProcess(context)) {
+                current = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
+            } else {
+                current = ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH;
+            }
+        }
+        return current;
     }
 
     public static void killAllOtherProcess(Context context) {

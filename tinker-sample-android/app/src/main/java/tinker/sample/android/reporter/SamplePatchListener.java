@@ -91,7 +91,7 @@ public class SamplePatchListener extends DefaultPatchListener {
 
                 if (tinker.isTinkerLoaded()) {
                     TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
-                    if (tinkerLoadResult != null) {
+                    if (tinkerLoadResult != null && !tinkerLoadResult.useInterpretMode) {
                         String currentVersion = tinkerLoadResult.currentVersion;
                         if (patchMd5.equals(currentVersion)) {
                             returnCode = Utils.ERROR_PATCH_ALREADY_APPLY;

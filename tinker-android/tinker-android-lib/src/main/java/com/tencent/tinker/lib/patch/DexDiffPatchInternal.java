@@ -38,6 +38,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.zip.ZipEntry;
@@ -146,14 +147,14 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 optFiles.add(new File(outputPathName));
             }
 
-            TinkerLog.w(TAG, "patch recover, try to optimize dex file count:%d", files.length);
+            TinkerLog.i(TAG, "patch recover, try to optimize dex file count:%d, optimizeDexDirectory:%s", files.length, optimizeDexDirectory);
 
             // only use parallel dex optimizer for art
             if (ShareTinkerInternals.isVmArt()) {
                 failOptDexFile.clear();
                 // try parallel dex optimizer
                 TinkerParallelDexOptimizer.optimizeAll(
-                    files, optimizeDexDirectoryFile,
+                    Arrays.asList(files), optimizeDexDirectoryFile,
                     new TinkerParallelDexOptimizer.ResultCallback() {
                         long startTime;
 

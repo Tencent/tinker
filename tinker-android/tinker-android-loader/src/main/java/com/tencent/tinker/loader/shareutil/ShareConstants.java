@@ -42,11 +42,17 @@ public class ShareConstants {
     public static final String SO_PATH      = "lib";
 
 
-    public static final String DEX_META_FILE     = "assets/dex_meta.txt";
-    public static final String DEX_PATH          = "dex";
-    public static final String DEX_OPTIMIZE_PATH = "odex";
-    public static final String DEX_SUFFIX        = ".dex";
-    public static final String JAR_SUFFIX        = ".jar";
+    public static final String DEX_META_FILE               = "assets/dex_meta.txt";
+    public static final String DEX_PATH                    = "dex";
+    public static final String DEFAULT_DEX_OPTIMIZE_PATH   = "odex";
+    public static final String INTERPRET_DEX_OPTIMIZE_PATH = "interpet";
+    public static final String CHANING_DEX_OPTIMIZE_PATH   = "changing";
+
+
+    public static final String DEX_SUFFIX = ".dex";
+    public static final String JAR_SUFFIX = ".jar";
+
+    public static final String TEST_DEX_NAME = "test.dex";
 
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
     public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";
@@ -117,33 +123,34 @@ public class ShareConstants {
     public static final int TINKER_ENABLE_ALL          = TINKER_DEX_MASK | TINKER_NATIVE_LIBRARY_MASK | TINKER_RESOURCE_MASK;
 
     //load error code
-    public static final int ERROR_LOAD_OK                                       = 0;
-    public static final int ERROR_LOAD_DISABLE                                  = -1;
-    public static final int ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST                = -2;
-    public static final int ERROR_LOAD_PATCH_INFO_NOT_EXIST                     = -3;
-    public static final int ERROR_LOAD_PATCH_INFO_CORRUPTED                     = -4;
-    public static final int ERROR_LOAD_PATCH_INFO_BLANK                         = -5;
-    public static final int ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST        = -6;
-    public static final int ERROR_LOAD_PATCH_VERSION_FILE_NOT_EXIST             = -7;
-    public static final int ERROR_LOAD_PATCH_PACKAGE_CHECK_FAIL                 = -8;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST    = -9;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST         = -10;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST     = -11;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL       = -12;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_MD5_MISMATCH           = -13;
-    public static final int ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION         = -14;
-    public static final int ERROR_LOAD_PATCH_VERSION_PARALLEL_DEX_OPT_EXCEPTION = -15;
+    public static final int ERROR_LOAD_OK                                      = 0;
+    public static final int ERROR_LOAD_DISABLE                                 = -1;
+    public static final int ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST               = -2;
+    public static final int ERROR_LOAD_PATCH_INFO_NOT_EXIST                    = -3;
+    public static final int ERROR_LOAD_PATCH_INFO_CORRUPTED                    = -4;
+    public static final int ERROR_LOAD_PATCH_INFO_BLANK                        = -5;
+    public static final int ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST       = -6;
+    public static final int ERROR_LOAD_PATCH_VERSION_FILE_NOT_EXIST            = -7;
+    public static final int ERROR_LOAD_PATCH_PACKAGE_CHECK_FAIL                = -8;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST   = -9;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST        = -10;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST    = -11;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL      = -12;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_MD5_MISMATCH          = -13;
+    public static final int ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION        = -14;
+    public static final int ERROR_LOAD_PATCH_GET_OTA_INSTRUCTION_SET_EXCEPTION = -15;
+    public static final int ERROR_LOAD_PATCH_OTA_INTERPRET_ONLY_EXCEPTION      = -16;
 
-    public static final int ERROR_LOAD_PATCH_VERSION_LIB_DIRECTORY_NOT_EXIST      = -16;
-    public static final int ERROR_LOAD_PATCH_VERSION_LIB_FILE_NOT_EXIST           = -17;
-    public static final int ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL              = -18;
-    public static final int ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION                    = -19;
+    public static final int ERROR_LOAD_PATCH_VERSION_LIB_DIRECTORY_NOT_EXIST      = -17;
+    public static final int ERROR_LOAD_PATCH_VERSION_LIB_FILE_NOT_EXIST           = -18;
+    public static final int ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL              = -19;
+    public static final int ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION                    = -20;
     //resource
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_DIRECTORY_NOT_EXIST = -20;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST      = -21;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -22;
-    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -23;
-    public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -24;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_DIRECTORY_NOT_EXIST = -21;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST      = -22;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -23;
+    public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -24;
+    public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -25;
 
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 
@@ -153,8 +160,6 @@ public class ShareConstants {
     public static final int ERROR_LOAD_EXCEPTION_DEX      = -2;
     public static final int ERROR_LOAD_EXCEPTION_RESOURCE = -3;
     public static final int ERROR_LOAD_EXCEPTION_UNCAUGHT = -4;
-    public static final int ERROR_LOAD_EXCEPTION_DEX_OPT  = -5;
-
 
     //patch listener error code
     public static final int ERROR_PATCH_OK        = 0;
@@ -174,4 +179,11 @@ public class ShareConstants {
     public static final int ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL       = -7;
     public static final int ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED   = -8;
     public static final int ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = -9;
+
+    // interpret error type
+    public static final int TYPE_INTERPRET_OK                        = 0;
+    public static final int TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR = 1;
+    public static final int TYPE_INTERPRET_COMMAND_ERROR             = 2;
+
+
 }

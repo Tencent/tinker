@@ -106,6 +106,31 @@ public class DefaultLoadReporter implements LoadReporter {
     }
 
     /**
+     * After system ota, we will try to load dex with interpret mode
+     * @param type type define as following
+     *             {@code ShareConstants.TYPE_INTERPRET_OK}                                    it is ok, using interpret mode
+     *             {@code ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR}             get instruction set from exist oat file fail
+     *             {@code ShareConstants.TYPE_INTERPRET_COMMAND_ERROR}                         use command line to generate interpret oat file fail
+     * @param e
+     */
+    @Override
+    public void onLoadInterpret(int type, Throwable e) {
+        TinkerLog.i(TAG, "patch loadReporter onLoadInterpret: type: %d, throwable: %s",
+            type, e);
+        switch (type) {
+            case ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR:
+                TinkerLog.e(TAG, "patch loadReporter onLoadInterpret fail, can get instruction set from existed oat file");
+                break;
+            case ShareConstants.TYPE_INTERPRET_COMMAND_ERROR:
+                TinkerLog.e(TAG, "patch loadReporter onLoadInterpret fail, command line to interpret return error");
+                break;
+            case ShareConstants.TYPE_INTERPRET_OK:
+                TinkerLog.i(TAG, "patch loadReporter onLoadInterpret ok");
+                break;
+        }
+    }
+
+    /**
      * some files is not found,
      * we'd like to recover the old patch with {@link TinkerPatchService} in OldPatchProcessor mode
      * as {@link DefaultLoadReporter#onLoadFileNotFound(File, int, boolean)}
@@ -203,9 +228,6 @@ public class DefaultLoadReporter implements LoadReporter {
                 }
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
                 TinkerLog.i(TAG, "dex exception disable tinker forever with sp");
-                break;
-            case ShareConstants.ERROR_LOAD_EXCEPTION_DEX_OPT:
-                TinkerLog.i(TAG, "patch load parallel dex opt exception: %s", e);
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE:
                 if (e.getMessage().contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {

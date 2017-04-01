@@ -254,7 +254,7 @@ if (buildWithTinker()) {
              * If this attribute is true, the generated patch package will contain a
              * dex including all changed classes instead of any dexdiff patch-info files.
              */
-            isProtectedApp = true
+            isProtectedApp = false
         }
 
         dex {

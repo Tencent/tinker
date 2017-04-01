@@ -39,6 +39,4 @@ public @interface DefaultLifeCycle {
     int flags();
 
     boolean loadVerifyFlag() default false;
-
-    boolean otaSplashActivity() default false;
 }

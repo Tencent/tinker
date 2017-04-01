@@ -51,6 +51,7 @@ public class SystemClassLoaderAdder {
     @SuppressLint("NewApi")
     public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files)
         throws Throwable {
+        Log.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
 
         if (!files.isEmpty()) {
             ClassLoader classLoader = loader;

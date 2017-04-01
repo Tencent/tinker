@@ -36,7 +36,7 @@ public class BasePatchInternal {
 
     protected static final String DEX_PATH             = ShareConstants.DEX_PATH;
     protected static final String SO_PATH              = ShareConstants.SO_PATH;
-    protected static final String DEX_OPTIMIZE_PATH    = ShareConstants.DEX_OPTIMIZE_PATH;
+    protected static final String DEX_OPTIMIZE_PATH    = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
     protected static final int    MAX_EXTRACT_ATTEMPTS = ShareConstants.MAX_EXTRACT_ATTEMPTS;
     protected static final String DEX_META_FILE        = ShareConstants.DEX_META_FILE;
     protected static final String SO_META_FILE         = ShareConstants.SO_META_FILE;

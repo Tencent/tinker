@@ -42,6 +42,9 @@ public class ShareIntentUtil {
     public static final  String INTENT_PATCH_PACKAGE_PATCH_CHECK = "intent_patch_package_patch_check";
     public static final  String INTENT_PATCH_PACKAGE_CONFIG      = "intent_patch_package_config";
     public static final  String INTENT_PATCH_SYSTEM_OTA          = "intent_patch_system_ota";
+    public static final  String INTENT_PATCH_OAT_DIR             = "intent_patch_oat_dir";
+    public static final  String INTENT_PATCH_INTERPRET_EXCEPTION = "intent_patch_interpret_exception";
+
 
     private static final String TAG                              = "ShareIntentUtil";
 
@@ -63,6 +66,14 @@ public class ShareIntentUtil {
 
     public static Throwable getIntentPatchException(Intent intent) {
         Serializable serializable = getSerializableExtra(intent, INTENT_PATCH_EXCEPTION);
+        if (serializable != null) {
+            return (Throwable) serializable;
+        }
+        return null;
+    }
+
+    public static Throwable getIntentInterpretException(Intent intent) {
+        Serializable serializable = getSerializableExtra(intent, INTENT_PATCH_INTERPRET_EXCEPTION);
         if (serializable != null) {
             return (Throwable) serializable;
         }

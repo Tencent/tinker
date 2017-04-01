@@ -64,7 +64,6 @@ public abstract class TinkerApplication extends Application {
     private final boolean tinkerLoadVerifyFlag;
     private final String  delegateClassName;
     private final String  loaderClassName;
-    private final boolean sPlashActivity;
 
     /**
      * if we have load patch, we should use safe mode
@@ -81,7 +80,7 @@ public abstract class TinkerApplication extends Application {
      * current build.
      */
     protected TinkerApplication(int tinkerFlags) {
-        this(tinkerFlags, "com.tencent.tinker.loader.app.DefaultApplicationLike", TinkerLoader.class.getName(), false, false);
+        this(tinkerFlags, "com.tencent.tinker.loader.app.DefaultApplicationLike", TinkerLoader.class.getName(), false);
     }
 
     /**
@@ -89,26 +88,15 @@ public abstract class TinkerApplication extends Application {
      *                          that will act as the delegate for application lifecycle callbacks.
      */
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
-                                String loaderClassName, boolean tinkerLoadVerifyFlag, boolean sPlashActivity) {
-        this.tinkerFlags = tinkerFlags;
-        this.delegateClassName = delegateClassName;
-        this.loaderClassName = loaderClassName;
-        this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
-        this.sPlashActivity = sPlashActivity;
-
-    }
-
-    protected TinkerApplication(int tinkerFlags, String delegateClassName,
                                 String loaderClassName, boolean tinkerLoadVerifyFlag) {
         this.tinkerFlags = tinkerFlags;
         this.delegateClassName = delegateClassName;
         this.loaderClassName = loaderClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
-        this.sPlashActivity = false;
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, false);
+        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
     }
 
     private ApplicationLike createDelegate() {
@@ -273,9 +261,5 @@ public abstract class TinkerApplication extends Application {
 
     public int getTinkerFlags() {
         return tinkerFlags;
-    }
-
-    public boolean getSplashActivity() {
-        return sPlashActivity;
     }
 }
