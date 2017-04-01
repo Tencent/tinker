@@ -16,9 +16,14 @@
 
 package tinker.sample.android.util;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Environment;
 import android.os.StatFs;
 
+import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 
 import java.io.ByteArrayOutputStream;
@@ -30,6 +35,7 @@ import java.io.PrintStream;
  * Created by zhangshaowen on 16/4/7.
  */
 public class Utils {
+    private static final String TAG = "Tinker.Utils";
 
     /**
      * the error code define by myself
@@ -154,6 +160,33 @@ public class Utils {
             return new String(chr, 0, i);
         } else {
             return src;
+        }
+    }
+
+    public interface IOnScreenOff {
+        void onScreenOff();
+    }
+
+    public static class ScreenState {
+        public ScreenState(Context context, final IOnScreenOff onScreenOffInterface) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_SCREEN_OFF);
+            context.registerReceiver(new BroadcastReceiver() {
+
+                @Override
+                public void onReceive(Context context, Intent in) {
+                    String action = in == null ? "" : in.getAction();
+                    TinkerLog.i(TAG, "ScreenReceiver action [%s] ", action);
+                    if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+
+                        context.unregisterReceiver(this);
+
+                        if (onScreenOffInterface != null) {
+                            onScreenOffInterface.onScreenOff();
+                        }
+                    }
+                }
+            }, filter);
         }
     }
 }

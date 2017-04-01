@@ -30,7 +30,9 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 
+import tinker.sample.android.service.SampleResultService;
 import tinker.sample.android.util.UpgradePatchRetry;
+import tinker.sample.android.util.Utils;
 
 /**
  * optional, you can just use DefaultLoadReporter
@@ -101,7 +103,12 @@ public class SampleLoadReporter extends DefaultLoadReporter {
         // only try to recover opt file
         // check dex opt file at last, some phone such as VIVO/OPPO like to change dex2oat to interpreted
         if (fileType == ShareConstants.TYPE_DEX_OPT) {
-            retryPatch();
+            Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+                @Override public boolean queueIdle() {
+                    retryPatch();
+                    return false;
+                }
+            });
         } else {
             checkAndCleanPatch();
         }
@@ -123,7 +130,12 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     @Override
     public void onLoadInterpret(int type, Throwable e) {
         super.onLoadInterpret(type, e);
-        retryPatch();
+        new Utils.ScreenState(context, new Utils.IOnScreenOff() {
+            @Override
+            public void onScreenOff() {
+                retryPatch();
+            }
+        });
     }
 
     @Override
@@ -132,25 +144,19 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     }
 
     private void retryPatch() {
-        Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-            @Override public boolean queueIdle() {
-                Tinker tinker = Tinker.with(context);
-                //we can recover at any process except recover process
-                if (tinker.isMainProcess()) {
-                    File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
-                    if (patchVersionFile != null) {
-                        if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
-                            TinkerLog.i(TAG, "try to repair oat file on patch process");
-                            TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
-                        } else {
-                            TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
-                            checkAndCleanPatch();
-                        }
-                    }
+        Tinker tinker = Tinker.with(context);
+        //we can recover at any process except recover process
+        if (tinker.isMainProcess()) {
+            File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
+            if (patchVersionFile != null) {
+                if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
+                    TinkerLog.i(TAG, "try to repair oat file on patch process");
+                    TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
+                } else {
+                    TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+                    checkAndCleanPatch();
                 }
-                return false;
             }
-        });
+        }
     }
-
 }
