@@ -24,15 +24,15 @@ import android.text.TextUtils;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
+import dalvik.system.DexFile;
+import dalvik.system.PathClassLoader;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-
-import dalvik.system.DexFile;
-import dalvik.system.PathClassLoader;
 
 /**
  * Created by zhangshaowen on 16/7/24.
@@ -168,8 +168,8 @@ class AndroidNClassLoader extends PathClassLoader {
         // loader class use default pathClassloader to load
         if ((name != null
                 && name.startsWith("com.tencent.tinker.loader.")
-                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS))
-                && !name.equals(CHECK_CLASSLOADER_CLASS)
+                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)
+                && !name.equals(CHECK_CLASSLOADER_CLASS))
                 || (applicationClassName != null && TextUtils.equals(applicationClassName, name))) {
             return originClassLoader.loadClass(name);
         }
