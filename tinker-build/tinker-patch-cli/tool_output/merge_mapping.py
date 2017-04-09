@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # coding: utf-8
 """
-当工程使用了aplymapping之后，会遇到这样的问题
+当工程使用了applymapping之后，会遇到这样的问题
     1.类和方法上个版本被keep住了，这个版本不keep
     2.类和方法上个版本没有被keep住，这个版本又keep住了
 这两个问题会导致proguard报warning，官方建议是手动解决冲突
