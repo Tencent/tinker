@@ -152,12 +152,18 @@ public class SharePatchInfo {
         if (pathInfoFile == null || info == null) {
             return false;
         }
+        // write fingerprint if it is null or nil
+        if (ShareTinkerInternals.isNullOrNil(info.fingerPrint)) {
+            info.fingerPrint = Build.FINGERPRINT;
+        }
         Log.i(TAG, "rewritePatchInfoFile file path:"
             + pathInfoFile.getAbsolutePath()
             + " , oldVer:"
             + info.oldVersion
             + ", newVer:"
-            + info.newVersion);
+            + info.newVersion
+            + ", fingerprint:"
+            + info.fingerPrint);
 
         boolean isWritePatchSuccessful = false;
         int numAttempts = 0;
@@ -173,7 +179,7 @@ public class SharePatchInfo {
             Properties newProperties = new Properties();
             newProperties.put(OLD_VERSION, info.oldVersion);
             newProperties.put(NEW_VERSION, info.newVersion);
-            newProperties.put(FINGER_PRINT, Build.FINGERPRINT);
+            newProperties.put(FINGER_PRINT, info.fingerPrint);
 
             FileOutputStream outputStream = null;
             try {

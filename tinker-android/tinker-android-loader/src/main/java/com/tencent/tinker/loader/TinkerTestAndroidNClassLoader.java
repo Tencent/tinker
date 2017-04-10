@@ -16,14 +16,24 @@
 
 package com.tencent.tinker.loader;
 
-import android.content.Intent;
-
-import com.tencent.tinker.loader.app.TinkerApplication;
-
-
 /**
- * Created by zhangshaowen on 16/4/30.
+ * Created by tangyinsheng on 17/3/15.
+ *
+ * This class is used to test if our AndroidNClassLoader can load classes in base.apk
+ * after its pathList is updated.
+ *
+ * <b> DO NOT touch this class in any places !! </b>
+ *
+ * <b>
+ *     If you change name of this class, you should also make such change in these places:
+ *      TinkerProguardConfigTask.groovy
+ *      TinkerMultidexConfigTask.groovy
+ *      AndroidNClassLoader.java
+ * </b>
  */
-public abstract class AbstractTinkerLoader {
-    abstract public Intent tryLoad(TinkerApplication app);
+public final class TinkerTestAndroidNClassLoader {
+
+    private TinkerTestAndroidNClassLoader() {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -35,6 +35,7 @@ public class InputParam {
     public final String  storealias;
     public final String  storepass;
     public final boolean ignoreWarning;
+    public final boolean isProtectedApp;
     public final boolean useSign;
 
     /**
@@ -81,6 +82,7 @@ public class InputParam {
         String storealias,
         String storepass,
         boolean ignoreWarning,
+        boolean isProtectedApp,
         boolean useSign,
 
         ArrayList<String> dexFilePattern,
@@ -103,6 +105,7 @@ public class InputParam {
         this.storealias = storealias;
         this.storepass = storepass;
         this.ignoreWarning = ignoreWarning;
+        this.isProtectedApp = isProtectedApp;
         this.useSign = useSign;
 
         this.dexFilePattern = dexFilePattern;
@@ -132,6 +135,7 @@ public class InputParam {
         private String  storealias;
         private String  storepass;
         private boolean ignoreWarning;
+        private boolean isProtectedApp;
         private boolean useSign;
 
         /**
@@ -243,6 +247,11 @@ public class InputParam {
             return this;
         }
 
+        public Builder setIsProtectedApp(boolean isProtectedApp) {
+            this.isProtectedApp = isProtectedApp;
+            return this;
+        }
+
         public Builder setDexLoaderPattern(ArrayList<String> dexLoaderPattern) {
             this.dexLoaderPattern = dexLoaderPattern;
             return this;
@@ -278,6 +287,7 @@ public class InputParam {
                     storealias,
                     storepass,
                     ignoreWarning,
+                    isProtectedApp,
                     useSign,
                     dexFilePattern,
                     dexLoaderPattern,

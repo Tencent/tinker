@@ -1,8 +1,18 @@
-<manifest
-    package="com.tencent.tinker.loader">
-
+<manifest package="com.tencent.tinker.loader"
+          xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
-
+        <activity
+            android:name=".splash.TinkerOTASplashActivity"
+            android:configChanges="keyboardHidden"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:process=":otasplash">
+        </activity>
+        <receiver
+            android:name=".splash.TinkerSplashBroadCast"
+            android:exported="false"
+            android:process=":otasplash"/>
     </application>
 
 </manifest>

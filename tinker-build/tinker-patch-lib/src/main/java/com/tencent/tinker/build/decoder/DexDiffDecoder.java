@@ -21,10 +21,12 @@ import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
 import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
+import com.tencent.tinker.build.dexpatcher.util.ChangedClassesDexClassInfoCollector;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.DexClassesComparator;
 import com.tencent.tinker.build.util.DexClassesComparator.DexClassInfo;
+import com.tencent.tinker.build.util.DexClassesComparator.DexGroup;
 import com.tencent.tinker.build.util.ExcludedClassModifiedChecker;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.Logger;
@@ -34,6 +36,16 @@ import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
+
+import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
+import org.jf.dexlib2.dexbacked.DexBackedDexFile;
+import org.jf.dexlib2.iface.DexFile;
+import org.jf.dexlib2.iface.Field;
+import org.jf.dexlib2.iface.Method;
+import org.jf.dexlib2.writer.builder.BuilderField;
+import org.jf.dexlib2.writer.builder.BuilderMethod;
+import org.jf.dexlib2.writer.builder.DexBuilder;
+import org.jf.dexlib2.writer.io.FileDataStore;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +65,7 @@ import java.util.zip.ZipEntry;
  */
 public class DexDiffDecoder extends BaseDecoder {
     private static final String TEST_DEX_NAME = "test.dex";
+    private static final String CHANGED_CLASSES_DEX_NAME = "changed_classes.dex";
 
     private final InfoWriter logWriter;
     private final InfoWriter metaWriter;
@@ -178,9 +191,113 @@ public class DexDiffDecoder extends BaseDecoder {
             return;
         }
 
-        generatePatchInfoFile();
+        if (config.mIsProtectedApp) {
+            generateChangedClassesDexFile();
+        } else {
+            generatePatchInfoFile();
+        }
 
         addTestDex();
+    }
+
+    @SuppressWarnings("NewApi")
+    private void generateChangedClassesDexFile() throws IOException {
+        final String dexMode = config.mDexRaw ? "raw" : "jar";
+        final File dest = new File(config.mTempResultDir + "/" + CHANGED_CLASSES_DEX_NAME);
+
+        Logger.d("\nBuilding changed classes dex: %s, size: %d\n", dest.getAbsolutePath(), dest.length());
+
+        List<File> oldDexList = new ArrayList<>();
+        List<File> newDexList = new ArrayList<>();
+        for (AbstractMap.SimpleEntry<File, File> oldAndNewDexFilePair : oldAndNewDexFilePairList) {
+            File oldDexFile = oldAndNewDexFilePair.getKey();
+            File newDexFile = oldAndNewDexFilePair.getValue();
+            if (oldDexFile != null) {
+                oldDexList.add(oldDexFile);
+            }
+            if (newDexFile != null) {
+                newDexList.add(newDexFile);
+            }
+        }
+
+        DexGroup oldDexGroup = DexGroup.wrap(oldDexList);
+        DexGroup newDexGroup = DexGroup.wrap(newDexList);
+
+        ChangedClassesDexClassInfoCollector collector = new ChangedClassesDexClassInfoCollector();
+        collector.setExcludedClassPatterns(config.mDexLoaderPattern);
+        collector.setLogger(dexPatcherLoggerBridge);
+        collector.setIncludeRefererToRefererAffectedClasses(true);
+
+        Set<DexClassInfo> classInfosInChangedClassesDex = collector.doCollect(oldDexGroup, newDexGroup);
+
+        Set<String> descsOfClassInChangedClassesDex = new HashSet<>();
+        Set<Dex> owners = new HashSet<>();
+        for (DexClassInfo classInfo : classInfosInChangedClassesDex) {
+            descsOfClassInChangedClassesDex.add(classInfo.classDesc);
+            owners.add(classInfo.owner);
+        }
+
+        DexBuilder dexBuilder = DexBuilder.makeDexBuilder();
+        for (Dex dex : owners) {
+            DexFile dexFile = new DexBackedDexFile(org.jf.dexlib2.Opcodes.forApi(20), dex.getBytes());
+            for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
+                if (!descsOfClassInChangedClassesDex.contains(classDef.getType())) {
+                    continue;
+                }
+
+                Logger.d("Class %s will be added into changed classes dex ...", classDef.getType());
+
+                List<BuilderField> builderFields = new ArrayList<>();
+                for (Field field : classDef.getFields()) {
+                    final BuilderField builderField = dexBuilder.internField(
+                            field.getDefiningClass(),
+                            field.getName(),
+                            field.getType(),
+                            field.getAccessFlags(),
+                            field.getInitialValue(),
+                            field.getAnnotations()
+                    );
+                    builderFields.add(builderField);
+                }
+                List<BuilderMethod> builderMethods = new ArrayList<>();
+
+                for (Method method : classDef.getMethods()) {
+                    BuilderMethod builderMethod = dexBuilder.internMethod(
+                            method.getDefiningClass(),
+                            method.getName(),
+                            method.getParameters(),
+                            method.getReturnType(),
+                            method.getAccessFlags(),
+                            method.getAnnotations(),
+                            new BuilderMutableMethodImplementation(dexBuilder, method.getImplementation())
+                    );
+                    builderMethods.add(builderMethod);
+                }
+                dexBuilder.internClassDef(
+                        classDef.getType(),
+                        classDef.getAccessFlags(),
+                        classDef.getSuperclass(),
+                        classDef.getInterfaces(),
+                        classDef.getSourceFile(),
+                        classDef.getAnnotations(),
+                        builderFields,
+                        builderMethods
+                );
+            }
+        }
+
+        // Write constructed changed classes dex to file and record it in meta file.
+        FileDataStore fileDataStore = new FileDataStore(dest);
+        dexBuilder.writeTo(fileDataStore);
+
+        final String md5 = MD5.getMD5(dest);
+
+        String meta = CHANGED_CLASSES_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0
+                + "," + 0 + "," + dexMode;
+
+        Logger.d("\nDexDecoder:write changed classes dex meta file data: %s", meta);
+
+        metaWriter.writeLineToInfoFile(meta);
     }
 
     @SuppressWarnings("NewApi")
@@ -234,16 +351,11 @@ public class DexDiffDecoder extends BaseDecoder {
             final String dexName = getRelativeDexName(oldDexFile, newDexFile);
             final RelatedInfo relatedInfo = dexNameToRelatedInfoMap.get(dexName);
             if (!relatedInfo.oldMd5.equals(relatedInfo.newMd5)) {
-                //logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.smallPatchedMd5, relatedInfo.dexDiffMd5);
                 logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.newOrFullPatchedMd5, relatedInfo.dexDiffMd5);
             } else {
                 // For class N dexes, if new dex is the same as old dex, we should log it as 'copy directly'
                 // in dex meta to fix problems in Art environment.
                 if (realClassNDexFiles.contains(oldDexFile)) {
-                    //if (!"0".equals(relatedInfo.smallPatchedMd5)) {
-                    //    logToDexMeta(newDexFile, oldDexFile, null, "0", relatedInfo.smallPatchedMd5, "0");
-                    //}
-
                     // Bugfix: However, if what we would copy directly is main dex, we should do an additional diff operation
                     // so that patch applier would help us remove all loader classes of it in runtime.
                     if (dexName.equals(DexFormat.DEX_IN_JAR_NAME)) {

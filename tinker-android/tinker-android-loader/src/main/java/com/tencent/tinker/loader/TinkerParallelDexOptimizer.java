@@ -24,8 +24,11 @@ import dalvik.system.DexFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class TinkerParallelDexOptimizer {
     private static final String TAG = "Tinker.ParallelDex";
 
+    private static final int DEFAULT_THREAD_COUNT = 2;
     /**
      * Optimize (trigger dexopt or dex2oat) dexes.
      *
@@ -69,15 +73,35 @@ public final class TinkerParallelDexOptimizer {
     }
 
     private static boolean optimizeAllLocked(Collection<File> dexFiles, File optimizedDir, AtomicInteger successCount, ResultCallback cb) {
-        final CountDownLatch lauch = new CountDownLatch(dexFiles.size());
-        final ExecutorService threadPool = Executors.newCachedThreadPool();
+        return optimizeAllLocked(dexFiles, optimizedDir, successCount, cb, DEFAULT_THREAD_COUNT);
+    }
+
+    private static boolean optimizeAllLocked(Collection<File> dexFiles, File optimizedDir, AtomicInteger successCount, ResultCallback cb, int threadCount) {
+        final CountDownLatch latch = new CountDownLatch(dexFiles.size());
+        final ExecutorService threadPool = Executors.newFixedThreadPool(threadCount);
         long startTick = System.nanoTime();
-        for (File dexFile : dexFiles) {
-            OptimizeWorker worker = new OptimizeWorker(dexFile, optimizedDir, successCount, lauch, cb);
+        ArrayList<File> sortList = new ArrayList<>(dexFiles);
+        // sort input dexFiles with its file length
+        Collections.sort(sortList, new Comparator<File>() {
+            @Override
+            public int compare(File lhs, File rhs) {
+                long diffSize = lhs.length() - rhs.length();
+                if (diffSize > 0) {
+                    return 1;
+                } else if (diffSize == 0) {
+                    return 0;
+                } else {
+                    return -1;
+                }
+            }
+        });
+        Collections.reverse(sortList);
+        for (File dexFile : sortList) {
+            OptimizeWorker worker = new OptimizeWorker(dexFile, optimizedDir, successCount, latch, cb);
             threadPool.submit(worker);
         }
         try {
-            lauch.await();
+            latch.await();
             long timeCost = (System.nanoTime() - startTick) / 1000000;
             if (successCount.get() == dexFiles.size()) {
                 Log.i(TAG, "All dexes are optimized successfully, cost: " + timeCost + " ms.");

@@ -52,6 +52,9 @@ public class TinkerProguardConfigTask extends DefaultTask {
                     "-keep public class com.tencent.tinker.loader.TinkerTestDexLoad {\n" +
                     "    *;\n" +
                     "}\n" +
+                    "-keep public class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {\n" +
+                    "    *;\n" +
+                    "}\n" +
                     "\n"
 
 
