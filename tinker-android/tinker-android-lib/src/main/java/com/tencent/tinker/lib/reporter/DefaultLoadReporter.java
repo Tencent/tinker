@@ -58,7 +58,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPatchListenerReceiveFail(File patchFile, int errorCode) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail:%s, code:%d",
+        TinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail: %s, code: %d",
             patchFile.getAbsolutePath(), errorCode);
     }
 
@@ -122,7 +122,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadFileNotFound(File file, int fileType, boolean isDirectory) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType:%d, isDirectory:%b",
+        TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType: %d, isDirectory: %b",
             file.getAbsolutePath(), fileType, isDirectory);
 
         checkAndCleanPatch();
@@ -142,7 +142,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadFileMd5Mismatch(File file, int fileType) {
-        TinkerLog.i(TAG, "patch load Reporter onLoadFileMd5Mismatch: patch file md5 mismatch file: %s, fileType:%d", file.getAbsolutePath(), fileType);
+        TinkerLog.i(TAG, "patch load Reporter onLoadFileMd5Mismatch: patch file md5 mismatch file: %s, fileType: %d", file.getAbsolutePath(), fileType);
         //clean patch for safety
         checkAndCleanPatch();
     }
@@ -174,7 +174,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadResult(File patchDirectory, int loadCode, long cost) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadResult: patch load result, path:%s, code:%d, cost:%d", patchDirectory.getAbsolutePath(), loadCode, cost);
+        TinkerLog.i(TAG, "patch loadReporter onLoadResult: patch load result, path:%s, code: %d, cost: %dms", patchDirectory.getAbsolutePath(), loadCode, cost);
         //you can just report the result here
     }
 
@@ -251,7 +251,7 @@ public class DefaultLoadReporter implements LoadReporter {
     @Override
     public void onLoadPackageCheckFail(File patchFile, int errorCode) {
         TinkerLog.i(TAG, "patch loadReporter onLoadPackageCheckFail: "
-            + "load patch package check fail file path:%s, errorCode:%d", patchFile.getAbsolutePath(), errorCode);
+            + "load patch package check fail file path: %s, errorCode: %d", patchFile.getAbsolutePath(), errorCode);
         checkAndCleanPatch();
     }
 

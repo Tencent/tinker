@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="ota_notice">system update</string>
+
+    <string name="ota_notice_update">loading data...</string>
+</resources>

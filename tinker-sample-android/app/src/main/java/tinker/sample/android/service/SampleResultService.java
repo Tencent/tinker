@@ -28,7 +28,6 @@ import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
-import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
 import java.io.File;
 

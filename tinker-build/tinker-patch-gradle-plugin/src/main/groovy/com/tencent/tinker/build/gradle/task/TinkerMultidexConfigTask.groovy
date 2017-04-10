@@ -29,15 +29,17 @@ public class TinkerMultidexConfigTask extends DefaultTask {
     static final String MULTIDEX_CONFIG_PATH = TinkerPatchPlugin.TINKER_INTERMEDIATES + "tinker_multidexkeep.pro"
     static final String MULTIDEX_CONFIG_SETTINGS =
             "-keep public class * implements com.tencent.tinker.loader.app.ApplicationLifeCycle {\n" +
-                    "    *;\n" +
+                    "    <init>();\n" +
+                    "    void onBaseContextAttached(android.content.Context);\n" +
                     "}\n" +
                     "\n" +
                     "-keep public class * extends com.tencent.tinker.loader.TinkerLoader {\n" +
-                    "    *;\n" +
+                    "    <init>();\n" +
                     "}\n" +
                     "\n" +
                     "-keep public class * extends android.app.Application {\n" +
-                    "    *;\n" +
+                    "     <init>();\n" +
+                    "     void attachBaseContext(android.content.Context);\n" +
                     "}\n"
 
 
@@ -70,7 +72,7 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                 }
             }
             lines.append("-keep class " + pattern + " {\n" +
-                    "    *;\n" +
+                    "    <init>();\n" +
                     "}\n")
                     .append("\n")
         }

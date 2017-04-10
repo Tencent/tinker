@@ -36,13 +36,14 @@ import com.tencent.tinker.build.immutable.ClassSimDef
 import com.tencent.tinker.build.immutable.DexRefData
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.build.util.Utils
+import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionGraph
 import org.gradle.api.execution.TaskExecutionGraphListener
 import org.gradle.api.logging.Logging
-
+import org.gradle.api.tasks.JavaExec
 
 import java.lang.reflect.Field;
 import java.util.zip.ZipEntry
@@ -332,21 +333,29 @@ public class ImmutableDexTransform extends Transform {
 
 
     private void doDex(String classIndexName, File classZip, def dexOptions) {
-        ArrayList<String> execArgs = new ArrayList()
-        def dex = "${project.android.getSdkDirectory()}/build-tools/${project.android.buildToolsVersion}/dx"
-        execArgs.add(dex.toString())
-        execArgs.add("--dex")
-        if (dexOptions.getJumboMode()) {
-            execArgs.add("--force-jumbo");
-        }
-        if (dexOptions.getIncremental()) {
-            execArgs.add("--incremental");
-            execArgs.add("--no-strict");
-        }
-        execArgs.add("--output=${dxOutDir.absolutePath}/${classIndexName}.dex".toString())
-        execArgs.add(classZip.absolutePath)
-        project.logger.info(execArgs.toString())
-        Utils.exec(execArgs, null)
+
+        def dexJar = "${project.android.getSdkDirectory()}/build-tools/${project.android.buildToolsVersion}/lib/dx.jar"
+        def task = project.tasks.create("dx" + classIndexName + varName, JavaExec.class, new Action<JavaExec>() {
+            @Override
+            void execute(JavaExec javaExec) {
+                ArrayList<String> execArgs = new ArrayList()
+                execArgs.add("--dex")
+                if (dexOptions.getJumboMode()) {
+                    execArgs.add("--force-jumbo");
+                }
+                if (dexOptions.getIncremental()) {
+                    execArgs.add("--incremental");
+                    execArgs.add("--no-strict");
+                }
+                execArgs.add("--output=${dxOutDir.absolutePath}/${classIndexName}.dex".toString())
+                execArgs.add(classZip.absolutePath)
+                project.logger.info(execArgs.toString())
+                javaExec.setClasspath(project.files(dexJar))
+                javaExec.setMain("com.android.dx.command.Main")
+                javaExec.setArgs(execArgs)
+            }
+        })
+        task.execute()
     }
 
     public static void inject(Project project, def variant) {

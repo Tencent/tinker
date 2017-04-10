@@ -72,6 +72,10 @@ public class SamplePatchListener extends DefaultPatchListener {
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             returnCode = Utils.checkForPatchRecover(NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
         }
+        // disable jit below N
+        if (returnCode == ShareConstants.ERROR_PATCH_OK) {
+            returnCode = ShareTinkerInternals.isVmJit() ? Utils.ERROR_PATCH_JIT : ShareConstants.ERROR_PATCH_OK;
+        }
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             String patchMd5 = SharePatchFileUtil.getMD5(patchFile);

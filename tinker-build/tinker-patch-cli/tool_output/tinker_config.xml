@@ -52,7 +52,7 @@
         <!--it support * or ? pattern.-->
         <!--for library in assets, we would just recover them in the patch directory-->
         <!--you can get them in TinkerLoadResult with Tinker-->
-        <pattern value="lib/armeabi/*.so"/>
+        <pattern value="lib/*/*.so"/>
     </issue>
 
     <issue id="resource">

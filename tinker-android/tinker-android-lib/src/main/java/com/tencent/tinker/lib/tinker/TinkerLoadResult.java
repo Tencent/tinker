@@ -74,8 +74,11 @@ public class TinkerLoadResult {
 
         costTime = ShareIntentUtil.getIntentPatchCostTime(intentResult);
         systemOTA = ShareIntentUtil.getBooleanExtra(intentResult, ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, false);
+        final boolean isMainProcess = tinker.isMainProcess();
 
-        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, systemOTA:%b", loadCode, systemOTA);
+        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, process name:%s, main process:%b, systemOTA:%b",
+            loadCode, ShareTinkerInternals.getProcessName(context), isMainProcess, systemOTA);
+
         //@Nullable
         final String oldVersion = ShareIntentUtil.getStringExtra(intentResult, ShareIntentUtil.INTENT_PATCH_OLD_VERSION);
         //@Nullable
@@ -83,8 +86,6 @@ public class TinkerLoadResult {
 
         final File patchDirectory = tinker.getPatchDirectory();
         final File patchInfoFile = tinker.getPatchInfoFile();
-
-        final boolean isMainProcess = tinker.isMainProcess();
 
 
         if (oldVersion != null && newVersion != null) {

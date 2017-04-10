@@ -73,7 +73,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchPackageCheckFail(File patchFile, int errorCode) {
-        TinkerLog.i(TAG, "patchReporter onPatchPackageCheckFail: package check failed. path:%s, code:%d",
+        TinkerLog.i(TAG, "patchReporter onPatchPackageCheckFail: package check failed. path: %s, code: %d",
             patchFile.getAbsolutePath(), errorCode);
         //only meta corrupted, need to delete temp files. others is just in the check time!
         if (errorCode == ShareConstants.ERROR_PACKAGE_CHECK_DEX_META_CORRUPTED
@@ -94,7 +94,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion) {
-        TinkerLog.i(TAG, "patchReporter onPatchVersionCheckFail: patch version exist. path:%s, version:%s",
+        TinkerLog.i(TAG, "patchReporter onPatchVersionCheckFail: patch version exist. path: %s, version: %s",
             patchFile.getAbsolutePath(), patchFileVersion);
         //no need to delete temp files, because it is only in the check time!
     }
@@ -114,7 +114,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType) {
-        TinkerLog.i(TAG, "patchReporter onPatchTypeExtractFail: file extract fail type:%s, path:%s, extractTo:%s, filename:%s",
+        TinkerLog.i(TAG, "patchReporter onPatchTypeExtractFail: file extract fail type: %s, path: %s, extractTo: %s, filename: %s",
             ShareTinkerInternals.getTypeString(fileType), patchFile.getPath(), extractTo.getPath(), filename);
         //delete temp files
         Tinker.with(context).cleanPatchByVersion(patchFile);
@@ -130,7 +130,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t) {
-        TinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path:%s, dexPath:%s, optDir:%s, dexName:%s",
+        TinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path: %s, dexPath: %s, optDir: %s, dexName: %s",
             patchFile.getAbsolutePath(), dexFile.getPath(), optDirectory, dexName);
         TinkerLog.printErrStackTrace(TAG, t, "onPatchDexOptFail:");
         //delete temp files
@@ -146,7 +146,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchResult(File patchFile, boolean success, long cost) {
-        TinkerLog.i(TAG, "patchReporter onPatchResult: patch all result path:%s, success:%b, cost:%d",
+        TinkerLog.i(TAG, "patchReporter onPatchResult: patch all result path: %s, success: %b, cost: %d",
             patchFile.getAbsolutePath(), success, cost);
         //you can just report the result here
     }
@@ -161,7 +161,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion) {
-        TinkerLog.i(TAG, "patchReporter onPatchInfoCorrupted: patch info is corrupted. old:%s, new:%s",
+        TinkerLog.i(TAG, "patchReporter onPatchInfoCorrupted: patch info is corrupted. old: %s, new: %s",
             oldVersion, newVersion);
         //patch.info is corrupted, just clean all patch
         Tinker.with(context).cleanPatch();
@@ -177,7 +177,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchException(File patchFile, Throwable e) {
-        TinkerLog.i(TAG, "patchReporter onPatchException: patch exception path:%s, throwable:%s",
+        TinkerLog.i(TAG, "patchReporter onPatchException: patch exception path: %s, throwable: %s",
             patchFile.getAbsolutePath(), e.getMessage());
         TinkerLog.e(TAG, "tinker patch exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
 //        if (e.getMessage().contains(ShareConstants.CHECK_VM_PROPERTY_FAIL)) {

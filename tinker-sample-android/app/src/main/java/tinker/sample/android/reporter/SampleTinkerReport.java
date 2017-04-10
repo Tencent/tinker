@@ -54,6 +54,7 @@ public class SampleTinkerReport {
     public static final int KEY_TRY_APPLY_MEMORY_LIMIT            = 78;
     public static final int KEY_TRY_APPLY_CRASH_LIMIT             = 79;
     public static final int KEY_TRY_APPLY_CONDITION_NOT_SATISFIED = 80;
+    public static final int KEY_TRY_APPLY_JIT                     = 81;
 
     //Key -- apply detail
     public static final int KEY_APPLIED_UPGRADE      = 100;
@@ -74,18 +75,18 @@ public class SampleTinkerReport {
     public static final int KEY_APPLIED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = 158;
 
     //version check
-    public static final int KEY_APPLIED_VERSION_CHECK                           = 180;
+    public static final int KEY_APPLIED_VERSION_CHECK      = 180;
     //extract error
-    public static final int KEY_APPLIED_PATCH_FILE_EXTRACT                      = 181;
-    public static final int KEY_APPLIED_DEX_EXTRACT                             = 182;
-    public static final int KEY_APPLIED_LIB_EXTRACT                             = 183;
-    public static final int KEY_APPLIED_RESOURCE_EXTRACT                        = 184;
+    public static final int KEY_APPLIED_PATCH_FILE_EXTRACT = 181;
+    public static final int KEY_APPLIED_DEX_EXTRACT        = 182;
+    public static final int KEY_APPLIED_LIB_EXTRACT        = 183;
+    public static final int KEY_APPLIED_RESOURCE_EXTRACT   = 184;
     //cost time
-    public static final int KEY_APPLIED_SUCC_COST_5S_LESS                       = 200;
-    public static final int KEY_APPLIED_SUCC_COST_10S_LESS                      = 201;
-    public static final int KEY_APPLIED_SUCC_COST_30S_LESS                      = 202;
-    public static final int KEY_APPLIED_SUCC_COST_60S_LESS                      = 203;
-    public static final int KEY_APPLIED_SUCC_COST_OTHER                         = 204;
+    public static final int KEY_APPLIED_SUCC_COST_5S_LESS  = 200;
+    public static final int KEY_APPLIED_SUCC_COST_10S_LESS = 201;
+    public static final int KEY_APPLIED_SUCC_COST_30S_LESS = 202;
+    public static final int KEY_APPLIED_SUCC_COST_60S_LESS = 203;
+    public static final int KEY_APPLIED_SUCC_COST_OTHER    = 204;
 
     public static final int KEY_APPLIED_FAIL_COST_5S_LESS  = 205;
     public static final int KEY_APPLIED_FAIL_COST_10S_LESS = 206;
@@ -191,6 +192,9 @@ public class SampleTinkerReport {
                 break;
             case Utils.ERROR_PATCH_CONDITION_NOT_SATISFIED:
                 reporter.onReport(KEY_TRY_APPLY_CONDITION_NOT_SATISFIED);
+                break;
+            case Utils.ERROR_PATCH_JIT:
+                reporter.onReport(KEY_TRY_APPLY_JIT);
                 break;
         }
     }
