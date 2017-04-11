@@ -146,9 +146,9 @@ public class UpgradePatch extends AbstractPatch {
         }
 
         // check dex opt file at last, some phone such as VIVO/OPPO like to change dex2oat to interpreted
-        // just warn
-        if (!DexDiffPatchInternal.waitDexOptFile()) {
+        if (!DexDiffPatchInternal.waitAndCheckDexOptFile(patchFile, manager)) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, check dex opt file failed");
+            return false;
         }
 
         if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, newInfo, patchInfoLockFile)) {

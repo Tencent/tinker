@@ -61,8 +61,10 @@ public class SampleTinkerReport {
     public static final int KEY_APPLIED_UPGRADE_FAIL = 101;
 
     public static final int KEY_APPLIED_EXCEPTION                               = 120;
-    public static final int KEY_APPLIED_DEXOPT                                  = 121;
-    public static final int KEY_APPLIED_INFO_CORRUPTED                          = 122;
+    public static final int KEY_APPLIED_DEXOPT_OTHER                            = 121;
+    public static final int KEY_APPLIED_DEXOPT_EXIST                            = 122;
+    public static final int KEY_APPLIED_DEXOPT_FORMAT                           = 123;
+    public static final int KEY_APPLIED_INFO_CORRUPTED                          = 124;
     //package check
     public static final int KEY_APPLIED_PACKAGE_CHECK_SIGNATURE                 = 150;
     public static final int KEY_APPLIED_PACKAGE_CHECK_DEX_META                  = 151;
@@ -132,6 +134,11 @@ public class SampleTinkerReport {
     public static final int KEY_LOADED_SUCC_COST_3000_LESS = 402;
     public static final int KEY_LOADED_SUCC_COST_5000_LESS = 403;
     public static final int KEY_LOADED_SUCC_COST_OTHER     = 404;
+
+    public static final int KEY_LOADED_INTERPRET_GET_INSTRUCTION_SET_ERROR = 450;
+    public static final int KEY_LOADED_INTERPRET_INTERPRET_COMMAND_ERROR   = 451;
+    public static final int KEY_LOADED_INTERPRET_TYPE_INTERPRET_OK         = 452;
+
 
     interface Reporter {
         void onReport(int key);
@@ -292,6 +299,25 @@ public class SampleTinkerReport {
         }
     }
 
+    public static void onLoadInterpretReport(int type, Throwable e) {
+        if (reporter == null) {
+            return;
+        }
+        switch (type) {
+            case ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR:
+                reporter.onReport(KEY_LOADED_INTERPRET_GET_INSTRUCTION_SET_ERROR);
+                reporter.onReport("Tinker Exception:interpret occur exception " + Utils.getExceptionCauseString(e));
+                break;
+            case ShareConstants.TYPE_INTERPRET_COMMAND_ERROR:
+                reporter.onReport(KEY_LOADED_INTERPRET_INTERPRET_COMMAND_ERROR);
+                reporter.onReport("Tinker Exception:interpret occur exception " + Utils.getExceptionCauseString(e));
+                break;
+            case ShareConstants.TYPE_INTERPRET_OK:
+                reporter.onReport(KEY_LOADED_INTERPRET_TYPE_INTERPRET_OK);
+                break;
+        }
+    }
+
     public static void onLoadFileMisMatch(int fileType) {
         if (reporter == null) {
             return;
@@ -359,8 +385,14 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        reporter.onReport(KEY_APPLIED_DEXOPT);
-        reporter.onReport("Tinker Exception:apply tinker occur exception " + Utils.getExceptionCauseString(throwable));
+        if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)) {
+            reporter.onReport(KEY_APPLIED_DEXOPT_EXIST);
+        } else if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
+            reporter.onReport(KEY_APPLIED_DEXOPT_FORMAT);
+        } else {
+            reporter.onReport(KEY_APPLIED_DEXOPT_OTHER);
+            reporter.onReport("Tinker Exception:apply tinker occur exception " + Utils.getExceptionCauseString(throwable));
+        }
     }
 
     public static void onApplyInfoCorrupted() {

@@ -163,14 +163,15 @@ public class Utils {
         }
     }
 
-    public interface IOnScreenOff {
-        void onScreenOff();
-    }
-
     public static class ScreenState {
-        public ScreenState(Context context, final IOnScreenOff onScreenOffInterface) {
+        public interface IOnScreenOff {
+            void onScreenOff();
+        }
+
+        public ScreenState(final Context context, final IOnScreenOff onScreenOffInterface) {
             IntentFilter filter = new IntentFilter();
             filter.addAction(Intent.ACTION_SCREEN_OFF);
+
             context.registerReceiver(new BroadcastReceiver() {
 
                 @Override
@@ -178,13 +179,11 @@ public class Utils {
                     String action = in == null ? "" : in.getAction();
                     TinkerLog.i(TAG, "ScreenReceiver action [%s] ", action);
                     if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-
-                        context.unregisterReceiver(this);
-
                         if (onScreenOffInterface != null) {
                             onScreenOffInterface.onScreenOff();
                         }
                     }
+                    context.unregisterReceiver(this);
                 }
             }, filter);
         }

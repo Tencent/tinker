@@ -52,8 +52,7 @@ public class TinkerDexLoader {
 
     private static final ArrayList<ShareDexDiffPatchInfo> dexList = new ArrayList<>();
 
-    private static boolean   parallelOTAResult;
-    private static Throwable parallelOTAThrowable;
+
 
     private static File testDexFile;
 
@@ -113,8 +112,8 @@ public class TinkerDexLoader {
         File optimizeDir = new File(directory + "/" + oatDir);
 
         if (isSystemOTA) {
-            parallelOTAResult = true;
-            parallelOTAThrowable = null;
+            final boolean[] parallelOTAResult = {true};
+            final Throwable[] parallelOTAThrowable = new Throwable[1];
             String targetISA;
             try {
                 targetISA = ShareOatUtil.getTestDexOatInstructionSet(directory, testDexFile);
@@ -152,15 +151,15 @@ public class TinkerDexLoader {
 
                     @Override
                     public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
-                        parallelOTAResult = false;
-                        parallelOTAThrowable = thr;
+                        parallelOTAResult[0] = false;
+                        parallelOTAThrowable[0] = thr;
                         Log.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
                     }
                 }
             );
 
 
-            if (!parallelOTAResult) {
+            if (!parallelOTAResult[0]) {
                 Log.e(TAG, "parallel oat dexes failed");
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, parallelOTAThrowable);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_OTA_INTERPRET_ONLY_EXCEPTION);

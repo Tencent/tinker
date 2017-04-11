@@ -21,11 +21,9 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
-
-import dalvik.system.DexFile;
-import dalvik.system.PathClassLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,11 +32,16 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import dalvik.system.DexFile;
+import dalvik.system.PathClassLoader;
+
 /**
  * Created by zhangshaowen on 16/7/24.
  */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 class AndroidNClassLoader extends PathClassLoader {
+    private static final String TAG = "Tinker.NClassLoader";
+
     private static final String CHECK_CLASSLOADER_CLASS = "com.tencent.tinker.loader.TinkerTestAndroidNClassLoader";
 
     private static ArrayList<DexFile> oldDexFiles = new ArrayList<>();
@@ -89,6 +92,7 @@ class AndroidNClassLoader extends PathClassLoader {
         try {
             Class.forName(CHECK_CLASSLOADER_CLASS, true, androidNClassLoader);
         } catch (Throwable thr) {
+            Log.e(TAG, "load TinkerTestAndroidNClassLoader fail, try to fixDexElementsForProtectedApp");
             fixDexElementsForProtectedApp(application, newDexElements);
         }
 

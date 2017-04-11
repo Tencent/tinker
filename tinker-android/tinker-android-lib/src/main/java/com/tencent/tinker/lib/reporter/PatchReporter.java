@@ -24,6 +24,7 @@ import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * Created by zhangshaowen on 16/3/14.
@@ -89,12 +90,10 @@ public interface PatchReporter {
      * dex opt failed
      *
      * @param patchFile      the input patch file to recover
-     * @param dexFile        the dex file
-     * @param optDirectory
-     * @param dexName        dexName try to dexOpt
+     * @param dexFiles       the dex file
      * @param t              throwable
      */
-    void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t);
+    void onPatchDexOptFail(File patchFile, List<File> dexFiles, Throwable t);
 
 
     /**

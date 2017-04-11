@@ -56,6 +56,10 @@ public class ShareConstants {
 
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
     public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";
+
+    public static final String CHECK_DEX_OAT_EXIST_FAIL = "checkDexOptExist failed";
+    public static final String CHECK_DEX_OAT_FORMAT_FAIL = "checkDexOptFormat failed";
+
 //    public static final String CHECK_VM_PROPERTY_FAIL = "checkVmArtProperty failed";
 
 

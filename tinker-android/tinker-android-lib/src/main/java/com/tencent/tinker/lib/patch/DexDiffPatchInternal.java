@@ -18,6 +18,7 @@ package com.tencent.tinker.lib.patch;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
@@ -27,6 +28,7 @@ import com.tencent.tinker.loader.TinkerParallelDexOptimizer;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareDexDiffPatchInfo;
+import com.tencent.tinker.loader.shareutil.ShareElfFile;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -54,11 +56,10 @@ import dalvik.system.DexFile;
 public class DexDiffPatchInternal extends BasePatchInternal {
     protected static final String TAG = "Tinker.DexDiffPatchInternal";
 
-    protected static final int WAIT_ASYN_OAT_TIME = 8 * 1000;
+    protected static final int WAIT_ASYN_OAT_TIME = 10 * 1000;
     protected static final int MAX_WAIT_COUNT     = 30;
 
     private static ArrayList<File> optFiles = new ArrayList<>();
-    private static List<File> failOptDexFile = new Vector<>();
 
 
     protected static boolean tryRecoverDexFiles(Tinker manager, ShareSecurityCheck checker, Context context,
@@ -81,7 +82,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return result;
     }
 
-    protected static boolean waitDexOptFile() {
+    protected static boolean waitAndCheckDexOptFile(File patchFile, Tinker manager) {
         if (optFiles.isEmpty()) {
             return true;
         }
@@ -101,19 +102,44 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 }
             }
         }
-
+        List<File> failDexFiles = new ArrayList<>();
         // check again, if still can be found, just return
         for (File file : optFiles) {
-            TinkerLog.i(TAG, "check dex optimizer file %s, size %d", file.getName(), file.length());
+            TinkerLog.i(TAG, "check dex optimizer file exist: %s, size %d", file.getName(), file.length());
 
             if (!SharePatchFileUtil.isLegalFile(file)) {
                 TinkerLog.e(TAG, "final parallel dex optimizer file %s is not exist, return false", file.getName());
-                // don't report fail
-//                manager.getPatchReporter()
-//                    .onPatchDexOptFail(patchFile, file, file.getParentFile().getPath(),
-//                        file.getName(), new TinkerRuntimeException("dexOpt file:" + file.getName() + " is not exist"));
-                return false;
+                failDexFiles.add(file);
+            }
+        }
+        if (!failDexFiles.isEmpty()) {
+            manager.getPatchReporter().onPatchDexOptFail(patchFile, failDexFiles,
+                        new TinkerRuntimeException(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL));
+            return false;
+        }
+        if (Build.VERSION.SDK_INT >= 21) {
+            for (File file : optFiles) {
+                TinkerLog.i(TAG, "check dex optimizer file format: %s, size %d", file.getName(), file.length());
+                ShareElfFile elfFile = null;
+                try {
+                    elfFile = new ShareElfFile(file);
+                } catch (Throwable e) {
+                    TinkerLog.e(TAG, "final parallel dex optimizer file %s is not elf format, return false", file.getName());
+                    failDexFiles.add(file);
+                } finally {
+                    if (elfFile != null) {
+                        try {
+                            elfFile.close();
+                        } catch (IOException ignore) {
 
+                        }
+                    }
+                }
+            }
+            if (!failDexFiles.isEmpty()) {
+                manager.getPatchReporter().onPatchDexOptFail(patchFile, failDexFiles,
+                    new TinkerRuntimeException(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL));
+                return false;
             }
         }
         return true;
@@ -148,10 +174,11 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             }
 
             TinkerLog.i(TAG, "patch recover, try to optimize dex file count:%d, optimizeDexDirectory:%s", files.length, optimizeDexDirectory);
-
             // only use parallel dex optimizer for art
             if (ShareTinkerInternals.isVmArt()) {
-                failOptDexFile.clear();
+                final List<File> failOptDexFile = new Vector<>();
+                final Throwable[] throwable = new Throwable[1];
+
                 // try parallel dex optimizer
                 TinkerParallelDexOptimizer.optimizeAll(
                     Arrays.asList(files), optimizeDexDirectoryFile,
@@ -176,30 +203,14 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             TinkerLog.i(TAG, "fail to parallel optimize dex %s use time %d",
                                 dexFile.getPath(), (System.currentTimeMillis() - startTime));
                             failOptDexFile.add(dexFile);
+                            throwable[0] = thr;
                         }
                     }
                 );
-                // try again
-                for (File retryDexFile : failOptDexFile) {
-                    try {
-                        String outputPathName = SharePatchFileUtil.optimizedPathFor(retryDexFile, optimizeDexDirectoryFile);
 
-                        if (!SharePatchFileUtil.isLegalFile(retryDexFile)) {
-                            manager.getPatchReporter().onPatchDexOptFail(patchFile, retryDexFile,
-                                optimizeDexDirectory, retryDexFile.getName(), new TinkerRuntimeException("retry dex optimize file is not exist, name: " + retryDexFile.getName()));
-                            return false;
-                        }
-                        TinkerLog.i(TAG, "try to retry dex optimize file, path: %s, size: %d", retryDexFile.getPath(), retryDexFile.length());
-                        long start = System.currentTimeMillis();
-                        DexFile.loadDex(retryDexFile.getAbsolutePath(), outputPathName, 0);
-
-                        TinkerLog.i(TAG, "success retry dex optimize file, path: %s, opt file size: %d, use time: %d",
-                            retryDexFile.getPath(), new File(outputPathName).length(), (System.currentTimeMillis() - start));
-                    } catch (Throwable e) {
-                        TinkerLog.e(TAG, "retry dex optimize or load failed, path:" + retryDexFile.getPath());
-                        manager.getPatchReporter().onPatchDexOptFail(patchFile, retryDexFile, optimizeDexDirectory, retryDexFile.getName(), e);
-                        return false;
-                    }
+                if (!failOptDexFile.isEmpty()) {
+                    manager.getPatchReporter().onPatchDexOptFail(patchFile, failOptDexFile, throwable[0]);
+                    return false;
                 }
             // for dalvik, machine hardware performance is much worse than art machine
             } else {
@@ -212,7 +223,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             (System.currentTimeMillis() - start));
                     } catch (Throwable e) {
                         TinkerLog.e(TAG, "single dex optimize or load failed, path:" + file.getPath());
-                        manager.getPatchReporter().onPatchDexOptFail(patchFile, file, optimizeDexDirectory, file.getName(), e);
+                        List<File> failedList = new ArrayList<>();
+                        failedList.add(file);
+                        manager.getPatchReporter().onPatchDexOptFail(patchFile, failedList, e);
                         return false;
                     }
                 }

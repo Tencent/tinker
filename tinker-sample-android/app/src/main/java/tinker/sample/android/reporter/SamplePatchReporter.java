@@ -20,9 +20,14 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.tencent.tinker.lib.reporter.DefaultPatchReporter;
+import com.tencent.tinker.lib.tinker.Tinker;
+import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareConstants;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 
 import java.io.File;
+import java.util.List;
 
 import tinker.sample.android.util.UpgradePatchRetry;
 
@@ -31,6 +36,10 @@ import tinker.sample.android.util.UpgradePatchRetry;
  * Created by zhangshaowen on 16/4/8.
  */
 public class SamplePatchReporter extends DefaultPatchReporter {
+    private final static String TAG = "Tinker.SamplePatchReporter";
+
+    private static boolean shouldRetry = false;
+
     public SamplePatchReporter(Context context) {
         super(context);
     }
@@ -38,14 +47,36 @@ public class SamplePatchReporter extends DefaultPatchReporter {
     @Override
     public void onPatchServiceStart(Intent intent) {
         super.onPatchServiceStart(intent);
+        shouldRetry = false;
         SampleTinkerReport.onApplyPatchServiceStart();
         UpgradePatchRetry.getInstance(context).onPatchServiceStart(intent);
     }
 
+    /**
+     * warning, do use its super method!
+     */
     @Override
-    public void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t) {
-        super.onPatchDexOptFail(patchFile, dexFile, optDirectory, dexName, t);
+    public void onPatchDexOptFail(File patchFile, List<File> dexFiles, Throwable t) {
+        TinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path: %s, dex size: %d",
+            patchFile.getAbsolutePath(), dexFiles.size());
+        TinkerLog.printErrStackTrace(TAG, t, "onPatchDexOptFail:");
+
+        // some phone such as VIVO/OPPO like to change dex2oat to interpreted may go here
+        // check oat file if it is elf format
+        if (t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)
+            || t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
+            shouldRetry = true;
+            deleteOptFiles(dexFiles);
+        } else {
+            Tinker.with(context).cleanPatchByVersion(patchFile);
+        }
         SampleTinkerReport.onApplyDexOptFail(t);
+    }
+
+    private void deleteOptFiles(List<File> dexFiles) {
+        for (File file : dexFiles) {
+            SharePatchFileUtil.safeDeleteFile(file);
+        }
     }
 
     @Override
@@ -70,7 +101,10 @@ public class SamplePatchReporter extends DefaultPatchReporter {
     public void onPatchResult(File patchFile, boolean success, long cost) {
         super.onPatchResult(patchFile, success, cost);
         SampleTinkerReport.onApplied(cost, success);
-        UpgradePatchRetry.getInstance(context).onPatchServiceResult();
+        // if should retry don't delete the temp file
+        if (!shouldRetry) {
+            UpgradePatchRetry.getInstance(context).onPatchServiceResult();
+        }
     }
 
     @Override

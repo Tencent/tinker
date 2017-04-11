@@ -135,6 +135,9 @@ public class ShareElfFile implements Closeable {
     @Override
     public void close() throws IOException {
         fis.close();
+        sectionNameToHeaderMap.clear();
+        programHeaders = null;
+        sectionHeaders = null;
     }
 
     public static class ElfHeader {

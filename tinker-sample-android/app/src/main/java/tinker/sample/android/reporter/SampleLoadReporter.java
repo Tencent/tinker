@@ -30,9 +30,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 
-import tinker.sample.android.service.SampleResultService;
 import tinker.sample.android.util.UpgradePatchRetry;
-import tinker.sample.android.util.Utils;
 
 /**
  * optional, you can just use DefaultLoadReporter
@@ -60,12 +58,14 @@ public class SampleLoadReporter extends DefaultLoadReporter {
                 break;
         }
         Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-            @Override public boolean queueIdle() {
+            @Override
+            public boolean queueIdle() {
                 UpgradePatchRetry.getInstance(context).onPatchRetryLoad();
                 return false;
             }
         });
     }
+
     @Override
     public void onLoadException(Throwable e, int errorCode) {
         super.onLoadException(e, errorCode);
@@ -91,6 +91,8 @@ public class SampleLoadReporter extends DefaultLoadReporter {
 
     /**
      * try to recover patch oat file
+     * warning, do use its super method!
+     *
      * @param file
      * @param fileType
      * @param isDirectory
@@ -103,12 +105,7 @@ public class SampleLoadReporter extends DefaultLoadReporter {
         // only try to recover opt file
         // check dex opt file at last, some phone such as VIVO/OPPO like to change dex2oat to interpreted
         if (fileType == ShareConstants.TYPE_DEX_OPT) {
-            Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-                @Override public boolean queueIdle() {
-                    retryPatch();
-                    return false;
-                }
-            });
+            retryPatch();
         } else {
             checkAndCleanPatch();
         }
@@ -130,12 +127,8 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     @Override
     public void onLoadInterpret(int type, Throwable e) {
         super.onLoadInterpret(type, e);
-        new Utils.ScreenState(context, new Utils.IOnScreenOff() {
-            @Override
-            public void onScreenOff() {
-                retryPatch();
-            }
-        });
+        SampleTinkerReport.onLoadInterpretReport(type, e);
+        retryPatch();
     }
 
     @Override
@@ -144,19 +137,25 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     }
 
     private void retryPatch() {
-        Tinker tinker = Tinker.with(context);
-        //we can recover at any process except recover process
-        if (tinker.isMainProcess()) {
-            File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
-            if (patchVersionFile != null) {
-                if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
-                    TinkerLog.i(TAG, "try to repair oat file on patch process");
-                    TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
-                } else {
-                    TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
-                    checkAndCleanPatch();
-                }
-            }
+        final Tinker tinker = Tinker.with(context);
+        if (!tinker.isMainProcess()) {
+            return;
         }
+        Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+            @Override
+            public boolean queueIdle() {
+                File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
+                if (patchVersionFile != null) {
+                    if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
+                        TinkerLog.i(TAG, "try to repair oat file on patch process");
+                        TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
+                    } else {
+                        TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+                        checkAndCleanPatch();
+                    }
+                }
+                return false;
+            }
+        });
     }
 }

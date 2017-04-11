@@ -28,6 +28,7 @@ import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * Created by zhangshaowen on 16/3/14.
@@ -124,14 +125,13 @@ public class DefaultPatchReporter implements PatchReporter {
      * dex opt failed
      *
      * @param patchFile      the input patch file to recover
-     * @param dexFile        the dex file
-     * @param optDirectory
-     * @param dexName        dexName try to dexOpt
+     * @param dexFiles       the dex files
+     * @param t
      */
     @Override
-    public void onPatchDexOptFail(File patchFile, File dexFile, String optDirectory, String dexName, Throwable t) {
-        TinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path: %s, dexPath: %s, optDir: %s, dexName: %s",
-            patchFile.getAbsolutePath(), dexFile.getPath(), optDirectory, dexName);
+    public void onPatchDexOptFail(File patchFile, List<File> dexFiles, Throwable t) {
+        TinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path: %s, dex size: %d",
+            patchFile.getAbsolutePath(), dexFiles.size());
         TinkerLog.printErrStackTrace(TAG, t, "onPatchDexOptFail:");
         //delete temp files
         Tinker.with(context).cleanPatchByVersion(patchFile);
