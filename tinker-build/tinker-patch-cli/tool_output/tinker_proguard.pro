@@ -29,7 +29,12 @@
     *;
 }
 
+#for command line version, we must keep all the loader class to avoid proguard mapping conflict
 #your dex.loader pattern here
--keep class com.tencent.tinker.loader.**
--keep class tinker.sample.android.app.SampleApplication
+-keep public class com.tencent.tinker.loader.** {
+    *;
+}
 
+-keep class tinker.sample.android.app.SampleApplication {
+    *;
+}
