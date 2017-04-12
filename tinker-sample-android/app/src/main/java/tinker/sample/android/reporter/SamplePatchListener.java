@@ -24,6 +24,7 @@ import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -33,7 +34,6 @@ import java.util.Properties;
 
 import tinker.sample.android.app.BuildInfo;
 import tinker.sample.android.crash.SampleUncaughtExceptionHandler;
-import tinker.sample.android.util.UpgradePatchRetry;
 import tinker.sample.android.util.Utils;
 
 /**
@@ -71,10 +71,6 @@ public class SamplePatchListener extends DefaultPatchListener {
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             returnCode = Utils.checkForPatchRecover(NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
-        }
-        // disable jit below N
-        if (returnCode == ShareConstants.ERROR_PATCH_OK) {
-            returnCode = ShareTinkerInternals.isVmJit() ? Utils.ERROR_PATCH_JIT : ShareConstants.ERROR_PATCH_OK;
         }
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {

@@ -18,11 +18,15 @@ package com.tencent.tinker.lib.reporter;
 
 
 import android.content.Context;
+import android.os.Looper;
+import android.os.MessageQueue;
 
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
+import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
@@ -128,6 +132,8 @@ public class DefaultLoadReporter implements LoadReporter {
                 TinkerLog.i(TAG, "patch loadReporter onLoadInterpret ok");
                 break;
         }
+
+        retryPatch();
     }
 
     /**
@@ -150,7 +156,13 @@ public class DefaultLoadReporter implements LoadReporter {
         TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType: %d, isDirectory: %b",
             file.getAbsolutePath(), fileType, isDirectory);
 
-        checkAndCleanPatch();
+        // only try to recover opt file
+        // check dex opt file at last, some phone such as VIVO/OPPO like to change dex2oat to interpreted
+        if (fileType == ShareConstants.TYPE_DEX_OPT) {
+            retryPatch();
+        } else {
+            checkAndCleanPatch();
+        }
     }
 
     /**
@@ -242,6 +254,14 @@ public class DefaultLoadReporter implements LoadReporter {
                 TinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unCatch exception: %s", e);
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
                 TinkerLog.i(TAG, "unCaught exception disable tinker forever with sp");
+
+                String uncaughtString = SharePatchFileUtil.checkTinkerLastUncaughtCrash(context);
+                if (!ShareTinkerInternals.isNullOrNil(uncaughtString)) {
+                    File laseCrashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
+                    SharePatchFileUtil.safeDeleteFile(laseCrashFile);
+                    // found really crash reason
+                    TinkerLog.e(TAG, "tinker uncaught real exception:" + uncaughtString);
+                }
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_UNKNOWN:
                 TinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unknown exception: %s", e);
@@ -296,9 +316,31 @@ public class DefaultLoadReporter implements LoadReporter {
                     ShareTinkerInternals.killAllOtherProcess(context);
                 }
             }
-
         }
         tinker.cleanPatch();
 
+    }
+
+    public void retryPatch() {
+        final Tinker tinker = Tinker.with(context);
+        if (!tinker.isMainProcess()) {
+            return;
+        }
+        Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+            @Override
+            public boolean queueIdle() {
+                File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
+                if (patchVersionFile != null) {
+                    if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
+                        TinkerLog.i(TAG, "try to repair oat file on patch process");
+                        TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
+                    } else {
+                        TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+                        checkAndCleanPatch();
+                    }
+                }
+                return false;
+            }
+        });
     }
 }

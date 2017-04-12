@@ -57,7 +57,7 @@ public class ShareConstants {
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
     public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";
 
-    public static final String CHECK_DEX_OAT_EXIST_FAIL = "checkDexOptExist failed";
+    public static final String CHECK_DEX_OAT_EXIST_FAIL  = "checkDexOptExist failed";
     public static final String CHECK_DEX_OAT_FORMAT_FAIL = "checkDexOptFormat failed";
 
 //    public static final String CHECK_VM_PROPERTY_FAIL = "checkVmArtProperty failed";
@@ -166,11 +166,13 @@ public class ShareConstants {
     public static final int ERROR_LOAD_EXCEPTION_UNCAUGHT = -4;
 
     //patch listener error code
-    public static final int ERROR_PATCH_OK        = 0;
-    public static final int ERROR_PATCH_DISABLE   = -1;
-    public static final int ERROR_PATCH_NOTEXIST  = -2;
-    public static final int ERROR_PATCH_RUNNING   = -3;
-    public static final int ERROR_PATCH_INSERVICE = -4;
+    public static final int ERROR_PATCH_OK                = 0;
+    public static final int ERROR_PATCH_DISABLE           = -1;
+    public static final int ERROR_PATCH_NOTEXIST          = -2;
+    public static final int ERROR_PATCH_RUNNING           = -3;
+    public static final int ERROR_PATCH_INSERVICE         = -4;
+    public static final int ERROR_PATCH_JIT               = -5;
+
 
     //package check error code
     public static final int ERROR_PACKAGE_CHECK_OK                        = 0;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tinker.sample.android.util;
+package com.tencent.tinker.lib.util;
 
 import android.content.Context;
 import android.content.Intent;
@@ -22,8 +22,6 @@ import android.content.Intent;
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
-import com.tencent.tinker.lib.util.TinkerLog;
-import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
 import java.io.File;
@@ -31,8 +29,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
-
-import tinker.sample.android.reporter.SampleTinkerReport;
 
 /**
  * optional
@@ -50,14 +46,12 @@ public class UpgradePatchRetry {
     private static final String RETRY_FILE_MD5_PROPERTY = "md5";
     private static final String RETRY_COUNT_PROPERTY    = "times";
     private static final int    RETRY_MAX_COUNT         = 4;
-
-
-    private boolean isRetryEnable = false;
+    private static UpgradePatchRetry sInstance;
+    private boolean isRetryEnable = true;
     private File    retryInfoFile = null;
     private File    tempPatchFile = null;
-
     private Context context = null;
-    private static UpgradePatchRetry sInstance;
+    private int maxRetryCount = RETRY_MAX_COUNT;
 
     /**
      * you must set after tinker has installed
@@ -77,36 +71,48 @@ public class UpgradePatchRetry {
         return sInstance;
     }
 
-    public void onPatchRetryLoad() {
+    public void setRetryEnable(boolean enable) {
+        isRetryEnable = enable;
+    }
+
+    public void setMaxRetryCount(int count) {
+        if (count <= 0) {
+            TinkerLog.e(TAG, "max count must large than 0");
+            return;
+        }
+        maxRetryCount = count;
+    }
+
+    public boolean onPatchRetryLoad() {
         if (!isRetryEnable) {
             TinkerLog.w(TAG, "onPatchRetryLoad retry disabled, just return");
-            return;
+            return false;
         }
         Tinker tinker = Tinker.with(context);
         //only retry on main process
         if (!tinker.isMainProcess()) {
             TinkerLog.w(TAG, "onPatchRetryLoad retry is not main process, just return");
-            return;
+            return false;
         }
 
         if (!retryInfoFile.exists()) {
             TinkerLog.w(TAG, "onPatchRetryLoad retry info not exist, just return");
-            return;
+            return false;
         }
 
         if (TinkerServiceInternals.isTinkerPatchServiceRunning(context)) {
             TinkerLog.w(TAG, "onPatchRetryLoad tinker service is running, just return");
-            return;
+            return false;
         }
         //must use temp file
         String path = tempPatchFile.getAbsolutePath();
         if (path == null || !new File(path).exists()) {
             TinkerLog.w(TAG, "onPatchRetryLoad patch file: %s is not exist, just return", path);
-            return;
+            return false;
         }
         TinkerLog.w(TAG, "onPatchRetryLoad patch file: %s is exist, retry to patch", path);
         TinkerInstaller.onReceiveUpgradePatch(context, path);
-        SampleTinkerReport.onReportRetryPatch();
+        return true;
     }
 
     public void onPatchServiceStart(Intent intent) {
@@ -144,7 +150,7 @@ public class UpgradePatchRetry {
                 retryInfo.times = "1";
             } else {
                 int nowTimes = Integer.parseInt(retryInfo.times);
-                if (nowTimes >= RETRY_MAX_COUNT) {
+                if (nowTimes >= maxRetryCount) {
                     SharePatchFileUtil.safeDeleteFile(tempPatchFile);
                     TinkerLog.w(TAG, "onPatchServiceStart retry more than max count, delete retry info file!");
                     return;
@@ -177,7 +183,7 @@ public class UpgradePatchRetry {
         RetryInfo retryInfo = RetryInfo.readRetryProperty(retryInfoFile);
         if (md5.equals(retryInfo.md5)) {
             int nowTimes = Integer.parseInt(retryInfo.times);
-            if (nowTimes >= RETRY_MAX_COUNT) {
+            if (nowTimes >= maxRetryCount) {
                 TinkerLog.w(TAG, "onPatchListenerCheck, retry count %d must exceed than max retry count", nowTimes);
                 SharePatchFileUtil.safeDeleteFile(tempPatchFile);
                 return false;
@@ -199,11 +205,6 @@ public class UpgradePatchRetry {
             SharePatchFileUtil.safeDeleteFile(tempPatchFile);
         }
     }
-
-    public void setRetryEnable(boolean enable) {
-        isRetryEnable = enable;
-    }
-
 
     private void copyToTempFile(File patchFile) {
         if (patchFile.getAbsolutePath().equals(tempPatchFile.getAbsolutePath())) {

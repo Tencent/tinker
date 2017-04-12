@@ -120,18 +120,27 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         if (Build.VERSION.SDK_INT >= 21) {
             for (File file : optFiles) {
                 TinkerLog.i(TAG, "check dex optimizer file format: %s, size %d", file.getName(), file.length());
-                ShareElfFile elfFile = null;
+                int returnType;
                 try {
-                    elfFile = new ShareElfFile(file);
-                } catch (Throwable e) {
-                    TinkerLog.e(TAG, "final parallel dex optimizer file %s is not elf format, return false", file.getName());
-                    failDexFiles.add(file);
-                } finally {
-                    if (elfFile != null) {
-                        try {
-                            elfFile.close();
-                        } catch (IOException ignore) {
+                    returnType = ShareElfFile.getFileTypeByMagic(file);
+                } catch (IOException e) {
+                    // read error just continue
+                   continue;
+                }
+                if (returnType == ShareElfFile.FILE_TYPE_ELF) {
+                    ShareElfFile elfFile = null;
+                    try {
+                        elfFile = new ShareElfFile(file);
+                    } catch (Throwable e) {
+                        TinkerLog.e(TAG, "final parallel dex optimizer file %s is not elf format, return false", file.getName());
+                        failDexFiles.add(file);
+                    } finally {
+                        if (elfFile != null) {
+                            try {
+                                elfFile.close();
+                            } catch (IOException ignore) {
 
+                            }
                         }
                     }
                 }

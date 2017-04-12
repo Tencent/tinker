@@ -55,7 +55,6 @@ public class DefaultPatchListener implements PatchListener {
             Tinker.with(context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode);
         }
         return returnCode;
-
     }
 
     protected int patchCheck(String path) {
@@ -78,6 +77,9 @@ public class DefaultPatchListener implements PatchListener {
         //if the patch service is running, pending
         if (TinkerServiceInternals.isTinkerPatchServiceRunning(context)) {
             return ShareConstants.ERROR_PATCH_RUNNING;
+        }
+        if (ShareTinkerInternals.isVmJit()) {
+            return ShareConstants.ERROR_PATCH_JIT;
         }
         return ShareConstants.ERROR_PATCH_OK;
     }

@@ -41,15 +41,13 @@ public class Utils {
      * the error code define by myself
      * should after {@code ShareConstants.ERROR_PATCH_INSERVICE
      */
-    public static final int ERROR_PATCH_GOOGLEPLAY_CHANNEL      = -5;
-    public static final int ERROR_PATCH_ROM_SPACE               = -6;
-    public static final int ERROR_PATCH_MEMORY_LIMIT            = -7;
-    public static final int ERROR_PATCH_ALREADY_APPLY           = -8;
+    public static final int ERROR_PATCH_GOOGLEPLAY_CHANNEL      = -6;
+    public static final int ERROR_PATCH_ROM_SPACE               = -7;
+    public static final int ERROR_PATCH_MEMORY_LIMIT            = -8;
     public static final int ERROR_PATCH_CRASH_LIMIT             = -9;
-    public static final int ERROR_PATCH_RETRY_COUNT_LIMIT       = -10;
-    public static final int ERROR_PATCH_CONDITION_NOT_SATISFIED = -11;
-    public static final int ERROR_PATCH_JIT                     = -12;
-
+    public static final int ERROR_PATCH_CONDITION_NOT_SATISFIED = -10;
+    public static final int ERROR_PATCH_ALREADY_APPLY           = -11;
+    public static final int ERROR_PATCH_RETRY_COUNT_LIMIT       = -12;
 
     public static final String PLATFORM = "platform";
 

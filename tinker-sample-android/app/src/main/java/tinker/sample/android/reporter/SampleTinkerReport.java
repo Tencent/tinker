@@ -182,6 +182,9 @@ public class SampleTinkerReport {
             case ShareConstants.ERROR_PATCH_RUNNING:
                 reporter.onReport(KEY_TRY_APPLY_RUNNING);
                 break;
+            case ShareConstants.ERROR_PATCH_JIT:
+                reporter.onReport(KEY_TRY_APPLY_JIT);
+                break;
             case Utils.ERROR_PATCH_ROM_SPACE:
                 reporter.onReport(KEY_TRY_APPLY_ROM_SPACE);
                 break;
@@ -200,9 +203,7 @@ public class SampleTinkerReport {
             case Utils.ERROR_PATCH_CONDITION_NOT_SATISFIED:
                 reporter.onReport(KEY_TRY_APPLY_CONDITION_NOT_SATISFIED);
                 break;
-            case Utils.ERROR_PATCH_JIT:
-                reporter.onReport(KEY_TRY_APPLY_JIT);
-                break;
+
         }
     }
 

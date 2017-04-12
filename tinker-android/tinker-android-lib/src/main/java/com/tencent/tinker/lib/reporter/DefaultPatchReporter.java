@@ -23,7 +23,9 @@ import android.content.Intent;
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
@@ -38,6 +40,7 @@ import java.util.List;
  */
 public class DefaultPatchReporter implements PatchReporter {
     private static final String TAG = "Tinker.DefaultPatchReporter";
+    private static boolean shouldRetry = false;
     protected final Context context;
 
     public DefaultPatchReporter(Context context) {
@@ -54,6 +57,9 @@ public class DefaultPatchReporter implements PatchReporter {
     @Override
     public void onPatchServiceStart(Intent intent) {
         TinkerLog.i(TAG, "patchReporter onPatchServiceStart: patch service start");
+        shouldRetry = false;
+        UpgradePatchRetry.getInstance(context).onPatchServiceStart(intent);
+
     }
 
     /**
@@ -133,8 +139,16 @@ public class DefaultPatchReporter implements PatchReporter {
         TinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path: %s, dex size: %d",
             patchFile.getAbsolutePath(), dexFiles.size());
         TinkerLog.printErrStackTrace(TAG, t, "onPatchDexOptFail:");
-        //delete temp files
-        Tinker.with(context).cleanPatchByVersion(patchFile);
+
+        // some phone such as VIVO/OPPO like to change dex2oat to interpreted may go here
+        // check oat file if it is elf format
+        if (t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)
+            || t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
+            shouldRetry = true;
+            deleteOptFiles(dexFiles);
+        } else {
+            Tinker.with(context).cleanPatchByVersion(patchFile);
+        }
     }
 
     /**
@@ -148,7 +162,10 @@ public class DefaultPatchReporter implements PatchReporter {
     public void onPatchResult(File patchFile, boolean success, long cost) {
         TinkerLog.i(TAG, "patchReporter onPatchResult: patch all result path: %s, success: %b, cost: %d",
             patchFile.getAbsolutePath(), success, cost);
-        //you can just report the result here
+        // if should retry don't delete the temp file
+        if (!shouldRetry) {
+            UpgradePatchRetry.getInstance(context).onPatchServiceResult();
+        }
     }
 
     /**
@@ -190,4 +207,11 @@ public class DefaultPatchReporter implements PatchReporter {
         ////delete temp files, I think we don't have to clean all patch
         Tinker.with(context).cleanPatchByVersion(patchFile);
     }
+
+    private void deleteOptFiles(List<File> dexFiles) {
+        for (File file : dexFiles) {
+            SharePatchFileUtil.safeDeleteFile(file);
+        }
+    }
+
 }
