@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -32,6 +33,10 @@ import java.util.Map;
  */
 
 public class ShareElfFile implements Closeable {
+    public static final int FILE_TYPE_OTHERS = -1;
+    public static final int FILE_TYPE_ODEX = 0;
+    public static final int FILE_TYPE_ELF = 1;
+
     private final FileInputStream fis;
     private final Map<String, SectionHeader> sectionNameToHeaderMap = new HashMap<>();
     public ElfHeader elfHeader = null;
@@ -77,6 +82,30 @@ public class ShareElfFile implements Closeable {
     private static void assertInRange(int b, int lb, int ub, String errMsg) throws IOException {
         if (b < lb || b > ub) {
             throw new IOException(errMsg);
+        }
+    }
+
+    public static int getFileTypeByMagic(File file) throws IOException {
+        InputStream is = null;
+        try {
+            final byte[] magicBuf = new byte[4];
+            is = new FileInputStream(file);
+            is.read(magicBuf);
+            if (magicBuf[0] == 'd' && magicBuf[1] == 'e' && magicBuf[2] == 'y' && magicBuf[3] == '\n') {
+                return FILE_TYPE_ODEX;
+            } else if (magicBuf[0] == 0x7F && magicBuf[1] == 'E' && magicBuf[2] == 'L' && magicBuf[3] == 'F') {
+                return FILE_TYPE_ELF;
+            } else {
+                return FILE_TYPE_OTHERS;
+            }
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (Throwable thr) {
+                    // Ignored.
+                }
+            }
         }
     }
 
