@@ -59,14 +59,14 @@ public class Configuration {
     protected static final String ATTR_VALUE = "value";
     protected static final String ATTR_NAME  = "name";
 
-    protected static final String ATTR_IGNORE_WARNING    = "ignoreWarning";
-    protected static final String ATTR_IS_PROTECTED_APP  = "isProtectedApp";
-    protected static final String ATTR_USE_SIGN          = "useSign";
-    protected static final String ATTR_SEVEN_ZIP_PATH    = "sevenZipPath";
-    protected static final String ATTR_DEX_MODE          = "dexMode";
-    protected static final String ATTR_PATTERN           = "pattern";
-    protected static final String ATTR_RES_IGNORE_CHANGE = "ignoreChange";
-    protected static final String ATTR_RES_LARGE_MOD     = "largeModSize";
+    protected static final String ATTR_IGNORE_WARNING   = "ignoreWarning";
+    protected static final String ATTR_IS_PROTECTED_APP = "isProtectedApp";
+    protected static final String ATTR_USE_SIGN         = "useSign";
+    protected static final String ATTR_SEVEN_ZIP_PATH   = "sevenZipPath";
+    protected static final String ATTR_DEX_MODE         = "dexMode";
+    protected static final String ATTR_PATTERN          = "pattern";
+    protected static final String ATTR_IGNORE_CHANGE    = "ignoreChange";
+    protected static final String ATTR_RES_LARGE_MOD    = "largeModSize";
 
     protected static final String ATTR_LOADER       = "loader";
     protected static final String ATTR_CONFIG_FIELD = "configField";
@@ -95,6 +95,8 @@ public class Configuration {
      */
     public HashSet<Pattern> mDexFilePattern;
     public HashSet<String>  mDexLoaderPattern;
+    public HashSet<Pattern> mDexIgnoreWarningLoaderPattern;
+
     public boolean          mDexRaw;
     /**
      * resource config
@@ -187,6 +189,9 @@ public class Configuration {
         for (String item : param.dexFilePattern) {
             addToPatterns(item, mDexFilePattern);
         }
+        for (String item : param.dexIgnoreWarningLoaderPattern) {
+            addToPatterns(item, mDexIgnoreWarningLoaderPattern);
+        }
 
         for (String item : param.resourceFilePattern) {
             mResRawPattern.add(item);
@@ -261,6 +266,9 @@ public class Configuration {
         }
         for (String name : mDexLoaderPattern) {
             sb.append("dex loader:" + name + "\n");
+        }
+        for (Pattern name : mDexIgnoreWarningLoaderPattern) {
+            sb.append("dex ignore warning loader:" + name .toString() + "\n");
         }
 
         sb.append("lib configs: \n");
@@ -496,6 +504,8 @@ public class Configuration {
                         addToPatterns(value, mDexFilePattern);
                     } else if (tagName.equals(ATTR_LOADER)) {
                         mDexLoaderPattern.add(value);
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
+                        addToPatterns(value, mDexIgnoreWarningLoaderPattern);
                     } else {
                         System.err.println("unknown dex tag " + tagName);
                     }
@@ -537,7 +547,7 @@ public class Configuration {
                     if (tagName.equals(ATTR_PATTERN)) {
                         mResRawPattern.add(value);
                         addToPatterns(value, mResFilePattern);
-                    } else if (tagName.equals(ATTR_RES_IGNORE_CHANGE)) {
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
                         addToPatterns(value, mResIgnoreChangePattern);
                     } else if (tagName.equals(ATTR_RES_LARGE_MOD)) {
                         mLargeModSize = Integer.valueOf(value);

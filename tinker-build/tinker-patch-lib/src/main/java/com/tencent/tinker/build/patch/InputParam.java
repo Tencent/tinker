@@ -41,8 +41,10 @@ public class InputParam {
     /**
      * tinkerPatch.dex
      */
-    public final ArrayList<String>       dexFilePattern;
-    public final ArrayList<String>       dexLoaderPattern;
+    public final ArrayList<String> dexFilePattern;
+    public final ArrayList<String> dexLoaderPattern;
+    public final ArrayList<String> dexIgnoreWarningLoaderPattern;
+
     public final String                  dexMode;
     /**
      * tinkerPatch.lib
@@ -87,6 +89,8 @@ public class InputParam {
 
         ArrayList<String> dexFilePattern,
         ArrayList<String> dexLoaderPattern,
+        ArrayList<String> dexIgnoreChangeLoaderPattern,
+
         String dexMode,
         ArrayList<String> soFilePattern,
         ArrayList<String> resourceFilePattern,
@@ -110,6 +114,7 @@ public class InputParam {
 
         this.dexFilePattern = dexFilePattern;
         this.dexLoaderPattern = dexLoaderPattern;
+        this.dexIgnoreWarningLoaderPattern = dexIgnoreChangeLoaderPattern;
         this.dexMode = dexMode;
 
         this.soFilePattern = soFilePattern;
@@ -141,8 +146,10 @@ public class InputParam {
         /**
          * tinkerPatch.dex
          */
-        private ArrayList<String>       dexFilePattern;
-        private ArrayList<String>       dexLoaderPattern;
+        private ArrayList<String> dexFilePattern;
+        private ArrayList<String> dexLoaderPattern;
+        private ArrayList<String> dexIgnoreWarningLoaderPattern;
+
         private String                  dexMode;
         /**
          * tinkerPatch.lib
@@ -257,6 +264,11 @@ public class InputParam {
             return this;
         }
 
+        public Builder setDexIgnoreWarningLoaderPattern(ArrayList<String> loader) {
+            this.dexIgnoreWarningLoaderPattern = loader;
+            return this;
+        }
+
         public Builder setDexMode(String dexMode) {
             this.dexMode = dexMode;
             return this;
@@ -291,6 +303,7 @@ public class InputParam {
                     useSign,
                     dexFilePattern,
                     dexLoaderPattern,
+                    dexIgnoreWarningLoaderPattern,
                     dexMode,
                     soFilePattern,
                     resourceFilePattern,

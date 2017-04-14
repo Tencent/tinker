@@ -26,6 +26,7 @@ import com.tencent.tinker.build.util.DexClassesComparator.DexClassInfo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -182,12 +183,23 @@ public final class ExcludedClassModifiedChecker {
                     throw new TinkerPatchException("loader classes are found in new secondary dex. Found classes: " + Utils.collectionToString(newClassesDescToCheck));
                 }
                 case STMCODE_ERROR_LOADER_CLASS_CHANGED: {
-                    String msg =
-                        "some loader class has been changed in new dex."
-                            + " Such these changes will not take effect!!"
-                            + " related classes: "
-                            + Utils.collectionToString(changedClassInfosMap.keySet());
-                    throw new TinkerPatchException(msg);
+                    ArrayList<String> changeClasses = new ArrayList<>(changedClassInfosMap.keySet());
+                    ArrayList<String> removeClasses = new ArrayList<>();
+                    for (String classname : changeClasses) {
+                        if (Utils.checkFileInPattern(config.mDexIgnoreWarningLoaderPattern, classname)) {
+                            Logger.e("loader class pattern: " + classname + " has changed,but it match ignore change pattern, just ignore!");
+                            removeClasses.add(classname);
+                        }
+                    }
+                    changeClasses.remove(removeClasses);
+                    if (!changeClasses.isEmpty()) {
+                        String msg =
+                            "some loader class has been changed in new dex."
+                                + " Such these changes will not take effect!!"
+                                + " related classes: "
+                                + Utils.collectionToString(changeClasses);
+                        throw new TinkerPatchException(msg);
+                    }
                 }
                 default: {
                     Logger.e("internal-error: unexpected stmCode.");
