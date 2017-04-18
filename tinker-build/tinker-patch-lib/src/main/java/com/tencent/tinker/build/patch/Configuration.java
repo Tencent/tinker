@@ -78,13 +78,13 @@ public class Configuration {
     /**
      * base config data
      */
-    public String           mOldApkPath;
-    public String           mNewApkPath;
-    public String           mOutFolder;
-    public File             mOldApkFile;
-    public File             mNewApkFile;
-    public boolean          mIgnoreWarning;
-    public boolean          mIsProtectedApp;
+    public String  mOldApkPath;
+    public String  mNewApkPath;
+    public String  mOutFolder;
+    public File    mOldApkFile;
+    public File    mNewApkFile;
+    public boolean mIgnoreWarning;
+    public boolean mIsProtectedApp;
 
     /**
      * lib config
@@ -95,7 +95,7 @@ public class Configuration {
      */
     public HashSet<Pattern> mDexFilePattern;
     public HashSet<String>  mDexLoaderPattern;
-    public HashSet<Pattern> mDexIgnoreWarningLoaderPattern;
+    public HashSet<String>  mDexIgnoreWarningLoaderPattern;
 
     public boolean          mDexRaw;
     /**
@@ -141,11 +141,12 @@ public class Configuration {
      * use by command line with xml config
      */
     public Configuration(File config, File outputFile, File oldApkFile, File newApkFile)
-            throws IOException, ParserConfigurationException, SAXException, TinkerPatchException {
+        throws IOException, ParserConfigurationException, SAXException, TinkerPatchException {
         mUsingGradle = false;
         mSoFilePattern = new HashSet<>();
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
+        mDexIgnoreWarningLoaderPattern = new HashSet<>();
 
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
@@ -175,6 +176,7 @@ public class Configuration {
         mSoFilePattern = new HashSet<>();
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
+        mDexIgnoreWarningLoaderPattern = new HashSet<>();
 
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
@@ -188,9 +190,6 @@ public class Configuration {
 
         for (String item : param.dexFilePattern) {
             addToPatterns(item, mDexFilePattern);
-        }
-        for (String item : param.dexIgnoreWarningLoaderPattern) {
-            addToPatterns(item, mDexIgnoreWarningLoaderPattern);
         }
 
         for (String item : param.resourceFilePattern) {
@@ -206,7 +205,7 @@ public class Configuration {
         mUseApplyResource = param.useApplyResource;
 
         mDexLoaderPattern.addAll(param.dexLoaderPattern);
-
+        mDexIgnoreWarningLoaderPattern.addAll(param.dexIgnoreWarningLoaderPattern);
         //can be only raw or jar
         if (param.dexMode.equals("raw")) {
             mDexRaw = true;
@@ -267,8 +266,8 @@ public class Configuration {
         for (String name : mDexLoaderPattern) {
             sb.append("dex loader:" + name + "\n");
         }
-        for (Pattern name : mDexIgnoreWarningLoaderPattern) {
-            sb.append("dex ignore warning loader:" + name .toString() + "\n");
+        for (String name : mDexIgnoreWarningLoaderPattern) {
+            sb.append("dex ignore warning loader:" + name.toString() + "\n");
         }
 
         sb.append("lib configs: \n");
@@ -505,7 +504,7 @@ public class Configuration {
                     } else if (tagName.equals(ATTR_LOADER)) {
                         mDexLoaderPattern.add(value);
                     } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
-                        addToPatterns(value, mDexIgnoreWarningLoaderPattern);
+                        mDexIgnoreWarningLoaderPattern.add(value);
                     } else {
                         System.err.println("unknown dex tag " + tagName);
                     }
