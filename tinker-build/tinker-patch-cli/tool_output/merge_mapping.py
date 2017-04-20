@@ -101,12 +101,12 @@ class DealWithProguardWarning:
                     current_data.raw_line = data.raw_line
                 new_method_list = []
                 # 处理方法
-                for line in current_data.filed_methods:
+                for line in current_data.field_methods:
                     result, new_line = self.find_same_methods(line, data)
                     # 只有找到才写入
                     if result:
                         new_method_list.append(new_line)
-                current_data.filed_methods = new_method_list
+                current_data.field_methods = new_method_list
             # 新的混淆不在旧的里面，则删除
             else:
                 del self.current_classes[key]
@@ -116,7 +116,7 @@ class DealWithProguardWarning:
         # 这里是特殊情况，如果在当前mapping发现查找的这个并没有混淆，就不打算保留在mapping文件中
         if search_name == search_new_name:
             return False, ""
-        for method_line in data.filed_methods:
+        for method_line in data.field_methods:
             target_name, target_complete_name, target_new_name = self.get_name_and_complete_name_and_new_name(method_line)
             # 这里必须要用最完整的信息来进行比较，避免重载的影响
             if search_complete_name == target_complete_name:
@@ -157,7 +157,7 @@ class DealWithProguardWarning:
                 if key in self.current_classes:
                     data = self.current_classes[key]
                     fw.write(data.raw_line)
-                    for line in data.filed_methods:
+                    for line in data.field_methods:
                         fw.write(line)
 
 
