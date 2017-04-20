@@ -129,7 +129,7 @@ public class SharePatchFileUtil {
     }
 
     public static final boolean isLegalFile(File file) {
-        return file != null && file.exists() && file.isFile() && file.length() > 0;
+        return file != null && file.exists() && file.canRead() && file.isFile() && file.length() > 0;
     }
 
     /**

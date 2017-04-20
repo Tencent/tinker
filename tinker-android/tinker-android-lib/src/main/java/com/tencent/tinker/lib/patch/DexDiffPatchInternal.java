@@ -118,6 +118,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             return false;
         }
         if (Build.VERSION.SDK_INT >= 21) {
+            Throwable lastThrowable = null;
             for (File file : optFiles) {
                 TinkerLog.i(TAG, "check dex optimizer file format: %s, size %d", file.getName(), file.length());
                 int returnType;
@@ -134,6 +135,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     } catch (Throwable e) {
                         TinkerLog.e(TAG, "final parallel dex optimizer file %s is not elf format, return false", file.getName());
                         failDexFiles.add(file);
+                        lastThrowable = e;
                     } finally {
                         if (elfFile != null) {
                             try {
@@ -146,8 +148,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 }
             }
             if (!failDexFiles.isEmpty()) {
+                Throwable returnThrowable = lastThrowable == null
+                    ? new TinkerRuntimeException(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)
+                    : new TinkerRuntimeException(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL, lastThrowable);
+
                 manager.getPatchReporter().onPatchDexOptFail(patchFile, failDexFiles,
-                    new TinkerRuntimeException(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL));
+                    returnThrowable);
                 return false;
             }
         }

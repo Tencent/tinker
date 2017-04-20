@@ -54,7 +54,7 @@ public class TinkerDexLoader {
 
 
 
-    private static File testDexFile;
+    private static File testOptDexFile;
 
     private TinkerDexLoader() {
     }
@@ -116,7 +116,7 @@ public class TinkerDexLoader {
             final Throwable[] parallelOTAThrowable = new Throwable[1];
             String targetISA;
             try {
-                targetISA = ShareOatUtil.getTestDexOatInstructionSet(directory, testDexFile);
+                targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
             } catch (Throwable e) {
                 // don't ota on the front
                 deleteOutOfDateOATFile(directory);
@@ -234,16 +234,16 @@ public class TinkerDexLoader {
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
                 return false;
             }
-            // find test dex
-            if (dexFile.getName().startsWith(ShareConstants.TEST_DEX_NAME)) {
-                testDexFile = dexFile;
-            }
             //check dex opt whether complete also
             File dexOptFile = new File(SharePatchFileUtil.optimizedPathFor(dexFile, optimizeDexDirectoryFile));
             if (!SharePatchFileUtil.isLegalFile(dexOptFile)) {
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexOptFile.getAbsolutePath());
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
                 return false;
+            }
+            // find test dex
+            if (dexOptFile.getName().startsWith(ShareConstants.TEST_DEX_NAME)) {
+                testOptDexFile = dexOptFile;
             }
         }
 

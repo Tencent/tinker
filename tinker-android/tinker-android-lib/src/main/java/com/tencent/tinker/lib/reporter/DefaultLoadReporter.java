@@ -18,8 +18,6 @@ package com.tencent.tinker.lib.reporter;
 
 
 import android.content.Context;
-import android.os.Looper;
-import android.os.MessageQueue;
 
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
@@ -111,6 +109,7 @@ public class DefaultLoadReporter implements LoadReporter {
 
     /**
      * After system ota, we will try to load dex with interpret mode
+     *
      * @param type type define as following
      *             {@code ShareConstants.TYPE_INTERPRET_OK}                                    it is ok, using interpret mode
      *             {@code ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR}             get instruction set from exist oat file fail
@@ -148,7 +147,6 @@ public class DefaultLoadReporter implements LoadReporter {
      *                    {@code ShareConstants.TYPE_DEX}         patch dex file or directory not found
      *                    {@code ShareConstants.TYPE_LIBRARY}     patch lib file or directory not found
      *                    {@code ShareConstants.TYPE_RESOURCE}    patch lib file or directory not found
-     *
      * @param isDirectory whether is directory for the file type
      */
     @Override
@@ -222,11 +220,11 @@ public class DefaultLoadReporter implements LoadReporter {
      * you can disable patch as {@link DefaultLoadReporter#onLoadException(Throwable, int)}
      *
      * @param e
-     * @param errorCode    exception code
-     *                     {@code ShareConstants.ERROR_LOAD_EXCEPTION_UNKNOWN}        unknown exception
-     *                     {@code ShareConstants.ERROR_LOAD_EXCEPTION_DEX}            exception when load dex
-     *                     {@code ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE}       exception when load resource
-     *                     {@code ShareConstants.ERROR_LOAD_EXCEPTION_UNCAUGHT}       exception unCaught
+     * @param errorCode exception code
+     *                  {@code ShareConstants.ERROR_LOAD_EXCEPTION_UNKNOWN}        unknown exception
+     *                  {@code ShareConstants.ERROR_LOAD_EXCEPTION_DEX}            exception when load dex
+     *                  {@code ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE}       exception when load resource
+     *                  {@code ShareConstants.ERROR_LOAD_EXCEPTION_UNCAUGHT}       exception unCaught
      */
     @Override
     public void onLoadException(Throwable e, int errorCode) {
@@ -321,26 +319,24 @@ public class DefaultLoadReporter implements LoadReporter {
 
     }
 
-    public void retryPatch() {
+    public boolean retryPatch() {
         final Tinker tinker = Tinker.with(context);
         if (!tinker.isMainProcess()) {
-            return;
+            return false;
         }
-        Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-            @Override
-            public boolean queueIdle() {
-                File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
-                if (patchVersionFile != null) {
-                    if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
-                        TinkerLog.i(TAG, "try to repair oat file on patch process");
-                        TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
-                    } else {
-                        TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
-                        checkAndCleanPatch();
-                    }
-                }
-                return false;
+
+        File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
+        if (patchVersionFile != null) {
+            if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
+                TinkerLog.i(TAG, "try to repair oat file on patch process");
+                TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
+                return true;
+            } else {
+                TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+                checkAndCleanPatch();
             }
-        });
+        }
+
+        return false;
     }
 }

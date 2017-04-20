@@ -63,10 +63,16 @@ public class TinkerLoader extends AbstractTinkerLoader {
     private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent) {
         final int tinkerFlag = app.getTinkerFlags();
 
-        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)
-            || ShareTinkerInternals.isInPatchProcess(app)) {
+        if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
+            Log.w(TAG, "tryLoadPatchFiles: tinker is disable, just return");
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
             return;
+        }
+        if (ShareTinkerInternals.isInPatchProcess(app)) {
+            Log.w(TAG, "tryLoadPatchFiles: we don't load patch with :patch process itself, just return");
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
+            return;
+
         }
         //tinker
         File patchDirectoryFile = SharePatchFileUtil.getPatchDirectory(app);

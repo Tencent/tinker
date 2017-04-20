@@ -33,12 +33,6 @@ public final class ShareOatUtil {
         throw new UnsupportedOperationException();
     }
 
-    public static String getTestDexOatInstructionSet(String directory, File testDexFile) throws Throwable {
-        String optimizeDexDirectory = directory + "/" + ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH + "/";
-        File testDexOptFile = new File(SharePatchFileUtil.optimizedPathFor(testDexFile, new File(optimizeDexDirectory)));
-        return getOatFileInstructionSet(testDexOptFile);
-
-    }
     /**
      * Get instruction set used to generate {@code oatFile}.
      *
