@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.os.Build;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -217,11 +218,14 @@ class TinkerResourcePatcher {
         // Handle issues caused by WebView on Android N.
         // Issue: On Android N, if an activity contains a webview, when screen rotates
         // our resource patch may lost effects.
-        try {
-            if (publicSourceDirField != null) {
-                publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
+        // for 5.x/6.x, we found Couldn't expand RemoteView for StatusBarNotification Exception
+        if (Build.VERSION.SDK_INT >= 24) {
+            try {
+                if (publicSourceDirField != null) {
+                    publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
+                }
+            } catch (Throwable ignore) {
             }
-        } catch (Throwable ignore) {
         }
 
         if (!checkResUpdate(context)) {
