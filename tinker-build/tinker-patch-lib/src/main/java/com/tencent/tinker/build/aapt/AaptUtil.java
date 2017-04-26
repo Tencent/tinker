@@ -304,7 +304,7 @@ public final class AaptUtil {
                 resourceCollector.addResource(RType.STYLEABLE, IdType.INT, String.format("%s_%s", resourceName, attrName), Integer.toString(count++));
 
                 if (!rawAttrName.startsWith("android:")) {
-                    resourceCollector.addIntResourceIfNotPresent(RType.ATTR, attrName);
+                    resourceCollector.addIntResourceIfNotPresent(RType.ATTR, rawAttrName);
                     resourceCollector.addRTypeResourceName(RType.ATTR, rawAttrName, nodeToString(attrNode, true), resourceDirectory);
                 }
             }
