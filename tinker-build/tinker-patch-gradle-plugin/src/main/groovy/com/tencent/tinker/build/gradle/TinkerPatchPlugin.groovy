@@ -57,24 +57,24 @@ class TinkerPatchPlugin implements Plugin<Project> {
             throw new GradleException('generateTinkerApk: Android Application plugin required')
         }
 
+        def android = project.extensions.android
+
+        //open jumboMode
+        android.dexOptions.jumboMode = true
+
+        //close preDexLibraries
+        try {
+            android.dexOptions.preDexLibraries = false
+        } catch (Throwable e) {
+            //no preDexLibraries field, just continue
+        }
+
         project.afterEvaluate {
             def configuration = project.tinkerPatch
 
             if (!configuration.tinkerEnable) {
                 project.logger.error("tinker tasks are disabled.")
                 return
-            }
-
-            def android = project.extensions.android
-
-            //open jumboMode
-            android.dexOptions.jumboMode = true
-
-            //close preDexLibraries
-            try {
-                android.dexOptions.preDexLibraries = false
-            } catch (Throwable e) {
-                //no preDexLibraries field, just continue
             }
 
             project.logger.error("----------------------tinker build warning ------------------------------------")
