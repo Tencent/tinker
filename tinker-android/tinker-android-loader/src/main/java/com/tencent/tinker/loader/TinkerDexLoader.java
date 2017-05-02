@@ -30,11 +30,11 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
+import dalvik.system.PathClassLoader;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import dalvik.system.PathClassLoader;
 
 /**
  * Created by zhangshaowen on 16/3/8.
@@ -45,13 +45,12 @@ public class TinkerDexLoader {
 
     private static final String TAG = "Tinker.TinkerDexLoader";
 
-    private static final String DEX_MEAT_FILE               = ShareConstants.DEX_META_FILE;
-    private static final String DEX_PATH                    = ShareConstants.DEX_PATH;
-    private static final String DEFAULT_DEX_OPTIMIZE_PATH   = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
+    private static final String DEX_MEAT_FILE = ShareConstants.DEX_META_FILE;
+    private static final String DEX_PATH = ShareConstants.DEX_PATH;
+    private static final String DEFAULT_DEX_OPTIMIZE_PATH = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
     private static final String INTERPRET_DEX_OPTIMIZE_PATH = ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH;
 
     private static final ArrayList<ShareDexDiffPatchInfo> dexList = new ArrayList<>();
-
 
 
     private static File testOptDexFile;
@@ -102,7 +101,7 @@ public class TinkerDexLoader {
                     //it is good to delete the mismatch file
                     ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_MD5_MISMATCH);
                     intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISMATCH_DEX_PATH,
-                        file.getAbsolutePath());
+                            file.getAbsolutePath());
                     return false;
                 }
                 Log.i(TAG, "verify dex file:" + file.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
@@ -133,29 +132,29 @@ public class TinkerDexLoader {
             optimizeDir = new File(directory + "/" + INTERPRET_DEX_OPTIMIZE_PATH);
 
             TinkerParallelDexOptimizer.optimizeAll(
-                legalFiles, optimizeDir, true, targetISA,
-                new TinkerParallelDexOptimizer.ResultCallback() {
-                    long start;
+                    legalFiles, optimizeDir, true, targetISA,
+                    new TinkerParallelDexOptimizer.ResultCallback() {
+                        long start;
 
-                    @Override
-                    public void onStart(File dexFile, File optimizedDir) {
-                        start = System.currentTimeMillis();
-                        Log.i(TAG, "start to optimize dex:" + dexFile.getPath());
-                    }
+                        @Override
+                        public void onStart(File dexFile, File optimizedDir) {
+                            start = System.currentTimeMillis();
+                            Log.i(TAG, "start to optimize dex:" + dexFile.getPath());
+                        }
 
-                    @Override
-                    public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
-                        // Do nothing.
-                        Log.i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
-                    }
+                        @Override
+                        public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                            // Do nothing.
+                            Log.i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                        }
 
-                    @Override
-                    public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
-                        parallelOTAResult[0] = false;
-                        parallelOTAThrowable[0] = thr;
-                        Log.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                        @Override
+                        public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                            parallelOTAResult[0] = false;
+                            parallelOTAThrowable[0] = thr;
+                            Log.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                        }
                     }
-                }
             );
 
 
@@ -170,7 +169,7 @@ public class TinkerDexLoader {
             SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles);
         } catch (Throwable e) {
             Log.e(TAG, "install dexes failed");
-//            e.printStackTrace();
+            e.printStackTrace();
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
             return false;
@@ -183,7 +182,6 @@ public class TinkerDexLoader {
      * all the dex files in meta file exist?
      * fast check, only check whether exist
      *
-     * @param directory
      * @return boolean
      */
     public static boolean checkComplete(String directory, ShareSecurityCheck securityCheck, String oatDir, Intent intentResult) {

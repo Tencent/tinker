@@ -61,7 +61,7 @@ public class ChangedClassesDexClassInfoCollector {
     }
 
     public ChangedClassesDexClassInfoCollector setLogger(DexPatcherLogger.IDexPatcherLogger loggerImpl) {
-        this.logger.setLoggerImpl(loggerImpl);
+        logger.setLoggerImpl(loggerImpl);
         return this;
     }
 
@@ -76,6 +76,7 @@ public class ChangedClassesDexClassInfoCollector {
         DexClassesComparator dexClassCmptor = new DexClassesComparator("*");
         dexClassCmptor.setCompareMode(DexClassesComparator.COMPARE_MODE_NORMAL);
         dexClassCmptor.setIgnoredRemovedClassDescPattern(excludedClassPatterns);
+        dexClassCmptor.setLogger(logger.getLoggerImpl());
         dexClassCmptor.startCheck(oldDexGroup, newDexGroup);
 
         // So far we collected infos of all added, changed, and deleted classes.
