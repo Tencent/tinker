@@ -20,7 +20,8 @@ dependencies {
     compile project(':tinker-android:tinker-android-loader')
 }
 
-task buildSdk(type: Copy, dependsOn: [build]) {
+task buildTinkerSdk(type: Copy, dependsOn: [build]) {
+    group = "tinker"
     from("$buildDir/outputs/aar/") {
         include "${project.getName()}-release.aar"
     }

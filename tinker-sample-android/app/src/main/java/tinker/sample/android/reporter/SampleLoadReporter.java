@@ -17,55 +17,30 @@
 package tinker.sample.android.reporter;
 
 import android.content.Context;
-import android.os.Handler;
 import android.os.Looper;
 import android.os.MessageQueue;
-import android.widget.Toast;
 
 import com.tencent.tinker.lib.reporter.DefaultLoadReporter;
-import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.tinker.TinkerInstaller;
+import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 
 import java.io.File;
 
-import tinker.sample.android.util.UpgradePatchRetry;
-import tinker.sample.android.util.Utils;
 
 /**
  * optional, you can just use DefaultLoadReporter
  * Created by zhangshaowen on 16/4/13.
  */
 public class SampleLoadReporter extends DefaultLoadReporter {
-    private Handler handler = new Handler();
+    private final static String TAG = "Tinker.SampleLoadReporter";
 
     public SampleLoadReporter(Context context) {
         super(context);
     }
 
     @Override
-    public void onLoadPatchListenerReceiveFail(final File patchFile, int errorCode, final boolean isUpgrade) {
-        super.onLoadPatchListenerReceiveFail(patchFile, errorCode, isUpgrade);
-        switch (errorCode) {
-            case ShareConstants.ERROR_PATCH_NOTEXIST:
-                Toast.makeText(context, "patch file is not exist", Toast.LENGTH_LONG).show();
-                break;
-            case ShareConstants.ERROR_PATCH_RUNNING:
-                // try later
-                // only retry for upgrade patch
-                if (isUpgrade) {
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            TinkerInstaller.onReceiveUpgradePatch(context, patchFile.getAbsolutePath());
-                        }
-                    }, 60 * 1000);
-                }
-                break;
-            case Utils.ERROR_PATCH_ROM_SPACE:
-                Toast.makeText(context, "rom space is not enough", Toast.LENGTH_LONG).show();
-                break;
-        }
+    public void onLoadPatchListenerReceiveFail(final File patchFile, int errorCode) {
+        super.onLoadPatchListenerReceiveFail(patchFile, errorCode);
         SampleTinkerReport.onTryApplyFail(errorCode);
     }
 
@@ -78,12 +53,16 @@ public class SampleLoadReporter extends DefaultLoadReporter {
                 break;
         }
         Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-            @Override public boolean queueIdle() {
-                UpgradePatchRetry.getInstance(context).onPatchRetryLoad();
+            @Override
+            public boolean queueIdle() {
+                if (UpgradePatchRetry.getInstance(context).onPatchRetryLoad()) {
+                    SampleTinkerReport.onReportRetryPatch();
+                }
                 return false;
             }
         });
     }
+
     @Override
     public void onLoadException(Throwable e, int errorCode) {
         super.onLoadException(e, errorCode);
@@ -96,6 +75,13 @@ public class SampleLoadReporter extends DefaultLoadReporter {
         SampleTinkerReport.onLoadFileMisMatch(fileType);
     }
 
+    /**
+     * try to recover patch oat file
+     *
+     * @param file
+     * @param fileType
+     * @param isDirectory
+     */
     @Override
     public void onLoadFileNotFound(File file, int fileType, boolean isDirectory) {
         super.onLoadFileNotFound(file, fileType, isDirectory);
@@ -112,6 +98,12 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     public void onLoadPatchInfoCorrupted(String oldVersion, String newVersion, File patchInfoFile) {
         super.onLoadPatchInfoCorrupted(oldVersion, newVersion, patchInfoFile);
         SampleTinkerReport.onLoadInfoCorrupted();
+    }
+
+    @Override
+    public void onLoadInterpret(int type, Throwable e) {
+        super.onLoadInterpret(type, e);
+        SampleTinkerReport.onLoadInterpretReport(type, e);
     }
 
     @Override

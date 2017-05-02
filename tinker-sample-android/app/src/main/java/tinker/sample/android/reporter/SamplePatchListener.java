@@ -24,6 +24,7 @@ import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -45,7 +46,6 @@ public class SamplePatchListener extends DefaultPatchListener {
     private static final String TAG = "Tinker.SamplePatchListener";
 
     protected static final long NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN = 60 * 1024 * 1024;
-    protected static final long OLD_PATCH_RESTRICTION_SPACE_SIZE_MIN = 30 * 1024 * 1024;
 
     private final int maxMemory;
 
@@ -64,17 +64,13 @@ public class SamplePatchListener extends DefaultPatchListener {
      * @return
      */
     @Override
-    public int patchCheck(String path, boolean isUpgrade) {
+    public int patchCheck(String path) {
         File patchFile = new File(path);
-        TinkerLog.i(TAG, "receive a patch file: %s, isUpgrade:%b, file size:%d", path, isUpgrade, SharePatchFileUtil.getFileOrDirectorySize(patchFile));
-        int returnCode = super.patchCheck(path, isUpgrade);
+        TinkerLog.i(TAG, "receive a patch file: %s, file size:%d", path, SharePatchFileUtil.getFileOrDirectorySize(patchFile));
+        int returnCode = super.patchCheck(path);
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
-            if (isUpgrade) {
-                returnCode = Utils.checkForPatchRecover(NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
-            } else {
-                returnCode = Utils.checkForPatchRecover(OLD_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
-            }
+            returnCode = Utils.checkForPatchRecover(NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
         }
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
@@ -91,13 +87,18 @@ public class SamplePatchListener extends DefaultPatchListener {
 
                 if (tinker.isTinkerLoaded()) {
                     TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
-                    if (tinkerLoadResult != null) {
+                    if (tinkerLoadResult != null && !tinkerLoadResult.useInterpretMode) {
                         String currentVersion = tinkerLoadResult.currentVersion;
                         if (patchMd5.equals(currentVersion)) {
                             returnCode = Utils.ERROR_PATCH_ALREADY_APPLY;
                         }
                     }
                 }
+            }
+            //check whether retry so many times
+            if (returnCode == ShareConstants.ERROR_PATCH_OK) {
+                returnCode = UpgradePatchRetry.getInstance(context).onPatchListenerCheck(patchMd5)
+                    ? ShareConstants.ERROR_PATCH_OK : Utils.ERROR_PATCH_RETRY_COUNT_LIMIT;
             }
         }
         // Warning, it is just a sample case, you don't need to copy all of these
@@ -116,7 +117,7 @@ public class SamplePatchListener extends DefaultPatchListener {
             }
         }
 
-        SampleTinkerReport.onTryApply(isUpgrade, returnCode == ShareConstants.ERROR_PATCH_OK);
+        SampleTinkerReport.onTryApply(returnCode == ShareConstants.ERROR_PATCH_OK);
         return returnCode;
     }
 }

@@ -143,7 +143,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Created by tangyinsheng on 2016/10/9.
+ * Created by tangyinsheng on 2017/02/16.
  */
 public class BuilderMutableMethodImplementation implements MethodImplementation {
     private final DexBuilder dexBuilder;
@@ -219,8 +219,12 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
         }
     }
 
-    public BuilderMutableMethodImplementation(int registerCount) {
-        this.dexBuilder = null;
+    private interface Task {
+        void perform();
+    }
+
+    public BuilderMutableMethodImplementation(DexBuilder dexBuilder, int registerCount) {
+        this.dexBuilder = dexBuilder;
         this.registerCount = registerCount;
     }
 
@@ -281,7 +285,7 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                         assert input != null;
                         if (fixInstructions) {
                             throw new IllegalStateException("This iterator was invalidated by a change to"
-                                + " this MutableMethodImplementation.");
+                                    + " this MutableMethodImplementation.");
                         }
                         return input.getDebugItems();
                     }
@@ -470,7 +474,7 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                         BuilderInstruction targetInstruction = targetLocation.instruction;
                         if (targetInstruction == null) {
                             throw new IllegalStateException(String.format("Switch instruction at address/index "
-                                + "0x%x/%d points to the end of the method.", location.codeAddress, location.index));
+                                    + "0x%x/%d points to the end of the method.", location.codeAddress, location.index));
                         }
 
                         if (targetInstruction.getOpcode() == Opcode.NOP) {
@@ -478,21 +482,21 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                         }
                         if (targetInstruction == null || !(targetInstruction instanceof BuilderSwitchPayload)) {
                             throw new IllegalStateException(String.format("Switch instruction at address/index "
-                                + "0x%x/%d does not refer to a payload instruction.",
+                                            + "0x%x/%d does not refer to a payload instruction.",
                                     location.codeAddress, location.index));
                         }
                         if ((instruction.opcode == Opcode.PACKED_SWITCH
-                            && targetInstruction.getOpcode() != Opcode.PACKED_SWITCH_PAYLOAD)
-                            || (instruction.opcode == Opcode.SPARSE_SWITCH
-                            && targetInstruction.getOpcode() != Opcode.SPARSE_SWITCH_PAYLOAD)) {
+                                && targetInstruction.getOpcode() != Opcode.PACKED_SWITCH_PAYLOAD)
+                                || (instruction.opcode == Opcode.SPARSE_SWITCH
+                                        && targetInstruction.getOpcode() != Opcode.SPARSE_SWITCH_PAYLOAD)) {
                             throw new IllegalStateException(String.format("Switch instruction at address/index "
-                                + "0x%x/%d refers to the wrong type of payload instruction.",
+                                            + "0x%x/%d refers to the wrong type of payload instruction.",
                                     location.codeAddress, location.index));
                         }
 
                         if (!payloadLocations.add(targetLocation)) {
                             throw new IllegalStateException("Multiple switch instructions refer to the same payload. "
-                                + "This is not currently supported. Please file a bug :)");
+                                    + "This is not currently supported. Please file a bug :)");
                         }
 
                         ((BuilderSwitchPayload) targetInstruction).referrer = location;
@@ -632,6 +636,11 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
     private Label newLabel(@Nonnull int[] codeAddressToIndex, int codeAddress) {
         MethodLocation referent = instructionList.get(mapCodeAddressToIndex(codeAddressToIndex, codeAddress));
         return referent.addNewLabel();
+    }
+
+    private static class SwitchPayloadReferenceLabel extends Label {
+        @Nonnull
+        public MethodLocation switchLocation;
     }
 
     @Nonnull
@@ -1008,7 +1017,7 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                 if (label instanceof SwitchPayloadReferenceLabel) {
                     if (switchLocation != null) {
                         throw new IllegalStateException("Multiple switch instructions refer to the same payload. "
-                            + "This is not currently supported. Please file a bug :)");
+                                + "This is not currently supported. Please file a bug :)");
                     }
                     switchLocation = ((SwitchPayloadReferenceLabel) label).switchLocation;
                 }
@@ -1129,14 +1138,4 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                 throw new ExceptionWithContext("Invalid debug item type: " + debugItem.getDebugItemType());
         }
     }
-
-    private interface Task {
-        void perform();
-    }
-
-    private static class SwitchPayloadReferenceLabel extends Label {
-        @Nonnull
-        public MethodLocation switchLocation;
-    }
 }
-

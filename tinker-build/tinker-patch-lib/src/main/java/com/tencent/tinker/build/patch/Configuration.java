@@ -59,13 +59,14 @@ public class Configuration {
     protected static final String ATTR_VALUE = "value";
     protected static final String ATTR_NAME  = "name";
 
-    protected static final String ATTR_IGNORE_WARNING    = "ignoreWarning";
-    protected static final String ATTR_USE_SIGN          = "useSign";
-    protected static final String ATTR_SEVEN_ZIP_PATH    = "sevenZipPath";
-    protected static final String ATTR_DEX_MODE          = "dexMode";
-    protected static final String ATTR_PATTERN           = "pattern";
-    protected static final String ATTR_RES_IGNORE_CHANGE = "ignoreChange";
-    protected static final String ATTR_RES_LARGE_MOD     = "largeModSize";
+    protected static final String ATTR_IGNORE_WARNING   = "ignoreWarning";
+    protected static final String ATTR_IS_PROTECTED_APP = "isProtectedApp";
+    protected static final String ATTR_USE_SIGN         = "useSign";
+    protected static final String ATTR_SEVEN_ZIP_PATH   = "sevenZipPath";
+    protected static final String ATTR_DEX_MODE         = "dexMode";
+    protected static final String ATTR_PATTERN          = "pattern";
+    protected static final String ATTR_IGNORE_CHANGE    = "ignoreChange";
+    protected static final String ATTR_RES_LARGE_MOD    = "largeModSize";
 
     protected static final String ATTR_LOADER       = "loader";
     protected static final String ATTR_CONFIG_FIELD = "configField";
@@ -77,13 +78,14 @@ public class Configuration {
     /**
      * base config data
      */
-    public String           mOldApkPath;
-    public String           mNewApkPath;
-    public String           mOutFolder;
-    public File             mOldApkFile;
-    public File             mNewApkFile;
-    public boolean          mIgnoreWarning;
-    public boolean          mUsePreGeneratedPatchDex;
+    public String  mOldApkPath;
+    public String  mNewApkPath;
+    public String  mOutFolder;
+    public File    mOldApkFile;
+    public File    mNewApkFile;
+    public boolean mIgnoreWarning;
+    public boolean mIsProtectedApp;
+
     /**
      * lib config
      */
@@ -93,6 +95,8 @@ public class Configuration {
      */
     public HashSet<Pattern> mDexFilePattern;
     public HashSet<String>  mDexLoaderPattern;
+    public HashSet<String>  mDexIgnoreWarningLoaderPattern;
+
     public boolean          mDexRaw;
     /**
      * resource config
@@ -142,6 +146,7 @@ public class Configuration {
         mSoFilePattern = new HashSet<>();
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
+        mDexIgnoreWarningLoaderPattern = new HashSet<>();
 
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
@@ -171,6 +176,7 @@ public class Configuration {
         mSoFilePattern = new HashSet<>();
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
+        mDexIgnoreWarningLoaderPattern = new HashSet<>();
 
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
@@ -199,7 +205,7 @@ public class Configuration {
         mUseApplyResource = param.useApplyResource;
 
         mDexLoaderPattern.addAll(param.dexLoaderPattern);
-
+        mDexIgnoreWarningLoaderPattern.addAll(param.dexIgnoreWarningLoaderPattern);
         //can be only raw or jar
         if (param.dexMode.equals("raw")) {
             mDexRaw = true;
@@ -214,7 +220,8 @@ public class Configuration {
         mOutFolder = param.outFolder;
 
         mIgnoreWarning = param.ignoreWarning;
-        mUsePreGeneratedPatchDex = param.usePreGeneratedPatchDex;
+
+        mIsProtectedApp = param.isProtectedApp;
 
         mSevenZipPath = param.sevenZipPath;
         mPackageFields = param.configFields;
@@ -237,7 +244,7 @@ public class Configuration {
         sb.append("newApk:" + mNewApkPath + "\n");
         sb.append("outputFolder:" + mOutFolder + "\n");
         sb.append("isIgnoreWarning:" + mIgnoreWarning + "\n");
-        sb.append("isInsertStubMode:" + mUsePreGeneratedPatchDex + "\n");
+        sb.append("isProtectedApp:" + mIsProtectedApp + "\n");
         sb.append("7-ZipPath:" + mSevenZipPath + "\n");
         sb.append("useSignAPk:" + mUseSignAPk + "\n");
 
@@ -258,6 +265,9 @@ public class Configuration {
         }
         for (String name : mDexLoaderPattern) {
             sb.append("dex loader:" + name + "\n");
+        }
+        for (String name : mDexIgnoreWarningLoaderPattern) {
+            sb.append("dex ignore warning loader:" + name.toString() + "\n");
         }
 
         sb.append("lib configs: \n");
@@ -303,7 +313,8 @@ public class Configuration {
 
         String tempNewName = newApkName.substring(0, newApkName.indexOf(TypedValue.FILE_APK));
 
-        if (tempNewName.equals(tempOldName)) {
+        // Bugfix: For windows user, filename is case-insensitive.
+        if (tempNewName.equalsIgnoreCase(tempOldName)) {
             tempOldName += "-old";
             tempNewName += "-new";
         }
@@ -410,6 +421,8 @@ public class Configuration {
                     }
                     if (tagName.equals(ATTR_IGNORE_WARNING)) {
                         mIgnoreWarning = value.equals("true");
+                    } else if (tagName.equals(ATTR_IS_PROTECTED_APP)) {
+                        mIsProtectedApp = value.equals("true");
                     } else if (tagName.equals(ATTR_USE_SIGN)) {
                         mUseSignAPk = value.equals("true");
                     } else if (tagName.equals(ATTR_SEVEN_ZIP_PATH)) {
@@ -490,6 +503,8 @@ public class Configuration {
                         addToPatterns(value, mDexFilePattern);
                     } else if (tagName.equals(ATTR_LOADER)) {
                         mDexLoaderPattern.add(value);
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
+                        mDexIgnoreWarningLoaderPattern.add(value);
                     } else {
                         System.err.println("unknown dex tag " + tagName);
                     }
@@ -531,7 +546,7 @@ public class Configuration {
                     if (tagName.equals(ATTR_PATTERN)) {
                         mResRawPattern.add(value);
                         addToPatterns(value, mResFilePattern);
-                    } else if (tagName.equals(ATTR_RES_IGNORE_CHANGE)) {
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
                         addToPatterns(value, mResIgnoreChangePattern);
                     } else if (tagName.equals(ATTR_RES_LARGE_MOD)) {
                         mLargeModSize = Integer.valueOf(value);
@@ -577,4 +592,3 @@ public class Configuration {
     }
 
 }
-

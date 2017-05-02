@@ -12,7 +12,8 @@ dependencies {
     compile project(':third-party:bsdiff-util')
 }
 
-task buildSdk(type: Copy, dependsOn: [build]) {
+task buildTinkerSdk(type: Copy, dependsOn: [build]) {
+    group = "tinker"
     from('build/libs') {
         include '*.jar'
         exclude '*javadoc.jar'

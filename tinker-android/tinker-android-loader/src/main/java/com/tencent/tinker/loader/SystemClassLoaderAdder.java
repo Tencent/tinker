@@ -43,16 +43,15 @@ import dalvik.system.PathClassLoader;
  * Created by zhangshaowen on 16/3/18.
  */
 public class SystemClassLoaderAdder {
+    public static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
+    public static final String CHECK_DEX_FIELD = "isPatch";
     private static final String TAG = "Tinker.ClassLoaderAdder";
-
-    private static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
-    private static final String CHECK_DEX_FIELD = "isPatch";
-
     private static int sPatchDexCount = 0;
 
     @SuppressLint("NewApi")
     public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files)
         throws Throwable {
+        Log.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
 
         if (!files.isEmpty()) {
             ClassLoader classLoader = loader;
@@ -72,6 +71,7 @@ public class SystemClassLoaderAdder {
             }
             //install done
             sPatchDexCount = files.size();
+            Log.i(TAG, "after loaded classloader: " + classLoader + ", dex size:" + sPatchDexCount);
 
             if (!checkDexInstall(classLoader)) {
                 //reset patch dex
@@ -109,7 +109,7 @@ public class SystemClassLoaderAdder {
     }
 
     /**
-     * Installer for platform versions 19.
+     * Installer for platform versions 23.
      */
     private static final class V23 {
 

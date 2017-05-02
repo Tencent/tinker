@@ -30,6 +30,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.tencent.tinker.lib.library.TinkerLoadLibrary;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -64,9 +65,16 @@ public class MainActivity extends AppCompatActivity {
         loadLibraryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //for lib/armeabi, just use TinkerInstaller.loadLibrary
-                TinkerInstaller.loadArmLibrary(getApplicationContext(), "stlport_shared");
+                // #method 1, hack classloader library path
+                TinkerLoadLibrary.installNavitveLibraryABI(getApplicationContext(), "armeabi");
+                System.loadLibrary("stlport_shared");
+
+                // #method 2, for lib/armeabi, just use TinkerInstaller.loadLibrary
+//                TinkerLoadLibrary.loadArmLibrary(getApplicationContext(), "stlport_shared");
+
+                // #method 3, load tinker patch library directly
 //                TinkerInstaller.loadLibraryFromTinker(getApplicationContext(), "assets/x86", "stlport_shared");
+
             }
         });
 
@@ -84,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         killSelfButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ShareTinkerInternals.killAllOtherProcess(getApplicationContext());
                 android.os.Process.killProcess(android.os.Process.myPid());
             }
         });

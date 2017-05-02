@@ -51,6 +51,8 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
     public static final int DEFAULT_BUFFER_SIZE = 512;
 
     private static final short[] EMPTY_SHORT_ARRAY = new short[0];
+    private static final Code.Try[] EMPTY_TRY_ARRAY = new Code.Try[0];
+    private static final Code.CatchHandler[] EMPTY_CATCHHANDLER_ARRAY = new Code.CatchHandler[0];
 
     private ByteBuffer data;
     private int dataBound;
@@ -235,8 +237,8 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         Code.Try[] tries;
         Code.CatchHandler[] catchHandlers;
         if (triesSize > 0) {
-            if (instructions.length % 2 == 1) {
-                readShort(); // padding
+            if ((instructions.length & 1) == 1) {
+                skip(2); // padding
             }
 
             /*
@@ -252,8 +254,8 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
             tries = readTries(triesSize, catchHandlers);
             data.position(posAfterCatchHandlers);
         } else {
-            tries = new Code.Try[0];
-            catchHandlers = new Code.CatchHandler[0];
+            tries = EMPTY_TRY_ARRAY;
+            catchHandlers = EMPTY_CATCHHANDLER_ARRAY;
         }
         return new Code(off, registersSize, insSize, outsSize, debugInfoOffset, instructions,
                 tries, catchHandlers);

@@ -24,9 +24,12 @@ import com.tencent.tinker.commons.ziputil.TinkerZipFile;
 import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -125,6 +128,9 @@ public class Utils {
                     );
                 }
                 String name = zipEntry.getName();
+                if (name.contains("../")) {
+                    continue;
+                }
                 if (Utils.checkFileInPattern(config.mResFilePattern, name)) {
                     //won't contain in add set.
                     if (!deletedSet.contains(name)
@@ -210,4 +216,33 @@ public class Utils {
         }
         return true;
     }
+
+    public static void closeQuietly(Closeable closeable) {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void exec(ArrayList<String> args, File path) throws RuntimeException, IOException, InterruptedException {
+        ProcessBuilder ps = new ProcessBuilder(args);
+        ps.redirectErrorStream(true);
+        if (path != null) {
+            ps.directory(path);
+        }
+        Process pr = ps.start();
+        BufferedReader ins = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+        String line;
+        while ((line = ins.readLine()) != null) {
+            System.out.println(line);
+        }
+        if (pr.waitFor() != 0) {
+            throw new RuntimeException("exec cmd failed! args: " + args);
+        }
+        ins.close();
+    }
+
 }

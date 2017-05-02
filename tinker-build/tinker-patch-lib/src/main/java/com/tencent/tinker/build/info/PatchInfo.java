@@ -23,13 +23,10 @@ import com.tencent.tinker.build.patch.Configuration;
  */
 public class PatchInfo {
 
-    private final Configuration config;
-
     private final PatchInfoGen infoGen;
 
 
     public PatchInfo(Configuration config) {
-        this.config = config;
         infoGen = new PatchInfoGen(config);
     }
 

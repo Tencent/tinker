@@ -36,9 +36,8 @@ public interface LoadReporter {
      *                  {@code ShareConstants.ERROR_PATCH_NOTEXIST}            the file of tempPatchPatch file is not exist
      *                  {@code ShareConstants.ERROR_PATCH_RUNNING}             the recover service is running now, try later
      *                  {@code ShareConstants.ERROR_PATCH_INSERVICE}           the recover service can't send patch request
-     * @param isUpgrade whether is a new patch, or just recover the old patch
      */
-    void onLoadPatchListenerReceiveFail(File patchFile, int errorCode, boolean isUpgrade);
+    void onLoadPatchListenerReceiveFail(File patchFile, int errorCode);
 
     /**
      * we can only handle patch version change in the main process,
@@ -53,6 +52,15 @@ public interface LoadReporter {
      */
     void onLoadPatchVersionChanged(String oldVersion, String newVersion, File patchDirectoryFile, String currentPatchName);
 
+    /**
+     * After system ota, we will try to load dex with interpret mode
+     * @param type type define as following
+     *             {@code ShareConstants.TYPE_INTERPRET_OK}                                    it is ok, using interpret mode
+     *             {@code ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR}             get instruction set from exist oat file fail
+     *             {@code ShareConstants.TYPE_INTERPRET_COMMAND_ERROR}                         use command line to generate interpret oat file fail
+     * @param e
+     */
+    void onLoadInterpret(int type, Throwable e);
     /**
      * the load patch process is end, we can see the cost times and the return code
      * return codes are define in {@link com.tencent.tinker.loader.shareutil.ShareConstants}

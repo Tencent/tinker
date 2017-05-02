@@ -70,7 +70,7 @@ public class AaptResourceCollector {
                     originalResourceMap.put(rDotTxtEntry, rDotTxtEntry);
                     ResourceIdEnumerator resourceIdEnumerator = null;
                     if (!rDotTxtEntry.idType.equals(IdType.INT_ARRAY)) {
-                        int resourceId = Integer.decode(rDotTxtEntry.idValue).intValue();
+                        int resourceId = Integer.decode(rDotTxtEntry.idValue.trim()).intValue();
                         int typeId = ((resourceId & 0x00FF0000) / 0x00010000);
                         if (typeId >= currentTypeId) {
                             currentTypeId = typeId + 1;

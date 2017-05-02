@@ -235,8 +235,6 @@ public class ResDiffDecoder extends BaseDecoder {
             throw new TinkerPatchException("resource must contain AndroidManifest.xml pattern");
         }
 
-        addAssetsFileForTestResource();
-
         //check gradle build
         if (config.mUsingGradle) {
             final boolean ignoreWarning = config.mIgnoreWarning;
@@ -274,11 +272,14 @@ public class ResDiffDecoder extends BaseDecoder {
         removeIgnoreChangeFile(addedSet);
         removeIgnoreChangeFile(largeModifiedSet);
 
+        // last add test res in assets for user cannot ignore it;
+        addAssetsFileForTestResource();
+
         File tempResZip = new File(config.mOutFolder + File.separator + TEMP_RES_ZIP);
         final File tempResFiles = config.mTempResultDir;
 
         //gen zip resources_out.zip
-        FileOperation.zipInputDir(tempResFiles, tempResZip);
+        FileOperation.zipInputDir(tempResFiles, tempResZip, null);
         File extractToZip = new File(config.mOutFolder + File.separator + TypedValue.RES_OUT);
 
         String resZipMd5 = Utils.genResOutputFile(extractToZip, tempResZip, config,
@@ -421,7 +422,7 @@ public class ResDiffDecoder extends BaseDecoder {
             if (Utils.checkFileInPattern(config.mResFilePattern, patternKey)) {
                 //not contain in new path, is deleted
                 if (!newPath.toFile().exists()) {
-                    deletedFiles.add(relativePath.toString());
+                    deletedFiles.add(patternKey);
                     writeResLog(newPath.toFile(), file.toFile(), TypedValue.DEL);
                 }
                 return FileVisitResult.CONTINUE;

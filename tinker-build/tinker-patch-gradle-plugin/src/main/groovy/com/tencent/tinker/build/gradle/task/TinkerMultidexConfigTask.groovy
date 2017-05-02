@@ -16,11 +16,9 @@
 
 package com.tencent.tinker.build.gradle.task
 
-import com.tencent.tinker.build.auxiliaryclass.AuxiliaryClassInjector
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
-
 
 /**
  * The configuration properties.
@@ -31,15 +29,17 @@ public class TinkerMultidexConfigTask extends DefaultTask {
     static final String MULTIDEX_CONFIG_PATH = TinkerPatchPlugin.TINKER_INTERMEDIATES + "tinker_multidexkeep.pro"
     static final String MULTIDEX_CONFIG_SETTINGS =
             "-keep public class * implements com.tencent.tinker.loader.app.ApplicationLifeCycle {\n" +
-                    "    *;\n" +
+                    "    <init>();\n" +
+                    "    void onBaseContextAttached(android.content.Context);\n" +
                     "}\n" +
                     "\n" +
                     "-keep public class * extends com.tencent.tinker.loader.TinkerLoader {\n" +
-                    "    *;\n" +
+                    "    <init>();\n" +
                     "}\n" +
                     "\n" +
-                    "-keep public class * extends com.tencent.tinker.loader.app.TinkerApplication {\n" +
-                    "    *;\n" +
+                    "-keep public class * extends android.app.Application {\n" +
+                    "     <init>();\n" +
+                    "     void attachBaseContext(android.content.Context);\n" +
                     "}\n"
 
 
@@ -51,20 +51,27 @@ public class TinkerMultidexConfigTask extends DefaultTask {
 
     @TaskAction
     def updateTinkerProguardConfig() {
-        def file = project.file(MULTIDEX_CONFIG_PATH)
+        File file = project.file(MULTIDEX_CONFIG_PATH)
         project.logger.error("try update tinker multidex keep proguard file with ${file}")
 
         // Create the directory if it doesn't exist already
         file.getParentFile().mkdirs()
 
-        // Write our recommended proguard settings to this file
-        FileWriter fr = new FileWriter(file.path)
+        StringBuffer lines = new StringBuffer()
+        lines.append("\n")
+             .append("#tinker multidex keep patterns:\n")
+             .append(MULTIDEX_CONFIG_SETTINGS)
+             .append("\n")
 
-        fr.write(MULTIDEX_CONFIG_SETTINGS)
-        fr.write("\n")
+        // This class must be placed in main dex so that we can use it to check if new pathList
+        // in AndroidNClassLoader is fine when under the protected app (whose main dex is always encrypted).
+        lines.append("-keep class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {\n" +
+                "    <init>();\n" +
+                "}\n")
+             .append("\n")
 
-        //unlike proguard, if loader endwith *, we must change to **
-        fr.write("#your dex.loader patterns here\n")
+        lines.append("#your dex.loader patterns here\n")
+
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
         for (String pattern : loader) {
             if (pattern.endsWith("*")) {
@@ -72,12 +79,46 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                     pattern += "*"
                 }
             }
-            fr.write("-keep class " + pattern + " {\n" +
-                    "    *;\n" +
+            lines.append("-keep class " + pattern + " {\n" +
+                    "    <init>();\n" +
                     "}\n")
-            fr.write("\n")
+                    .append("\n")
         }
-        fr.close()
+
+
+
+        // Write our recommended proguard settings to this file
+        FileWriter fr = new FileWriter(file.path)
+        try {
+            for (String line : lines) {
+                fr.write(line)
+            }
+        } finally {
+            fr.close()
+        }
+
+        File multiDexKeepProguard = null
+        try {
+            multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
+        } catch (Throwable ignore) {
+            try {
+                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+            } catch (Throwable e) {
+                project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+            }
+        }
+        if (multiDexKeepProguard == null) {
+            project.logger.error("auto add multidex keep pattern fail, you can only copy ${file} to your own multiDex keep proguard file yourself.")
+            return
+        }
+        FileWriter manifestWriter = new FileWriter(multiDexKeepProguard, true)
+        try {
+            for (String line : lines) {
+                manifestWriter.write(line)
+            }
+        } finally {
+            manifestWriter.close()
+        }
     }
 
 

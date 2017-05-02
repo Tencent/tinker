@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.loader.shareutil;
 
+import android.content.Context;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -152,6 +154,32 @@ public class ShareReflectUtil {
         System.arraycopy(original, reduceSize, combined, 0, finalLength);
 
         jlrField.set(instance, combined);
+    }
+
+    public static Object getActivityThread(Context context,
+                                            Class<?> activityThread) {
+        try {
+            if (activityThread == null) {
+                activityThread = Class.forName("android.app.ActivityThread");
+            }
+            Method m = activityThread.getMethod("currentActivityThread");
+            m.setAccessible(true);
+            Object currentActivityThread = m.invoke(null);
+            if (currentActivityThread == null && context != null) {
+                // In older versions of Android (prior to frameworks/base 66a017b63461a22842)
+                // the currentActivityThread was built on thread locals, so we'll need to try
+                // even harder
+                Field mLoadedApk = context.getClass().getField("mLoadedApk");
+                mLoadedApk.setAccessible(true);
+                Object apk = mLoadedApk.get(context);
+                Field mActivityThreadField = apk.getClass().getDeclaredField("mActivityThread");
+                mActivityThreadField.setAccessible(true);
+                currentActivityThread = mActivityThreadField.get(apk);
+            }
+            return currentActivityThread;
+        } catch (Throwable ignore) {
+            return null;
+        }
     }
 
 }

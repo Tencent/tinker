@@ -102,7 +102,7 @@ public class ShareSecurityCheck {
     }
 
     public boolean verifyPatchMetaSignature(File path) {
-        if (path == null || !path.isFile() || !path.exists() || path.length() == 0) {
+        if (!SharePatchFileUtil.isLegalFile(path)) {
             return false;
         }
         JarFile jarFile = null;
