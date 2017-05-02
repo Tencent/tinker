@@ -71,6 +71,7 @@ public class ChangedClassesDexClassInfoCollector {
     }
 
     public Set<DexClassInfo> doCollect(DexGroup oldDexGroup, DexGroup newDexGroup) {
+        final Set<String> classDescsInResult = new HashSet<>();
         final Set<DexClassInfo> result = new HashSet<>();
 
         DexClassesComparator dexClassCmptor = new DexClassesComparator("*");
@@ -91,6 +92,10 @@ public class ChangedClassesDexClassInfoCollector {
             result.add(newClassInfo);
         }
 
+        for (DexClassInfo classInfo : result) {
+            classDescsInResult.add(classInfo.classDesc);
+        }
+
         if (includeRefererToRefererAffectedClasses) {
             // Then we also need to add classes who refer to classes with referrer
             // affected changes to the result. (referrer affected change means the changes
@@ -102,7 +107,8 @@ public class ChangedClassesDexClassInfoCollector {
             Set<DexClassInfo> oldClassInfos = oldDexGroup.getClassInfosInDexesWithDuplicateCheck();
 
             for (DexClassInfo oldClassInfo : oldClassInfos) {
-                if (isClassReferToAnyClasses(oldClassInfo, referrerAffectedChangedClassDescs)) {
+                if (!classDescsInResult.contains(oldClassInfo.classDesc)
+                        && isClassReferToAnyClasses(oldClassInfo, referrerAffectedChangedClassDescs)) {
                     logger.i(TAG, "Add class %s in old dex to changed classes dex since it is affected by modified referee.", oldClassInfo.classDesc);
                     result.add(oldClassInfo);
                 }
