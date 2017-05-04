@@ -59,6 +59,11 @@ public class TinkerBuildConfigExtension {
     boolean usingResourceMapping
 
     /**
+     * Specify a folder for the outputs where place the tinker patch results.
+     */
+    String outputFolder
+
+    /**
      * if keepDexApply is true,class in which dex refer to the old apk.
      * open this can reduce the dex diff file size.
      */
@@ -72,6 +77,7 @@ public class TinkerBuildConfigExtension {
         usingResourceMapping = false
         keepDexApply = false
         isProtectedApp = false
+        outputFolder = ""
     }
 
     void checkParameter() {
@@ -88,6 +94,7 @@ public class TinkerBuildConfigExtension {
            | isProtectedApp = ${isProtectedApp}
            | keepDexApply = ${keepDexApply}
            | tinkerId = ${tinkerId}
+           | outputFolder = ${outputFolder}
         """.stripMargin()
     }
 }

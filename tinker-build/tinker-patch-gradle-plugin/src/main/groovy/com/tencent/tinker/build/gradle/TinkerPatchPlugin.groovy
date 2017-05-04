@@ -133,7 +133,14 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 variant.outputs.each { output ->
                     tinkerPatchBuildTask.buildApkPath = output.outputFile
                     File parentFile = output.outputFile
-                    tinkerPatchBuildTask.outputFolder = "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/" + TypedValue.PATH_DEFAULT_OUTPUT + "/" + variant.dirName
+                    String outputFolder = "${configuration.buildConfig.outputFolder}";
+                    if (outputFolder != null && outputFolder.length() != 0) {
+                        outputFolder = "${outputFolder}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+                    } else {
+                        outputFolder =
+                                "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+                    }
+                    tinkerPatchBuildTask.outputFolder = outputFolder
                 }
 
                 // Create a task to add a build TINKER_ID to AndroidManifest.xml

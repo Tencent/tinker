@@ -146,6 +146,8 @@ ext {
 
     //only use for build all flavor, if not, just ignore this field
     tinkerBuildFlavorDirectory = "${bakPath}/app-1018-17-32-47"
+
+    tinkerOutputFolder = "${buildDir}/XXX"
 }
 
 
@@ -163,6 +165,10 @@ def getApplyResourceMappingPath() {
 
 def getTinkerIdValue() {
     return hasProperty("TINKER_ID") ? TINKER_ID : gitSha()
+}
+
+def getOutputFolderPath(){
+    return hasProperty("OUTPUT_FOLDER")? OUTPUT_FOLDER : ext.tinkerOutputFolder
 }
 
 def buildWithTinker() {
@@ -255,6 +261,12 @@ if (buildWithTinker()) {
              * dex including all changed classes instead of any dexdiff patch-info files.
              */
             isProtectedApp = false
+
+            /**
+             * optional, default 'null'
+             * Specify the output folder where place the tinker patch result.
+             */
+            outputFolder = getOutputFolderPath()
         }
 
         dex {
