@@ -147,7 +147,8 @@ ext {
     //only use for build all flavor, if not, just ignore this field
     tinkerBuildFlavorDirectory = "${bakPath}/app-1018-17-32-47"
 
-    tinkerOutputFolder = "${buildDir}/XXX"
+    //the output folder of tinker patch result, leave it null if using the default place. Example: tinkerOutputFolder="${buildDir}/outputs"
+    tinkerOutputFolder = ""
 }
 
 
