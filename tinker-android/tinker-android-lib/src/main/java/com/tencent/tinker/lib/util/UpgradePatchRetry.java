@@ -45,7 +45,7 @@ public class UpgradePatchRetry {
 
     private static final String RETRY_FILE_MD5_PROPERTY = "md5";
     private static final String RETRY_COUNT_PROPERTY    = "times";
-    private static final int    RETRY_MAX_COUNT         = 4;
+    private static final int    RETRY_MAX_COUNT         = 3;
     private static UpgradePatchRetry sInstance;
     private boolean isRetryEnable = true;
     private File    retryInfoFile = null;
