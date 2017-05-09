@@ -25,15 +25,15 @@ import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
+import dalvik.system.DexFile;
+import dalvik.system.PathClassLoader;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-
-import dalvik.system.DexFile;
-import dalvik.system.PathClassLoader;
 
 /**
  * Created by zhangshaowen on 16/7/24.
@@ -121,7 +121,6 @@ class AndroidNClassLoader extends PathClassLoader {
     // then set its fileName, cookie, internalCookie field to the value
     // comes from original DexFile object so that the encrypted dex would be taking effect.
     private static void fixDexElementsForProtectedApp(Application application, Object[] newDexElements) throws Exception {
-        Field zipField = null;
         Field dexFileField = null;
         final Field mFileNameField = ShareReflectUtil.findField(DexFile.class, "mFileName");
         final Field mCookieField = ShareReflectUtil.findField(DexFile.class, "mCookie");
@@ -131,8 +130,7 @@ class AndroidNClassLoader extends PathClassLoader {
         for (int i = 0; i < newDexElements.length - 1; ++i) {
             final Object newElement = newDexElements[i];
 
-            if (zipField == null && dexFileField == null) {
-                zipField = ShareReflectUtil.findField(newElement, "zip");
+            if (dexFileField == null) {
                 dexFileField = ShareReflectUtil.findField(newElement, "dexFile");
             }
 
@@ -147,14 +145,6 @@ class AndroidNClassLoader extends PathClassLoader {
             mInternalCookieField.set(dupOrigDexFile, origInternalCookie);
 
             dexFileField.set(newElement, dupOrigDexFile);
-
-            // Just for better looking when dump new classloader.
-            // Avoid such output like this: DexPathList{zip file: /xx/yy/zz/uu.odex}
-            final File newZip = (File) zipField.get(newElement);
-            final String newZipPath = (newZip != null ? newZip.getAbsolutePath() : null);
-            if (newZipPath != null && !newZipPath.endsWith(".zip") && !newZipPath.endsWith(".jar") && !newZipPath.endsWith(".apk")) {
-                zipField.set(newElement, null);
-            }
         }
     }
 
