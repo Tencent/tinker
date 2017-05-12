@@ -47,6 +47,7 @@ class AndroidNClassLoader extends PathClassLoader {
     private static ArrayList<DexFile> oldDexFiles = new ArrayList<>();
     private final PathClassLoader originClassLoader;
     private String applicationClassName;
+    private Method findLoadedClassMethod = null;
 
     private AndroidNClassLoader(String dexPath, PathClassLoader parent, Application application) {
         super(dexPath, parent.getParent());
@@ -170,12 +171,16 @@ class AndroidNClassLoader extends PathClassLoader {
 
     public Class<?> findClass(String name) throws ClassNotFoundException {
         // loader class use default pathClassloader to load
-        if ((name != null
-                && name.startsWith("com.tencent.tinker.loader.")
-                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)
-                && !name.equals(CHECK_CLASSLOADER_CLASS))
-                || (applicationClassName != null && TextUtils.equals(applicationClassName, name))) {
-            return originClassLoader.loadClass(name);
+        try {
+            if (findLoadedClassMethod == null) {
+                findLoadedClassMethod = ShareReflectUtil.findMethod(originClassLoader, "findLoadedClass", String.class);
+            }
+            Class<?> loadedClass = (Class<?>) findLoadedClassMethod.invoke(originClassLoader, name);
+            if (loadedClass != null) {
+                return loadedClass;
+            }
+        } catch (Exception ignore) {
+
         }
         return super.findClass(name);
     }
