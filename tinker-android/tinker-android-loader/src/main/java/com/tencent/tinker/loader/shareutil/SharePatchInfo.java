@@ -37,7 +37,7 @@ public class SharePatchInfo {
     public static final String FINGER_PRINT         = "print";
     public static final String OAT_DIR              = "dir";
     public static final String DEFAULT_DIR   = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
-    private static final String TAG = "PatchInfo";
+    private static final String TAG = "Tinker.PatchInfo";
     public String oldVersion;
     public String newVersion;
     public String fingerPrint;
@@ -73,7 +73,7 @@ public class SharePatchInfo {
                     fileLock.close();
                 }
             } catch (IOException e) {
-                Log.i(TAG, "releaseInfoLock error", e);
+                Log.w(TAG, "releaseInfoLock error", e);
             }
         }
 
@@ -129,7 +129,7 @@ public class SharePatchInfo {
                 oatDIr = properties.getProperty(OAT_DIR);
             } catch (IOException e) {
 //                e.printStackTrace();
-                Log.e(TAG, "read property failed, e:" + e);
+                Log.w(TAG, "read property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(inputStream);
             }
@@ -199,7 +199,8 @@ public class SharePatchInfo {
                 String comment = "from old version:" + info.oldVersion + " to new version:" + info.newVersion;
                 newProperties.store(outputStream, comment);
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
+                Log.w(TAG, "write property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(outputStream);
             }
