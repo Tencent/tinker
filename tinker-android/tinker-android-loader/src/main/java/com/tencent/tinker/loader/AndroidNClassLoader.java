@@ -126,7 +126,6 @@ class AndroidNClassLoader extends PathClassLoader {
         final Field mCookieField = ShareReflectUtil.findField(DexFile.class, "mCookie");
         final Field mInternalCookieField = ShareReflectUtil.findField(DexFile.class, "mInternalCookie");
 
-        // Always ignore the last element since it should always be the base.apk.
         for (int i = 0; i < newDexElements.length - 1; ++i) {
             final Object newElement = newDexElements[i];
 
@@ -139,12 +138,10 @@ class AndroidNClassLoader extends PathClassLoader {
             final Object origCookie = mCookieField.get(origDexFile);
             final Object origInternalCookie = mInternalCookieField.get(origDexFile);
 
-            final DexFile dupOrigDexFile = DexFile.loadDex(application.getApplicationInfo().sourceDir, null, 0);
-            mFileNameField.set(dupOrigDexFile, origFileName);
-            mCookieField.set(dupOrigDexFile, origCookie);
-            mInternalCookieField.set(dupOrigDexFile, origInternalCookie);
-
-            dexFileField.set(newElement, dupOrigDexFile);
+            final DexFile newDexFile = (DexFile) dexFileField.get(newElement);
+            mFileNameField.set(newDexFile, origFileName);
+            mCookieField.set(newDexFile, origCookie);
+            mInternalCookieField.set(newDexFile, origInternalCookie);
         }
     }
 
