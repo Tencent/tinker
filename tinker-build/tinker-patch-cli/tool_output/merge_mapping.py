@@ -97,7 +97,7 @@ class DealWithProguardWarning:
                 current_data = self.current_classes[key]
                 # 如果当前的类没有被混淆，则保留，否则用之前的mapping里面的内容覆盖
                 # ___.___ -> ___.___:
-                if current_data.raw_line.split("->")[0] == current_data.raw_line.split("->")[1][:-1]:
+                if current_data.raw_line.split("->")[0] != current_data.raw_line.split("->")[1][:-1]:
                     current_data.raw_line = data.raw_line
                 new_method_list = []
                 # 处理方法
