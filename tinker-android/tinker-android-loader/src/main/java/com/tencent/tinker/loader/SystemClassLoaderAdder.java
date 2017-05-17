@@ -32,8 +32,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 import dalvik.system.DexFile;
@@ -44,6 +49,7 @@ import dalvik.system.PathClassLoader;
  */
 public class SystemClassLoaderAdder {
     public static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
+    public static final String CHECK_CLASSLOADER_CLASS = "com.tencent.tinker.loader.TinkerTestAndroidNClassLoader";
     public static final String CHECK_DEX_FIELD = "isPatch";
     private static final String TAG = "Tinker.ClassLoaderAdder";
     private static int sPatchDexCount = 0;
@@ -55,7 +61,7 @@ public class SystemClassLoaderAdder {
 
         if (!files.isEmpty()) {
             ClassLoader classLoader = loader;
-            if (Build.VERSION.SDK_INT >= 24) {
+            if (Build.VERSION.SDK_INT >= 24 && !checkIfIWasReinforced(loader)) {
                 classLoader = AndroidNClassLoader.inject(loader, application);
             }
             //because in dalvik, if inner class is not the same classloader with it wrapper class.
@@ -108,6 +114,27 @@ public class SystemClassLoaderAdder {
         return isPatch;
     }
 
+    private static boolean checkIfIWasReinforced(ClassLoader originalClassLoader) {
+        try {
+            final Field pathListField = ShareReflectUtil.findField(originalClassLoader, "pathList");
+            final Object pathList = pathListField.get(originalClassLoader);
+            final Field dexElementsField = ShareReflectUtil.findField(pathList, "dexElements");
+            final Object[] dexElements = (Object[]) dexElementsField.get(pathList);
+            final Field dexFileField = ShareReflectUtil.findField(dexElements.getClass().getComponentType(), "dexFile");
+            final DexFile baseDex = (DexFile) dexFileField.get(dexElements[dexElements.length - 1]);
+            try {
+                Class<?> res = baseDex.loadClass(CHECK_CLASSLOADER_CLASS, originalClassLoader);
+                return res == null;
+            } catch (Exception e) {
+                return true;
+            }
+        } catch (Throwable thr) {
+            thr.printStackTrace();
+            // There's something wrong, treat it as I am not reinforced.
+            return false;
+        }
+    }
+
     /**
      * Installer for platform versions 23.
      */
@@ -122,6 +149,7 @@ public class SystemClassLoaderAdder {
              * dalvik.system.DexPathList pathList field to append additional DEX
              * file entries.
              */
+            additionalClassPathEntries = createSortedAdditionalPathEntries(additionalClassPathEntries);
             Field pathListField = ShareReflectUtil.findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
             ArrayList<IOException> suppressedExceptions = new ArrayList<IOException>();
@@ -184,6 +212,7 @@ public class SystemClassLoaderAdder {
              * dalvik.system.DexPathList pathList field to append additional DEX
              * file entries.
              */
+            additionalClassPathEntries = createSortedAdditionalPathEntries(additionalClassPathEntries);
             Field pathListField = ShareReflectUtil.findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
             ArrayList<IOException> suppressedExceptions = new ArrayList<IOException>();
@@ -239,6 +268,7 @@ public class SystemClassLoaderAdder {
              * dalvik.system.DexPathList pathList field to append additional DEX
              * file entries.
              */
+            additionalClassPathEntries = createSortedAdditionalPathEntries(additionalClassPathEntries);
             Field pathListField = ShareReflectUtil.findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
             ShareReflectUtil.expandFieldArray(dexPathList, "dexElements", makeDexElements(dexPathList,
@@ -272,6 +302,8 @@ public class SystemClassLoaderAdder {
              * fields mPaths, mFiles, mZips and mDexs to append additional DEX
              * file entries.
              */
+            additionalClassPathEntries = createSortedAdditionalPathEntries(additionalClassPathEntries);
+
             int extraSize = additionalClassPathEntries.size();
 
             Field pathField = ShareReflectUtil.findField(loader, "path");
@@ -306,6 +338,66 @@ public class SystemClassLoaderAdder {
 
             }
         }
+    }
+
+    private static List<File> createSortedAdditionalPathEntries(List<File> additionalPathEntries) {
+        final List<File> result = new ArrayList<>(additionalPathEntries);
+
+        final Pattern classNPattern = Pattern.compile("classes(?:[2-9]{0,1}|[1-9][0-9]+)\\.dex");
+        final Map<String, Boolean> matchesClassNPatternMemo = new HashMap<>();
+        for (File file : result) {
+            final String name = file.getName();
+            matchesClassNPatternMemo.put(name, classNPattern.matcher(name).matches());
+        }
+        Collections.sort(result, new Comparator<File>() {
+            @Override
+            public int compare(File lhs, File rhs) {
+                if (lhs == null && rhs == null) {
+                    return 0;
+                }
+                if (lhs == null) {
+                    return -1;
+                }
+                if (rhs == null) {
+                    return 1;
+                }
+
+                final String lhsName = lhs.getName();
+                final String rhsName = rhs.getName();
+                if (lhsName.equals(rhsName)) {
+                    return 0;
+                }
+
+                final String testDexSuffix = ShareConstants.TEST_DEX_NAME;
+                // test.dex should always be at tail.
+                if (lhsName.equals(testDexSuffix)) {
+                    return 1;
+                }
+                if (rhsName.equals(testDexSuffix)) {
+                    return -1;
+                }
+
+                final boolean isLhsNameMatchClassN = matchesClassNPatternMemo.get(lhsName);
+                final boolean isRhsNameMatchClassN = matchesClassNPatternMemo.get(rhsName);
+                if (isLhsNameMatchClassN && isRhsNameMatchClassN) {
+                    final int lhsDotPos = lhsName.lastIndexOf('.');
+                    final int rhsDotPos = rhsName.lastIndexOf('.');
+                    final int lhsId = (lhsDotPos > 7 ? Integer.parseInt(lhsName.substring(7, lhsDotPos)) : 1);
+                    final int rhsId = (rhsDotPos > 7 ? Integer.parseInt(rhsName.substring(7, rhsDotPos)) : 1);
+                    return (lhsId == rhsId ? 0 : (lhsId < rhsId ? -1 : 1));
+                }
+                // Dex name that matches class N rules should always be at first.
+                if (isLhsNameMatchClassN) {
+                    return -1;
+                }
+                if (isRhsNameMatchClassN) {
+                    return 1;
+                }
+                return lhsName.compareTo(rhsName);
+            }
+        });
+
+        return result;
     }
 
 }

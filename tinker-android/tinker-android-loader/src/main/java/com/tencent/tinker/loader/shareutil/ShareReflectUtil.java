@@ -19,6 +19,7 @@ package com.tencent.tinker.loader.shareutil;
 import android.content.Context;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -102,6 +103,36 @@ public class ShareReflectUtil {
             + " with parameters "
             + Arrays.asList(parameterTypes)
             + " not found in " + instance.getClass());
+    }
+
+    /**
+     * Locates a given constructor anywhere in the class inheritance hierarchy.
+     *
+     * @param instance       an object to search the constructor into.
+     * @param parameterTypes constructor parameter types
+     * @return a constructor object
+     * @throws NoSuchMethodException if the constructor cannot be located
+     */
+    public static Constructor<?> findConstructor(Object instance, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        for (Class<?> clazz = instance.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+            try {
+                Constructor<?> ctor = clazz.getDeclaredConstructor(parameterTypes);
+
+                if (!ctor.isAccessible()) {
+                    ctor.setAccessible(true);
+                }
+
+                return ctor;
+            } catch (NoSuchMethodException e) {
+                // ignore and search next
+            }
+        }
+
+        throw new NoSuchMethodException("Constructor"
+                + " with parameters "
+                + Arrays.asList(parameterTypes)
+                + " not found in " + instance.getClass());
     }
 
     /**
