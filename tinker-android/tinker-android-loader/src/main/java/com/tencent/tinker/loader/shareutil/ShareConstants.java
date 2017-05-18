@@ -53,6 +53,8 @@ public class ShareConstants {
     public static final String JAR_SUFFIX = ".jar";
 
     public static final String TEST_DEX_NAME = "test.dex";
+    public static final String CHANGED_CLASSES_DEX_NAME = "changed_classes.dex";
+
 
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
     public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";

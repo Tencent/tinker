@@ -23,16 +23,13 @@ import android.os.Build;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
-import dalvik.system.DexFile;
-import dalvik.system.PathClassLoader;
-
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
+
+import dalvik.system.DexFile;
+import dalvik.system.PathClassLoader;
 
 /**
  * Created by zhangshaowen on 16/7/24.
@@ -41,7 +38,6 @@ import java.util.List;
 class AndroidNClassLoader extends PathClassLoader {
     private static final String TAG = "Tinker.NClassLoader";
 
-    private static ArrayList<DexFile> oldDexFiles = new ArrayList<>();
     private final PathClassLoader originClassLoader;
     private String applicationClassName;
 
@@ -98,8 +94,8 @@ class AndroidNClassLoader extends PathClassLoader {
 
         final String libraryPath = libraryPathBuilder.toString();
 
-        final Constructor<?> dexPathListCtor = ShareReflectUtil.findConstructor(originalDexPathList, ClassLoader.class, String.class, String.class, File.class);
-        return dexPathListCtor.newInstance(definingContext, dexPath, libraryPath, null);
+        final Constructor<?> dexPathListConstructor = ShareReflectUtil.findConstructor(originalDexPathList, ClassLoader.class, String.class, String.class, File.class);
+        return dexPathListConstructor.newInstance(definingContext, dexPath, libraryPath, null);
     }
 
     private static AndroidNClassLoader createAndroidNClassLoader(PathClassLoader originalClassLoader, Application application) throws Exception {
@@ -111,40 +107,15 @@ class AndroidNClassLoader extends PathClassLoader {
         // To avoid 'dex file register with multiple classloader' exception on Android O, we must keep old
         // dexPathList in original classloader so that after the newly loaded base dex was bound to
         // AndroidNClassLoader we can still load class in base dex from original classloader.
-        Object newPathList = originPathList;
-        if ((Build.VERSION.SDK_INT == 25 && Build.VERSION.PREVIEW_SDK_INT != 0) || Build.VERSION.SDK_INT > 25) {
-            newPathList = cloneDexPathList(originPathList);
-        }
+
+        Object newPathList = cloneDexPathList(originPathList);
 
         //should reflect definingContext also
         final Field definingContextField = ShareReflectUtil.findField(newPathList, "definingContext");
         definingContextField.set(newPathList, androidNClassLoader);
-        if (newPathList != originPathList) {
-            definingContextField.set(originPathList, androidNClassLoader);
-        }
 
         //just use PathClassloader's pathList
         pathListField.set(androidNClassLoader, newPathList);
-
-        //we must recreate dexFile due to dexCache
-        final List<File> additionalClassPathEntries = new ArrayList<>();
-        final Field dexElementsField = ShareReflectUtil.findField(newPathList, "dexElements");
-        final Object[] originDexElements = (Object[]) dexElementsField.get(newPathList);
-        for (Object element : originDexElements) {
-            DexFile dexFile = (DexFile) ShareReflectUtil.findField(element, "dexFile").get(element);
-            if (dexFile == null) {
-                continue;
-            }
-            additionalClassPathEntries.add(new File(dexFile.getName()));
-            //protect for java.lang.AssertionError: Failed to close dex file in finalizer.
-            oldDexFiles.add(dexFile);
-        }
-
-        final Method makePathElementsMethod = ShareReflectUtil.findMethod(newPathList, "makePathElements",
-                List.class, File.class, List.class);
-        final List<IOException> suppressedExceptions = new ArrayList<>();
-        final Object[] newDexElements = (Object[]) makePathElementsMethod.invoke(newPathList, additionalClassPathEntries, null, suppressedExceptions);
-        dexElementsField.set(newPathList, newDexElements);
 
         return androidNClassLoader;
     }
