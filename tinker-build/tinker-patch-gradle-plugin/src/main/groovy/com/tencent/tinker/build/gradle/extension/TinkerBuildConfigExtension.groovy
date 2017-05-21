@@ -69,6 +69,11 @@ public class TinkerBuildConfigExtension {
      */
     boolean keepDexApply;
 
+    /**
+     * Specify the new apk path instead of running assemble task again.
+     */
+    String newApk;
+
     public TinkerBuildConfigExtension(Project project) {
         this.project = project
         applyMapping = ""
@@ -78,6 +83,7 @@ public class TinkerBuildConfigExtension {
         keepDexApply = false
         isProtectedApp = false
         outputFolder = ""
+        newApk = ""
     }
 
     void checkParameter() {
@@ -95,6 +101,7 @@ public class TinkerBuildConfigExtension {
            | keepDexApply = ${keepDexApply}
            | tinkerId = ${tinkerId}
            | outputFolder = ${outputFolder}
+           | newApk = ${newApk}
         """.stripMargin()
     }
 }
