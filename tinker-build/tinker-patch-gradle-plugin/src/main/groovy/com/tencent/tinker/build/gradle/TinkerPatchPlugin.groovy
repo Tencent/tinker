@@ -126,14 +126,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
-                tinkerPatchBuildTask.dependsOn variant.assemble
 
                 tinkerPatchBuildTask.signConfig = variant.apkVariantData.variantConfiguration.signingConfig
 
                 variant.outputs.each { output ->
-                    tinkerPatchBuildTask.buildApkPath = output.outputFile
-                    File parentFile = output.outputFile
-                    tinkerPatchBuildTask.outputFolder = "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/" + TypedValue.PATH_DEFAULT_OUTPUT + "/" + variant.dirName
+                    setPatchNewApkPath(project, configuration, output, variant, tinkerPatchBuildTask)
+                    setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask)
                 }
 
                 // Create a task to add a build TINKER_ID to AndroidManifest.xml
@@ -191,6 +189,52 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     com.tencent.tinker.build.gradle.transform.ImmutableDexTransform.inject(project, variant)
                 }
             }
+        }
+    }
+
+    /**
+     * Specify the output folder of tinker patch result.
+     *
+     * @param configuration the tinker configuration 'tinkerPatch'
+     * @param output the output of assemble result
+     * @param variant the variant
+     * @param tinkerPatchBuildTask the task that tinker patch uses
+     */
+    private static void setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask) {
+        File parentFile = output.outputFile
+        String outputFolder = "${configuration.buildConfig.outputFolder}";
+        if (outputFolder != null && outputFolder.length() != 0) {
+            outputFolder = "${outputFolder}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+        } else {
+            outputFolder =
+                    "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+        }
+        tinkerPatchBuildTask.outputFolder = outputFolder
+    }
+
+    /**
+     * Specify the new apk path. If the new apk file is specified by {@code tinkerPatch.buildConfig.newApk},
+     * just use it as the new apk input for tinker patch, otherwise use the assemble output.
+     *
+     * @param project the project which applies this plugin
+     * @param configuration the tinker configuration 'tinkerPatch'
+     * @param output the output of assemble result
+     * @param variant the variant
+     * @param tinkerPatchBuildTask the task that tinker patch uses
+     */
+    private static void setPatchNewApkPath(project, configuration, output, variant, tinkerPatchBuildTask) {
+        def newApkFile;
+        def newApkPath = configuration.buildConfig.newApk;
+        if (newApkPath != null && newApkPath.length() != 0) {
+            newApkFile = project.file(newApkPath)
+            if (newApkFile.exists() && newApkFile.isFile()) {
+                tinkerPatchBuildTask.buildApkPath = newApkFile
+            } else {
+                tinkerPatchBuildTask.buildApkPath = output.outputFile
+            }
+        } else {
+            tinkerPatchBuildTask.buildApkPath = output.outputFile
+            tinkerPatchBuildTask.dependsOn variant.assemble
         }
     }
 
