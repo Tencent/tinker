@@ -170,6 +170,17 @@ public class TinkerLoadLibrary {
             TinkerLog.e(TAG, "installNativeLibraryPath, folder %s is illegal", folder);
             return;
         }
+        if ((Build.VERSION.SDK_INT == 25 && Build.VERSION.PREVIEW_SDK_INT != 0)
+                || Build.VERSION.SDK_INT > 25) {
+            try {
+                V25.install(classLoader, folder);
+                return;
+            } catch (Throwable throwable) {
+                // install fail, try to treat it as v14
+                TinkerLog.e(TAG, "installNativeLibraryPath, v25 fail, sdk: %d, error: %s",
+                        Build.VERSION.SDK_INT, throwable.getMessage());
+            }
+        }
         if (Build.VERSION.SDK_INT >= 23) {
             try {
                 V23.install(classLoader, folder);
@@ -235,4 +246,26 @@ public class TinkerLoadLibrary {
         }
     }
 
+    private static final class V25 {
+        private static void install(ClassLoader classLoader, File folder)  throws Throwable {
+            Field pathListField = ShareReflectUtil.findField(classLoader, "pathList");
+            Object dexPathList = pathListField.get(classLoader);
+
+            Field nativeLibraryDirectories = ShareReflectUtil.findField(dexPathList, "nativeLibraryDirectories");
+
+            List<File> libDirs = (List<File>) nativeLibraryDirectories.get(dexPathList);
+            libDirs.add(0, folder);
+            Field systemNativeLibraryDirectories =
+                    ShareReflectUtil.findField(dexPathList, "systemNativeLibraryDirectories");
+            List<File> systemLibDirs = (List<File>) systemNativeLibraryDirectories.get(dexPathList);
+            Method makePathElements =
+                    ShareReflectUtil.findMethod(dexPathList, "makePathElements", List.class);
+            libDirs.addAll(systemLibDirs);
+            Object[] elements = (Object[]) makePathElements.
+                    invoke(dexPathList, libDirs);
+            Field nativeLibraryPathElements = ShareReflectUtil.findField(dexPathList, "nativeLibraryPathElements");
+            nativeLibraryPathElements.setAccessible(true);
+            nativeLibraryPathElements.set(dexPathList, elements);
+        }
+    }
 }
