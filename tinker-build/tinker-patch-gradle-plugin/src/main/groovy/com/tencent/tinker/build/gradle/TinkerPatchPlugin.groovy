@@ -231,6 +231,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 tinkerPatchBuildTask.buildApkPath = newApkFile
             } else {
                 tinkerPatchBuildTask.buildApkPath = output.outputFile
+                tinkerPatchBuildTask.dependsOn variant.assemble
             }
         } else {
             tinkerPatchBuildTask.buildApkPath = output.outputFile
