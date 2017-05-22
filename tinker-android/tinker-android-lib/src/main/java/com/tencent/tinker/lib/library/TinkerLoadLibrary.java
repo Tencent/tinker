@@ -170,23 +170,26 @@ public class TinkerLoadLibrary {
             TinkerLog.e(TAG, "installNativeLibraryPath, folder %s is illegal", folder);
             return;
         }
+        // android o sdk_int 26
+        // for android o preview sdk_int 25
         if ((Build.VERSION.SDK_INT == 25 && Build.VERSION.PREVIEW_SDK_INT != 0)
-                || Build.VERSION.SDK_INT > 25) {
+            || Build.VERSION.SDK_INT > 25) {
             try {
                 V25.install(classLoader, folder);
                 return;
             } catch (Throwable throwable) {
-                // install fail, try to treat it as v14
-                TinkerLog.e(TAG, "installNativeLibraryPath, v25 fail, sdk: %d, error: %s",
+                // install fail, try to treat it as v23
+                // some preview N version may go here
+                TinkerLog.e(TAG, "installNativeLibraryPath, v25 fail, sdk: %d, error: %s, try to fallback to V23",
                         Build.VERSION.SDK_INT, throwable.getMessage());
+                V23.install(classLoader, folder);
             }
-        }
-        if (Build.VERSION.SDK_INT >= 23) {
+        } else if (Build.VERSION.SDK_INT >= 23) {
             try {
                 V23.install(classLoader, folder);
             } catch (Throwable throwable) {
                 // install fail, try to treat it as v14
-                TinkerLog.e(TAG, "installNativeLibraryPath, v23 fail, sdk: %d, error: %s",
+                TinkerLog.e(TAG, "installNativeLibraryPath, v23 fail, sdk: %d, error: %s, try to fallback to V14",
                     Build.VERSION.SDK_INT, throwable.getMessage());
 
                 V14.install(classLoader, folder);
