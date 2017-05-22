@@ -142,15 +142,22 @@ class TinkerResourcePatcher {
         if (references == null) {
             throw new IllegalStateException("resource references is null");
         }
-        try {
+        // fix jianGuo pro has private field 'mAssets' with Resource
+        // try use mResourcesImpl first
+        if (SDK_INT >= 24) {
+            try {
+                // N moved the mAssets inside an mResourcesImpl field
+                resourcesImplFiled = Resources.class.getDeclaredField("mResourcesImpl");
+                resourcesImplFiled.setAccessible(true);
+            } catch (Throwable ignore) {
+                // for safety
+                assetsFiled = Resources.class.getDeclaredField("mAssets");
+                assetsFiled.setAccessible(true);
+            }
+        } else {
             assetsFiled = Resources.class.getDeclaredField("mAssets");
             assetsFiled.setAccessible(true);
-        } catch (Throwable ignore) {
-            // N moved the mAssets inside an mResourcesImpl field
-            resourcesImplFiled = Resources.class.getDeclaredField("mResourcesImpl");
-            resourcesImplFiled.setAccessible(true);
         }
-
 //        final Resources resources = context.getResources();
 //        isMiuiSystem = resources != null && MIUI_RESOURCE_CLASSNAME.equals(resources.getClass().getName());
 
