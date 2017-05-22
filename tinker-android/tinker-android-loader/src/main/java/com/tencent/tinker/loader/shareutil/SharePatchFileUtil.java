@@ -367,20 +367,11 @@ public class SharePatchFileUtil {
         try {
             fin = new FileInputStream(file);
             String md5 = getMD5(fin);
-            fin.close();
             return md5;
-
         } catch (Exception e) {
             return null;
-
         } finally {
-            try {
-                if (fin != null) {
-                    fin.close();
-                }
-            } catch (IOException e) {
-
-            }
+            closeQuietly(fin);
         }
     }
 
