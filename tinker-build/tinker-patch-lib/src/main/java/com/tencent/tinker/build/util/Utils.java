@@ -74,6 +74,10 @@ public class Utils {
         return input;
     }
 
+    public static boolean isNullOrNil(final String object) {
+        return (object == null) || (object.length() <= 0);
+    }
+
     public static boolean isStringMatchesPatterns(String str, Collection<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(str).matches()) {

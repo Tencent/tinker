@@ -20,6 +20,7 @@ import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.build.util.TypedValue
+import com.tencent.tinker.build.util.Utils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -130,7 +131,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 tinkerPatchBuildTask.signConfig = variant.apkVariantData.variantConfiguration.signingConfig
 
                 variant.outputs.each { output ->
-                    setPatchNewApkPath(project, configuration, output, variant, tinkerPatchBuildTask)
+                    setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask)
                     setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask)
                 }
 
@@ -200,10 +201,10 @@ class TinkerPatchPlugin implements Plugin<Project> {
      * @param variant the variant
      * @param tinkerPatchBuildTask the task that tinker patch uses
      */
-    private static void setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask) {
+    void setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask) {
         File parentFile = output.outputFile
-        String outputFolder = "${configuration.buildConfig.outputFolder}";
-        if (outputFolder != null && outputFolder.length() != 0) {
+        String outputFolder = "${configuration.outputFolder}";
+        if (!Utils.isNullOrNil(outputFolder)) {
             outputFolder = "${outputFolder}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
         } else {
             outputFolder =
@@ -222,20 +223,17 @@ class TinkerPatchPlugin implements Plugin<Project> {
      * @param variant the variant
      * @param tinkerPatchBuildTask the task that tinker patch uses
      */
-    private static void setPatchNewApkPath(project, configuration, output, variant, tinkerPatchBuildTask) {
-        def newApkFile;
-        def newApkPath = configuration.buildConfig.newApk;
-        if (newApkPath != null && newApkPath.length() != 0) {
-            newApkFile = project.file(newApkPath)
-            if (newApkFile.exists() && newApkFile.isFile()) {
-                tinkerPatchBuildTask.buildApkPath = newApkFile
-            } else {
-                tinkerPatchBuildTask.buildApkPath = output.outputFile
+    void setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask) {
+        def newApkPath = configuration.newApk;
+        if (!Utils.isNullOrNil(newApkPath)) {
+            if (FileOperation.isLegalFile(newApkPath)) {
+                tinkerPatchBuildTask.buildApkPath = newApkPath
+                return
             }
-        } else {
-            tinkerPatchBuildTask.buildApkPath = output.outputFile
-            tinkerPatchBuildTask.dependsOn variant.assemble
         }
+
+        tinkerPatchBuildTask.buildApkPath = output.outputFile
+        tinkerPatchBuildTask.dependsOn variant.assemble
     }
 
     Task getMultiDexTask(Project project, String variantName) {

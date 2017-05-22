@@ -265,12 +265,12 @@ class TinkerResourcePatcher {
 
     private static boolean checkResUpdate(Context context) {
         try {
-            Log.e(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
             context.getAssets().open(TEST_ASSETS_VALUE);
         } catch (Throwable e) {
             Log.e(TAG, "checkResUpdate failed, can't find test resource assets file " + TEST_ASSETS_VALUE + " e:" + e.getMessage());
             return false;
         }
+        Log.e(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
         return true;
     }
 }

@@ -59,20 +59,10 @@ public class TinkerBuildConfigExtension {
     boolean usingResourceMapping
 
     /**
-     * Specify a folder for the outputs where place the tinker patch results.
-     */
-    String outputFolder
-
-    /**
      * if keepDexApply is true,class in which dex refer to the old apk.
      * open this can reduce the dex diff file size.
      */
     boolean keepDexApply;
-
-    /**
-     * Specify the new apk path instead of running assemble task again.
-     */
-    String newApk;
 
     public TinkerBuildConfigExtension(Project project) {
         this.project = project
@@ -82,8 +72,6 @@ public class TinkerBuildConfigExtension {
         usingResourceMapping = false
         keepDexApply = false
         isProtectedApp = false
-        outputFolder = ""
-        newApk = ""
     }
 
     void checkParameter() {
@@ -100,8 +88,6 @@ public class TinkerBuildConfigExtension {
            | isProtectedApp = ${isProtectedApp}
            | keepDexApply = ${keepDexApply}
            | tinkerId = ${tinkerId}
-           | outputFolder = ${outputFolder}
-           | newApk = ${newApk}
         """.stripMargin()
     }
 }
