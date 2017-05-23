@@ -267,6 +267,21 @@ public class Tinker {
     }
 
     /**
+     * rollback patch should restart all process
+     */
+    public void rollbackPatch() {
+        if (!isTinkerLoaded()) {
+            TinkerLog.w(TAG, "rollbackPatch: tinker is not loaded, just return");
+            return;
+        }
+        // kill all other process
+        ShareTinkerInternals.killAllOtherProcess(context);
+        // clean patch
+        cleanPatch();
+        // kill itself
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
+    /**
      * clean the patch version files, such as tinker/patch-641e634c
      *
      * @param versionName
