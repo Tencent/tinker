@@ -51,9 +51,8 @@ class AndroidNClassLoader extends PathClassLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private static Object cloneDexPathList(Object originalDexPathList) throws Exception {
+    private static Object recreateDexPathList(Object originalDexPathList, ClassLoader newDefiningContext) throws Exception {
         final Field definingContextField = ShareReflectUtil.findField(originalDexPathList, "definingContext");
-        final Object definingContext = definingContextField.get(originalDexPathList);
         final Field dexElementsField = ShareReflectUtil.findField(originalDexPathList, "dexElements");
         final Object[] dexElements = (Object[]) dexElementsField.get(originalDexPathList);
         final Field nativeLibraryDirectoriesField = ShareReflectUtil.findField(originalDexPathList, "nativeLibraryDirectories");
@@ -95,7 +94,7 @@ class AndroidNClassLoader extends PathClassLoader {
         final String libraryPath = libraryPathBuilder.toString();
 
         final Constructor<?> dexPathListConstructor = ShareReflectUtil.findConstructor(originalDexPathList, ClassLoader.class, String.class, String.class, File.class);
-        return dexPathListConstructor.newInstance(definingContext, dexPath, libraryPath, null);
+        return dexPathListConstructor.newInstance(newDefiningContext, dexPath, libraryPath, null);
     }
 
     private static AndroidNClassLoader createAndroidNClassLoader(PathClassLoader originalClassLoader, Application application) throws Exception {
@@ -108,13 +107,9 @@ class AndroidNClassLoader extends PathClassLoader {
         // dexPathList in original classloader so that after the newly loaded base dex was bound to
         // AndroidNClassLoader we can still load class in base dex from original classloader.
 
-        Object newPathList = cloneDexPathList(originPathList);
+        Object newPathList = recreateDexPathList(originPathList, androidNClassLoader);
 
-        //should reflect definingContext also
-        final Field definingContextField = ShareReflectUtil.findField(newPathList, "definingContext");
-        definingContextField.set(newPathList, androidNClassLoader);
-
-        //just use PathClassloader's pathList
+        // Update new classloader's pathList.
         pathListField.set(androidNClassLoader, newPathList);
 
         return androidNClassLoader;
