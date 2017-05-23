@@ -277,7 +277,7 @@ class TinkerResourcePatcher {
             Log.e(TAG, "checkResUpdate failed, can't find test resource assets file " + TEST_ASSETS_VALUE + " e:" + e.getMessage());
             return false;
         }
-        Log.e(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
+        Log.i(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
         return true;
     }
 }

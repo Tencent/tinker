@@ -52,7 +52,6 @@ class AndroidNClassLoader extends PathClassLoader {
 
     @SuppressWarnings("unchecked")
     private static Object recreateDexPathList(Object originalDexPathList, ClassLoader newDefiningContext) throws Exception {
-        final Field definingContextField = ShareReflectUtil.findField(originalDexPathList, "definingContext");
         final Field dexElementsField = ShareReflectUtil.findField(originalDexPathList, "dexElements");
         final Object[] dexElements = (Object[]) dexElementsField.get(originalDexPathList);
         final Field nativeLibraryDirectoriesField = ShareReflectUtil.findField(originalDexPathList, "nativeLibraryDirectories");
