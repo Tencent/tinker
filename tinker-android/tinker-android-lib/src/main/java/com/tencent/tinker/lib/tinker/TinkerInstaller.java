@@ -18,6 +18,7 @@ package com.tencent.tinker.lib.tinker;
 
 import android.content.Context;
 
+import android.os.Bundle;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.reporter.LoadReporter;
@@ -87,8 +88,8 @@ public class TinkerInstaller {
      * @param context
      * @param patchLocation
      */
-    public static void onReceiveUpgradePatch(Context context, String patchLocation) {
-        Tinker.with(context).getPatchListener().onPatchReceived(patchLocation);
+    public static void onReceiveUpgradePatch(Context context, String patchLocation, Bundle customBundle) {
+        Tinker.with(context).getPatchListener().onPatchReceived(patchLocation, customBundle);
     }
 
     /**

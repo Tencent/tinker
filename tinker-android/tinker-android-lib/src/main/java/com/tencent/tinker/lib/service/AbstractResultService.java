@@ -19,7 +19,6 @@ package com.tencent.tinker.lib.service;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;

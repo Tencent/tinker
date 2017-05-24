@@ -16,9 +16,11 @@
 
 package com.tencent.tinker.lib.listener;
 
+import android.os.Bundle;
+
 /**
  * Created by zhangshaowen on 16/3/14.
  */
 public interface PatchListener {
-    int onPatchReceived(String path);
+    int onPatchReceived(String path, Bundle customBundle);
 }

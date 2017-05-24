@@ -18,6 +18,7 @@ package com.tencent.tinker.lib.listener;
 
 import android.content.Context;
 
+import android.os.Bundle;
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
@@ -45,12 +46,12 @@ public class DefaultPatchListener implements PatchListener {
      * @return
      */
     @Override
-    public int onPatchReceived(String path) {
+    public int onPatchReceived(String path, Bundle customBundle) {
 
         int returnCode = patchCheck(path);
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
-            TinkerPatchService.runPatchService(context, path);
+            TinkerPatchService.runPatchService(context, path, customBundle);
         } else {
             Tinker.with(context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode);
         }
