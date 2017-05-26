@@ -69,6 +69,9 @@ public class UpgradePatch extends AbstractPatch {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:patch md5 is null, just return");
             return false;
         }
+        //use md5 as version
+        patchResult.patchVersion = patchMd5;
+
         TinkerLog.i(TAG, "UpgradePatch tryPatch:patchMd5:%s", patchMd5);
 
         //check ok, we can real recover a new patch
