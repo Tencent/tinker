@@ -105,7 +105,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         List<File> failDexFiles = new ArrayList<>();
         // check again, if still can be found, just return
         for (File file : optFiles) {
-            TinkerLog.i(TAG, "check dex optimizer file exist: %s, size %d", file.getName(), file.length());
+            TinkerLog.i(TAG, "check dex optimizer file exist: %s, size %d", file.getPath(), file.length());
 
             if (!SharePatchFileUtil.isLegalFile(file)) {
                 TinkerLog.e(TAG, "final parallel dex optimizer file %s is not exist, return false", file.getName());
@@ -190,7 +190,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
             TinkerLog.i(TAG, "patch recover, try to optimize dex file count:%d, optimizeDexDirectory:%s", files.length, optimizeDexDirectory);
             // only use parallel dex optimizer for art
-            if (ShareTinkerInternals.isVmArt()) {
+            // for Android O version, it is very strange. If we use parallel dex optimizer, it won't work
+            if (ShareTinkerInternals.isVmArt() /*&& !ShareTinkerInternals.isAfterAndroidO()*/) {
                 final List<File> failOptDexFile = new Vector<>();
                 final Throwable[] throwable = new Throwable[1];
 
@@ -209,8 +210,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         @Override
                         public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
                             // Do nothing.
-                            TinkerLog.i(TAG, "success to parallel optimize dex %s, opt file size: %d, use time %d",
-                                dexFile.getPath(), optimizedFile.length(), (System.currentTimeMillis() - startTime));
+                            TinkerLog.i(TAG, "success to parallel optimize dex %s, opt file:%s, opt file size: %d, use time %d",
+                                dexFile.getPath(), optimizedFile.getPath(), optimizedFile.length(), (System.currentTimeMillis() - startTime));
                         }
 
                         @Override
@@ -234,7 +235,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         String outputPathName = SharePatchFileUtil.optimizedPathFor(file, optimizeDexDirectoryFile);
                         long start = System.currentTimeMillis();
                         DexFile.loadDex(file.getAbsolutePath(), outputPathName, 0);
-                        TinkerLog.i(TAG, "success single dex optimize file, path: %s, opt file size: %d, use time: %d", file.getPath(), new File(outputPathName).length(),
+                        TinkerLog.i(TAG, "success single dex optimize file, path: %s, opt file:%s, opt file size: %d, use time: %d", file.getPath(), outputPathName, new File(outputPathName).length(),
                             (System.currentTimeMillis() - start));
                     } catch (Throwable e) {
                         TinkerLog.e(TAG, "single dex optimize or load failed, path:" + file.getPath());

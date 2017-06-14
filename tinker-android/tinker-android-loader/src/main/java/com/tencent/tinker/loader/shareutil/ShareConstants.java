@@ -45,14 +45,17 @@ public class ShareConstants {
     public static final String DEX_META_FILE               = "assets/dex_meta.txt";
     public static final String DEX_PATH                    = "dex";
     public static final String DEFAULT_DEX_OPTIMIZE_PATH   = "odex";
+    public static final String ANDROID_O_DEX_OPTIMIZE_PATH = "oat";
+
     public static final String INTERPRET_DEX_OPTIMIZE_PATH = "interpet";
     public static final String CHANING_DEX_OPTIMIZE_PATH   = "changing";
 
 
-    public static final String DEX_SUFFIX = ".dex";
-    public static final String JAR_SUFFIX = ".jar";
+    public static final String DEX_SUFFIX  = ".dex";
+    public static final String JAR_SUFFIX  = ".jar";
+    public static final String ODEX_SUFFIX = ".odex";
 
-    public static final String TEST_DEX_NAME = "test.dex";
+    public static final String TEST_DEX_NAME            = "test.dex";
     public static final String CHANGED_CLASSES_DEX_NAME = "changed_classes.dex";
 
 
@@ -168,12 +171,12 @@ public class ShareConstants {
     public static final int ERROR_LOAD_EXCEPTION_UNCAUGHT = -4;
 
     //patch listener error code
-    public static final int ERROR_PATCH_OK                = 0;
-    public static final int ERROR_PATCH_DISABLE           = -1;
-    public static final int ERROR_PATCH_NOTEXIST          = -2;
-    public static final int ERROR_PATCH_RUNNING           = -3;
-    public static final int ERROR_PATCH_INSERVICE         = -4;
-    public static final int ERROR_PATCH_JIT               = -5;
+    public static final int ERROR_PATCH_OK        = 0;
+    public static final int ERROR_PATCH_DISABLE   = -1;
+    public static final int ERROR_PATCH_NOTEXIST  = -2;
+    public static final int ERROR_PATCH_RUNNING   = -3;
+    public static final int ERROR_PATCH_INSERVICE = -4;
+    public static final int ERROR_PATCH_JIT       = -5;
 
 
     //package check error code

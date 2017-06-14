@@ -20,6 +20,8 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
 
+import com.tencent.tinker.loader.TinkerRuntimeException;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -377,12 +379,36 @@ public class SharePatchFileUtil {
 
     /**
      * change the jar file path as the makeDexElements do
+     * Android O change its path
      *
      * @param path
      * @param optimizedDirectory
      * @return
      */
     public static String optimizedPathFor(File path, File optimizedDirectory) {
+        if (ShareTinkerInternals.isAfterAndroidO()) {
+            // dex_location = /foo/bar/baz.jar
+            // odex_location = /foo/bar/oat/<isa>/baz.odex
+
+            String currentInstructionSet;
+            try {
+                currentInstructionSet = ShareTinkerInternals.getCurrentInstructionSet();
+            } catch (Exception e) {
+                throw new TinkerRuntimeException("getCurrentInstructionSet fail:", e);
+            }
+
+            File parentFile = path.getParentFile();
+            String fileName = path.getName();
+            int index = fileName.lastIndexOf('.');
+            if (index > 0) {
+                fileName = fileName.substring(0, index);
+            }
+
+            String result = parentFile.getAbsolutePath() + "/oat/"
+                + currentInstructionSet + "/" + fileName + ShareConstants.ODEX_SUFFIX;
+            return result;
+        }
+
         String fileName = path.getName();
         if (!fileName.endsWith(ShareConstants.DEX_SUFFIX)) {
             int lastDot = fileName.lastIndexOf(".");

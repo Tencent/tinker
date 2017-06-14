@@ -115,14 +115,19 @@ public class TinkerDexLoader {
             final Throwable[] parallelOTAThrowable = new Throwable[1];
             String targetISA;
             try {
-                targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
-            } catch (Throwable e) {
-                // don't ota on the front
-                deleteOutOfDateOATFile(directory);
+                targetISA = ShareTinkerInternals.getCurrentInstructionSet();
+            } catch (Exception e) {
+                Log.i(TAG, "getCurrentInstructionSet fail:" + e);
+                try {
+                    targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
+                } catch (Throwable throwable) {
+                    // don't ota on the front
+                    deleteOutOfDateOATFile(directory);
 
-                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, e);
-                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_GET_OTA_INSTRUCTION_SET_EXCEPTION);
-                return false;
+                    intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, throwable);
+                    ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_GET_OTA_INSTRUCTION_SET_EXCEPTION);
+                    return false;
+                }
             }
 
             deleteOutOfDateOATFile(directory);
@@ -253,6 +258,11 @@ public class TinkerDexLoader {
     private static void deleteOutOfDateOATFile(String directory) {
         String optimizeDexDirectory = directory + "/" + DEFAULT_DEX_OPTIMIZE_PATH + "/";
         SharePatchFileUtil.deleteDir(optimizeDexDirectory);
+        // delete android o
+        if (ShareTinkerInternals.isAfterAndroidO()) {
+            String androidODexDirectory = directory + "/" + ShareConstants.ANDROID_O_DEX_OPTIMIZE_PATH + "/";
+            SharePatchFileUtil.deleteDir(androidODexDirectory);
+        }
     }
 
     private static boolean isJustArtSupportDex(ShareDexDiffPatchInfo dexDiffPatchInfo) {

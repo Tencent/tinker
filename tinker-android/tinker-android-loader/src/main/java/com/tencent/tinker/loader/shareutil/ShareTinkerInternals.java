@@ -54,6 +54,7 @@ public class ShareTinkerInternals {
      */
     private static String processName = null;
     private static String tinkerID    = null;
+    private static String currentInstructionSet = null;
 
     public static boolean isVmArt() {
         return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
@@ -61,6 +62,22 @@ public class ShareTinkerInternals {
 
     public static boolean isVmJit() {
         return VM_IS_JIT && Build.VERSION.SDK_INT < 24;
+    }
+
+    public static boolean isAfterAndroidO() {
+        return Build.VERSION.SDK_INT > 25;
+    }
+
+    public static String getCurrentInstructionSet() throws Exception {
+        if (currentInstructionSet != null) {
+            return currentInstructionSet;
+        }
+        Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
+        Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
+
+        currentInstructionSet = (String) currentGet.invoke(null);
+        Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
+        return currentInstructionSet;
     }
 
     public static boolean isSystemOTA(String lastFingerPrint) {
