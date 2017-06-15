@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.loader;
 
+import android.os.Build;
 import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -177,7 +178,11 @@ public final class TinkerParallelDexOptimizer {
             commandAndParams.add("--dex-file=" + dexFilePath);
             commandAndParams.add("--oat-file=" + oatFilePath);
             commandAndParams.add("--instruction-set=" + targetISA);
-            commandAndParams.add("--compiler-filter=interpret-only");
+            if (Build.VERSION.SDK_INT > 25) {
+                commandAndParams.add("--compiler-filter=quicken");
+            } else {
+                commandAndParams.add("--compiler-filter=interpret-only");
+            }
 
             final ProcessBuilder pb = new ProcessBuilder(commandAndParams);
             pb.redirectErrorStream(true);
