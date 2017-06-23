@@ -175,6 +175,10 @@ public final class TinkerParallelDexOptimizer {
 
             final List<String> commandAndParams = new ArrayList<>();
             commandAndParams.add("dex2oat");
+            commandAndParams.add("--runtime-arg");
+            commandAndParams.add("-classpath");
+            commandAndParams.add("--runtime-arg");
+            commandAndParams.add("&");
             commandAndParams.add("--dex-file=" + dexFilePath);
             commandAndParams.add("--oat-file=" + oatFilePath);
             commandAndParams.add("--instruction-set=" + targetISA);
