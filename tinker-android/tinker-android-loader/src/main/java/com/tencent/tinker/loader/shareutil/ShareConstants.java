@@ -171,12 +171,14 @@ public class ShareConstants {
     public static final int ERROR_LOAD_EXCEPTION_UNCAUGHT = -4;
 
     //patch listener error code
-    public static final int ERROR_PATCH_OK        = 0;
-    public static final int ERROR_PATCH_DISABLE   = -1;
-    public static final int ERROR_PATCH_NOTEXIST  = -2;
-    public static final int ERROR_PATCH_RUNNING   = -3;
-    public static final int ERROR_PATCH_INSERVICE = -4;
-    public static final int ERROR_PATCH_JIT       = -5;
+    public static final int ERROR_PATCH_OK                = 0;
+    public static final int ERROR_PATCH_DISABLE           = -1;
+    public static final int ERROR_PATCH_NOTEXIST          = -2;
+    public static final int ERROR_PATCH_RUNNING           = -3;
+    public static final int ERROR_PATCH_INSERVICE         = -4;
+    public static final int ERROR_PATCH_JIT               = -5;
+    public static final int ERROR_PATCH_ALREADY_APPLY     = -6;
+    public static final int ERROR_PATCH_RETRY_COUNT_LIMIT = -7;
 
 
     //package check error code

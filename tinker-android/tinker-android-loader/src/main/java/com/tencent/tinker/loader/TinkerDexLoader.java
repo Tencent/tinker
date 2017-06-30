@@ -165,7 +165,7 @@ public class TinkerDexLoader {
 
             if (!parallelOTAResult[0]) {
                 Log.e(TAG, "parallel oat dexes failed");
-                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, parallelOTAThrowable);
+                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, parallelOTAThrowable[0]);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_OTA_INTERPRET_ONLY_EXCEPTION);
                 return false;
             }

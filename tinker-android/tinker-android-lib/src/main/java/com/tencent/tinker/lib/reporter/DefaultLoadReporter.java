@@ -94,6 +94,8 @@ public class DefaultLoadReporter implements LoadReporter {
         TinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
         //kill all other process to ensure that all process's code is the same.
         ShareTinkerInternals.killAllOtherProcess(context);
+        // reset retry count to 1, for interpret retry
+        UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(newVersion);
 
         //delete old patch files
         File[] files = patchDirectoryFile.listFiles();
@@ -331,10 +333,11 @@ public class DefaultLoadReporter implements LoadReporter {
                 TinkerLog.i(TAG, "try to repair oat file on patch process");
                 TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
                 return true;
-            } else {
-                TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
-                checkAndCleanPatch();
             }
+//          else {
+//                TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+//                checkAndCleanPatch();
+//            }
         }
 
         return false;

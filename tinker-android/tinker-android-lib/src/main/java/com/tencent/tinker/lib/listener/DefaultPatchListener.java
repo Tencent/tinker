@@ -20,7 +20,9 @@ import android.content.Context;
 
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
+import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
+import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -46,8 +48,9 @@ public class DefaultPatchListener implements PatchListener {
      */
     @Override
     public int onPatchReceived(String path) {
+        File patchFile = new File(path);
 
-        int returnCode = patchCheck(path);
+        int returnCode = patchCheck(path, SharePatchFileUtil.getMD5(patchFile));
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             TinkerPatchService.runPatchService(context, path);
@@ -57,7 +60,7 @@ public class DefaultPatchListener implements PatchListener {
         return returnCode;
     }
 
-    protected int patchCheck(String path) {
+    protected int patchCheck(String path, String patchMd5) {
         Tinker manager = Tinker.with(context);
         //check SharePreferences also
         if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
@@ -81,6 +84,23 @@ public class DefaultPatchListener implements PatchListener {
         if (ShareTinkerInternals.isVmJit()) {
             return ShareConstants.ERROR_PATCH_JIT;
         }
+
+        Tinker tinker = Tinker.with(context);
+
+        if (tinker.isTinkerLoaded()) {
+            TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
+            if (tinkerLoadResult != null && !tinkerLoadResult.useInterpretMode) {
+                String currentVersion = tinkerLoadResult.currentVersion;
+                if (patchMd5.equals(currentVersion)) {
+                    return ShareConstants.ERROR_PATCH_ALREADY_APPLY;
+                }
+            }
+        }
+
+        if (!UpgradePatchRetry.getInstance(context).onPatchListenerCheck(patchMd5)) {
+            return ShareConstants.ERROR_PATCH_RETRY_COUNT_LIMIT;
+        }
+
         return ShareConstants.ERROR_PATCH_OK;
     }
 

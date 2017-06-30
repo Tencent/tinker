@@ -45,7 +45,7 @@ public class UpgradePatchRetry {
 
     private static final String RETRY_FILE_MD5_PROPERTY = "md5";
     private static final String RETRY_COUNT_PROPERTY    = "times";
-    private static final int    RETRY_MAX_COUNT         = 3;
+    private static final int    RETRY_MAX_COUNT         = 5;
     private static UpgradePatchRetry sInstance;
     private boolean isRetryEnable = true;
     private File    retryInfoFile = null;
@@ -191,6 +191,29 @@ public class UpgradePatchRetry {
         }
         return true;
     }
+
+    public boolean onPatchResetMaxCheck(String md5) {
+        if (!isRetryEnable) {
+            TinkerLog.w(TAG, "onPatchResetMaxCheck retry disabled, just return");
+            return true;
+        }
+        if (!retryInfoFile.exists()) {
+            TinkerLog.w(TAG, "onPatchResetMaxCheck retry file is not exist, just return");
+            return true;
+        }
+        if (md5 == null) {
+            TinkerLog.w(TAG, "onPatchResetMaxCheck md5 is null, just return");
+            return true;
+        }
+        RetryInfo retryInfo = RetryInfo.readRetryProperty(retryInfoFile);
+
+        if (md5.equals(retryInfo.md5)) {
+            TinkerLog.i(TAG, "onPatchResetMaxCheck, reset max check to 1");
+            retryInfo.times = "1";
+            RetryInfo.writeRetryProperty(retryInfoFile, retryInfo);
+        }
+        return true;
+    }
     /**
      * if we receive any result, we can delete the temp retry info file
      */
@@ -204,6 +227,7 @@ public class UpgradePatchRetry {
         if (tempPatchFile.exists()) {
             SharePatchFileUtil.safeDeleteFile(tempPatchFile);
         }
+
     }
 
     private void copyToTempFile(File patchFile) {

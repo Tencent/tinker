@@ -83,8 +83,8 @@ public class TinkerLoadResult {
 
         final boolean isMainProcess = tinker.isMainProcess();
 
-        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, process name:%s, main process:%b, systemOTA:%b, oatDir:%s, useInterpretMode:%b",
-            loadCode, ShareTinkerInternals.getProcessName(context), isMainProcess, systemOTA, oatDir, useInterpretMode);
+        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, process name:%s, main process:%b, systemOTA:%b, fingerPrint:%s, oatDir:%s, useInterpretMode:%b",
+            loadCode, ShareTinkerInternals.getProcessName(context), isMainProcess, systemOTA, Build.FINGERPRINT, oatDir, useInterpretMode);
 
         //@Nullable
         final String oldVersion = ShareIntentUtil.getStringExtra(intentResult, ShareIntentUtil.INTENT_PATCH_OLD_VERSION);

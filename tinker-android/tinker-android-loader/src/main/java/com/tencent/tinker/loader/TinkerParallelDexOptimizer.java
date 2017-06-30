@@ -175,6 +175,7 @@ public final class TinkerParallelDexOptimizer {
 
             final List<String> commandAndParams = new ArrayList<>();
             commandAndParams.add("dex2oat");
+            // for 7.1.1, duplicate class fix
             if (Build.VERSION.SDK_INT >= 24) {
                 commandAndParams.add("--runtime-arg");
                 commandAndParams.add("-classpath");
