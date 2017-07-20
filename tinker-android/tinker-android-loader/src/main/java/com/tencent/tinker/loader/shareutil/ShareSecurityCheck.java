@@ -24,15 +24,15 @@ import android.util.Log;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.security.PublicKey;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -40,23 +40,23 @@ import java.util.jar.JarFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareSecurityCheck {
-    private static final String    TAG        = "ShareSecurityCheck";
-    /**
-     * static to faster
-     * public key
-     */
-    private static       PublicKey mPublicKey = null;
+    private static final String TAG = "ShareSecurityCheck";
 
-    private final Context                 mContext;
+    private static final String HASH_ALGORITHM = "SHA-1";
+    private static Set<String> apkSignatureSet = new HashSet<>(1);
+
     private final HashMap<String, String> metaContentMap;
-    private       HashMap<String, String> packageProperties;
+    private final HashMap<String, String> packageProperties;
 
     public ShareSecurityCheck(Context context) {
-        mContext = context;
         metaContentMap = new HashMap<>();
-
-        if (mPublicKey == null) {
-            init(mContext);
+        packageProperties = new HashMap<>();
+        synchronized (ShareSecurityCheck.class) {
+            if (apkSignatureSet.isEmpty()) {
+                synchronized (ShareSecurityCheck.class) {
+                    init(context);
+                }
+            }
         }
     }
 
@@ -70,18 +70,16 @@ public class ShareSecurityCheck {
      * @return HashMap<String, String>
      */
     public HashMap<String, String> getPackagePropertiesIfPresent() {
-        if (packageProperties != null) {
+        if (packageProperties.size() > 0) {
             return packageProperties;
         }
 
-        String property = metaContentMap.get(ShareConstants.PACKAGE_META_FILE);
-
+        final String property = metaContentMap.get(ShareConstants.PACKAGE_META_FILE);
         if (property == null) {
             return null;
         }
 
-        String[] lines = property.split("\n");
-        for (final String line : lines) {
+        for (String line : property.split("\n")) {
             if (line == null || line.length() <= 0) {
                 continue;
             }
@@ -90,17 +88,15 @@ public class ShareSecurityCheck {
                 continue;
             }
             final String[] kv = line.split("=", 2);
-            if (kv == null || kv.length < 2) {
+            if (kv.length < 2) {
                 continue;
-            }
-            if (packageProperties == null) {
-                packageProperties = new HashMap<>();
             }
             packageProperties.put(kv[0].trim(), kv[1].trim());
         }
         return packageProperties;
     }
 
+    @SuppressLint("DefaultLocale")
     public boolean verifyPatchMetaSignature(File path) {
         if (!SharePatchFileUtil.isLegalFile(path)) {
             return false;
@@ -121,45 +117,41 @@ public class ShareSecurityCheck {
                     continue;
                 }
                 //for faster, only check the meta.txt files
-                //we will check other files's mad5 written in meta files
+                //we will check other files's md5 written in meta files
                 if (!name.endsWith(ShareConstants.META_SUFFIX)) {
                     continue;
                 }
                 metaContentMap.put(name, SharePatchFileUtil.loadDigestes(jarFile, jarEntry));
                 Certificate[] certs = jarEntry.getCertificates();
-                if (certs == null) {
-                    return false;
-                }
-                if (!check(path, certs)) {
+                if (certs == null || !check(path, name, certs)) {
                     return false;
                 }
             }
         } catch (Exception e) {
             throw new TinkerRuntimeException(
-                String.format("ShareSecurityCheck file %s, size %d verifyPatchMetaSignature fail", path.getAbsolutePath(), path.length()), e);
+                String.format(
+                    "ShareSecurityCheck file %s, size %d verifyPatchMetaSignature fail",
+                    path.getAbsolutePath(), path.length()
+                ), e);
         } finally {
-            try {
-                if (jarFile != null) {
-                    jarFile.close();
-                }
-            } catch (IOException e) {
-                Log.e(TAG, path.getAbsolutePath(), e);
-            }
+            SharePatchFileUtil.closeQuietly(jarFile);
         }
         return true;
     }
 
-
-    // verify the signature of the Apk
-    private boolean check(File path, Certificate[] certs) {
-        if (certs.length > 0) {
-            for (int i = certs.length - 1; i >= 0; i--) {
-                try {
-                    certs[i].verify(mPublicKey);
+    // verify the signature of the Apkg
+    private boolean check(File path, String name, Certificate[] certs) throws NoSuchAlgorithmException {
+        final MessageDigest sha1 = MessageDigest.getInstance(HASH_ALGORITHM);
+        for (int i = 0; i < certs.length; ++i) {
+            try {
+                final byte[] encodedKey = certs[i].getEncoded();
+                final String patchSignature = ShareHexEncoding.encode(sha1.digest(encodedKey));
+                Log.d(TAG, String.format("#%d Patch(%s/%s) Signature is %s", i, path.getName(), name, patchSignature));
+                if (apkSignatureSet.contains(patchSignature)) {
                     return true;
-                } catch (Exception e) {
-                    Log.e(TAG, path.getAbsolutePath(), e);
                 }
+            } catch (Exception e) {
+                Log.e(TAG, path.getAbsolutePath(), e);
             }
         }
         return false;
@@ -167,19 +159,19 @@ public class ShareSecurityCheck {
 
     @SuppressLint("PackageManagerGetSignatures")
     private void init(Context context) {
-        ByteArrayInputStream stream = null;
         try {
             PackageManager pm = context.getPackageManager();
             String packageName = context.getPackageName();
             PackageInfo packageInfo = pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            stream = new ByteArrayInputStream(packageInfo.signatures[0].toByteArray());
-            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(stream);
-            mPublicKey = cert.getPublicKey();
+            for (int i = 0; i < packageInfo.signatures.length; ++i) {
+                byte[] encodedKey = packageInfo.signatures[i].toByteArray();
+                final MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
+                final String currentSignature = ShareHexEncoding.encode(md.digest(encodedKey));
+                Log.d(TAG, String.format("#%d APK(%s) Signature is %s", i, packageName, currentSignature));
+                apkSignatureSet.add(currentSignature);
+            }
         } catch (Exception e) {
-            throw new TinkerRuntimeException("ShareSecurityCheck init public key fail", e);
-        } finally {
-            SharePatchFileUtil.closeQuietly(stream);
+            throw new TinkerRuntimeException("ShareSecurityCheck init signatures fail", e);
         }
     }
 }
