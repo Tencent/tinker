@@ -234,7 +234,11 @@ public class SharePatchFileUtil {
      * dex may wrap with jar
      */
     public static boolean verifyDexFileMd5(File file, String md5) {
-        if (file == null || md5 == null) {
+        return verifyDexFileMd5(file, ShareConstants.DEX_IN_JAR, md5);
+    }
+
+    public static boolean verifyDexFileMd5(File file, String entryName, String md5) {
+        if (file == null || md5 == null || entryName == null) {
             return false;
         }
         //if it is not the raw dex, we check the stream instead
@@ -246,7 +250,7 @@ public class SharePatchFileUtil {
             ZipFile dexJar = null;
             try {
                 dexJar = new ZipFile(file);
-                ZipEntry classesDex = dexJar.getEntry(ShareConstants.DEX_IN_JAR);
+                ZipEntry classesDex = dexJar.getEntry(entryName);
                 // no code
                 if (null == classesDex) {
                     Log.e(TAG, "There's no entry named: " + ShareConstants.DEX_IN_JAR + " in " + file.getAbsolutePath());

@@ -28,6 +28,8 @@ public class ShareDexDiffPatchInfo {
     public final String destMd5InDvm;
     public final String destMd5InArt;
     public final String oldDexCrC;
+    public final String newDexCrC;
+
     public final String dexDiffMd5;
 
     public final String path;
@@ -42,7 +44,8 @@ public class ShareDexDiffPatchInfo {
     public final String realName;
 
 
-    public ShareDexDiffPatchInfo(String name, String path, String destMd5InDvm, String destMd5InArt, String dexDiffMd5, String oldDexCrc, String dexMode) {
+    public ShareDexDiffPatchInfo(String name, String path, String destMd5InDvm, String destMd5InArt,
+                                 String dexDiffMd5, String oldDexCrc, String newDexCrC, String dexMode) {
         // TODO Auto-generated constructor stub
         this.rawName = name;
         this.path = path;
@@ -50,6 +53,7 @@ public class ShareDexDiffPatchInfo {
         this.destMd5InArt = destMd5InArt;
         this.dexDiffMd5 = dexDiffMd5;
         this.oldDexCrC = oldDexCrc;
+        this.newDexCrC = newDexCrC;
         this.dexMode = dexMode;
         if (dexMode.equals(ShareConstants.DEXMODE_JAR)) {
             this.isJarMode = true;
@@ -75,8 +79,8 @@ public class ShareDexDiffPatchInfo {
             if (line == null || line.length() <= 0) {
                 continue;
             }
-            final String[] kv = line.split(",", 7);
-            if (kv == null || kv.length < 7) {
+            final String[] kv = line.split(",", 8);
+            if (kv == null || kv.length < 8) {
                 continue;
             }
 
@@ -87,9 +91,12 @@ public class ShareDexDiffPatchInfo {
             final String destMd5InArt = kv[3].trim();
             final String dexDiffMd5 = kv[4].trim();
             final String oldDexCrc = kv[5].trim();
-            final String dexMode = kv[6].trim();
+            final String newDexCrc = kv[6].trim();
 
-            ShareDexDiffPatchInfo dexInfo = new ShareDexDiffPatchInfo(name, path, destMd5InDvm, destMd5InArt, dexDiffMd5, oldDexCrc, dexMode);
+            final String dexMode = kv[7].trim();
+
+            ShareDexDiffPatchInfo dexInfo = new ShareDexDiffPatchInfo(name, path, destMd5InDvm, destMd5InArt,
+                dexDiffMd5, oldDexCrc, newDexCrc, dexMode);
             dexList.add(dexInfo);
         }
 
@@ -119,6 +126,8 @@ public class ShareDexDiffPatchInfo {
         sb.append(destMd5InArt);
         sb.append(",");
         sb.append(oldDexCrC);
+        sb.append(",");
+        sb.append(newDexCrC);
         sb.append(",");
         sb.append(dexDiffMd5);
         sb.append(",");

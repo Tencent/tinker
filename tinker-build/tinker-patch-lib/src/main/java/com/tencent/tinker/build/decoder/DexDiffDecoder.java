@@ -304,7 +304,7 @@ public class DexDiffDecoder extends BaseDecoder {
         final String md5 = MD5.getMD5(dest);
 
         String meta = CHANGED_CLASSES_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0
-                + "," + 0 + "," + dexMode;
+                + "," + 0 + "," + 0 + "," + dexMode;
 
         Logger.d("\nDexDecoder:write changed classes dex meta file data: %s", meta);
 
@@ -475,7 +475,7 @@ public class DexDiffDecoder extends BaseDecoder {
         String md5 = MD5.getMD5(is, 1024);
         is.close();
 
-        String meta = TEST_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0 + "," + 0 + "," + dexMode;
+        String meta = TEST_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0 + "," + 0 + "," + 0 + "," + dexMode;
 
         File dest = new File(config.mTempResultDir + "/" + TEST_DEX_NAME);
         FileOperation.copyResourceUsingStream(TEST_DEX_NAME, dest);
@@ -665,7 +665,9 @@ public class DexDiffDecoder extends BaseDecoder {
                 }
             }
 
-            String meta = fileName + "," + parentRelative + "," + destMd5InDvm + "," + destMd5InArt + "," + dexDiffMd5 + "," + oldCrc + "," + dexMode;
+            String newCrc = FileOperation.getZipEntryCrc(config.mNewApkFile, relative);
+            String meta = fileName + "," + parentRelative + "," + destMd5InDvm + ","
+                + destMd5InArt + "," + dexDiffMd5 + "," + oldCrc + "," + newCrc + "," + dexMode;
 
             Logger.d("DexDecoder:write meta file data: %s", meta);
             metaWriter.writeLineToInfoFile(meta);

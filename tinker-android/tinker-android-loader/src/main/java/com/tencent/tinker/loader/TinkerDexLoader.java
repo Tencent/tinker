@@ -33,6 +33,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import dalvik.system.PathClassLoader;
 
@@ -54,6 +55,9 @@ public class TinkerDexLoader {
 
 
     private static File testOptDexFile;
+    private static HashSet<ShareDexDiffPatchInfo> classNDexInfo = new HashSet<>();
+
+    private static boolean isVmArt = ShareTinkerInternals.isVmArt();
 
     private TinkerDexLoader() {
     }
@@ -80,15 +84,15 @@ public class TinkerDexLoader {
             return false;
         }
         String dexPath = directory + "/" + DEX_PATH + "/";
-//        Log.i(TAG, "loadTinkerJars: dex path: " + dexPath);
-//        Log.i(TAG, "loadTinkerJars: opt path: " + optimizeDir.getAbsolutePath());
 
         ArrayList<File> legalFiles = new ArrayList<>();
 
-        final boolean isArtPlatForm = ShareTinkerInternals.isVmArt();
         for (ShareDexDiffPatchInfo info : dexList) {
             //for dalvik, ignore art support dex
             if (isJustArtSupportDex(info)) {
+                continue;
+            }
+            if (classNDexInfo.contains(info)) {
                 continue;
             }
             String path = dexPath + info.realName;
@@ -96,7 +100,7 @@ public class TinkerDexLoader {
 
             if (application.isTinkerLoadVerifyFlag()) {
                 long start = System.currentTimeMillis();
-                String checkMd5 = isArtPlatForm ? info.destMd5InArt : info.destMd5InDvm;
+                String checkMd5 = getInfoMd5(info);
                 if (!SharePatchFileUtil.verifyDexFileMd5(file, checkMd5)) {
                     //it is good to delete the mismatch file
                     ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_MD5_MISMATCH);
@@ -107,6 +111,22 @@ public class TinkerDexLoader {
                 Log.i(TAG, "verify dex file:" + file.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
             }
             legalFiles.add(file);
+        }
+        // verify merge classN.apk
+        if (isVmArt && !classNDexInfo.isEmpty()) {
+            File classNFile = new File(dexPath + ShareConstants.CLASS_N_APK_NAME);
+
+            if (application.isTinkerLoadVerifyFlag()) {
+                for (ShareDexDiffPatchInfo info : classNDexInfo) {
+                    if (!SharePatchFileUtil.verifyDexFileMd5(classNFile, info.rawName, info.destMd5InArt)) {
+                        ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_MD5_MISMATCH);
+                        intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISMATCH_DEX_PATH,
+                            classNFile.getAbsolutePath());
+                        return false;
+                    }
+                }
+            }
+            legalFiles.add(classNFile);
         }
         File optimizeDir = new File(directory + "/" + oatDir);
 
@@ -136,9 +156,9 @@ public class TinkerDexLoader {
             // change dir
             optimizeDir = new File(directory + "/" + INTERPRET_DEX_OPTIMIZE_PATH);
 
-            TinkerParallelDexOptimizer.optimizeAll(
+            TinkerDexOptimizer.optimizeAll(
                 legalFiles, optimizeDir, true, targetISA,
-                new TinkerParallelDexOptimizer.ResultCallback() {
+                new TinkerDexOptimizer.ResultCallback() {
                     long start;
 
                     @Override
@@ -196,6 +216,8 @@ public class TinkerDexLoader {
             return true;
         }
         dexList.clear();
+        classNDexInfo.clear();
+
         ShareDexDiffPatchInfo.parseDexDiffPatchInfo(meta, dexList);
 
         if (dexList.isEmpty()) {
@@ -214,7 +236,14 @@ public class TinkerDexLoader {
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_PACKAGE_CHECK_FAIL);
                 return false;
             }
-            dexes.put(info.realName, info.destMd5InDvm);
+            if (isVmArt && ShareConstants.CLASS_N_PATTERN.matcher(info.realName).matches()) {
+                classNDexInfo.add(info);
+            } else {
+                dexes.put(info.realName, getInfoMd5(info));
+            }
+        }
+        if (isVmArt && !classNDexInfo.isEmpty()) {
+            dexes.put(ShareConstants.CLASS_N_APK_NAME, "");
         }
         //tinker/patch.info/patch-641e634c/dex
         String dexDirectory = directory + "/" + DEX_PATH + "/";
@@ -255,6 +284,10 @@ public class TinkerDexLoader {
         return true;
     }
 
+    private static String getInfoMd5(ShareDexDiffPatchInfo info) {
+        return isVmArt ? info.destMd5InArt : info.destMd5InDvm;
+    }
+
     private static void deleteOutOfDateOATFile(String directory) {
         String optimizeDexDirectory = directory + "/" + DEFAULT_DEX_OPTIMIZE_PATH + "/";
         SharePatchFileUtil.deleteDir(optimizeDexDirectory);
@@ -266,7 +299,7 @@ public class TinkerDexLoader {
     }
 
     private static boolean isJustArtSupportDex(ShareDexDiffPatchInfo dexDiffPatchInfo) {
-        if (ShareTinkerInternals.isVmArt()) {
+        if (isVmArt) {
             return false;
         }
 
