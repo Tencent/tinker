@@ -116,7 +116,7 @@ public class ShareSecurityCheck {
                     continue;
                 }
                 //for faster, only check the meta.txt files
-                //we will check other files's ma5 written in meta files
+                //we will check other files's md5 written in meta files
                 if (!name.endsWith(ShareConstants.META_SUFFIX)) {
                     continue;
                 }
