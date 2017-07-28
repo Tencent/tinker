@@ -187,6 +187,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
        if (patchList.isEmpty() || !isVmArt) {
             return false;
         }
+        ShareDexDiffPatchInfo testInfo = null;
+        File testFile = null;
 
         for (ShareDexDiffPatchInfo info : patchList) {
             File dexFile = new File(dexFilePath + info.realName);
@@ -195,6 +197,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             if (ShareConstants.CLASS_N_PATTERN.matcher(fileName).matches()) {
                 classNDexInfo.put(info, dexFile);
             }
+            if (info.rawName.startsWith(ShareConstants.TEST_DEX_NAME)) {
+                testInfo = info;
+                testFile = dexFile;
+            }
+        }
+        if (testInfo != null) {
+            classNDexInfo.put(ShareTinkerInternals.changeTestDexToClassN(testInfo, classNDexInfo.size() + 1), testFile);
         }
 
         File classNFile = new File(dexFilePath, ShareConstants.CLASS_N_APK_NAME);
@@ -238,7 +247,6 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(classNFile)));
             for (ShareDexDiffPatchInfo info : classNDexInfo.keySet()) {
                 File dexFile = classNDexInfo.get(info);
-                TinkerLog.w(TAG, "dexFile.getName: %s", dexFile.getName());
 
                 if (info.isJarMode) {
                     TinkerZipFile dexZipFile = new TinkerZipFile(dexFile);

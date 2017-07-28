@@ -166,8 +166,8 @@ public class SystemClassLoaderAdder {
                 final boolean isLhsNameMatchClassN = matchesClassNPatternMemo.get(lhsName);
                 final boolean isRhsNameMatchClassN = matchesClassNPatternMemo.get(rhsName);
                 if (isLhsNameMatchClassN && isRhsNameMatchClassN) {
-                    final int lhsDotPos = lhsName.lastIndexOf('.');
-                    final int rhsDotPos = rhsName.lastIndexOf('.');
+                    final int lhsDotPos = lhsName.indexOf('.');
+                    final int rhsDotPos = rhsName.indexOf('.');
                     final int lhsId = (lhsDotPos > 7 ? Integer.parseInt(lhsName.substring(7, lhsDotPos)) : 1);
                     final int rhsId = (rhsDotPos > 7 ? Integer.parseInt(rhsName.substring(7, rhsDotPos)) : 1);
                     return (lhsId == rhsId ? 0 : (lhsId < rhsId ? -1 : 1));
