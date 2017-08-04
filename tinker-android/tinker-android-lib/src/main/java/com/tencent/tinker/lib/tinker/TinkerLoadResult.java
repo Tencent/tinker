@@ -132,6 +132,9 @@ public class TinkerLoadResult {
                 case ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION:
                     errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE;
                     break;
+                case ShareConstants.ERROR_LOAD_PATCH_VERSION_COMPONENT_HOTPLUG_EXCEPTION:
+                    errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_COMPONENT_HOTPLUG;
+                    break;
                 case ShareConstants.ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION:
                     errorCode = ShareConstants.ERROR_LOAD_EXCEPTION_UNCAUGHT;
                     break;

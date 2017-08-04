@@ -161,6 +161,9 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -24;
     public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -25;
 
+    //component hotplug
+    public static final int ERROR_LOAD_PATCH_VERSION_COMPONENT_HOTPLUG_EXCEPTION = -26;
+
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 
     //load exception code
@@ -169,6 +172,7 @@ public class ShareConstants {
     public static final int ERROR_LOAD_EXCEPTION_DEX      = -2;
     public static final int ERROR_LOAD_EXCEPTION_RESOURCE = -3;
     public static final int ERROR_LOAD_EXCEPTION_UNCAUGHT = -4;
+    public static final int ERROR_LOAD_EXCEPTION_COMPONENT_HOTPLUG = -5;
 
     //patch listener error code
     public static final int ERROR_PATCH_OK        = 0;

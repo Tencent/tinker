@@ -78,6 +78,10 @@ public class Utils {
         return (object == null) || (object.length() <= 0);
     }
 
+    public static boolean isNullOrNil(final Collection<?> collection) {
+        return (collection == null || collection.isEmpty());
+    }
+
     public static boolean isStringMatchesPatterns(String str, Collection<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(str).matches()) {

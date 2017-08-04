@@ -24,6 +24,7 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
+import com.tencent.tinker.loader.hotplug.ComponentHotplug;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -283,6 +284,19 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 return;
             }
         }
+
+        // Init component hotplug support.
+        if (isEnabledForDex && isEnabledForResource) {
+            try {
+                ComponentHotplug.install(app, securityCheck);
+            } catch (Throwable thr) {
+                Log.w(TAG, "tryLoadPatchFiles:onInitComponentHotPlugFail", thr);
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_EXCEPTION_COMPONENT_HOTPLUG);
+                resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, thr);
+                return;
+            }
+        }
+
         // kill all other process if oat mode change
         if (oatModeChanged) {
             ShareTinkerInternals.killAllOtherProcess(app);
