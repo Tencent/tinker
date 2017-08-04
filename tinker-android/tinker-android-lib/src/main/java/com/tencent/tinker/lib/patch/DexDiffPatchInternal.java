@@ -59,7 +59,7 @@ import java.util.zip.ZipOutputStream;
 public class DexDiffPatchInternal extends BasePatchInternal {
     protected static final String TAG = "Tinker.DexDiffPatchInternal";
 
-    protected static final int WAIT_ASYN_OAT_TIME = 10 * 1000;
+    protected static final int WAIT_ASYN_OAT_TIME = 12 * 1000;
     protected static final int MAX_WAIT_COUNT     = 30;
 
     private static ArrayList<File>                      optFiles      = new ArrayList<>();
@@ -92,12 +92,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         if (optFiles.isEmpty()) {
             return true;
         }
-
-        int size = optFiles.size() * 6;
+        // should use patch list size
+        int size = patchList.size() * 6;
         if (size > MAX_WAIT_COUNT) {
             size = MAX_WAIT_COUNT;
         }
-        TinkerLog.i(TAG, "dex count: %d, final wait time: %d", optFiles.size(), size);
+        TinkerLog.i(TAG, "raw dex count: %d, dex opt dex count: %d, final wait times: %d", patchList.size(), optFiles.size(), size);
 
         for (int i = 0; i < size; i++) {
             if (!checkAllDexOptFile(optFiles, i + 1)) {
