@@ -29,11 +29,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import dalvik.system.DexFile;
 
@@ -41,10 +38,8 @@ import dalvik.system.DexFile;
  * Created by tangyinsheng on 2016/11/15.
  */
 
-public final class TinkerParallelDexOptimizer {
+public final class TinkerDexOptimizer {
     private static final String TAG = "Tinker.ParallelDex";
-
-    private static final int DEFAULT_THREAD_COUNT = 2;
 
     /**
      * Optimize (trigger dexopt or dex2oat) dexes.
@@ -58,16 +53,8 @@ public final class TinkerParallelDexOptimizer {
         return optimizeAll(dexFiles, optimizedDir, false, null, cb);
     }
 
-    public static boolean optimizeAll(Collection<File> dexFiles, File optimizedDir, boolean useInterpretMode, String targetISA, ResultCallback cb) {
-        final AtomicInteger successCount = new AtomicInteger(0);
-        return optimizeAllLocked(dexFiles, optimizedDir, useInterpretMode, targetISA, successCount, cb, DEFAULT_THREAD_COUNT);
-    }
-
-    private synchronized static boolean optimizeAllLocked(Collection<File> dexFiles, File optimizedDir,
-                                             boolean useInterpretMode, String targetISA, AtomicInteger successCount, ResultCallback cb, int threadCount) {
-        final CountDownLatch latch = new CountDownLatch(dexFiles.size());
-        final ExecutorService threadPool = Executors.newFixedThreadPool(threadCount);
-        long startTick = System.nanoTime();
+    public static boolean optimizeAll(Collection<File> dexFiles, File optimizedDir,
+                                                   boolean useInterpretMode, String targetISA, ResultCallback cb) {
         ArrayList<File> sortList = new ArrayList<>(dexFiles);
         // sort input dexFiles with its file length
         Collections.sort(sortList, new Comparator<File>() {
@@ -85,25 +72,14 @@ public final class TinkerParallelDexOptimizer {
         });
         Collections.reverse(sortList);
         for (File dexFile : sortList) {
-            OptimizeWorker worker = new OptimizeWorker(dexFile, optimizedDir, useInterpretMode, targetISA, successCount, latch, cb);
-            threadPool.submit(worker);
-        }
-        try {
-            latch.await();
-            long timeCost = (System.nanoTime() - startTick) / 1000000;
-            if (successCount.get() == dexFiles.size()) {
-                Log.i(TAG, "All dexes are optimized successfully, cost: " + timeCost + " ms.");
-                return true;
-            } else {
-                Log.e(TAG, "Dexes optimizing failed, some dexes are not optimized.");
+            OptimizeWorker worker = new OptimizeWorker(dexFile, optimizedDir, useInterpretMode, targetISA, cb);
+            if (!worker.run()) {
                 return false;
             }
-        } catch (InterruptedException e) {
-            Log.w(TAG, "Dex optimizing was interrupted.", e);
-            return false;
-        } finally {
-            threadPool.shutdown();
         }
+        return true;
+
+
     }
 
     public interface ResultCallback {
@@ -114,33 +90,29 @@ public final class TinkerParallelDexOptimizer {
         void onFailed(File dexFile, File optimizedDir, Throwable thr);
     }
 
-    private static class OptimizeWorker implements Runnable {
-        private static       String   targetISA           = null;
+    private static class OptimizeWorker {
+        private static String targetISA = null;
 
         private final File           dexFile;
         private final File           optimizedDir;
         private final boolean        useInterpretMode;
-        private final AtomicInteger  successCount;
-        private final CountDownLatch waitingLatch;
         private final ResultCallback callback;
 
-        OptimizeWorker(File dexFile, File optimizedDir, boolean useInterpretMode, String targetISA, AtomicInteger successCount, CountDownLatch latch, ResultCallback cb) {
+        OptimizeWorker(File dexFile, File optimizedDir, boolean useInterpretMode, String targetISA, ResultCallback cb) {
             this.dexFile = dexFile;
             this.optimizedDir = optimizedDir;
             this.useInterpretMode = useInterpretMode;
-            this.successCount = successCount;
-            this.waitingLatch = latch;
             this.callback = cb;
             this.targetISA = targetISA;
         }
 
-        @Override
-        public void run() {
+        public boolean run() {
             try {
                 if (!SharePatchFileUtil.isLegalFile(dexFile)) {
                     if (callback != null) {
                         callback.onFailed(dexFile, optimizedDir,
                             new IOException("dex file " + dexFile.getAbsolutePath() + " is not exist!"));
+                        return false;
                     }
                 }
                 if (callback != null) {
@@ -152,7 +124,6 @@ public final class TinkerParallelDexOptimizer {
                 } else {
                     DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
                 }
-                successCount.incrementAndGet();
                 if (callback != null) {
                     callback.onSuccess(dexFile, optimizedDir, new File(optimizedPath));
                 }
@@ -160,10 +131,10 @@ public final class TinkerParallelDexOptimizer {
                 Log.e(TAG, "Failed to optimize dex: " + dexFile.getAbsolutePath(), e);
                 if (callback != null) {
                     callback.onFailed(dexFile, optimizedDir, e);
+                    return false;
                 }
-            } finally {
-                this.waitingLatch.countDown();
             }
+            return true;
         }
 
         private void interpretDex2Oat(String dexFilePath, String oatFilePath) throws IOException {
@@ -175,6 +146,7 @@ public final class TinkerParallelDexOptimizer {
 
             final List<String> commandAndParams = new ArrayList<>();
             commandAndParams.add("dex2oat");
+            // for 7.1.1, duplicate class fix
             if (Build.VERSION.SDK_INT >= 24) {
                 commandAndParams.add("--runtime-arg");
                 commandAndParams.add("-classpath");

@@ -16,11 +16,13 @@
 
 package com.tencent.tinker.loader.shareutil;
 
+import java.util.regex.Pattern;
+
 /**
  * Created by zhangshaowen on 16/3/24.
  */
 public class ShareConstants {
-    public static final String TINKER_VERSION = "1.7.11";
+    public static final String TINKER_VERSION = "1.8.0";
 
     public static final int BUFFER_SIZE         = 16384;
     public static final int MD5_LENGTH          = 32;
@@ -50,6 +52,8 @@ public class ShareConstants {
     public static final String INTERPRET_DEX_OPTIMIZE_PATH = "interpet";
     public static final String CHANING_DEX_OPTIMIZE_PATH   = "changing";
 
+    public static final Pattern CLASS_N_PATTERN = Pattern.compile("classes(?:[2-9]{0,1}|[1-9][0-9]+)\\.dex(\\.jar)?");
+
 
     public static final String DEX_SUFFIX  = ".dex";
     public static final String JAR_SUFFIX  = ".jar";
@@ -57,7 +61,7 @@ public class ShareConstants {
 
     public static final String TEST_DEX_NAME            = "test.dex";
     public static final String CHANGED_CLASSES_DEX_NAME = "changed_classes.dex";
-
+    public static final String CLASS_N_APK_NAME         = "tinker_classN.apk";
 
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
     public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";
@@ -119,9 +123,10 @@ public class ShareConstants {
     public static final int TYPE_PATCH_INFO = 2;
     public static final int TYPE_DEX        = 3;
 
-    public static final int TYPE_DEX_OPT  = 4;
-    public static final int TYPE_LIBRARY  = 5;
-    public static final int TYPE_RESOURCE = 6;
+    public static final int TYPE_DEX_OPT     = 4;
+    public static final int TYPE_LIBRARY     = 5;
+    public static final int TYPE_RESOURCE    = 6;
+    public static final int TYPE_CLASS_N_DEX = 7;
 
 
     public static final int TINKER_DISABLE             = 0x00;
@@ -175,12 +180,14 @@ public class ShareConstants {
     public static final int ERROR_LOAD_EXCEPTION_COMPONENT_HOTPLUG = -5;
 
     //patch listener error code
-    public static final int ERROR_PATCH_OK        = 0;
-    public static final int ERROR_PATCH_DISABLE   = -1;
-    public static final int ERROR_PATCH_NOTEXIST  = -2;
-    public static final int ERROR_PATCH_RUNNING   = -3;
-    public static final int ERROR_PATCH_INSERVICE = -4;
-    public static final int ERROR_PATCH_JIT       = -5;
+    public static final int ERROR_PATCH_OK                = 0;
+    public static final int ERROR_PATCH_DISABLE           = -1;
+    public static final int ERROR_PATCH_NOTEXIST          = -2;
+    public static final int ERROR_PATCH_RUNNING           = -3;
+    public static final int ERROR_PATCH_INSERVICE         = -4;
+    public static final int ERROR_PATCH_JIT               = -5;
+    public static final int ERROR_PATCH_ALREADY_APPLY     = -6;
+    public static final int ERROR_PATCH_RETRY_COUNT_LIMIT = -7;
 
 
     //package check error code

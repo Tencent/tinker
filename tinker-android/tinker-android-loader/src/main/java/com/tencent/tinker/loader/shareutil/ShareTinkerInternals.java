@@ -99,6 +99,16 @@ public class ShareTinkerInternals {
         }
     }
 
+    public static ShareDexDiffPatchInfo changeTestDexToClassN(ShareDexDiffPatchInfo rawDexInfo, int index) {
+        if (rawDexInfo.rawName.startsWith(ShareConstants.TEST_DEX_NAME)) {
+           String newName = "classes" + index + ".dex";
+            return new ShareDexDiffPatchInfo(newName, rawDexInfo.path, rawDexInfo.destMd5InDvm, rawDexInfo.destMd5InArt,
+                rawDexInfo.dexDiffMd5, rawDexInfo.oldDexCrC, rawDexInfo.newDexCrC, rawDexInfo.dexMode);
+        }
+
+        return null;
+    }
+
     public static boolean isNullOrNil(final String object) {
         if ((object == null) || (object.length() <= 0)) {
             return true;

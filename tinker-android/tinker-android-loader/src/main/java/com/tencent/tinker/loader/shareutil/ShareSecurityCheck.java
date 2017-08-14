@@ -27,10 +27,7 @@ import com.tencent.tinker.loader.TinkerRuntimeException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.security.PublicKey;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.jar.JarEntry;
@@ -40,22 +37,22 @@ import java.util.jar.JarFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareSecurityCheck {
-    private static final String    TAG        = "ShareSecurityCheck";
+    private static final String TAG           = "Tinker.SecurityCheck";
     /**
      * static to faster
      * public key
      */
-    private static       PublicKey mPublicKey = null;
+    private static       String mPublicKeyMd5 = null;
 
     private final Context                 mContext;
     private final HashMap<String, String> metaContentMap;
-    private       HashMap<String, String> packageProperties;
+    private final HashMap<String, String> packageProperties;
 
     public ShareSecurityCheck(Context context) {
         mContext = context;
         metaContentMap = new HashMap<>();
-
-        if (mPublicKey == null) {
+        packageProperties = new HashMap<>();
+        if (mPublicKeyMd5 == null) {
             init(mContext);
         }
     }
@@ -70,7 +67,7 @@ public class ShareSecurityCheck {
      * @return HashMap<String, String>
      */
     public HashMap<String, String> getPackagePropertiesIfPresent() {
-        if (packageProperties != null) {
+        if (!packageProperties.isEmpty()) {
             return packageProperties;
         }
 
@@ -93,9 +90,7 @@ public class ShareSecurityCheck {
             if (kv == null || kv.length < 2) {
                 continue;
             }
-            if (packageProperties == null) {
-                packageProperties = new HashMap<>();
-            }
+
             packageProperties.put(kv[0].trim(), kv[1].trim());
         }
         return packageProperties;
@@ -121,16 +116,14 @@ public class ShareSecurityCheck {
                     continue;
                 }
                 //for faster, only check the meta.txt files
-                //we will check other files's mad5 written in meta files
+                //we will check other files's md5 written in meta files
                 if (!name.endsWith(ShareConstants.META_SUFFIX)) {
                     continue;
                 }
                 metaContentMap.put(name, SharePatchFileUtil.loadDigestes(jarFile, jarEntry));
                 Certificate[] certs = jarEntry.getCertificates();
-                if (certs == null) {
-                    return false;
-                }
-                if (!check(path, certs)) {
+
+                if (certs == null || !check(path, certs)) {
                     return false;
                 }
             }
@@ -155,8 +148,9 @@ public class ShareSecurityCheck {
         if (certs.length > 0) {
             for (int i = certs.length - 1; i >= 0; i--) {
                 try {
-                    certs[i].verify(mPublicKey);
-                    return true;
+                    if (mPublicKeyMd5.equals(SharePatchFileUtil.getMD5(certs[i].getEncoded()))) {
+                        return true;
+                    }
                 } catch (Exception e) {
                     Log.e(TAG, path.getAbsolutePath(), e);
                 }
@@ -172,10 +166,10 @@ public class ShareSecurityCheck {
             PackageManager pm = context.getPackageManager();
             String packageName = context.getPackageName();
             PackageInfo packageInfo = pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            stream = new ByteArrayInputStream(packageInfo.signatures[0].toByteArray());
-            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(stream);
-            mPublicKey = cert.getPublicKey();
+            mPublicKeyMd5 = SharePatchFileUtil.getMD5(packageInfo.signatures[0].toByteArray());
+            if (mPublicKeyMd5 == null) {
+                throw new TinkerRuntimeException("get public key md5 is null");
+            }
         } catch (Exception e) {
             throw new TinkerRuntimeException("ShareSecurityCheck init public key fail", e);
         } finally {

@@ -26,39 +26,39 @@ public class TinkerLog {
     private static TinkerLogImp debugLog = new TinkerLogImp() {
 
         @Override
-        public void v(final String tag, final String msg, final Object... obj) {
-            String log = obj == null ? msg : String.format(msg, obj);
+        public void v(final String tag, final String format, final Object... params) {
+            String log = (params == null || params.length == 0) ? format : String.format(format, params);
             android.util.Log.v(tag, log);
         }
 
         @Override
-        public void i(final String tag, final String msg, final Object... obj) {
-            String log = obj == null ? msg : String.format(msg, obj);
+        public void i(final String tag, final String format, final Object... params) {
+            String log = (params == null || params.length == 0) ? format : String.format(format, params);
             android.util.Log.i(tag, log);
 
         }
 
         @Override
-        public void d(final String tag, final String msg, final Object... obj) {
-            String log = obj == null ? msg : String.format(msg, obj);
+        public void d(final String tag, final String format, final Object... params) {
+            String log = (params == null || params.length == 0) ? format : String.format(format, params);
             android.util.Log.d(tag, log);
         }
 
         @Override
-        public void w(final String tag, final String msg, final Object... obj) {
-            String log = obj == null ? msg : String.format(msg, obj);
+        public void w(final String tag, final String format, final Object... params) {
+            String log = (params == null || params.length == 0) ? format : String.format(format, params);
             android.util.Log.w(tag, log);
         }
 
         @Override
-        public void e(final String tag, final String msg, final Object... obj) {
-            String log = obj == null ? msg : String.format(msg, obj);
+        public void e(final String tag, final String format, final Object... params) {
+            String log = (params == null || params.length == 0) ? format : String.format(format, params);
             android.util.Log.e(tag, log);
         }
 
         @Override
-        public void printErrStackTrace(String tag, Throwable tr, String format, Object... obj) {
-            String log = obj == null ? format : String.format(format, obj);
+        public void printErrStackTrace(String tag, Throwable tr, String format, Object... params) {
+            String log = (params == null || params.length == 0) ? format : String.format(format, params);
             if (log == null) {
                 log = "";
             }

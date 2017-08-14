@@ -41,6 +41,8 @@ import java.util.zip.ZipFile;
 public class SharePatchFileUtil {
     private static final String TAG = "Tinker.PatchFileUtil";
 
+    private static char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
     /**
      * data dir, such as /data/data/tinker.sample.android/tinker
      * @param context
@@ -234,7 +236,11 @@ public class SharePatchFileUtil {
      * dex may wrap with jar
      */
     public static boolean verifyDexFileMd5(File file, String md5) {
-        if (file == null || md5 == null) {
+        return verifyDexFileMd5(file, ShareConstants.DEX_IN_JAR, md5);
+    }
+
+    public static boolean verifyDexFileMd5(File file, String entryName, String md5) {
+        if (file == null || md5 == null || entryName == null) {
             return false;
         }
         //if it is not the raw dex, we check the stream instead
@@ -246,7 +252,7 @@ public class SharePatchFileUtil {
             ZipFile dexJar = null;
             try {
                 dexJar = new ZipFile(file);
-                ZipEntry classesDex = dexJar.getEntry(ShareConstants.DEX_IN_JAR);
+                ZipEntry classesDex = dexJar.getEntry(entryName);
                 // no code
                 if (null == classesDex) {
                     Log.e(TAG, "There's no entry named: " + ShareConstants.DEX_IN_JAR + " in " + file.getAbsolutePath());
@@ -350,6 +356,25 @@ public class SharePatchFileUtil {
                 md5Str.append(Integer.toString((hashValue[i] & 0xff) + 0x100, 16).substring(1));
             }
             return md5Str.toString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String getMD5(byte[] buffer) {
+        try {
+            MessageDigest mdTemp = MessageDigest.getInstance("MD5");
+            mdTemp.update(buffer);
+            byte[] md = mdTemp.digest();
+            int j = md.length;
+            char[] str = new char[j * 2];
+            int k = 0;
+            for (int i = 0; i < j; i++) {
+                byte byte0 = md[i];
+                str[k++] = hexDigits[byte0 >>> 4 & 0xf];
+                str[k++] = hexDigits[byte0 & 0xf];
+            }
+            return new String(str);
         } catch (Exception e) {
             return null;
         }

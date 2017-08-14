@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 import dalvik.system.DexFile;
@@ -131,11 +130,10 @@ public class SystemClassLoaderAdder {
     private static List<File> createSortedAdditionalPathEntries(List<File> additionalPathEntries) {
         final List<File> result = new ArrayList<>(additionalPathEntries);
 
-        final Pattern classNPattern = Pattern.compile("classes(?:[2-9]{0,1}|[1-9][0-9]+)\\.dex");
         final Map<String, Boolean> matchesClassNPatternMemo = new HashMap<>();
         for (File file : result) {
             final String name = file.getName();
-            matchesClassNPatternMemo.put(name, classNPattern.matcher(name).matches());
+            matchesClassNPatternMemo.put(name, ShareConstants.CLASS_N_PATTERN.matcher(name).matches());
         }
         Collections.sort(result, new Comparator<File>() {
             @Override
@@ -168,8 +166,8 @@ public class SystemClassLoaderAdder {
                 final boolean isLhsNameMatchClassN = matchesClassNPatternMemo.get(lhsName);
                 final boolean isRhsNameMatchClassN = matchesClassNPatternMemo.get(rhsName);
                 if (isLhsNameMatchClassN && isRhsNameMatchClassN) {
-                    final int lhsDotPos = lhsName.lastIndexOf('.');
-                    final int rhsDotPos = rhsName.lastIndexOf('.');
+                    final int lhsDotPos = lhsName.indexOf('.');
+                    final int rhsDotPos = rhsName.indexOf('.');
                     final int lhsId = (lhsDotPos > 7 ? Integer.parseInt(lhsName.substring(7, lhsDotPos)) : 1);
                     final int rhsId = (rhsDotPos > 7 ? Integer.parseInt(rhsName.substring(7, rhsDotPos)) : 1);
                     return (lhsId == rhsId ? 0 : (lhsId < rhsId ? -1 : 1));

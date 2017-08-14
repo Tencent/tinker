@@ -191,7 +191,7 @@ public class SampleTinkerReport {
             case Utils.ERROR_PATCH_GOOGLEPLAY_CHANNEL:
                 reporter.onReport(KEY_TRY_APPLY_GOOGLEPLAY);
                 break;
-            case Utils.ERROR_PATCH_ALREADY_APPLY:
+            case ShareConstants.ERROR_PATCH_ALREADY_APPLY:
                 reporter.onReport(KEY_TRY_APPLY_ALREADY_APPLY);
                 break;
             case Utils.ERROR_PATCH_CRASH_LIMIT:
