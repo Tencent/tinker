@@ -249,7 +249,8 @@ public class TinkerDexLoader {
             }
         }
 
-        if (isVmArt && !classNDexInfo.isEmpty()) {
+        if (isVmArt
+            && (testInfo != null || !classNDexInfo.isEmpty())) {
             if (testInfo != null) {
                 classNDexInfo.add(ShareTinkerInternals.changeTestDexToClassN(testInfo, classNDexInfo.size() + 1));
             }

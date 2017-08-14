@@ -43,18 +43,18 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
-    private static final String TAG = "Tinker.TinkerInternals";
+    private static final String  TAG       = "Tinker.TinkerInternals";
     private static final boolean VM_IS_ART = isVmArt(System.getProperty("java.vm.version"));
     private static final boolean VM_IS_JIT = isVmJitInternal();
 
-    private static final String PATCH_PROCESS_NAME = ":patch";
-    private static Boolean isPatchProcess = null;
+    private static final String  PATCH_PROCESS_NAME    = ":patch";
+    private static       Boolean isPatchProcess        = null;
     /**
      * or you may just hardcode them in your app
      */
-    private static String processName = null;
-    private static String tinkerID    = null;
-    private static String currentInstructionSet = null;
+    private static       String  processName           = null;
+    private static       String  tinkerID              = null;
+    private static       String  currentInstructionSet = null;
 
     public static boolean isVmArt() {
         return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
@@ -101,7 +101,12 @@ public class ShareTinkerInternals {
 
     public static ShareDexDiffPatchInfo changeTestDexToClassN(ShareDexDiffPatchInfo rawDexInfo, int index) {
         if (rawDexInfo.rawName.startsWith(ShareConstants.TEST_DEX_NAME)) {
-           String newName = "classes" + index + ".dex";
+            String newName;
+            if (index != 1) {
+                newName = "classes" + index + ".dex";
+            } else {
+                newName = "classes.dex";
+            }
             return new ShareDexDiffPatchInfo(newName, rawDexInfo.path, rawDexInfo.destMd5InDvm, rawDexInfo.destMd5InArt,
                 rawDexInfo.dexDiffMd5, rawDexInfo.oldDexCrC, rawDexInfo.newDexCrC, rawDexInfo.dexMode);
         }
