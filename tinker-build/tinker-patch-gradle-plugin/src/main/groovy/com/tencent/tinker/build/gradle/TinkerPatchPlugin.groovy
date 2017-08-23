@@ -20,6 +20,7 @@ import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.build.util.TypedValue
+import com.tencent.tinker.build.util.Utils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -36,7 +37,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.apply plugin: 'osdetector'
+        //osdetector change its plugin name in 1.4.0
+        try {
+            project.apply plugin: 'osdetector'
+        } catch (Throwable e) {
+            project.apply plugin: 'com.google.osdetector'
+        }
 
         project.extensions.create('tinkerPatch', TinkerPatchExtension)
 
@@ -48,17 +54,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
         project.tinkerPatch.extensions.create('packageConfig', TinkerPackageConfigExtension, project)
         project.tinkerPatch.extensions.create('sevenZip', TinkerSevenZipExtension, project)
 
-        def configuration = project.tinkerPatch
-
         if (!project.plugins.hasPlugin('com.android.application')) {
             throw new GradleException('generateTinkerApk: Android Application plugin required')
         }
 
         def android = project.extensions.android
-
-        //add the tinker anno resource to the package exclude option
-        android.packagingOptions.exclude("META-INF/services/javax.annotation.processing.Processor")
-        android.packagingOptions.exclude("TinkerAnnoApplication.tmpl")
 
         //open jumboMode
         android.dexOptions.jumboMode = true
@@ -71,6 +71,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate {
+            def configuration = project.tinkerPatch
+
+            if (!configuration.tinkerEnable) {
+                project.logger.error("tinker tasks are disabled.")
+                return
+            }
+
             project.logger.error("----------------------tinker build warning ------------------------------------")
             project.logger.error("tinker auto operation: ")
             project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")
@@ -120,14 +127,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
-                tinkerPatchBuildTask.dependsOn variant.assemble
 
                 tinkerPatchBuildTask.signConfig = variant.apkVariantData.variantConfiguration.signingConfig
 
                 variant.outputs.each { output ->
-                    tinkerPatchBuildTask.buildApkPath = output.outputFile
-                    File parentFile = output.outputFile
-                    tinkerPatchBuildTask.outputFolder = "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/" + TypedValue.PATH_DEFAULT_OUTPUT + "/" + variant.dirName
+                    setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask)
+                    setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask)
                 }
 
                 // Create a task to add a build TINKER_ID to AndroidManifest.xml
@@ -180,8 +185,55 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     }
                 }
 
+                if (configuration.buildConfig.keepDexApply
+                    && FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
+                    com.tencent.tinker.build.gradle.transform.ImmutableDexTransform.inject(project, variant)
+                }
             }
         }
+    }
+
+    /**
+     * Specify the output folder of tinker patch result.
+     *
+     * @param configuration the tinker configuration 'tinkerPatch'
+     * @param output the output of assemble result
+     * @param variant the variant
+     * @param tinkerPatchBuildTask the task that tinker patch uses
+     */
+    void setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask) {
+        File parentFile = output.outputFile
+        String outputFolder = "${configuration.outputFolder}";
+        if (!Utils.isNullOrNil(outputFolder)) {
+            outputFolder = "${outputFolder}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+        } else {
+            outputFolder =
+                    "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+        }
+        tinkerPatchBuildTask.outputFolder = outputFolder
+    }
+
+    /**
+     * Specify the new apk path. If the new apk file is specified by {@code tinkerPatch.buildConfig.newApk},
+     * just use it as the new apk input for tinker patch, otherwise use the assemble output.
+     *
+     * @param project the project which applies this plugin
+     * @param configuration the tinker configuration 'tinkerPatch'
+     * @param output the output of assemble result
+     * @param variant the variant
+     * @param tinkerPatchBuildTask the task that tinker patch uses
+     */
+    void setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask) {
+        def newApkPath = configuration.newApk;
+        if (!Utils.isNullOrNil(newApkPath)) {
+            if (FileOperation.isLegalFile(newApkPath)) {
+                tinkerPatchBuildTask.buildApkPath = newApkPath
+                return
+            }
+        }
+
+        tinkerPatchBuildTask.buildApkPath = output.outputFile
+        tinkerPatchBuildTask.dependsOn variant.assemble
     }
 
     Task getMultiDexTask(Project project, String variantName) {

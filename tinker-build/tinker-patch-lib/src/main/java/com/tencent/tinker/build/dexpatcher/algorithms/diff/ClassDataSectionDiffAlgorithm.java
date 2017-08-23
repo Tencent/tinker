@@ -21,7 +21,8 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -33,7 +34,7 @@ import java.util.Set;
 public class ClassDataSectionDiffAlgorithm extends DexSectionDiffAlgorithm<ClassData> {
     private Set<Integer> offsetOfClassDataToRemoveSet = new HashSet<>();
 
-    public ClassDataSectionDiffAlgorithm(Dex oldDex, Dex newDex, IndexMap oldToNewIndexMap, IndexMap oldToPatchedIndexMap, IndexMap newToPatchedIndexMap, IndexMap selfIndexMapForSkip) {
+    public ClassDataSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {
         super(oldDex, newDex, oldToNewIndexMap, oldToPatchedIndexMap, newToPatchedIndexMap, selfIndexMapForSkip);
     }
 
@@ -62,7 +63,7 @@ public class ClassDataSectionDiffAlgorithm extends DexSectionDiffAlgorithm<Class
     }
 
     @Override
-    protected ClassData adjustItem(IndexMap indexMap, ClassData item) {
+    protected ClassData adjustItem(AbstractIndexMap indexMap, ClassData item) {
         return indexMap.adjust(item);
     }
 
@@ -78,14 +79,14 @@ public class ClassDataSectionDiffAlgorithm extends DexSectionDiffAlgorithm<Class
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldOffset != newOffset) {
-            indexMap.mapClassDataOffset(oldOffset, newOffset);
+            sparseIndexMap.mapClassDataOffset(oldOffset, newOffset);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markClassDataDeleted(deletedOffset);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markClassDataDeleted(deletedOffset);
     }
 }

@@ -20,5 +20,5 @@ package com.tencent.tinker.lib.listener;
  * Created by zhangshaowen on 16/3/14.
  */
 public interface PatchListener {
-    int onPatchReceived(String path, boolean isUpgrade);
+    int onPatchReceived(String path);
 }

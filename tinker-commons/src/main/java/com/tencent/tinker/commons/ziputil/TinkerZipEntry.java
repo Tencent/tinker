@@ -107,6 +107,20 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         localHeaderRelOffset = ze.localHeaderRelOffset;
         dataOffset = ze.dataOffset;
     }
+
+    public TinkerZipEntry(TinkerZipEntry ze, String name) {
+        this.name = name;
+        comment = ze.comment;
+        time = ze.time;
+        size = ze.size;
+        compressedSize = ze.compressedSize;
+        crc = ze.crc;
+        compressionMethod = ze.compressionMethod;
+        modDate = ze.modDate;
+        extra = ze.extra;
+        localHeaderRelOffset = ze.localHeaderRelOffset;
+        dataOffset = ze.dataOffset;
+    }
     /*
      * Internal constructor.  Creates a new ZipEntry by reading the
      * Central Directory Entry (CDE) from "in", which must be positioned
@@ -418,7 +432,7 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         sb.append("\ncrc:" + crc);
         sb.append("\ncompressionMethod:" + compressionMethod);
         sb.append("\nmodDate:" + modDate);
-        sb.append("\nextra:" + extra);
+        sb.append("\nextra length:" + extra.length);
         sb.append("\nlocalHeaderRelOffset:" + localHeaderRelOffset);
         sb.append("\ndataOffset:" + dataOffset);
         return sb.toString();

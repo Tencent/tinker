@@ -20,13 +20,17 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
 
+import com.tencent.tinker.loader.TinkerRuntimeException;
+
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -36,6 +40,8 @@ import java.util.zip.ZipFile;
 
 public class SharePatchFileUtil {
     private static final String TAG = "Tinker.PatchFileUtil";
+
+    private static char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
     /**
      * data dir, such as /data/data/tinker.sample.android/tinker
@@ -50,6 +56,24 @@ public class SharePatchFileUtil {
         }
 
         return new File(applicationInfo.dataDir, ShareConstants.PATCH_DIRECTORY_NAME);
+    }
+
+    public static File getPatchTempDirectory(Context context) {
+        ApplicationInfo applicationInfo = context.getApplicationInfo();
+        if (applicationInfo == null) {
+            // Looks like running on a test Context, so just return without patching.
+            return null;
+        }
+
+        return new File(applicationInfo.dataDir, ShareConstants.PATCH_TEMP_DIRECTORY_NAME);
+    }
+
+    public static File getPatchLastCrashFile(Context context) {
+        File tempFile = getPatchTempDirectory(context);
+        if (tempFile == null) {
+            return null;
+        }
+        return new File(tempFile, ShareConstants.PATCH_TEMP_LAST_CRASH_NAME);
     }
 
     public static File getPatchInfoFile(String patchDirectory) {
@@ -83,16 +107,33 @@ public class SharePatchFileUtil {
         return true;
     }
 
-    public static final boolean fileExists(String filePath) {
-        if (filePath == null) {
-            return false;
+    public static String checkTinkerLastUncaughtCrash(Context context) {
+        File crashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
+        if (!SharePatchFileUtil.isLegalFile(crashFile)) {
+            return null;
+        }
+        StringBuffer buffer = new StringBuffer();
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(crashFile)));
+            String line;
+            while ((line = in.readLine()) != null) {
+                buffer.append(line);
+                buffer.append("\n");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "checkTinkerLastUncaughtCrash exception: " + e);
+            return null;
+        } finally {
+            closeQuietly(in);
         }
 
-        File file = new File(filePath);
-        if (file.exists()) {
-            return true;
-        }
-        return false;
+        return buffer.toString();
+
+    }
+
+    public static final boolean isLegalFile(File file) {
+        return file != null && file.exists() && file.canRead() && file.isFile() && file.length() > 0;
     }
 
     /**
@@ -195,7 +236,11 @@ public class SharePatchFileUtil {
      * dex may wrap with jar
      */
     public static boolean verifyDexFileMd5(File file, String md5) {
-        if (file == null || md5 == null) {
+        return verifyDexFileMd5(file, ShareConstants.DEX_IN_JAR, md5);
+    }
+
+    public static boolean verifyDexFileMd5(File file, String entryName, String md5) {
+        if (file == null || md5 == null || entryName == null) {
             return false;
         }
         //if it is not the raw dex, we check the stream instead
@@ -207,14 +252,14 @@ public class SharePatchFileUtil {
             ZipFile dexJar = null;
             try {
                 dexJar = new ZipFile(file);
-                ZipEntry classesDex = dexJar.getEntry(ShareConstants.DEX_IN_JAR);
+                ZipEntry classesDex = dexJar.getEntry(entryName);
                 // no code
                 if (null == classesDex) {
                     Log.e(TAG, "There's no entry named: " + ShareConstants.DEX_IN_JAR + " in " + file.getAbsolutePath());
                     return false;
                 }
                 fileMd5 = getMD5(dexJar.getInputStream(classesDex));
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 Log.e(TAG, "Bad dex jar file: " + file.getAbsolutePath(), e);
                 return false;
             } finally {
@@ -234,6 +279,12 @@ public class SharePatchFileUtil {
     }
 
     public static void copyFileUsingStream(File source, File dest) throws IOException {
+        if (!SharePatchFileUtil.isLegalFile(source) || dest == null) {
+            return;
+        }
+        if (source.getAbsolutePath().equals(dest.getAbsolutePath())) {
+            return;
+        }
         FileInputStream is = null;
         FileOutputStream os = null;
         File parent = dest.getParentFile();
@@ -310,6 +361,25 @@ public class SharePatchFileUtil {
         }
     }
 
+    public static String getMD5(byte[] buffer) {
+        try {
+            MessageDigest mdTemp = MessageDigest.getInstance("MD5");
+            mdTemp.update(buffer);
+            byte[] md = mdTemp.digest();
+            int j = md.length;
+            char[] str = new char[j * 2];
+            int k = 0;
+            for (int i = 0; i < j; i++) {
+                byte byte0 = md[i];
+                str[k++] = hexDigits[byte0 >>> 4 & 0xf];
+                str[k++] = hexDigits[byte0 & 0xf];
+            }
+            return new String(str);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /**
      * Get the md5 for the file. call getMD5(FileInputStream is, int bufLen) inside.
      *
@@ -324,31 +394,46 @@ public class SharePatchFileUtil {
         try {
             fin = new FileInputStream(file);
             String md5 = getMD5(fin);
-            fin.close();
             return md5;
-
         } catch (Exception e) {
             return null;
-
         } finally {
-            try {
-                if (fin != null) {
-                    fin.close();
-                }
-            } catch (IOException e) {
-
-            }
+            closeQuietly(fin);
         }
     }
 
     /**
      * change the jar file path as the makeDexElements do
+     * Android O change its path
      *
      * @param path
      * @param optimizedDirectory
      * @return
      */
     public static String optimizedPathFor(File path, File optimizedDirectory) {
+        if (ShareTinkerInternals.isAfterAndroidO()) {
+            // dex_location = /foo/bar/baz.jar
+            // odex_location = /foo/bar/oat/<isa>/baz.odex
+
+            String currentInstructionSet;
+            try {
+                currentInstructionSet = ShareTinkerInternals.getCurrentInstructionSet();
+            } catch (Exception e) {
+                throw new TinkerRuntimeException("getCurrentInstructionSet fail:", e);
+            }
+
+            File parentFile = path.getParentFile();
+            String fileName = path.getName();
+            int index = fileName.lastIndexOf('.');
+            if (index > 0) {
+                fileName = fileName.substring(0, index);
+            }
+
+            String result = parentFile.getAbsolutePath() + "/oat/"
+                + currentInstructionSet + "/" + fileName + ShareConstants.ODEX_SUFFIX;
+            return result;
+        }
+
         String fileName = path.getName();
         if (!fileName.endsWith(ShareConstants.DEX_SUFFIX)) {
             int lastDot = fileName.lastIndexOf(".");

@@ -125,10 +125,6 @@ task buildAndPublishRepo(dependsOn: ['build', 'uploadArchives']) {
     }
 }
 
-//depend checkstyle
-tasks.getByName("uploadArchives").dependsOn tasks.getByName("checkstyle")
-tasks.getByName("bintrayUpload").dependsOn tasks.getByName("checkstyle")
-
 tasks.getByName("bintrayUpload") {
     it.doFirst {
         if (!isReleaseBuild()) {

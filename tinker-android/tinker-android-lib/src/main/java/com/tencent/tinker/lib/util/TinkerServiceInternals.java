@@ -47,8 +47,13 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
         }
 
         final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-
-        for (ActivityManager.RunningAppProcessInfo appProcess : am.getRunningAppProcesses()) {
+        // ActivityManager getRunningAppProcesses()
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = am
+            .getRunningAppProcesses();
+        if (appProcessList == null) {
+            return;
+        }
+        for (ActivityManager.RunningAppProcessInfo appProcess : appProcessList) {
             String processName = appProcess.processName;
             if (processName.equals(serverProcessName)) {
                 android.os.Process.killProcess(appProcess.pid);
@@ -67,7 +72,9 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
             // ActivityManager getRunningAppProcesses()
             List<ActivityManager.RunningAppProcessInfo> appProcessList = am
                 .getRunningAppProcesses();
-
+            if (appProcessList == null) {
+                return false;
+            }
             for (ActivityManager.RunningAppProcessInfo appProcess : appProcessList) {
                 String processName = appProcess.processName;
                 if (processName.equals(serverName)) {

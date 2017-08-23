@@ -25,5 +25,5 @@ import com.tencent.tinker.loader.app.TinkerApplication;
  * Created by zhangshaowen on 16/4/30.
  */
 public abstract class AbstractTinkerLoader {
-    abstract public Intent tryLoad(TinkerApplication app, int tinkerFlag, boolean tinkerLoadVerifyFlag);
+    abstract public Intent tryLoad(TinkerApplication app);
 }

@@ -21,8 +21,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.tencent.tinker.lib.listener.DefaultPatchListener;
-import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -45,7 +43,6 @@ public class SamplePatchListener extends DefaultPatchListener {
     private static final String TAG = "Tinker.SamplePatchListener";
 
     protected static final long NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN = 60 * 1024 * 1024;
-    protected static final long OLD_PATCH_RESTRICTION_SPACE_SIZE_MIN = 30 * 1024 * 1024;
 
     private final int maxMemory;
 
@@ -64,40 +61,21 @@ public class SamplePatchListener extends DefaultPatchListener {
      * @return
      */
     @Override
-    public int patchCheck(String path, boolean isUpgrade) {
+    public int patchCheck(String path, String patchMd5) {
         File patchFile = new File(path);
-        TinkerLog.i(TAG, "receive a patch file: %s, isUpgrade:%b, file size:%d", path, isUpgrade, SharePatchFileUtil.getFileOrDirectorySize(patchFile));
-        int returnCode = super.patchCheck(path, isUpgrade);
+        TinkerLog.i(TAG, "receive a patch file: %s, file size:%d", path, SharePatchFileUtil.getFileOrDirectorySize(patchFile));
+        int returnCode = super.patchCheck(path, patchMd5);
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
-            if (isUpgrade) {
-                returnCode = Utils.checkForPatchRecover(NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
-            } else {
-                returnCode = Utils.checkForPatchRecover(OLD_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
-            }
+            returnCode = Utils.checkForPatchRecover(NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
         }
 
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
-            String patchMd5 = SharePatchFileUtil.getMD5(patchFile);
             SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
             //optional, only disable this patch file with md5
             int fastCrashCount = sp.getInt(patchMd5, 0);
             if (fastCrashCount >= SampleUncaughtExceptionHandler.MAX_CRASH_COUNT) {
                 returnCode = Utils.ERROR_PATCH_CRASH_LIMIT;
-            } else {
-                //for upgrade patch, version must be not the same
-                //for repair patch, we won't has the tinker load flag
-                Tinker tinker = Tinker.with(context);
-
-                if (tinker.isTinkerLoaded()) {
-                    TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
-                    if (tinkerLoadResult != null) {
-                        String currentVersion = tinkerLoadResult.currentVersion;
-                        if (patchMd5.equals(currentVersion)) {
-                            returnCode = Utils.ERROR_PATCH_ALREADY_APPLY;
-                        }
-                    }
-                }
             }
         }
         // Warning, it is just a sample case, you don't need to copy all of these
@@ -116,7 +94,7 @@ public class SamplePatchListener extends DefaultPatchListener {
             }
         }
 
-        SampleTinkerReport.onTryApply(isUpgrade, returnCode == ShareConstants.ERROR_PATCH_OK);
+        SampleTinkerReport.onTryApply(returnCode == ShareConstants.ERROR_PATCH_OK);
         return returnCode;
     }
 }

@@ -19,6 +19,7 @@ package com.tencent.tinker.loader;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -49,20 +50,29 @@ public class TinkerLoader extends AbstractTinkerLoader {
      * only main process can handle patch version change or incomplete
      */
     @Override
-    public Intent tryLoad(TinkerApplication app, int tinkerFlag, boolean tinkerLoadVerifyFlag) {
+    public Intent tryLoad(TinkerApplication app) {
         Intent resultIntent = new Intent();
 
         long begin = SystemClock.elapsedRealtime();
-        tryLoadPatchFilesInternal(app, tinkerFlag, tinkerLoadVerifyFlag, resultIntent);
+        tryLoadPatchFilesInternal(app, resultIntent);
         long cost = SystemClock.elapsedRealtime() - begin;
         ShareIntentUtil.setIntentPatchCostTime(resultIntent, cost);
         return resultIntent;
     }
 
-    private void tryLoadPatchFilesInternal(TinkerApplication app, int tinkerFlag, boolean tinkerLoadVerifyFlag, Intent resultIntent) {
+    private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent) {
+        final int tinkerFlag = app.getTinkerFlags();
+
         if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
+            Log.w(TAG, "tryLoadPatchFiles: tinker is disable, just return");
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
             return;
+        }
+        if (ShareTinkerInternals.isInPatchProcess(app)) {
+            Log.w(TAG, "tryLoadPatchFiles: we don't load patch with :patch process itself, just return");
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
+            return;
+
         }
         //tinker
         File patchDirectoryFile = SharePatchFileUtil.getPatchDirectory(app);
@@ -102,8 +112,9 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         String oldVersion = patchInfo.oldVersion;
         String newVersion = patchInfo.newVersion;
+        String oatDex = patchInfo.oatDir;
 
-        if (oldVersion == null || newVersion == null) {
+        if (oldVersion == null || newVersion == null || oatDex == null) {
             //it is nice to clean patch
             Log.w(TAG, "tryLoadPatchFiles:onPatchInfoCorrupted");
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_CORRUPTED);
@@ -115,8 +126,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
         boolean versionChanged = !(oldVersion.equals(newVersion));
+        boolean oatModeChanged = oatDex.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH) && mainProcess;
+        oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
+        resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
 
         String version = oldVersion;
+
         if (versionChanged && mainProcess) {
             version = newVersion;
         }
@@ -128,9 +143,15 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //patch-641e634c
         String patchName = SharePatchFileUtil.getPatchVersionDirectory(version);
-
+        if (patchName == null) {
+            Log.w(TAG, "tryLoadPatchFiles:patchName is null");
+            //we may delete patch info file
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST);
+            return;
+        }
         //tinker/patch.info/patch-641e634c
         String patchVersionDirectory = patchDirectoryPath + "/" + patchName;
+
         File patchVersionDirectoryFile = new File(patchVersionDirectory);
 
         if (!patchVersionDirectoryFile.exists()) {
@@ -143,7 +164,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         //tinker/patch.info/patch-641e634c/patch-641e634c.apk
         File patchVersionFile = new File(patchVersionDirectoryFile.getAbsolutePath(), SharePatchFileUtil.getPatchVersionFile(version));
 
-        if (!patchVersionFile.exists()) {
+        if (!SharePatchFileUtil.isLegalFile(patchVersionFile)) {
             Log.w(TAG, "tryLoadPatchFiles:onPatchVersionFileNotFound");
             //we may delete patch info file
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_VERSION_FILE_NOT_EXIST);
@@ -166,7 +187,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         if (isEnabledForDex) {
             //tinker/patch.info/patch-641e634c/dex
-            boolean dexCheck = TinkerDexLoader.checkComplete(patchVersionDirectory, securityCheck, resultIntent);
+            boolean dexCheck = TinkerDexLoader.checkComplete(patchVersionDirectory, securityCheck, oatDex, resultIntent);
             if (!dexCheck) {
                 //file not found, do not load patch
                 Log.w(TAG, "tryLoadPatchFiles:dex check fail");
@@ -197,18 +218,29 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 return;
             }
         }
-        //only work for art platform oat
-        boolean isSystemOTA = ShareTinkerInternals.isVmArt() && ShareTinkerInternals.isSystemOTA(patchInfo.fingerPrint);
+        //only work for art platform oat，because of interpret, refuse 4.4 art oat
+        boolean isSystemOTA = ShareTinkerInternals.isVmArt()
+            && ShareTinkerInternals.isSystemOTA(patchInfo.fingerPrint)
+            && Build.VERSION.SDK_INT >= 21;
+
+        resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 
         //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if (isSystemOTA
-            || (mainProcess && versionChanged)) {
+        if ((mainProcess && versionChanged)
+             || oatModeChanged) {
             patchInfo.oldVersion = version;
+            patchInfo.oatDir = oatDex;
+
             //update old version to new
             if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
                 ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
                 Log.w(TAG, "tryLoadPatchFiles:onReWritePatchInfoCorrupted");
                 return;
+            }
+            if (oatModeChanged) {
+                // delete interpret odex
+                Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to delete interpret optimize files");
+                SharePatchFileUtil.deleteDir(patchVersionDirectory + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
             }
         }
         if (!checkSafeModeCount(app)) {
@@ -217,9 +249,26 @@ public class TinkerLoader extends AbstractTinkerLoader {
             Log.w(TAG, "tryLoadPatchFiles:checkSafeModeCount fail");
             return;
         }
+
         //now we can load patch jar
         if (isEnabledForDex) {
-            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent, isSystemOTA);
+            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, patchVersionDirectory, oatDex, resultIntent, isSystemOTA);
+
+            if (isSystemOTA) {
+                // update fingerprint after load success
+                patchInfo.fingerPrint = Build.FINGERPRINT;
+                patchInfo.oatDir = loadTinkerJars ? ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH : ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
+                // reset to false
+                oatModeChanged = false;
+
+                if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
+                    ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
+                    Log.w(TAG, "tryLoadPatchFiles:onReWritePatchInfoCorrupted");
+                    return;
+                }
+                // update oat dir
+                resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, patchInfo.oatDir);
+            }
             if (!loadTinkerJars) {
                 Log.w(TAG, "tryLoadPatchFiles:onPatchLoadDexesFail");
                 return;
@@ -228,11 +277,16 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //now we can load patch resource
         if (isEnabledForResource) {
-            boolean loadTinkerResources = TinkerResourceLoader.loadTinkerResources(app, tinkerLoadVerifyFlag, patchVersionDirectory, resultIntent);
+            boolean loadTinkerResources = TinkerResourceLoader.loadTinkerResources(app, patchVersionDirectory, resultIntent);
             if (!loadTinkerResources) {
                 Log.w(TAG, "tryLoadPatchFiles:onPatchLoadResourcesFail");
                 return;
             }
+        }
+        // kill all other process if oat mode change
+        if (oatModeChanged) {
+            ShareTinkerInternals.killAllOtherProcess(app);
+            Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to kill all other process");
         }
         //all is ok!
         ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_OK);
@@ -245,18 +299,14 @@ public class TinkerLoader extends AbstractTinkerLoader {
         String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG + processName;
         //each process have its own SharedPreferences file
         SharedPreferences sp = application.getSharedPreferences(preferName, Context.MODE_PRIVATE);
-        int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0);
+        int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0) + 1;
         Log.w(TAG, "tinker safe mode preferName:" + preferName + " count:" + count);
         if (count >= ShareConstants.TINKER_SAFE_MODE_MAX_COUNT) {
             sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
             return false;
         }
         application.setUseSafeMode(true);
-        count++;
         sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, count).commit();
-        Log.w(TAG, "after tinker safe mode count:" + count);
         return true;
     }
-
-
 }

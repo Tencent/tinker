@@ -24,6 +24,11 @@
 
         <!--if you don't set sevenZip path, we just use 7za to try-->
         <sevenZipPath value="/usr/local/bin/7za"/>
+        <!--Whether tinker should treat the base apk as the one being protected by app-->
+        <!--protection tools.-->
+        <!--If this attribute is true, the generated patch package will contain a-->
+        <!--dex including all changed classes instead of any dexdiff patch-info files.-->
+        <isProtectedApp value="false"/>
     </issue>
 
     <issue id="dex">
@@ -52,7 +57,7 @@
         <!--it support * or ? pattern.-->
         <!--for library in assets, we would just recover them in the patch directory-->
         <!--you can get them in TinkerLoadResult with Tinker-->
-        <pattern value="lib/armeabi/*.so"/>
+        <pattern value="lib/*/*.so"/>
     </issue>
 
     <issue id="resource">

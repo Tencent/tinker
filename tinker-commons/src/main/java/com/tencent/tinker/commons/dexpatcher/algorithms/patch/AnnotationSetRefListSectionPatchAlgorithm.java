@@ -20,9 +20,9 @@ import com.tencent.tinker.android.dex.AnnotationSetRefList;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
-import com.tencent.tinker.commons.dexpatcher.struct.SmallPatchedDexItemFile;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
@@ -35,44 +35,9 @@ public class AnnotationSetRefListSectionPatchAlgorithm extends DexSectionPatchAl
             DexPatchFile patchFile,
             Dex oldDex,
             Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            final SmallPatchedDexItemFile extraInfoFile
+            SparseIndexMap oldToPatchedIndexMap
     ) {
-        this(
-                patchFile,
-                oldDex,
-                patchedDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                new SmallPatchedDexItemChooser() {
-                    @Override
-                    public boolean isPatchedItemInSmallPatchedDex(
-                            String oldDexSign, int patchedItemIndex
-                    ) {
-                        return extraInfoFile.isAnnotationSetRefListInSmallPatchedDex(
-                                oldDexSign, patchedItemIndex
-                        );
-                    }
-                }
-        );
-    }
-
-    public AnnotationSetRefListSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            Dex patchedDex,
-            IndexMap oldToFullPatchedIndexMap,
-            IndexMap fullPatchedToSmallPatchedIndexMap,
-            SmallPatchedDexItemChooser spdItemChooser
-    ) {
-        super(
-                patchFile,
-                oldDex,
-                oldToFullPatchedIndexMap,
-                fullPatchedToSmallPatchedIndexMap,
-                spdItemChooser
-        );
+        super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
             this.patchedAnnotationSetRefListTocSec
@@ -98,16 +63,7 @@ public class AnnotationSetRefListSectionPatchAlgorithm extends DexSectionPatchAl
     }
 
     @Override
-    protected int getFullPatchSectionBase() {
-        if (this.patchFile != null) {
-            return this.patchFile.getPatchedAnnotationSetRefListSectionOffset();
-        } else {
-            return getTocSection(this.oldDex).off;
-        }
-    }
-
-    @Override
-    protected AnnotationSetRefList adjustItem(IndexMap indexMap, AnnotationSetRefList item) {
+    protected AnnotationSetRefList adjustItem(AbstractIndexMap indexMap, AnnotationSetRefList item) {
         return indexMap.adjust(item);
     }
 
@@ -118,14 +74,14 @@ public class AnnotationSetRefListSectionPatchAlgorithm extends DexSectionPatchAl
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldOffset != newOffset) {
-            indexMap.mapAnnotationSetRefListOffset(oldOffset, newOffset);
+            sparseIndexMap.mapAnnotationSetRefListOffset(oldOffset, newOffset);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markAnnotationSetRefListDeleted(deletedOffset);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markAnnotationSetRefListDeleted(deletedOffset);
     }
 }

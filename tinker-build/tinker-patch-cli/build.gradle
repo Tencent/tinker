@@ -21,7 +21,8 @@ jar {
 }
 
 // copy the jar to work directory
-task buildSdk(type: Copy, dependsOn: [build, jar]) {
+task buildTinkerSdk(type: Copy, dependsOn: [build, jar]) {
+    group = "tinker"
     from('build/libs') {
         include '*.jar'
         exclude '*-javadoc.jar'
@@ -33,4 +34,4 @@ task buildSdk(type: Copy, dependsOn: [build, jar]) {
     into(rootProject.file("buildSdk/build"))
 }
 
-defaultTasks 'buildSdk'
+defaultTasks 'buildTinkerSdk'

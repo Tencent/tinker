@@ -279,7 +279,7 @@ public class ResDiffDecoder extends BaseDecoder {
         final File tempResFiles = config.mTempResultDir;
 
         //gen zip resources_out.zip
-        FileOperation.zipInputDir(tempResFiles, tempResZip);
+        FileOperation.zipInputDir(tempResFiles, tempResZip, null);
         File extractToZip = new File(config.mOutFolder + File.separator + TypedValue.RES_OUT);
 
         String resZipMd5 = Utils.genResOutputFile(extractToZip, tempResZip, config,

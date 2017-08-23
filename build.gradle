@@ -21,21 +21,6 @@ allprojects {
         enabled = false
         options.setEncoding('UTF-8')
     }
-
-    apply plugin: 'checkstyle'
-
-    checkstyle {
-        configFile rootProject.file('checkstyle.xml')
-        toolVersion '6.19'
-        ignoreFailures false
-        showViolations true
-    }
-
-    task('checkstyle', type: Checkstyle) {
-        source 'src/main/java'
-        include '**/*.java'
-        classpath = files()
-    }
 }
 
 ext {

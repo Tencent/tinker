@@ -45,9 +45,24 @@ public class TinkerBuildConfigExtension {
      */
     String tinkerId
 
+    /**
+     * Whether tinker should treat the base apk as the one being protected by app
+     * protection tools.
+     * If this attribute is true, the generated patch package will contain a
+     * dex including all changed classes instead of any dexdiff patch-info files.
+     * default: false
+     */
+    boolean isProtectedApp
+
     private Project project
 
     boolean usingResourceMapping
+
+    /**
+     * if keepDexApply is true,class in which dex refer to the old apk.
+     * open this can reduce the dex diff file size.
+     */
+    boolean keepDexApply;
 
     public TinkerBuildConfigExtension(Project project) {
         this.project = project
@@ -55,6 +70,8 @@ public class TinkerBuildConfigExtension {
         applyResourceMapping = ""
         tinkerId = null
         usingResourceMapping = false
+        keepDexApply = false
+        isProtectedApp = false
     }
 
     void checkParameter() {
@@ -68,6 +85,8 @@ public class TinkerBuildConfigExtension {
     public String toString() {
         """| applyMapping = ${applyMapping}
            | applyResourceMapping = ${applyResourceMapping}
+           | isProtectedApp = ${isProtectedApp}
+           | keepDexApply = ${keepDexApply}
            | tinkerId = ${tinkerId}
         """.stripMargin()
     }

@@ -20,13 +20,14 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 
 /**
  * Created by tangyinsheng on 2016/6/30.
  */
 public class TypeIdSectionDiffAlgorithm extends DexSectionDiffAlgorithm<Integer> {
-    public TypeIdSectionDiffAlgorithm(Dex oldDex, Dex newDex, IndexMap oldToNewIndexMap, IndexMap oldToPatchedIndexMap, IndexMap newToPatchedIndexMap, IndexMap selfIndexMapForSkip) {
+    public TypeIdSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {
         super(oldDex, newDex, oldToNewIndexMap, oldToPatchedIndexMap, newToPatchedIndexMap, selfIndexMapForSkip);
     }
 
@@ -46,19 +47,19 @@ public class TypeIdSectionDiffAlgorithm extends DexSectionDiffAlgorithm<Integer>
     }
 
     @Override
-    protected Integer adjustItem(IndexMap indexMap, Integer item) {
+    protected Integer adjustItem(AbstractIndexMap indexMap, Integer item) {
         return indexMap.adjustStringIndex(item);
     }
 
     @Override
-    protected void updateIndexOrOffset(IndexMap indexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
+    protected void updateIndexOrOffset(SparseIndexMap sparseIndexMap, int oldIndex, int oldOffset, int newIndex, int newOffset) {
         if (oldIndex != newIndex) {
-            indexMap.mapTypeIds(oldIndex, newIndex);
+            sparseIndexMap.mapTypeIds(oldIndex, newIndex);
         }
     }
 
     @Override
-    protected void markDeletedIndexOrOffset(IndexMap indexMap, int deletedIndex, int deletedOffset) {
-        indexMap.markTypeIdDeleted(deletedIndex);
+    protected void markDeletedIndexOrOffset(SparseIndexMap sparseIndexMap, int deletedIndex, int deletedOffset) {
+        sparseIndexMap.markTypeIdDeleted(deletedIndex);
     }
 }

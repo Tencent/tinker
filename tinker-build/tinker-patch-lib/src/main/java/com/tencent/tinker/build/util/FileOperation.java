@@ -247,12 +247,15 @@ public class FileOperation {
      * @param zipFile     output zip file
      * @throws IOException
      */
-    public static void zipFiles(Collection<File> resFileList, File zipFile) throws IOException {
+    public static void zipFiles(Collection<File> resFileList, File zipFile, String comment) throws IOException {
         ZipOutputStream zipout = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile), TypedValue.BUFFER_SIZE));
         for (File resFile : resFileList) {
             if (resFile.exists()) {
                 zipFile(resFile, zipout, "");
             }
+        }
+        if (comment != null) {
+            zipout.setComment(comment);
         }
         zipout.close();
     }
@@ -364,14 +367,14 @@ public class FileOperation {
         return null;
     }
 
-    public static void zipInputDir(File inputDir, File outputFile) throws IOException {
+    public static void zipInputDir(File inputDir, File outputFile, String comment) throws IOException {
         File[] unzipFiles = inputDir.listFiles();
         List<File> collectFiles = new ArrayList<>();
         for (File f : unzipFiles) {
             collectFiles.add(f);
         }
 
-        FileOperation.zipFiles(collectFiles, outputFile);
+        FileOperation.zipFiles(collectFiles, outputFile, comment);
     }
 
     public static boolean sevenZipInputDir(File inputDir, File outputFile, Configuration config) {

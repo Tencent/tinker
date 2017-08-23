@@ -35,19 +35,26 @@ public class SharePatchInfo {
     public static final String OLD_VERSION          = ShareConstants.OLD_VERSION;
     public static final String NEW_VERSION          = ShareConstants.NEW_VERSION;
     public static final String FINGER_PRINT         = "print";
-    private static final String TAG = "PatchInfo";
+    public static final String OAT_DIR              = "dir";
+    public static final String DEFAULT_DIR   = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
+    private static final String TAG = "Tinker.PatchInfo";
     public String oldVersion;
     public String newVersion;
     public String fingerPrint;
+    public String oatDir;
 
-    public SharePatchInfo(String oldVer, String newVew, String finger) {
+    public SharePatchInfo(String oldVer, String newVew, String finger, String oatDir) {
         // TODO Auto-generated constructor stub
         this.oldVersion = oldVer;
         this.newVersion = newVew;
         this.fingerPrint = finger;
+        this.oatDir = oatDir;
     }
 
     public static SharePatchInfo readAndCheckPropertyWithLock(File pathInfoFile, File lockFile) {
+        if (pathInfoFile == null || lockFile == null) {
+            return null;
+        }
         File lockParentFile = lockFile.getParentFile();
         if (!lockParentFile.exists()) {
             lockParentFile.mkdirs();
@@ -66,7 +73,7 @@ public class SharePatchInfo {
                     fileLock.close();
                 }
             } catch (IOException e) {
-                Log.i(TAG, "releaseInfoLock error", e);
+                Log.w(TAG, "releaseInfoLock error", e);
             }
         }
 
@@ -74,6 +81,9 @@ public class SharePatchInfo {
     }
 
     public static boolean rewritePatchInfoFileWithLock(File pathInfoFile, SharePatchInfo info, File lockFile) {
+        if (pathInfoFile == null || info == null || lockFile == null) {
+            return false;
+        }
         File lockParentFile = lockFile.getParentFile();
         if (!lockParentFile.exists()) {
             lockParentFile.mkdirs();
@@ -104,6 +114,7 @@ public class SharePatchInfo {
         String oldVer = null;
         String newVer = null;
         String lastFingerPrint = null;
+        String oatDIr = null;
 
         while (numAttempts < MAX_EXTRACT_ATTEMPTS && !isReadPatchSuccessful) {
             numAttempts++;
@@ -115,9 +126,10 @@ public class SharePatchInfo {
                 oldVer = properties.getProperty(OLD_VERSION);
                 newVer = properties.getProperty(NEW_VERSION);
                 lastFingerPrint = properties.getProperty(FINGER_PRINT);
+                oatDIr = properties.getProperty(OAT_DIR);
             } catch (IOException e) {
 //                e.printStackTrace();
-                Log.e(TAG, "read property failed, e:" + e);
+                Log.w(TAG, "read property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(inputStream);
             }
@@ -126,7 +138,8 @@ public class SharePatchInfo {
                 continue;
             }
             //oldVer may be "" or 32 md5
-            if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer)) || !SharePatchFileUtil.checkIfMd5Valid(newVer)) {
+            if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer))
+                || !SharePatchFileUtil.checkIfMd5Valid(newVer)) {
                 Log.w(TAG, "path info file  corrupted:" + pathInfoFile.getAbsolutePath());
                 continue;
             } else {
@@ -135,7 +148,7 @@ public class SharePatchInfo {
         }
 
         if (isReadPatchSuccessful) {
-            return new SharePatchInfo(oldVer, newVer, lastFingerPrint);
+            return new SharePatchInfo(oldVer, newVer, lastFingerPrint, oatDIr);
         }
 
         return null;
@@ -145,12 +158,23 @@ public class SharePatchInfo {
         if (pathInfoFile == null || info == null) {
             return false;
         }
+        // write fingerprint if it is null or nil
+        if (ShareTinkerInternals.isNullOrNil(info.fingerPrint)) {
+            info.fingerPrint = Build.FINGERPRINT;
+        }
+        if (ShareTinkerInternals.isNullOrNil(info.oatDir)) {
+            info.oatDir = DEFAULT_DIR;
+        }
         Log.i(TAG, "rewritePatchInfoFile file path:"
             + pathInfoFile.getAbsolutePath()
             + " , oldVer:"
             + info.oldVersion
             + ", newVer:"
-            + info.newVersion);
+            + info.newVersion
+            + ", fingerprint:"
+            + info.fingerPrint
+            + ", oatDir:"
+            + info.oatDir);
 
         boolean isWritePatchSuccessful = false;
         int numAttempts = 0;
@@ -166,7 +190,8 @@ public class SharePatchInfo {
             Properties newProperties = new Properties();
             newProperties.put(OLD_VERSION, info.oldVersion);
             newProperties.put(NEW_VERSION, info.newVersion);
-            newProperties.put(FINGER_PRINT, Build.FINGERPRINT);
+            newProperties.put(FINGER_PRINT, info.fingerPrint);
+            newProperties.put(OAT_DIR, info.oatDir);
 
             FileOutputStream outputStream = null;
             try {
@@ -174,7 +199,8 @@ public class SharePatchInfo {
                 String comment = "from old version:" + info.oldVersion + " to new version:" + info.newVersion;
                 newProperties.store(outputStream, comment);
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
+                Log.w(TAG, "write property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(outputStream);
             }

@@ -31,6 +31,16 @@ public class TinkerPatchExtension {
     String oldApk
 
     /**
+     * Specify a folder for the outputs where place the tinker patch results.
+     */
+    String outputFolder
+
+    /**
+     * Specify the new apk path instead of running assemble task again.
+     */
+    String newApk;
+
+    /**
      * If there is loader class changes,
      * or Activity, Service, Receiver, Provider change, it will terminal
      * if ignoreWarning is false
@@ -44,10 +54,19 @@ public class TinkerPatchExtension {
      */
     boolean useSign
 
+    /**
+     * whether use tinker
+     * default: true
+     */
+    boolean tinkerEnable
+
     public TinkerPatchExtension() {
         oldApk = ""
+        outputFolder = ""
+        newApk = ""
         ignoreWarning = false
         useSign = true
+        tinkerEnable = true
     }
 
     void checkParameter() {
@@ -66,7 +85,10 @@ public class TinkerPatchExtension {
     @Override
     public String toString() {
         """| oldApk = ${oldApk}
+           | outputFolder = ${outputFolder}
+           | newApk = ${newApk}
            | ignoreWarning = ${ignoreWarning}
+           | tinkerEnable = ${tinkerEnable}
            | useSign = ${useSign}
         """.stripMargin()
     }

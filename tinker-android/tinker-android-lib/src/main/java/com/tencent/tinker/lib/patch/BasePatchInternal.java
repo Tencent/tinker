@@ -36,7 +36,7 @@ public class BasePatchInternal {
 
     protected static final String DEX_PATH             = ShareConstants.DEX_PATH;
     protected static final String SO_PATH              = ShareConstants.SO_PATH;
-    protected static final String DEX_OPTIMIZE_PATH    = ShareConstants.DEX_OPTIMIZE_PATH;
+    protected static final String DEX_OPTIMIZE_PATH    = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
     protected static final int    MAX_EXTRACT_ATTEMPTS = ShareConstants.MAX_EXTRACT_ATTEMPTS;
     protected static final String DEX_META_FILE        = ShareConstants.DEX_META_FILE;
     protected static final String SO_META_FILE         = ShareConstants.SO_META_FILE;
@@ -45,6 +45,8 @@ public class BasePatchInternal {
     protected static final int TYPE_DEX         = ShareConstants.TYPE_DEX;
     protected static final int TYPE_Library     = ShareConstants.TYPE_LIBRARY;
     protected static final int TYPE_RESOURCE    = ShareConstants.TYPE_RESOURCE;
+    protected static final int TYPE_CLASS_N_DEX = ShareConstants.TYPE_CLASS_N_DEX;
+
 
     public static boolean extract(ZipFile zipFile, ZipEntry entryFile, File extractTo, String targetMd5, boolean isDex) throws IOException {
         int numAttempts = 0;

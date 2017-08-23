@@ -16,17 +16,63 @@
 
 package com.tencent.tinker.loader;
 
+import android.content.Context;
 import android.util.Log;
+
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 /**
  * Created by zhangshaowen on 16/12/1.
  */
 
-public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler  {
+public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
     private static final String TAG = "Tinker.UncaughtHandler";
+
+
+    private final File crashFile;
+    private final Context context;
+    private final Thread.UncaughtExceptionHandler ueh;
+
+    public TinkerUncaughtHandler(Context context) {
+        this.context = context;
+        ueh = Thread.getDefaultUncaughtExceptionHandler();
+        crashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
+    }
 
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
-        Log.e(TAG, "catch exception when loading tinker:" + ex);
+        Log.e(TAG, "TinkerUncaughtHandler catch exception:" + Log.getStackTraceString(ex));
+        ueh.uncaughtException(thread, ex);
+
+        if (crashFile != null) {
+            Thread.UncaughtExceptionHandler handler = Thread.getDefaultUncaughtExceptionHandler();
+
+            //only catch real uncaught Exception
+            if (handler instanceof TinkerUncaughtHandler) {
+                File parentFile = crashFile.getParentFile();
+                if (!parentFile.exists() && !parentFile.mkdirs()) {
+                    Log.e(TAG, "print crash file error: create directory fail!");
+                    return;
+                }
+                PrintWriter pw = null;
+                try {
+                    pw = new PrintWriter(new FileWriter(crashFile, false));
+                    pw.println("process:" + ShareTinkerInternals.getProcessName(this.context));
+                    pw.println(ShareTinkerInternals.getExceptionCauseString(ex));
+                } catch (IOException e) {
+                    //ignore
+                    Log.e(TAG, "print crash file error:" + Log.getStackTraceString(e));
+                } finally {
+                    SharePatchFileUtil.closeQuietly(pw);
+                }
+                android.os.Process.killProcess(android.os.Process.myPid());
+            }
+        }
     }
 }

@@ -43,12 +43,16 @@ public class TinkerDexExtension {
      * such as [com.tencent.tinker.loader.*, com.tinker.sample.MyApplication]
      */
     Iterable<String> loader;
+
+    Iterable<String> ignoreWarningLoader;
+
     private Project project;
 
     public TinkerDexExtension(Project project) {
         dexMode = "jar"
         pattern = []
         loader = []
+        ignoreWarningLoader = []
         this.project = project
     }
 
@@ -63,6 +67,7 @@ public class TinkerDexExtension {
         """| dexMode = ${dexMode}
            | pattern = ${pattern}
            | loader = ${loader}
+           | ignoreWarningLoader = ${ignoreWarningLoader}
         """.stripMargin()
     }
 }
