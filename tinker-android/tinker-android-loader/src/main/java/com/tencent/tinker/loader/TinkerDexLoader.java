@@ -304,7 +304,7 @@ public class TinkerDexLoader {
         SharePatchFileUtil.deleteDir(optimizeDexDirectory);
         // delete android o
         if (ShareTinkerInternals.isAfterAndroidO()) {
-            String androidODexDirectory = directory + "/" + ShareConstants.ANDROID_O_DEX_OPTIMIZE_PATH + "/";
+            String androidODexDirectory = directory + "/" + DEX_PATH + "/" + ShareConstants.ANDROID_O_DEX_OPTIMIZE_PATH + "/";
             SharePatchFileUtil.deleteDir(androidODexDirectory);
         }
     }

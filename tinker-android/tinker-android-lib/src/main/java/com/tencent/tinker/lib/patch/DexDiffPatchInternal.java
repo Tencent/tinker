@@ -22,10 +22,10 @@ import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
-import com.tencent.tinker.commons.resutil.ResUtil;
-import com.tencent.tinker.commons.ziputil.TinkerZipEntry;
-import com.tencent.tinker.commons.ziputil.TinkerZipFile;
-import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerDexOptimizer;
@@ -254,13 +254,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     TinkerZipEntry newDexZipEntry = new TinkerZipEntry(rawDexZipEntry, info.rawName);
                     InputStream inputStream = dexZipFile.getInputStream(rawDexZipEntry);
                     try {
-                        ResUtil.extractTinkerEntry(newDexZipEntry, inputStream, out);
+                        TinkerZipUtil.extractTinkerEntry(newDexZipEntry, inputStream, out);
                     } finally {
                         SharePatchFileUtil.closeQuietly(inputStream);
                     }
                 } else {
                     TinkerZipEntry dexZipEntry = new TinkerZipEntry(info.rawName);
-                    ResUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newDexCrC), out);
+                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newDexCrC), out);
                 }
 
             }
