@@ -19,6 +19,7 @@ package com.tencent.tinker.loader;
 import android.os.Build;
 import android.util.Log;
 
+import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
 import java.io.File;
@@ -41,6 +42,8 @@ import dalvik.system.DexFile;
 public final class TinkerDexOptimizer {
     private static final String TAG = "Tinker.ParallelDex";
 
+    private static final String INTERPRET_LOCK_FILE_NAME = "interpret.lock";
+
     /**
      * Optimize (trigger dexopt or dex2oat) dexes.
      *
@@ -54,7 +57,7 @@ public final class TinkerDexOptimizer {
     }
 
     public static boolean optimizeAll(Collection<File> dexFiles, File optimizedDir,
-                                                   boolean useInterpretMode, String targetISA, ResultCallback cb) {
+                                      boolean useInterpretMode, String targetISA, ResultCallback cb) {
         ArrayList<File> sortList = new ArrayList<>(dexFiles);
         // sort input dexFiles with its file length
         Collections.sort(sortList, new Comparator<File>() {
@@ -138,42 +141,56 @@ public final class TinkerDexOptimizer {
         }
 
         private void interpretDex2Oat(String dexFilePath, String oatFilePath) throws IOException {
-
+            // add process lock for interpret mode
             final File oatFile = new File(oatFilePath);
             if (!oatFile.exists()) {
                 oatFile.getParentFile().mkdirs();
             }
 
-            final List<String> commandAndParams = new ArrayList<>();
-            commandAndParams.add("dex2oat");
-            // for 7.1.1, duplicate class fix
-            if (Build.VERSION.SDK_INT >= 24) {
-                commandAndParams.add("--runtime-arg");
-                commandAndParams.add("-classpath");
-                commandAndParams.add("--runtime-arg");
-                commandAndParams.add("&");
-            }
-            commandAndParams.add("--dex-file=" + dexFilePath);
-            commandAndParams.add("--oat-file=" + oatFilePath);
-            commandAndParams.add("--instruction-set=" + targetISA);
-            if (Build.VERSION.SDK_INT > 25) {
-                commandAndParams.add("--compiler-filter=quicken");
-            } else {
-                commandAndParams.add("--compiler-filter=interpret-only");
-            }
-
-            final ProcessBuilder pb = new ProcessBuilder(commandAndParams);
-            pb.redirectErrorStream(true);
-            final Process dex2oatProcess = pb.start();
-            StreamConsumer.consumeInputStream(dex2oatProcess.getInputStream());
-            StreamConsumer.consumeInputStream(dex2oatProcess.getErrorStream());
+            File lockFile = new File(oatFile.getParentFile(), INTERPRET_LOCK_FILE_NAME);
+            ShareFileLockHelper fileLock = null;
             try {
-                final int ret = dex2oatProcess.waitFor();
-                if (ret != 0) {
-                    throw new IOException("dex2oat works unsuccessfully, exit code: " + ret);
+                fileLock = ShareFileLockHelper.getFileLock(lockFile);
+
+                final List<String> commandAndParams = new ArrayList<>();
+                commandAndParams.add("dex2oat");
+                // for 7.1.1, duplicate class fix
+                if (Build.VERSION.SDK_INT >= 24) {
+                    commandAndParams.add("--runtime-arg");
+                    commandAndParams.add("-classpath");
+                    commandAndParams.add("--runtime-arg");
+                    commandAndParams.add("&");
                 }
-            } catch (InterruptedException e) {
-                throw new IOException("dex2oat is interrupted, msg: " + e.getMessage(), e);
+                commandAndParams.add("--dex-file=" + dexFilePath);
+                commandAndParams.add("--oat-file=" + oatFilePath);
+                commandAndParams.add("--instruction-set=" + targetISA);
+                if (Build.VERSION.SDK_INT > 25) {
+                    commandAndParams.add("--compiler-filter=quicken");
+                } else {
+                    commandAndParams.add("--compiler-filter=interpret-only");
+                }
+
+                final ProcessBuilder pb = new ProcessBuilder(commandAndParams);
+                pb.redirectErrorStream(true);
+                final Process dex2oatProcess = pb.start();
+                StreamConsumer.consumeInputStream(dex2oatProcess.getInputStream());
+                StreamConsumer.consumeInputStream(dex2oatProcess.getErrorStream());
+                try {
+                    final int ret = dex2oatProcess.waitFor();
+                    if (ret != 0) {
+                        throw new IOException("dex2oat works unsuccessfully, exit code: " + ret);
+                    }
+                } catch (InterruptedException e) {
+                    throw new IOException("dex2oat is interrupted, msg: " + e.getMessage(), e);
+                }
+            } finally {
+                try {
+                    if (fileLock != null) {
+                        fileLock.close();
+                    }
+                } catch (IOException e) {
+                    Log.w(TAG, "release interpret Lock error", e);
+                }
             }
         }
     }

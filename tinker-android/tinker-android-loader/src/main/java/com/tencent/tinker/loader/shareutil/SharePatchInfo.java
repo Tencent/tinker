@@ -31,13 +31,14 @@ import java.util.Properties;
  * Created by zhangshaowen on 16/3/16.
  */
 public class SharePatchInfo {
+    private static final String TAG = "Tinker.PatchInfo";
+
     public static final int    MAX_EXTRACT_ATTEMPTS = ShareConstants.MAX_EXTRACT_ATTEMPTS;
     public static final String OLD_VERSION          = ShareConstants.OLD_VERSION;
     public static final String NEW_VERSION          = ShareConstants.NEW_VERSION;
     public static final String FINGER_PRINT         = "print";
     public static final String OAT_DIR              = "dir";
     public static final String DEFAULT_DIR   = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
-    private static final String TAG = "Tinker.PatchInfo";
     public String oldVersion;
     public String newVersion;
     public String fingerPrint;
