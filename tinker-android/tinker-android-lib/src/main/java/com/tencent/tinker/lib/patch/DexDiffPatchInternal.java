@@ -22,10 +22,6 @@ import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerDexOptimizer;
@@ -36,6 +32,10 @@ import com.tencent.tinker.loader.shareutil.ShareElfFile;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -44,7 +44,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
@@ -176,10 +175,18 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
         File dexFiles = new File(dir);
         File[] files = dexFiles.listFiles();
-        List<File> dexList = files != null ? Arrays.asList(files) : null;
+        List<File> legalFiles = new ArrayList<>();
+        // may have directory in android o
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) {
+                    legalFiles.add(file);
+                }
+            }
+        }
 
         final String optimizeDexDirectory = patchVersionDirectory + "/" + DEX_OPTIMIZE_PATH + "/";
-        return dexOptimizeDexFiles(context, dexList, optimizeDexDirectory, patchFile);
+        return dexOptimizeDexFiles(context, legalFiles, optimizeDexDirectory, patchFile);
 
     }
 
@@ -223,6 +230,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             result = false;
         }
 
+        if (result) {
+            // delete classN dex if exist
+            for (File dexFile : classNDexInfo.values()) {
+                SharePatchFileUtil.safeDeleteFile(dexFile);
+            }
+        }
 
         return result;
     }
@@ -320,7 +333,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
             // try parallel dex optimizer
             TinkerDexOptimizer.optimizeAll(
-                dexFiles, optimizeDexDirectoryFile,
+                    dexFiles, optimizeDexDirectoryFile,
                 new TinkerDexOptimizer.ResultCallback() {
                     long startTime;
 

@@ -240,6 +240,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
             }
             if (oatModeChanged) {
                 // delete interpret odex
+                // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
                 Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to delete interpret optimize files");
                 SharePatchFileUtil.deleteDir(patchVersionDirectory + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
             }
