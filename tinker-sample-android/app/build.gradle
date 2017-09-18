@@ -19,6 +19,7 @@ dependencies {
 //    compile("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
 //    compile("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
 //    compile("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
+//    compile("com.tencent.tinker:tinker-ziputils:${TINKER_VERSION}") { changing = true }
 //    compile("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
 
 }

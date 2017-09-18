@@ -21,10 +21,10 @@ import android.content.pm.ApplicationInfo;
 import android.os.SystemClock;
 
 import com.tencent.tinker.bsdiff.BSPatch;
-import com.tencent.tinker.commons.resutil.ResUtil;
-import com.tencent.tinker.commons.ziputil.TinkerZipEntry;
-import com.tencent.tinker.commons.ziputil.TinkerZipFile;
-import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -146,7 +146,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                             && !resPatchInfo.modRes.contains(name)
                             && !resPatchInfo.largeModRes.contains(name)
                             && !name.equals(ShareConstants.RES_MANIFEST)) {
-                            ResUtil.extractTinkerEntry(oldApk, zipEntry, out);
+                            TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
                             totalEntryCount++;
                         }
                     }
@@ -159,7 +159,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, ShareConstants.RES_MANIFEST, type);
                     return false;
                 }
-                ResUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
+                TinkerZipUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
                 totalEntryCount++;
 
                 for (String name : resPatchInfo.largeModRes) {
@@ -170,7 +170,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                         return false;
                     }
                     ShareResPatchInfo.LargeModeInfo largeModeInfo = resPatchInfo.largeModMap.get(name);
-                    ResUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.file, largeModeInfo.crc, out);
+                    TinkerZipUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.file, largeModeInfo.crc, out);
                     totalEntryCount++;
                 }
 
@@ -181,7 +181,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, name, type);
                         return false;
                     }
-                    ResUtil.extractTinkerEntry(newApk, addZipEntry, out);
+                    TinkerZipUtil.extractTinkerEntry(newApk, addZipEntry, out);
                     totalEntryCount++;
                 }
 
@@ -192,7 +192,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, name, type);
                         return false;
                     }
-                    ResUtil.extractTinkerEntry(newApk, modZipEntry, out);
+                    TinkerZipUtil.extractTinkerEntry(newApk, modZipEntry, out);
                     totalEntryCount++;
                 }
                 // set comment back

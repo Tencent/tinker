@@ -1,17 +1,9 @@
 apply plugin: 'java'
 
-version rootProject.ext.VERSION_NAME
-group rootProject.ext.GROUP
-
 [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
 
-
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':third-party:aosp-dexutils')
-    compile project(':third-party:bsdiff-util')
-    compile project(':third-party:tinker-ziputils')
-}
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {
     group = "tinker"

@@ -168,9 +168,9 @@ public class SharePatchFileUtil {
             return true;
         }
 
-        Log.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());
-
         if (file.exists()) {
+            Log.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());
+
             boolean deleted = file.delete();
             if (!deleted) {
                 Log.e(TAG, "Failed to delete file, try to delete when exit. path: " + file.getPath());

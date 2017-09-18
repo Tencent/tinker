@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.commons.resutil;
-
-import com.tencent.tinker.commons.ziputil.TinkerZipEntry;
-import com.tencent.tinker.commons.ziputil.TinkerZipFile;
-import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
+package com.tencent.tinker.ziputils.ziputil;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -29,7 +25,7 @@ import java.io.InputStream;
 /**
  * Created by zhangshaowen on 16/8/10.
  */
-public class ResUtil {
+public class TinkerZipUtil {
     private static final int BUFFER_SIZE = 16384;
 
     public static void extractTinkerEntry(TinkerZipFile apk, TinkerZipEntry zipEntry, TinkerZipOutputStream outputStream) throws IOException {
