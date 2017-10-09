@@ -18,10 +18,10 @@ package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.decoder.ResDiffDecoder;
 import com.tencent.tinker.build.patch.Configuration;
-import com.tencent.tinker.commons.resutil.ResUtil;
-import com.tencent.tinker.commons.ziputil.TinkerZipEntry;
-import com.tencent.tinker.commons.ziputil.TinkerZipFile;
-import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -145,7 +145,7 @@ public class Utils {
                         && !modifiedSet.contains(name)
                         && !largeModifiedSet.contains(name)
                         && !name.equals(TypedValue.RES_MANIFEST)) {
-                        ResUtil.extractTinkerEntry(oldApk, zipEntry, out);
+                        TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
                     }
                 }
             }
@@ -156,7 +156,7 @@ public class Utils {
                     String.format("can't found resource file %s from old apk file %s", TypedValue.RES_MANIFEST, config.mOldApkFile.getAbsolutePath())
                 );
             }
-            ResUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
+            TinkerZipUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
 
             for (String name : largeModifiedSet) {
                 TinkerZipEntry largeZipEntry = oldApk.getEntry(name);
@@ -166,7 +166,7 @@ public class Utils {
                     );
                 }
                 ResDiffDecoder.LargeModeInfo largeModeInfo = largeModifiedMap.get(name);
-                ResUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.path, largeModeInfo.crc, out);
+                TinkerZipUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.path, largeModeInfo.crc, out);
             }
 
             for (String name : addedSet) {
@@ -176,7 +176,7 @@ public class Utils {
                         String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
                     );
                 }
-                ResUtil.extractTinkerEntry(newApk, addZipEntry, out);
+                TinkerZipUtil.extractTinkerEntry(newApk, addZipEntry, out);
             }
 
             for (String name : modifiedSet) {
@@ -186,7 +186,7 @@ public class Utils {
                         String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
                     );
                 }
-                ResUtil.extractTinkerEntry(newApk, modZipEntry, out);
+                TinkerZipUtil.extractTinkerEntry(newApk, modZipEntry, out);
             }
         } finally {
             out.close();

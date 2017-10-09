@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * Created by zhangshaowen on 16/3/24.
  */
 public class ShareConstants {
-    public static final String TINKER_VERSION = "1.8.1";
+    public static final String TINKER_VERSION = "1.8.3";
 
     public static final int BUFFER_SIZE         = 16384;
     public static final int MD5_LENGTH          = 32;
