@@ -9,7 +9,7 @@ group rootProject.ext.GROUP
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':tinker-commons')
-    compile group: 'com.tencent.mm', name: 'apk-parser-lib', version: '1.2.1'
+    compile group: 'com.tencent.mm', name: 'apk-parser-lib', version: '1.2.3'
     compile group: 'com.google.guava', name: 'guava', version: '11.0.2'
     compile group: 'org.ow2.asm', name: 'asm', version: '5.0.3'
     compile group: 'org.smali', name: 'dexlib2', version: '2.1.3'
