@@ -11,12 +11,15 @@ android {
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+
+        buildConfigField "String", "TINKER_VERSION", "\"${rootProject.ext.VERSION_NAME}\""
     }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
+    compile "com.android.support:appcompat-v7:${rootProject.ext.supportLibVersion}"
 }
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {
