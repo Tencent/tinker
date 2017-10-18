@@ -68,6 +68,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setIgnoreWarning(configuration.ignoreWarning)
                .setDexFilePattern(new ArrayList<String>(configuration.dex.pattern))
                .setIsProtectedApp(configuration.buildConfig.isProtectedApp)
+               .setIsComponentHotplugSupported(configuration.buildConfig.supportHotplugComponent)
                .setDexLoaderPattern(new ArrayList<String>(configuration.dex.loader))
                .setDexIgnoreWarningLoaderPattern(new ArrayList<String>(configuration.dex.ignoreWarningLoader))
                .setDexMode(configuration.dex.dexMode)

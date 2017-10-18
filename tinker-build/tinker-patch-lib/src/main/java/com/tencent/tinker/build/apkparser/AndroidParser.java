@@ -23,15 +23,19 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -39,9 +43,18 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import tinker.net.dongliu.apk.parser.ApkParser;
 import tinker.net.dongliu.apk.parser.bean.ApkMeta;
 import tinker.net.dongliu.apk.parser.exception.ParserException;
+import tinker.net.dongliu.apk.parser.parser.ApkMetaTranslator;
+import tinker.net.dongliu.apk.parser.parser.BinaryXmlParser;
+import tinker.net.dongliu.apk.parser.parser.CompositeXmlStreamer;
+import tinker.net.dongliu.apk.parser.parser.ResourceTableParser;
+import tinker.net.dongliu.apk.parser.parser.XmlTranslator;
+import tinker.net.dongliu.apk.parser.struct.AndroidConstants;
+import tinker.net.dongliu.apk.parser.struct.ResourceValue;
 import tinker.net.dongliu.apk.parser.struct.StringPool;
 import tinker.net.dongliu.apk.parser.struct.resource.ResourceTable;
+import tinker.net.dongliu.apk.parser.struct.xml.Attribute;
 import tinker.net.dongliu.apk.parser.utils.ParseUtils;
+import tinker.net.dongliu.apk.parser.utils.Utils;
 
 /**
  * Created by zhangshaowen on 16/5/5.
@@ -133,9 +146,63 @@ public class AndroidParser {
     }
 
     public static AndroidParser getAndroidManifest(File file) throws IOException, ParseException {
-        ApkParser apkParser = new ApkParser(file);
-        AndroidParser androidManifest = new AndroidParser(apkParser.getApkMeta(), apkParser.getManifestXml());
-        return androidManifest;
+        ZipFile zf = null;
+        try {
+            zf = new ZipFile(file);
+            final ByteBuffer arscData = getZipEntryData(zf, AndroidConstants.RESOURCE_FILE);
+            final ResourceTableParser resTableParser = new ResourceTableParser(arscData);
+            resTableParser.parse();
+            final ResourceTable resTable = resTableParser.getResourceTable();
+
+            final ByteBuffer manifestData = getZipEntryData(zf, AndroidConstants.MANIFEST_FILE);
+            final BinaryXmlParser xmlParser = new BinaryXmlParser(manifestData, resTable);
+            final ApkMetaTranslator metaTranslator = new ApkMetaTranslator();
+            final XmlTranslatorForPatch xmlTranslator = new XmlTranslatorForPatch();
+            final CompositeXmlStreamer compositeStreamer = new CompositeXmlStreamer(metaTranslator, xmlTranslator);
+            xmlParser.setXmlStreamer(compositeStreamer);
+            xmlParser.parse();
+
+            AndroidParser androidManifest = new AndroidParser(metaTranslator.getApkMeta(), xmlTranslator.getXml());
+            return androidManifest;
+        } finally {
+            if (zf != null) {
+                try {
+                    zf.close();
+                } catch (Throwable ignored) {
+                    // Ignored.
+                }
+            }
+        }
+    }
+
+    private static ByteBuffer getZipEntryData(ZipFile zf, String entryPath) throws IOException {
+        final ZipEntry entry = zf.getEntry(entryPath);
+        InputStream is = null;
+        try {
+            is = new BufferedInputStream(zf.getInputStream(entry));
+            final byte[] data = Utils.toByteArray(is);
+            return ByteBuffer.wrap(data);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (Throwable ignored) {
+                    // Ignored.
+                }
+            }
+        }
+    }
+
+    private static final class XmlTranslatorForPatch extends XmlTranslator {
+
+        @Override
+        public void onAttribute(Attribute attribute) {
+            final ResourceValue attrVal = attribute.getTypedValue();
+            if (attrVal != null && attrVal instanceof ResourceValue.ReferenceResourceValue) {
+                attribute.setValue(attrVal.toString());
+            }
+            super.onAttribute(attribute);
+        }
     }
 
     private static String getAttribute(NamedNodeMap namedNodeMap, String name) {

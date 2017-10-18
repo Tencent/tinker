@@ -1,27 +1,37 @@
 package com.tencent.tinker.loader.hotplug.interceptor;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.util.Log;
+
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
 
 public abstract class Interceptor<T_TARGET> {
+    private static final String TAG = "Tinker.Interceptor";
+
     private T_TARGET mTarget = null;
     private volatile boolean mInstalled = false;
 
-    protected abstract T_TARGET fetchTarget() throws Throwable;
+    protected @Nullable abstract T_TARGET fetchTarget() throws Throwable;
 
-    protected T_TARGET decorate(T_TARGET target) throws Throwable {
+    protected @NonNull T_TARGET decorate(@Nullable T_TARGET target) throws Throwable {
         return target;
     }
 
-    protected abstract void inject(T_TARGET decorated) throws Throwable;
+    protected abstract void inject(@Nullable T_TARGET decorated) throws Throwable;
 
     public synchronized void install() throws InterceptFailedException {
         try {
             final T_TARGET target = fetchTarget();
             mTarget = target;
             final T_TARGET decorated = decorate(target);
-            inject(decorated);
+            if (decorated != target) {
+                inject(decorated);
+            } else {
+                Log.w(TAG, "target: " + target + " was already hooked.");
+            }
             mInstalled = true;
         } catch (Throwable thr) {
             mTarget = null;
@@ -39,5 +49,9 @@ public abstract class Interceptor<T_TARGET> {
                 throw new InterceptFailedException(thr);
             }
         }
+    }
+
+    protected interface ITinkerHotplugProxy {
+        // Marker interface for proxy objects created by tinker.
     }
 }

@@ -1,7 +1,6 @@
 package com.tencent.tinker.loader.hotplug;
 
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.os.Handler;
 import android.util.Log;
 
@@ -15,7 +14,6 @@ import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 /**
  * Created by tangyinsheng on 2017/7/31.
@@ -32,14 +30,33 @@ public final class ComponentHotplug {
     public synchronized static void install(TinkerApplication app, ShareSecurityCheck checker) throws UnsupportedEnvironmentException {
         if (!sInstalled) {
             try {
-                IncrementComponentManager.init(app, checker);
+                if (IncrementComponentManager.init(app, checker)) {
+                    sAMSInterceptor = new ServiceBinderInterceptor(app, EnvConsts.ACTIVITY_MANAGER_SRVNAME, new AMSInterceptHandler(app));
+                    sPMSInterceptor = new ServiceBinderInterceptor(app, EnvConsts.PACKAGE_MANAGER_SRVNAME, new PMSInterceptHandler());
 
-                sAMSInterceptor = new ServiceBinderInterceptor(EnvConsts.ACTIVITY_MANAGER_SRVNAME, new AMSInterceptHandler());
-                sPMSInterceptor = new ServiceBinderInterceptor(EnvConsts.PACKAGE_MANAGER_SRVNAME, new PMSInterceptHandler());
+                    final Handler mH = fetchMHInstance(app);
+                    sMHMessageInterceptor = new HandlerMessageInterceptor(mH, new MHMessageHandler(app));
 
-                final Handler mH = fetchMHInstance(app);
-                sMHMessageInterceptor = new HandlerMessageInterceptor(mH, new MHMessageHandler());
+                    sAMSInterceptor.install();
+                    sPMSInterceptor.install();
+                    sMHMessageInterceptor.install();
 
+                    sInstalled = true;
+
+                    Log.i(TAG, "installed successfully.");
+                }
+            } catch (Throwable thr) {
+                uninstall();
+                throw new UnsupportedEnvironmentException(thr);
+            }
+        }
+    }
+
+    public synchronized static void ensureComponentHotplugInstalled(TinkerApplication app) throws UnsupportedEnvironmentException {
+        // Some environments may reset AMS, PMS and mH，which cause component hotplug feature
+        // being unavailable. So we reinstall them here.
+        if (sInstalled) {
+            try {
                 sAMSInterceptor.install();
                 sPMSInterceptor.install();
                 sMHMessageInterceptor.install();
@@ -47,41 +64,18 @@ public final class ComponentHotplug {
                 uninstall();
                 throw new UnsupportedEnvironmentException(thr);
             }
-
-            sInstalled = true;
+        } else {
+            Log.i(TAG, "method install() is not invoked, ignore ensuring operations.");
         }
     }
 
     private static Handler fetchMHInstance(Context context) {
-        Method currentActivityThreadMethod = null;
-        Field mHField = null;
-        try {
-            final Class<?> activityThreadClazz = Class.forName("android.app.ActivityThread");
-            currentActivityThreadMethod = ShareReflectUtil.findMethod(activityThreadClazz,
-                    "currentActivityThread");
-            mHField = ShareReflectUtil.findField(activityThreadClazz, "mH");
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
-
-        Object activityThread = null;
-        try {
-            activityThread = currentActivityThreadMethod.invoke(null);
-            if (activityThread == null) {
-                throw new IllegalStateException("activityThread is null, try another method.");
-            }
-        } catch (Throwable thr) {
-            // Try another method.
-            while (context != null && context instanceof ContextWrapper) {
-                context = ((ContextWrapper) context).getBaseContext();
-            }
-            try {
-                activityThread = ShareReflectUtil.findField(context, "mMainThread").get(context);
-            } catch (Throwable thr1) {
-                throw new IllegalStateException(thr1);
-            }
+        final Object activityThread = ShareReflectUtil.getActivityThread(context, null);
+        if (activityThread == null) {
+            throw new IllegalStateException("failed to fetch instance of ActivityThread.");
         }
         try {
+            final Field mHField = ShareReflectUtil.findField(activityThread, "mH");
             final Handler mH = (Handler) mHField.get(activityThread);
             return mH;
         } catch (Throwable thr) {

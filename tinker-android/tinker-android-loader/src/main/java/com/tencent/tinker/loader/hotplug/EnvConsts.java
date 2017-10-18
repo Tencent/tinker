@@ -13,7 +13,7 @@ public final class EnvConsts {
     public static final String INTENT_EXTRA_OLD_COMPONENT = "tinker_iek_old_component";
 
     // Please keep it synchronized with the other one defined in 'TypedValue' class
-    public static final String INCCOMPONENT_META_FILE = "inc_component_meta.txt";
+    public static final String INCCOMPONENT_META_FILE = "assets/inc_component_meta.txt";
 
     private EnvConsts() {
         throw new UnsupportedOperationException();

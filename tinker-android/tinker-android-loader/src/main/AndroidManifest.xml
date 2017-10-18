@@ -1,6 +1,65 @@
 <manifest package="com.tencent.tinker.loader"
           xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <activity android:name=".hotplug.ActivityStubs$STDStub_00" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_01" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_02" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_03" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_04" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_05" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_06" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_07" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_08" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_09" />
+
+        <activity android:name=".hotplug.ActivityStubs$STDStub_00_T" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_01_T" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$STDStub_02_T" android:theme="@android:style/Theme.Translucent" />
+
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_00" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_01" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_02" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_03" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_04" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_05" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_06" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_07" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_08" android:launchMode="singleTop" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_09" android:launchMode="singleTop" />
+
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_00_T" android:launchMode="singleTop" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_01_T" android:launchMode="singleTop" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$SGTStub_02_T" android:launchMode="singleTop" android:theme="@android:style/Theme.Translucent" />
+
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_00" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_01" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_02" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_03" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_04" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_05" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_06" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_07" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_08" android:launchMode="singleTask" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_09" android:launchMode="singleTask" />
+
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_00_T" android:launchMode="singleTask" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_01_T" android:launchMode="singleTask" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$SGTKStub_02_T" android:launchMode="singleTask" android:theme="@android:style/Theme.Translucent" />
+
+        <activity android:name=".hotplug.ActivityStubs$SIStub_00" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_01" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_02" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_03" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_04" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_05" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_06" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_07" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_08" android:launchMode="singleInstance" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_09" android:launchMode="singleInstance" />
+
+        <activity android:name=".hotplug.ActivityStubs$SIStub_00_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_01_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
+        <activity android:name=".hotplug.ActivityStubs$SIStub_02_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
     </application>
 
 </manifest>

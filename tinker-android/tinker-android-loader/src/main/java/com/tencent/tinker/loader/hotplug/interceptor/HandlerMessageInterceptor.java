@@ -2,6 +2,8 @@ package com.tencent.tinker.loader.hotplug.interceptor;
 
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
@@ -34,18 +36,25 @@ public class HandlerMessageInterceptor extends Interceptor<Handler.Callback> {
         mMessageHandler = messageHandler;
     }
 
+    @Nullable
     @Override
     protected Handler.Callback fetchTarget() throws Throwable {
         return (Handler.Callback) sMCallbackField.get(mTarget);
     }
 
+    @NonNull
     @Override
-    protected Handler.Callback decorate(final Handler.Callback callback) throws Throwable {
-        return new CallbackWrapper(mMessageHandler, callback);
+    protected Handler.Callback decorate(@Nullable final Handler.Callback callback) throws Throwable {
+        if (callback != null && ITinkerHotplugProxy.class.isAssignableFrom(callback.getClass())) {
+            // Already intercepted, just return the target.
+            return callback;
+        } else {
+            return new CallbackWrapper(mMessageHandler, callback);
+        }
     }
 
     @Override
-    protected void inject(Handler.Callback decorated) throws Throwable {
+    protected void inject(@Nullable Handler.Callback decorated) throws Throwable {
         sMCallbackField.set(mTarget, decorated);
     }
 
@@ -53,24 +62,33 @@ public class HandlerMessageInterceptor extends Interceptor<Handler.Callback> {
         boolean handleMessage(Message msg);
     }
 
-    private static class CallbackWrapper implements Handler.Callback {
+    private static class CallbackWrapper implements Handler.Callback, ITinkerHotplugProxy {
         private final MessageHandler   mMessageHandler;
         private final Handler.Callback mOrigCallback;
+        private volatile boolean mIsInHandleMethod;
 
         CallbackWrapper(MessageHandler messageHandler, Handler.Callback origCallback) {
             mMessageHandler = messageHandler;
             mOrigCallback = origCallback;
+            mIsInHandleMethod = false;
         }
 
         @Override
         public boolean handleMessage(Message message) {
-            if (mMessageHandler.handleMessage(message)) {
-                return true;
-            } else if (mOrigCallback != null) {
-                return mOrigCallback.handleMessage(message);
+            boolean result = false;
+            if (mIsInHandleMethod) {
+                // Reentered, this may happen if origCallback calls back to us which forms a loop.
+                return result;
             } else {
-                return false;
+                mIsInHandleMethod = true;
             }
+            if (mMessageHandler.handleMessage(message)) {
+                result = true;
+            } else if (mOrigCallback != null) {
+                result = mOrigCallback.handleMessage(message);
+            }
+            mIsInHandleMethod = false;
+            return result;
         }
     }
 }

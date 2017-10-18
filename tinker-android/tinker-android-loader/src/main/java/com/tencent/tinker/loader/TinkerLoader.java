@@ -289,14 +289,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         // Init component hotplug support.
         if (isEnabledForDex && isEnabledForResource) {
-            try {
-                ComponentHotplug.install(app, securityCheck);
-            } catch (Throwable thr) {
-                Log.w(TAG, "tryLoadPatchFiles:onInitComponentHotPlugFail", thr);
-                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_EXCEPTION_COMPONENT_HOTPLUG);
-                resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, thr);
-                return;
-            }
+            ComponentHotplug.install(app, securityCheck);
         }
 
         // kill all other process if oat mode change

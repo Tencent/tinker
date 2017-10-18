@@ -45,7 +45,7 @@ public class TypedValue {
     public static final String PACKAGE_META_FILE       = "package_meta.txt";
 
     // Please keep it synchronized with the other one defined in 'EnvConsts' class
-    public static final String INCCOMPONENT_META_FILE = "inc_component_meta.txt";
+    public static final String INCCOMPONENT_META_FILE = "assets/inc_component_meta.txt";
 
     public static final String PATH_DEFAULT_OUTPUT = "tinkerPatch";
 

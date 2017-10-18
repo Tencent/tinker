@@ -24,11 +24,20 @@
 
         <!--if you don't set sevenZip path, we just use 7za to try-->
         <sevenZipPath value="/usr/local/bin/7za"/>
+
         <!--Whether tinker should treat the base apk as the one being protected by app-->
         <!--protection tools.-->
         <!--If this attribute is true, the generated patch package will contain a-->
         <!--dex including all changed classes instead of any dexdiff patch-info files.-->
         <isProtectedApp value="false"/>
+
+        <!--Whether tinker should support component hotplug (add new component dynamically).-->
+        <!--If this attribute is true, the component added in new apk will be available after-->
+        <!--patch is successfully loaded. Otherwise an error would be announced when generating patch-->
+        <!--on compile-time.-->
+        <!---->
+        <!--Notice that currently this feature is incubating and only support NON-EXPORTED Activity-->
+        <supportHotplugComponent value="false"/>
     </issue>
 
     <issue id="dex">

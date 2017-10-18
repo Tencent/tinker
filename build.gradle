@@ -28,6 +28,7 @@ ext {
     compileSdkVersion = 23
     targetSdkVersion = compileSdkVersion
     buildToolsVersion = '23.0.2'
+    supportLibVersion = '23.0.1'
     javaVersion = JavaVersion.VERSION_1_7
 
     GROUP = 'com.tencent.tinker'

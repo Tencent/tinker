@@ -17,9 +17,11 @@
 package com.tencent.tinker.loader.shareutil;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.util.Log;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -189,5 +191,20 @@ public class ShareIntentUtil {
             ret = defaultValue;
         }
         return ret;
+    }
+
+    public static void fixIntentClassLoader(Intent intent, ClassLoader cl) {
+        try {
+            final Field mExtrasField = ShareReflectUtil.findField(Intent.class, "mExtras");
+            Bundle extra = (Bundle) mExtrasField.get(intent);
+            if (extra == null) {
+                extra = new Bundle();
+                mExtrasField.set(intent, extra);
+            }
+        } catch (Throwable thr) {
+            thr.printStackTrace();
+        } finally {
+            intent.setExtrasClassLoader(cl);
+        }
     }
 }

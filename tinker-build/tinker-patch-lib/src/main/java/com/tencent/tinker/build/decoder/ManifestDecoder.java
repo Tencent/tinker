@@ -38,20 +38,30 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by zhangshaowen on 16/4/6.
  */
 
 public class ManifestDecoder extends BaseDecoder {
-    private static final String XML_NODENAME_APPLICATION  = "application";
-    private static final String XML_NODEATTR_PACKAGE      = "package";
-    private static final String XML_NODENAME_ACTIVITY     = "activity";
-    private static final String XML_NODEATTR_NAME         = "name";
-    private static final String XML_NODEATTR_EXPORTED     = "exported";
-    private static final String XML_NODEATTR_PROCESS      = "process";
-    private static final String XML_NODENAME_INTENTFILTER = "intent-filter";
+    private static final String XML_NODENAME_APPLICATION        = "application";
+    private static final String XML_NODENAME_USES_SDK           = "uses-sdk";
+    private static final String XML_NODEATTR_MIN_SDK_VERSION    = "minSdkVersion";
+    private static final String XML_NODEATTR_TARGET_SDK_VERSION = "targetSdkVersion";
+    private static final String XML_NODEATTR_PACKAGE            = "package";
+    private static final String XML_NODENAME_ACTIVITY           = "activity";
+    private static final String XML_NODENAME_SERVICE            = "service";
+    private static final String XML_NODENAME_RECEIVER           = "receiver";
+    private static final String XML_NODENAME_PROVIDER           = "provider";
+    private static final String XML_NODEATTR_NAME               = "name";
+    private static final String XML_NODEATTR_EXPORTED           = "exported";
+    private static final String XML_NODEATTR_PROCESS            = "process";
+    private static final String XML_NODENAME_INTENTFILTER       = "intent-filter";
 
     public ManifestDecoder(Configuration config) throws IOException {
         super(config);
@@ -59,110 +69,97 @@ public class ManifestDecoder extends BaseDecoder {
 
     @Override
     public boolean patch(File oldFile, File newFile) throws IOException, TinkerPatchException {
-        final boolean ignoreWarning = config.mIgnoreWarning;
-
-        final List<String> addedActivities = new ArrayList<>();
-
         try {
             AndroidParser oldAndroidManifest = AndroidParser.getAndroidManifest(oldFile);
             AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(newFile);
+
             //check minSdkVersion
             int minSdkVersion = Integer.parseInt(oldAndroidManifest.apkMeta.getMinSdkVersion());
 
             if (minSdkVersion < TypedValue.ANDROID_40_API_LEVEL) {
                 if (config.mDexRaw) {
-                    if (ignoreWarning) {
-                        //ignoreWarning, just log
-                        Logger.e("Warning:ignoreWarning is true, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will crash at some time", minSdkVersion);
-                    } else {
-                        Logger.e("Warning:ignoreWarning is false, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will crash at some time", minSdkVersion);
-
-                        throw new TinkerPatchException(
-                            String.format("ignoreWarning is false, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will crash at some time", minSdkVersion)
-                        );
-                    }
+                    final StringBuilder sb = new StringBuilder();
+                    sb.append("your old apk's minSdkVersion ")
+                      .append(minSdkVersion)
+                      .append(" is below 14, you should set the dexMode to 'jar', ")
+                      .append("otherwise, it will crash at some time");
+                    announceWarningOrException(sb.toString());
                 }
             }
 
-            //check whether there is any new Android Component
-            List<String> oldAndroidComponent = oldAndroidManifest.getComponents();
-            List<String> newAndroidComponent = newAndroidManifest.getComponents();
+            final String oldXml = oldAndroidManifest.xml.trim();
+            final String newXml = newAndroidManifest.xml.trim();
+            final boolean isManifestChanged = !oldXml.equals(newXml);
 
-            for (String newComponentName : newAndroidComponent) {
-                boolean found = false;
-                for (String oldComponentName : oldAndroidComponent) {
-                    if (newComponentName.equals(oldComponentName)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    // Currently only activities are supported.
-                    if (newAndroidManifest.activities.contains(newComponentName)) {
-                        addedActivities.add(newComponentName);
-                    } else {
-                        if (ignoreWarning) {
-                            Logger.e("Warning:ignoreWarning is true, but we found a new AndroidComponent %s, it will crash at some time", newComponentName);
-                        } else {
-                            Logger.e("Warning:ignoreWarning is false, but we found a new AndroidComponent %s, it will crash at some time", newComponentName);
-                            throw new TinkerPatchException(
-                                    String.format("ignoreWarning is false, but we found a new AndroidComponent %s, it will crash at some time", newComponentName)
-                            );
-                        }
-                    }
-                }
+            if (!config.mSupportHotplugComponent && isManifestChanged) {
+                announceWarningOrException("manifest was changed, while hot plug component support mode is disabled. "
+                        + "Such changes will not take effect.");
             }
 
-            // Checking works are done, then we store added activities' information into a standalone xml file.
-            if (!addedActivities.isEmpty()) {
+            if (!isManifestChanged) {
+                Logger.d("\nManifest has no changes, skip rest decode works.");
+                return false;
+            }
+
+            // check whether there is any new Android Component and get their names.
+            // so far only Activity increment can pass checking.
+            final Set<String> incActivities = getIncrementActivities(oldAndroidManifest.activities, newAndroidManifest.activities);
+            final Set<String> incServices = getIncrementServices(oldAndroidManifest.services, newAndroidManifest.services);
+            final Set<String> incReceivers = getIncrementReceivers(oldAndroidManifest.receivers, newAndroidManifest.receivers);
+            final Set<String> incProviders = getIncrementProviders(oldAndroidManifest.providers, newAndroidManifest.providers);
+
+            final boolean hasIncComponent = (!incActivities.isEmpty() || !incServices.isEmpty()
+                    || !incProviders.isEmpty() || !incReceivers.isEmpty());
+
+            // generate increment manifest.
+            if (hasIncComponent) {
+                final Document newXmlDoc = DocumentHelper.parseText(newAndroidManifest.xml);
                 final Document incXmlDoc = DocumentHelper.createDocument();
-                final Document xmlDoc = DocumentHelper.parseText(newAndroidManifest.xml);
-                final Element rootElement = xmlDoc.getRootElement();
-                final String packageName = rootElement.attributeValue(XML_NODEATTR_PACKAGE);
-                if (Utils.isNullOrNil(packageName)) {
-                    throw new IOException("Unable to find package name from manifest: " + newFile.getAbsolutePath());
-                }
-                final Element incRootElement = DocumentHelper.createElement(rootElement.getName());
-                final Element appElement = rootElement.element(XML_NODENAME_APPLICATION);
-                if (appElement == null) {
-                    throw new TinkerPatchException("Unable to find application node from manifest: " + newFile.getAbsolutePath());
-                }
-                final Element incAppElement = DocumentHelper.createElement(XML_NODENAME_APPLICATION);
-                for (Object attrObj : appElement.attributes()) {
-                    final Attribute attr = (Attribute) attrObj;
-                    incAppElement.addAttribute(attr.getName(), attr.getValue());
-                }
-                incRootElement.add(incAppElement);
-                final List<Element> activityElements = appElement.elements(XML_NODENAME_ACTIVITY);
-                for (Element activityElement : activityElements) {
-                    String activityClazzName = activityElement.attributeValue(XML_NODEATTR_NAME);
-                    if (activityClazzName.charAt(0) == '.') {
-                        activityClazzName = packageName + activityClazzName;
-                    }
-                    if (!addedActivities.contains(activityClazzName)) {
-                        continue;
-                    }
-                    final String exportedVal = activityElement.attributeValue(XML_NODEATTR_EXPORTED,
-                            Utils.isNullOrNil(activityElement.elements(XML_NODENAME_INTENTFILTER)) ? "false" : "true");
-                    if ("true".equalsIgnoreCase(exportedVal)) {
-                        throw new TinkerPatchException(
-                                    String.format("Found a new exported activity %s"
-                                            + ", tinker does not support increase exported activity.", activityClazzName)
-                        );
-                    }
-                    final String processVal = activityElement.attributeValue(XML_NODEATTR_PROCESS);
-                    if (processVal != null && processVal.charAt(0) == ':') {
-                        throw new TinkerPatchException(
-                                String.format("Found a new activity %s which would be run in standalone process"
-                                        + ", tinker does not support increase such kind of activities.", activityClazzName)
-                        );
-                    }
-                    incAppElement.add(activityElement.detach());
-                }
-                incXmlDoc.add(incRootElement);
 
-                final File incXmlOutput = new File(config.mTempResultDir,
-                        TypedValue.SO_META_FILE + File.separator + TypedValue.INCCOMPONENT_META_FILE);
+                final Element newRootNode = newXmlDoc.getRootElement();
+                final String packageName = newRootNode.attributeValue(XML_NODEATTR_PACKAGE);
+                if (Utils.isNullOrNil(packageName)) {
+                    throw new TinkerPatchException("Unable to find package name from manifest: " + newFile.getAbsolutePath());
+                }
+
+                final Element newAppNode = newRootNode.element(XML_NODENAME_APPLICATION);
+
+                final Element incAppNode = incXmlDoc.addElement(newAppNode.getQName());
+                copyAttributes(newAppNode, incAppNode);
+
+                if (!incActivities.isEmpty()) {
+                    final List<Element> newActivityNodes = newAppNode.elements(XML_NODENAME_ACTIVITY);
+                    final List<Element> incActivityNodes = getIncrementActivityNodes(packageName, newActivityNodes, incActivities);
+                    for (Element node : incActivityNodes) {
+                        incAppNode.add(node.detach());
+                    }
+                }
+
+                if (!incServices.isEmpty()) {
+                    final List<Element> newServiceNodes = newAppNode.elements(XML_NODENAME_SERVICE);
+                    final List<Element> incServiceNodes = getIncrementServiceNodes(packageName, newServiceNodes, incServices);
+                    for (Element node : incServiceNodes) {
+                        incAppNode.add(node.detach());
+                    }
+                }
+
+                if (!incReceivers.isEmpty()) {
+                    final List<Element> newReceiverNodes = newAppNode.elements(XML_NODENAME_RECEIVER);
+                    final List<Element> incReceiverNodes = getIncrementReceiverNodes(packageName, newReceiverNodes, incReceivers);
+                    for (Element node : incReceiverNodes) {
+                        incAppNode.add(node.detach());
+                    }
+                }
+
+                if (!incProviders.isEmpty()) {
+                    final List<Element> newProviderNodes = newAppNode.elements(XML_NODENAME_PROVIDER);
+                    final List<Element> incProviderNodes = getIncrementProviderNodes(packageName, newProviderNodes, incProviders);
+                    for (Element node : incProviderNodes) {
+                        incAppNode.add(node.detach());
+                    }
+                }
+
+                final File incXmlOutput = new File(config.mTempResultDir, TypedValue.INCCOMPONENT_META_FILE);
                 if (!incXmlOutput.exists()) {
                     incXmlOutput.getParentFile().mkdirs();
                 }
@@ -172,21 +169,133 @@ public class ManifestDecoder extends BaseDecoder {
                     final XMLWriter docWriter = new XMLWriter(os);
                     docWriter.write(incXmlDoc);
                     docWriter.close();
-                } catch (IOException e) {
-                    throw new TinkerPatchException("Failed to generate increment manifest.", e);
                 } finally {
                     Utils.closeQuietly(os);
                 }
             }
+
+            if (isManifestChanged && !hasIncComponent) {
+                Logger.d("\nManifest was changed, while there's no any new components added."
+                       + " Make sure if such changes were all you expected.\n");
+            }
+
         } catch (ParseException e) {
             e.printStackTrace();
-            throw new TinkerPatchException("parse android manifest error!");
+            throw new TinkerPatchException("Parse android manifest error!");
         } catch (DocumentException e) {
             e.printStackTrace();
-            throw new TinkerPatchException("parse android manifest by dom4j error!");
+            throw new TinkerPatchException("Parse android manifest by dom4j error!");
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new TinkerPatchException("Failed to generate increment manifest.", e);
         }
 
         return false;
+    }
+
+    private Set<String> getIncrementActivities(Collection<String> oldActivities, Collection<String> newActivities) {
+        final Set<String> incNames = new HashSet<>(newActivities);
+        incNames.removeAll(oldActivities);
+        return incNames;
+    }
+
+    private Set<String> getIncrementServices(Collection<String> oldServices, Collection<String> newServices) {
+        final Set<String> incNames = new HashSet<>(newServices);
+        incNames.removeAll(oldServices);
+        if (!incNames.isEmpty()) {
+            announceWarningOrException("found added services: " + incNames.toString()
+                    + "\n currently tinker does not support increase new services, "
+                    + "such these changes would not take effect.");
+        }
+        return incNames;
+    }
+
+    private Set<String> getIncrementReceivers(Collection<String> oldReceivers, Collection<String> newReceivers) {
+        final Set<String> incNames = new HashSet<>(newReceivers);
+        incNames.removeAll(oldReceivers);
+        if (!incNames.isEmpty()) {
+            announceWarningOrException("found added receivers: " + incNames.toString()
+                    + "\n currently tinker does not support increase new receivers, "
+                    + "such these changes would not take effect.");
+        }
+        return incNames;
+    }
+
+    private Set<String> getIncrementProviders(Collection<String> oldProviders, Collection<String> newProviders) {
+        final Set<String> incNames = new HashSet<>(newProviders);
+        incNames.removeAll(oldProviders);
+        if (!incNames.isEmpty()) {
+            announceWarningOrException("found added providers: " + incNames.toString()
+                    + "\n currently tinker does not support increase new providers, "
+                    + "such these changes would not take effect.");
+        }
+        return incNames;
+    }
+
+    private List<Element> getIncrementActivityNodes(String packageName, List<Element> newActivityNodes, Collection<String> incActivities) {
+        final List<Element> result = new ArrayList<>();
+        for (Element newActivityNode : newActivityNodes) {
+            String activityClazzName = newActivityNode.attributeValue(XML_NODEATTR_NAME);
+            if (activityClazzName.charAt(0) == '.') {
+                activityClazzName = packageName + activityClazzName;
+            }
+            if (!incActivities.contains(activityClazzName)) {
+                continue;
+            }
+            final String exportedVal = newActivityNode.attributeValue(XML_NODEATTR_EXPORTED,
+                    Utils.isNullOrNil(newActivityNode.elements(XML_NODENAME_INTENTFILTER)) ? "false" : "true");
+            if ("true".equalsIgnoreCase(exportedVal)) {
+                announceWarningOrException(
+                        String.format("found a new exported activity %s"
+                                + ", tinker does not support increase exported activity.", activityClazzName)
+                );
+            }
+            final String processVal = newActivityNode.attributeValue(XML_NODEATTR_PROCESS);
+            if (processVal != null && processVal.charAt(0) == ':') {
+                announceWarningOrException(
+                        String.format("found a new activity %s which would be run in standalone process"
+                                + ", tinker does not support increase such kind of activities.", activityClazzName)
+                );
+            }
+
+            Logger.d("Found increment activity: " + activityClazzName);
+
+            result.add(newActivityNode);
+        }
+        return result;
+    }
+
+    private List<Element> getIncrementServiceNodes(String packageName, List<Element> newServiceNodes, Collection<String> incServices) {
+        announceWarningOrException("currently tinker does not support increase new services.");
+        return Collections.emptyList();
+    }
+
+    private List<Element> getIncrementReceiverNodes(String packageName, List<Element> newReceiverNodes, Collection<String> incReceivers) {
+        announceWarningOrException("currently tinker does not support increase new receivers.");
+        return Collections.emptyList();
+    }
+
+    private List<Element> getIncrementProviderNodes(String packageName, List<Element> newProviderNodes, Collection<String> incProviders) {
+        announceWarningOrException("currently tinker does not support increase new providers.");
+        return Collections.emptyList();
+    }
+
+    private void copyAttributes(Element srcNode, Element destNode) {
+        for (Object attrObj : srcNode.attributes()) {
+            final Attribute attr = (Attribute) attrObj;
+            destNode.addAttribute(attr.getQName(), attr.getValue());
+        }
+    }
+
+    private void announceWarningOrException(String message) {
+        if (config.mIgnoreWarning) {
+            final String msg = "Warning:ignoreWarning is true, but " + message;
+            Logger.e(msg);
+        } else {
+            final String msg = "Warning:ignoreWarning is false, " + message;
+            Logger.e(msg);
+            throw new TinkerPatchException(msg);
+        }
     }
 
     @Override

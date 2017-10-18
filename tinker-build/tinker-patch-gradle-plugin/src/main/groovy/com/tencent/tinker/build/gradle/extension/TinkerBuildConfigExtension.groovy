@@ -54,6 +54,16 @@ public class TinkerBuildConfigExtension {
      */
     boolean isProtectedApp
 
+    /**
+     * Whether tinker should support component hotplug (add new component dynamically).
+     * If this attribute is true, the component added in new apk will be available after
+     * patch is successfully loaded. Otherwise an error would be announced when generating patch
+     * on compile-time.
+     *
+     * <b>Notice that currently this feature is incubating and only support NON-EXPORTED Activity</b>
+     */
+    boolean supportHotplugComponent
+
     private Project project
 
     boolean usingResourceMapping
@@ -86,6 +96,7 @@ public class TinkerBuildConfigExtension {
         """| applyMapping = ${applyMapping}
            | applyResourceMapping = ${applyResourceMapping}
            | isProtectedApp = ${isProtectedApp}
+           | supportHotplugComponent = ${supportHotplugComponent}
            | keepDexApply = ${keepDexApply}
            | tinkerId = ${tinkerId}
         """.stripMargin()

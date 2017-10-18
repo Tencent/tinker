@@ -16,13 +16,15 @@
 
 package com.tencent.tinker.loader.shareutil;
 
+import com.tencent.tinker.loader.BuildConfig;
+
 import java.util.regex.Pattern;
 
 /**
  * Created by zhangshaowen on 16/3/24.
  */
 public class ShareConstants {
-    public static final String TINKER_VERSION = "1.8.3";
+    public static final String TINKER_VERSION = BuildConfig.TINKER_VERSION;
 
     public static final int BUFFER_SIZE         = 16384;
     public static final int MD5_LENGTH          = 32;
@@ -165,9 +167,6 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -23;
     public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -24;
     public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -25;
-
-    //component hotplug
-    public static final int ERROR_LOAD_PATCH_VERSION_COMPONENT_HOTPLUG_EXCEPTION = -26;
 
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 

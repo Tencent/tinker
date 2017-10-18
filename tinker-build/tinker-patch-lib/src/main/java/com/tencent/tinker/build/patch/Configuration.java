@@ -59,14 +59,15 @@ public class Configuration {
     protected static final String ATTR_VALUE = "value";
     protected static final String ATTR_NAME  = "name";
 
-    protected static final String ATTR_IGNORE_WARNING   = "ignoreWarning";
-    protected static final String ATTR_IS_PROTECTED_APP = "isProtectedApp";
-    protected static final String ATTR_USE_SIGN         = "useSign";
-    protected static final String ATTR_SEVEN_ZIP_PATH   = "sevenZipPath";
-    protected static final String ATTR_DEX_MODE         = "dexMode";
-    protected static final String ATTR_PATTERN          = "pattern";
-    protected static final String ATTR_IGNORE_CHANGE    = "ignoreChange";
-    protected static final String ATTR_RES_LARGE_MOD    = "largeModSize";
+    protected static final String ATTR_IGNORE_WARNING            = "ignoreWarning";
+    protected static final String ATTR_IS_PROTECTED_APP          = "isProtectedApp";
+    protected static final String ATTR_SUPPORT_HOTPLUG_COMPONENT = "supportHotplugComponent";
+    protected static final String ATTR_USE_SIGN                  = "useSign";
+    protected static final String ATTR_SEVEN_ZIP_PATH            = "sevenZipPath";
+    protected static final String ATTR_DEX_MODE                  = "dexMode";
+    protected static final String ATTR_PATTERN                   = "pattern";
+    protected static final String ATTR_IGNORE_CHANGE             = "ignoreChange";
+    protected static final String ATTR_RES_LARGE_MOD             = "largeModSize";
 
     protected static final String ATTR_LOADER       = "loader";
     protected static final String ATTR_CONFIG_FIELD = "configField";
@@ -85,7 +86,7 @@ public class Configuration {
     public File    mNewApkFile;
     public boolean mIgnoreWarning;
     public boolean mIsProtectedApp;
-
+    public boolean mSupportHotplugComponent;
     /**
      * lib config
      */
@@ -222,6 +223,8 @@ public class Configuration {
         mIgnoreWarning = param.ignoreWarning;
 
         mIsProtectedApp = param.isProtectedApp;
+
+        mSupportHotplugComponent = param.supportHotplugComponent;
 
         mSevenZipPath = param.sevenZipPath;
         mPackageFields = param.configFields;
@@ -423,6 +426,8 @@ public class Configuration {
                         mIgnoreWarning = value.equals("true");
                     } else if (tagName.equals(ATTR_IS_PROTECTED_APP)) {
                         mIsProtectedApp = value.equals("true");
+                    } else if (tagName.equals(ATTR_SUPPORT_HOTPLUG_COMPONENT)) {
+                        mSupportHotplugComponent = value.equals("true");
                     } else if (tagName.equals(ATTR_USE_SIGN)) {
                         mUseSignAPk = value.equals("true");
                     } else if (tagName.equals(ATTR_SEVEN_ZIP_PATH)) {

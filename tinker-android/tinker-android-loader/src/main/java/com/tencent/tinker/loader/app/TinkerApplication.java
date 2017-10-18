@@ -29,6 +29,8 @@ import android.os.SystemClock;
 import com.tencent.tinker.loader.TinkerLoader;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.TinkerUncaughtHandler;
+import com.tencent.tinker.loader.hotplug.ComponentHotplug;
+import com.tencent.tinker.loader.hotplug.UnsupportedEnvironmentException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -170,6 +172,11 @@ public abstract class TinkerApplication extends Application {
     public void onCreate() {
         super.onCreate();
         ensureDelegate();
+        try {
+            ComponentHotplug.ensureComponentHotplugInstalled(this);
+        } catch (UnsupportedEnvironmentException e) {
+            throw new TinkerRuntimeException("failed to make sure that ComponentHotplug logic is fine.", e);
+        }
         applicationLike.onCreate();
     }
 
