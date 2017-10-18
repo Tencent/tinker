@@ -89,7 +89,7 @@ android {
          * so we can get the newly git version easily!
          */
         buildConfigField "String", "TINKER_ID", "\"${getTinkerIdValue()}\""
-        buildConfigField "String", "PLATFORM",  "\"all\""
+        buildConfigField "String", "PLATFORM", "\"all\""
     }
 
 //    aaptOptions{
@@ -256,6 +256,17 @@ if (buildWithTinker()) {
              * dex including all changed classes instead of any dexdiff patch-info files.
              */
             isProtectedApp = false
+
+            /**
+             * optional, default 'false'
+             * Whether tinker should support component hotplug (add new component dynamically).
+             * If this attribute is true, the component added in new apk will be available after
+             * patch is successfully loaded. Otherwise an error would be announced when generating patch
+             * on compile-time.
+             *
+             * <b>Notice that currently this feature is incubating and only support NON-EXPORTED Activity</b>
+             */
+            supportHotplugComponent = false
         }
 
         dex {
@@ -285,8 +296,8 @@ if (buildWithTinker()) {
              *
              */
             loader = [
-                      //use sample, let BaseBuildInfo unchangeable with tinker
-                      "tinker.sample.android.app.BaseBuildInfo"
+                    //use sample, let BaseBuildInfo unchangeable with tinker
+                    "tinker.sample.android.app.BaseBuildInfo"
             ]
         }
 
@@ -360,7 +371,7 @@ if (buildWithTinker()) {
              * optional，default '7za'
              * the 7zip artifact path, it will use the right 7za with your platform
              */
-           zipArtifact = "com.tencent.mm:SevenZip:1.1.10"
+            zipArtifact = "com.tencent.mm:SevenZip:1.1.10"
             /**
              * optional，default '7za'
              * you can specify the 7za path yourself, it will overwrite the zipArtifact value
@@ -370,15 +381,15 @@ if (buildWithTinker()) {
     }
 
     List<String> flavors = new ArrayList<>();
-    project.android.productFlavors.each {flavor ->
+    project.android.productFlavors.each { flavor ->
         flavors.add(flavor.name)
     }
     boolean hasFlavors = flavors.size() > 0
     def date = new Date().format("MMdd-HH-mm-ss")
 
     /**
-    * bak apk and mapping
-    */
+     * bak apk and mapping
+     */
     android.applicationVariants.all { variant ->
         /**
          * task type, you want to bak
