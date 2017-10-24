@@ -60,12 +60,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
         def android = project.extensions.android
 
-        //open jumboMode
-        android.dexOptions.jumboMode = true
-
-        //close preDexLibraries
         try {
+            //close preDexLibraries
             android.dexOptions.preDexLibraries = false
+
+            //open jumboMode
+            android.dexOptions.jumboMode = true
+            reflectAapt2Flag()
         } catch (Throwable e) {
             //no preDexLibraries field, just continue
         }
@@ -116,6 +117,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 def variantOutput = variant.outputs.first()
                 def variantName = variant.name.capitalize()
+                def variantData = variant.variantData
 
                 def instantRunTask = getInstantRunTask(project, variantName)
                 if (instantRunTask != null) {
@@ -128,7 +130,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
 
-                tinkerPatchBuildTask.signConfig = variant.apkVariantData.variantConfiguration.signingConfig
+                tinkerPatchBuildTask.signConfig = variantData.variantConfiguration.signingConfig
 
                 variant.outputs.each { output ->
                     setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask)
@@ -139,18 +141,32 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 // This task must be called after "process${variantName}Manifest", since it
                 // requires that an AndroidManifest.xml exists in `build/intermediates`.
                 TinkerManifestTask manifestTask = project.tasks.create("tinkerProcess${variantName}Manifest", TinkerManifestTask)
-                manifestTask.manifestPath = variantOutput.processManifest.manifestOutputFile
+
+                if (variantOutput.processManifest.properties['manifestOutputFile'] != null) {
+                    manifestTask.manifestPath = variantOutput.processManifest.manifestOutputFile
+                } else if (variantOutput.processResources.properties['manifestFile'] != null) {
+                    manifestTask.manifestPath = variantOutput.processResources.manifestFile
+                }
                 manifestTask.mustRunAfter variantOutput.processManifest
 
                 variantOutput.processResources.dependsOn manifestTask
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = project.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.resDir = variantOutput.processResources.resDir
+
+                if (variantOutput.processResources.properties['resDir'] != null) {
+                    applyResourceTask.resDir = variantOutput.processResources.resDir
+                } else if (variantOutput.processResources.properties['inputResourcesDir'] != null) {
+                    applyResourceTask.resDir = variantOutput.processResources.inputResourcesDir.getFiles().first()
+                }
                 //let applyResourceTask run after manifestTask
                 applyResourceTask.mustRunAfter manifestTask
 
                 variantOutput.processResources.dependsOn applyResourceTask
+
+                if (manifestTask.manifestPath == null || applyResourceTask.resDir == null) {
+                    throw new RuntimeException("manifestTask.manifestPath or applyResourceTask.resDir is null.")
+                }
 
                 // Add this proguard settings file to the list
                 boolean proguardEnable = variant.getBuildType().buildType.minifyEnabled
@@ -168,7 +184,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 // Add this multidex proguard settings file to the list
-                boolean multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
+                // gradle plugin 3.0.0-beta2 com.android.build.gradle.internal.api.ApplicationVariantImpl only contains variantData
+                boolean multiDexEnabled = variantData.variantConfiguration.isMultiDexEnabled()
 
                 if (multiDexEnabled) {
                     TinkerMultidexConfigTask multidexConfigTask = project.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
@@ -186,7 +203,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 if (configuration.buildConfig.keepDexApply
-                    && FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
+                        && FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
                     com.tencent.tinker.build.gradle.transform.ImmutableDexTransform.inject(project, variant)
                 }
             }
@@ -213,6 +230,20 @@ class TinkerPatchPlugin implements Plugin<Project> {
         tinkerPatchBuildTask.outputFolder = outputFolder
     }
 
+    void reflectAapt2Flag() {
+        try {
+            def booleanOptClazz = Class.forName('com.android.build.gradle.options.BooleanOption')
+            def enableAAPT2Field = booleanOptClazz.getDeclaredField('ENABLE_AAPT2')
+            enableAAPT2Field.setAccessible(true)
+            def enableAAPT2EnumObj = enableAAPT2Field.get(null)
+            def defValField = enableAAPT2EnumObj.getClass().getDeclaredField('defaultValue')
+            defValField.setAccessible(true)
+            defValField.set(enableAAPT2EnumObj, false)
+        } catch (Throwable thr) {
+            project.logger.error("relectAapt2Flag error: ${thr.getMessage()}.")
+        }
+    }
+
     /**
      * Specify the new apk path. If the new apk file is specified by {@code tinkerPatch.buildConfig.newApk},
      * just use it as the new apk input for tinker patch, otherwise use the assemble output.
@@ -224,7 +255,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
      * @param tinkerPatchBuildTask the task that tinker patch uses
      */
     void setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask) {
-        def newApkPath = configuration.newApk;
+        def newApkPath = configuration.newApk
         if (!Utils.isNullOrNil(newApkPath)) {
             if (FileOperation.isLegalFile(newApkPath)) {
                 tinkerPatchBuildTask.buildApkPath = newApkPath

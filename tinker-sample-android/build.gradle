@@ -2,10 +2,15 @@
 buildscript {
     repositories {
         mavenLocal()
+        google()
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.0'
+        if (project.hasProperty('GRADLE_3') && GRADLE_3.equalsIgnoreCase('TRUE')) {
+            classpath 'com.android.tools.build:gradle:3.0.0-rc2'
+        } else {
+            classpath 'com.android.tools.build:gradle:2.3.3'
+        }
         classpath "com.tencent.tinker:tinker-patch-gradle-plugin:${TINKER_VERSION}"
     }
 }
@@ -13,7 +18,13 @@ buildscript {
 allprojects {
     repositories {
         mavenLocal()
+        google()
         jcenter()
     }
 }
+
+def is_gradle_3() {
+    return hasProperty('GRADLE_3') && GRADLE_3.equalsIgnoreCase('TRUE')
+}
+
 

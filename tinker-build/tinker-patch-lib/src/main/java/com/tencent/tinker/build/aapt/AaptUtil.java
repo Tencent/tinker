@@ -80,7 +80,7 @@ public final class AaptUtil {
 
     public static AaptResourceCollector collectResource(List<String> resourceDirectoryList, Map<RType, Set<RDotTxtEntry>> rTypeResourceMap) {
         AaptResourceCollector resourceCollector = new AaptResourceCollector(rTypeResourceMap);
-        List<com.tencent.tinker.build.aapt.RDotTxtEntry> references = new ArrayList<com.tencent.tinker.build.aapt.RDotTxtEntry>();
+        List<RDotTxtEntry> references = new ArrayList<>();
         for (String resourceDirectory : resourceDirectoryList) {
             try {
                 collectResources(resourceDirectory, resourceCollector);

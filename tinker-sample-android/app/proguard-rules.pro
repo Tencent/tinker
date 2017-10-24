@@ -17,3 +17,8 @@
 #}
 -keepattributes SourceFile,LineNumberTable
 
+-dontwarn com.google.**
+
+-dontwarn com.android.**
+
+

@@ -1,27 +1,45 @@
 apply plugin: 'com.android.application'
 
-
-
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile "com.android.support:appcompat-v7:23.1.1"
-    compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
-    provided("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+    if (is_gradle_3()) {
+        implementation fileTree(dir: 'libs', include: ['*.jar'])
+        testImplementation 'junit:junit:4.12'
+        implementation "com.android.support:appcompat-v7:23.1.1"
+        implementation("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
+        annotationProcessor("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+        compileOnly("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
 
-    compile "com.android.support:multidex:1.0.1"
+        implementation "com.android.support:multidex:1.0.1"
+        //use to test multiDex
+//    implementation group: 'com.google.guava', name: 'guava', version: '19.0'
+//    implementation "org.scala-lang:scala-library:2.11.7"
 
-    //use to test multiDex
+        //use for local maven test
+//        implementation("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
+//        implementation("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
+//        implementation("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
+//        implementation("com.tencent.tinker:tinker-ziputils:${TINKER_VERSION}") { changing = true }
+//        implementation("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
+    } else {
+        compile fileTree(dir: 'libs', include: ['*.jar'])
+        testCompile 'junit:junit:4.12'
+        compile "com.android.support:appcompat-v7:23.1.1"
+        compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
+        provided("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+
+        compile "com.android.support:multidex:1.0.1"
+
+        //use to test multiDex
 //    compile group: 'com.google.guava', name: 'guava', version: '19.0'
 //    compile "org.scala-lang:scala-library:2.11.7"
 
-    //use for local maven test
-//    compile("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
-//    compile("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
-//    compile("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
-//    compile("com.tencent.tinker:tinker-ziputils:${TINKER_VERSION}") { changing = true }
-//    compile("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
-
+        //use for local maven test
+//        compile("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
+//        compile("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
+//        compile("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
+//        compile("com.tencent.tinker:tinker-ziputils:${TINKER_VERSION}") { changing = true }
+//        compile("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
+    }
 }
 
 def gitSha() {
@@ -39,8 +57,8 @@ def gitSha() {
 def javaVersion = JavaVersion.VERSION_1_7
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion 26
+    buildToolsVersion '26.0.2'
 
     compileOptions {
         sourceCompatibility javaVersion
@@ -111,7 +129,7 @@ android {
         release {
             minifyEnabled true
             signingConfig signingConfigs.release
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), project.file('proguard-rules.pro')
         }
         debug {
             debuggable true
@@ -405,7 +423,7 @@ if (buildWithTinker()) {
                         def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
 
                         def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
-                        from variant.outputs.outputFile
+                        from variant.outputs.first().outputFile
                         into destPath
                         rename { String fileName ->
                             fileName.replace("${fileNamePrefix}.apk", "${newFileNamePrefix}.apk")
