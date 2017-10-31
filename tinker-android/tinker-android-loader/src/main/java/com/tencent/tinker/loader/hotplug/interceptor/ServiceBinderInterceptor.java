@@ -76,7 +76,7 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
             // Already intercepted, just return the target.
             return target;
         } else {
-            return createProxy(getAllInterfacesThroughDeriveChain(target.getClass()),
+            return createProxy(target.getClass().getClassLoader(), getAllInterfacesThroughDeriveChain(target.getClass()),
                     new FakeClientBinderHandler(target, mBinderInvocationHandler));
         }
     }
@@ -87,13 +87,13 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
         final Map<String, IBinder> sCache = (Map<String, IBinder>) sSCacheField.get(null);
         sCache.put(mServiceName, decorated);
         if (Context.ACTIVITY_SERVICE.equals(mServiceName)) {
-            fixAMSBinderCache(mBinderInvocationHandler);
+            fixAMSBinderCache(decorated);
         } else if (EnvConsts.PACKAGE_MANAGER_SRVNAME.equals(mServiceName)) {
-            fixPMSBinderCache(mBaseContext, mBinderInvocationHandler);
+            fixPMSBinderCache(mBaseContext, decorated);
         }
     }
 
-    private static void fixAMSBinderCache(BinderInvocationHandler binderInvocationHandler) throws Throwable {
+    private static void fixAMSBinderCache(IBinder fakeBinder) throws Throwable {
         Object singletonObj = null;
         try {
             final Class<?> amsNativeClazz = Class.forName("android.app.ActivityManagerNative");
@@ -112,20 +112,22 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
             return;
         }
 
-        final FakeInterfaceHandler fakeInterfaceHandler
-                = new FakeInterfaceHandler(originalInterface, originalInterface.asBinder(), binderInvocationHandler);
-        final IInterface fakeInterface = createProxy(getAllInterfacesThroughDeriveChain(originalInterface.getClass()), fakeInterfaceHandler);
+        final IInterface fakeInterface = fakeBinder.queryLocalInterface(fakeBinder.getInterfaceDescriptor());
+        if (fakeInterface == null || !ITinkerHotplugProxy.class.isAssignableFrom(fakeInterface.getClass())) {
+            throw new IllegalStateException("fakeBinder does not return fakeInterface, binder: " + fakeBinder + ", itf: " + fakeInterface);
+        }
         mInstanceField.set(singletonObj, fakeInterface);
     }
 
-    private static void fixPMSBinderCache(Context context, BinderInvocationHandler binderInvocationHandler) throws Throwable {
+    private static void fixPMSBinderCache(Context context, IBinder fakeBinder) throws Throwable {
         final Class<?> activityThreadClazz = Class.forName("android.app.ActivityThread");
         final Field sPackageManagerField = ShareReflectUtil.findField(activityThreadClazz, "sPackageManager");
         final IInterface originalInterface = (IInterface) sPackageManagerField.get(null);
         if (originalInterface != null && !ITinkerHotplugProxy.class.isAssignableFrom(originalInterface.getClass())) {
-            final FakeInterfaceHandler fakeInterfaceHandler = new FakeInterfaceHandler(originalInterface,
-                    originalInterface.asBinder(), binderInvocationHandler);
-            final IInterface fakeInterface = createProxy(getAllInterfacesThroughDeriveChain(originalInterface.getClass()), fakeInterfaceHandler);
+            final IInterface fakeInterface = fakeBinder.queryLocalInterface(fakeBinder.getInterfaceDescriptor());
+            if (fakeInterface == null || !ITinkerHotplugProxy.class.isAssignableFrom(fakeInterface.getClass())) {
+                throw new IllegalStateException("fakeBinder does not return fakeInterface, binder: " + fakeBinder + ", itf: " + fakeInterface);
+            }
             sPackageManagerField.set(null, fakeInterface);
         }
 
@@ -134,19 +136,32 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
         final PackageManager pm = context.getPackageManager();
         final IInterface originalInterface2 = (IInterface) mPMField.get(pm);
         if (originalInterface2 != null && !ITinkerHotplugProxy.class.isAssignableFrom(originalInterface2.getClass())) {
-            final FakeInterfaceHandler fakeInterfaceHandler = new FakeInterfaceHandler(originalInterface2,
-                    originalInterface2.asBinder(), binderInvocationHandler);
-            final IInterface fakeInterface = createProxy(getAllInterfacesThroughDeriveChain(originalInterface2.getClass()), fakeInterfaceHandler);
+            final IInterface fakeInterface = fakeBinder.queryLocalInterface(fakeBinder.getInterfaceDescriptor());
+            if (fakeInterface == null || !ITinkerHotplugProxy.class.isAssignableFrom(fakeInterface.getClass())) {
+                throw new IllegalStateException("fakeBinder does not return fakeInterface, binder: " + fakeBinder + ", itf: " + fakeInterface);
+            }
             mPMField.set(pm, fakeInterface);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T createProxy(Class<?>[] itfs, InvocationHandler handler) {
+    private static <T> T createProxy(ClassLoader cl, Class<?>[] itfs, InvocationHandler handler) {
         final Class<?>[] mergedItfs = new Class<?>[itfs.length + 1];
         System.arraycopy(itfs, 0, mergedItfs, 0, itfs.length);
         mergedItfs[itfs.length] = ITinkerHotplugProxy.class;
-        return (T) Proxy.newProxyInstance(MY_CLASSLOADER, mergedItfs, handler);
+        try {
+            return (T) Proxy.newProxyInstance(MY_CLASSLOADER, mergedItfs, handler);
+        } catch (Throwable thr) {
+            if (cl != null && cl != MY_CLASSLOADER) {
+                try {
+                    return (T) Proxy.newProxyInstance(cl, mergedItfs, handler);
+                } catch (Throwable thr2) {
+                    throw new RuntimeException("cl: " + cl, thr);
+                }
+            } else {
+                throw new RuntimeException("cl: " + cl, thr);
+            }
+        }
     }
 
     private static Class<?>[] getAllInterfacesThroughDeriveChain(Class<?> clazz) {
@@ -194,7 +209,8 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
                 final InvocationHandler fakeInterfaceHandler
                         = new FakeInterfaceHandler(originalInterface, (IBinder) fakeClientBinder, mBinderInvocationHandler);
 
-                return createProxy(getAllInterfacesThroughDeriveChain(originalInterface.getClass()), fakeInterfaceHandler);
+                return createProxy(originalInterface.getClass().getClassLoader(),
+                        getAllInterfacesThroughDeriveChain(originalInterface.getClass()), fakeInterfaceHandler);
             } else {
                 return method.invoke(mOriginalClientBinder, args);
             }
