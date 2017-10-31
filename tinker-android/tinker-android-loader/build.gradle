@@ -13,6 +13,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
 
         buildConfigField "String", "TINKER_VERSION", "\"${rootProject.ext.VERSION_NAME}\""
+
+        manifestPlaceholders = [TINKER_VERSION: "${rootProject.ext.VERSION_NAME}"]
     }
 }
 

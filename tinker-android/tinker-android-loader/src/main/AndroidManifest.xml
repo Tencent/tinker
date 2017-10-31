@@ -60,6 +60,11 @@
         <activity android:name=".hotplug.ActivityStubs$SIStub_00_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
         <activity android:name=".hotplug.ActivityStubs$SIStub_01_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
         <activity android:name=".hotplug.ActivityStubs$SIStub_02_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
+
+        <meta-data
+            android:name="tinker_version"
+            android:value="${TINKER_VERSION}"/>
+
     </application>
 
 </manifest>
