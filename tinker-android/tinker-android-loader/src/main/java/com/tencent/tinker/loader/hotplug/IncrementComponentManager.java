@@ -10,6 +10,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.PatternMatcher;
 import android.text.TextUtils;
 import android.util.Log;
@@ -379,6 +380,8 @@ public final class IncrementComponentManager {
             final String tagName = parser.getName();
             if ("intent-filter".equalsIgnoreCase(tagName)) {
                 parseIntentFilter(context, aInfo.name, parser);
+            } else if ("meta-data".equalsIgnoreCase(tagName)) {
+                parseMetaData(context, aInfo, parser);
             }
         }
 
@@ -475,6 +478,19 @@ public final class IncrementComponentManager {
         }
 
         sClassNameToIntentFilterMap.put(componentName, intentFilter);
+    }
+
+    private static synchronized void parseMetaData(Context context, ActivityInfo aInfo, XmlPullParser parser)
+            throws XmlPullParserException, IOException {
+        final ClassLoader myCl = IncrementComponentManager.class.getClassLoader();
+        final String name = parser.getAttributeValue(null, "name");
+        final String value = parser.getAttributeValue(null, "value");
+        if (!TextUtils.isEmpty(name)) {
+            if (aInfo.metaData == null) {
+                aInfo.metaData = new Bundle(myCl);
+            }
+            aInfo.metaData.putString(name, value);
+        }
     }
 
     private static void skipCurrentTag(XmlPullParser parser) throws IOException, XmlPullParserException {
