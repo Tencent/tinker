@@ -42,7 +42,7 @@ public class TypedValue {
     public static final String TINKER_ID     = "TINKER_ID";
     public static final String NEW_TINKER_ID = "NEW_TINKER_ID";
 
-    public static final String PACKAGE_META_FILE       = "package_meta.txt";
+    public static final String PACKAGE_META_FILE = "package_meta.txt";
 
     // Please keep it synchronized with the other one defined in 'EnvConsts' class
     public static final String INCCOMPONENT_META_FILE = "assets/inc_component_meta.txt";
@@ -66,10 +66,14 @@ public class TypedValue {
     public static final int MOD       = 2;
     public static final int DEL       = 3;
     public static final int LARGE_MOD = 4;
+    public static final int STORED    = 5;
+
 
     public static final String ADD_TITLE       = "add:";
     public static final String MOD_TITLE       = "modify:";
     public static final String LARGE_MOD_TITLE = "large modify:";
     public static final String DEL_TITLE       = "delete:";
     public static final String PATTERN_TITLE   = "pattern:";
+    public static final String STORE_TITLE     = "store:";
+
 }

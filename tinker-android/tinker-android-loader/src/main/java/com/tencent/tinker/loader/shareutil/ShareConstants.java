@@ -85,6 +85,8 @@ public class ShareConstants {
     public static final String RES_LARGE_MOD_TITLE = "large modify:";
     public static final String RES_DEL_TITLE       = "delete:";
     public static final String RES_PATTERN_TITLE   = "pattern:";
+    public static final String RES_STORE_TITLE     = "store:";
+
 
     public static final String DEXMODE_RAW = "raw";
     public static final String DEXMODE_JAR = "jar";

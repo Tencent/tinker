@@ -184,13 +184,16 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 // Add this multidex proguard settings file to the list
-                // gradle plugin 3.0.0-beta2 com.android.build.gradle.internal.api.ApplicationVariantImpl only contains variantData
                 boolean multiDexEnabled = variantData.variantConfiguration.isMultiDexEnabled()
 
                 if (multiDexEnabled) {
                     TinkerMultidexConfigTask multidexConfigTask = project.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
                     multidexConfigTask.mustRunAfter manifestTask
+
+                    // for java.io.FileNotFoundException: app/build/intermediates/multi-dex/release/manifest_keep.txt
+                    // for gradle 3.x gen manifest_keep move to processResources task
+                    multidexConfigTask.mustRunAfter variantOutput.processResources
 
                     def multidexTask = getMultiDexTask(project, variantName)
                     if (multidexTask != null) {

@@ -70,11 +70,15 @@ public class BasePatchInternal {
                 SharePatchFileUtil.closeQuietly(out);
                 SharePatchFileUtil.closeQuietly(bis);
             }
-
-            if (isDex) {
-                isExtractionSuccessful = SharePatchFileUtil.verifyDexFileMd5(extractTo, targetMd5);
+            if (targetMd5 != null) {
+                if (isDex) {
+                    isExtractionSuccessful = SharePatchFileUtil.verifyDexFileMd5(extractTo, targetMd5);
+                } else {
+                    isExtractionSuccessful = SharePatchFileUtil.verifyFileMd5(extractTo, targetMd5);
+                }
             } else {
-                isExtractionSuccessful = SharePatchFileUtil.verifyFileMd5(extractTo, targetMd5);
+                // treat it as true
+                isExtractionSuccessful = true;
             }
             TinkerLog.i(TAG, "isExtractionSuccessful: %b", isExtractionSuccessful);
 
