@@ -326,13 +326,14 @@ public class ShareTinkerInternals {
     }
 
     public static boolean isInMainProcess(Context context) {
-        String pkgName = context.getPackageName();
+        ApplicationInfo applicationInfo = context.getApplicationInfo();
+        String mainProcessName = applicationInfo.processName;
         String processName = getProcessName(context);
         if (processName == null || processName.length() == 0) {
             processName = "";
         }
 
-        return pkgName.equals(processName);
+        return mainProcessName.equals(processName);
     }
 
     public static boolean isInPatchProcess(Context context) {
