@@ -159,8 +159,9 @@ ext {
     //old apk file to build patch apk
     tinkerOldApkPath = "${bakPath}/app-debug-1018-17-32-47.apk"
     if (project.hasProperty("OLD_APK")) {
-        File file = new File(OLD_APK)
-        tinkerOldApkPath = file.isAbsolute() ? OLD_APK : "${bakPath}/" + OLD_APK
+        String oldApk = OLD_APK
+        tinkerOldApkPath = (oldApk.indexOf('\\') > 0 || oldApk.indexOf('/') > 0) ? OLD_APK :
+                "${bakPath}/" + OLD_APK
     }
     pathPrefix = getPathPrefix(tinkerOldApkPath)
     //proguard mapping file to build patch apk
