@@ -22,6 +22,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -236,6 +239,14 @@ public class AndroidParser {
         Document document;
         try {
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
+            // Block any external content resolving actions since we don't need them and a report
+            // says these actions may cause security problems.
+            builder.setEntityResolver(new EntityResolver() {
+                @Override
+                public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+                    return new InputSource();
+                }
+            });
             document = builder.parse(new ByteArrayInputStream(xml.getBytes("UTF-8")));
             Node manifestNode = document.getElementsByTagName("manifest").item(0);
             NodeList nodes = manifestNode.getChildNodes();
