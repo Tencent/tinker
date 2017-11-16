@@ -20,6 +20,7 @@ import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -407,13 +408,7 @@ public class Configuration {
                 }
             }
         } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    System.exit(-1);
-                }
-            }
+            StreamUtil.closeQuietly(input);
         }
     }
 

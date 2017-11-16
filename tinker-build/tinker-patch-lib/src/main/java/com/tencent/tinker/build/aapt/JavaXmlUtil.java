@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.build.aapt;
 
+import com.tencent.tinker.commons.util.StreamUtil;
+
 import org.w3c.dom.Document;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
@@ -128,13 +130,7 @@ public final class JavaXmlUtil {
         } catch (Exception e) {
             throw new JavaXmlUtilException(e);
         } finally {
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (Exception e) {
-                    throw new JavaXmlUtilException(e);
-                }
-            }
+            StreamUtil.closeQuietly(outputStream);
         }
     }
 

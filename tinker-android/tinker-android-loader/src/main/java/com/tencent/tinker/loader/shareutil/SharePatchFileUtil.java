@@ -16,8 +16,10 @@
 
 package com.tencent.tinker.loader.shareutil;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.os.Build;
 import android.util.Log;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -130,6 +132,25 @@ public class SharePatchFileUtil {
 
         return buffer.toString();
 
+    }
+
+    /**
+     * Closes the given {@code obj}. Suppresses any exceptions.
+     */
+    @SuppressLint("NewApi")
+    public static void closeQuietly(Object obj) {
+        if (obj == null) return;
+        try {
+            if (obj instanceof Closeable) {
+                ((Closeable) obj).close();
+            } else if (Build.VERSION.SDK_INT >= 19 && obj instanceof AutoCloseable) {
+                ((AutoCloseable) obj).close();
+            } else if (obj instanceof ZipFile) {
+                ((ZipFile) obj).close();
+            }
+        } catch (Throwable ignored) {
+            // ignored.
+        }
     }
 
     public static final boolean isLegalFile(File file) {
@@ -451,19 +472,6 @@ public class SharePatchFileUtil {
         return result.getPath();
     }
 
-    /**
-     * Closes the given {@code Closeable}. Suppresses any IO exceptions.
-     */
-    public static void closeQuietly(Closeable closeable) {
-        try {
-            if (closeable != null) {
-                closeable.close();
-            }
-        } catch (IOException e) {
-            Log.w(TAG, "Failed to close resource", e);
-        }
-    }
-
     public static void closeZip(ZipFile zipFile) {
         try {
             if (zipFile != null) {
@@ -491,7 +499,7 @@ public class SharePatchFileUtil {
                     return true;
                 }
             } finally {
-                SharePatchFileUtil.closeQuietly(inputStream);
+                closeQuietly(inputStream);
             }
 
         } catch (Throwable e) {

@@ -18,6 +18,7 @@ package com.tencent.tinker.build.aapt;
 
 import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -397,10 +398,7 @@ public final class AaptUtil {
         } catch (Exception e) {
             throw new AaptUtilException(e);
         } finally {
-            if (writer != null) {
-                writer.flush();
-                writer.close();
-            }
+            StreamUtil.closeQuietly(writer);
         }
     }
 

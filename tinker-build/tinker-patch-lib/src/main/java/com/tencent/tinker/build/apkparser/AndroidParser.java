@@ -17,6 +17,7 @@
 package com.tencent.tinker.build.apkparser;
 
 import com.tencent.tinker.build.patch.Configuration;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -140,11 +141,12 @@ public class AndroidParser {
         }
 
         //write array to file
-        FileOutputStream fileOutputStream = new FileOutputStream(destFile);
+        FileOutputStream fileOutputStream = null;
         try {
+            fileOutputStream = new FileOutputStream(destFile);
             fileOutputStream.write(array);
         } finally {
-            fileOutputStream.close();
+            StreamUtil.closeQuietly(fileOutputStream);
         }
     }
 
