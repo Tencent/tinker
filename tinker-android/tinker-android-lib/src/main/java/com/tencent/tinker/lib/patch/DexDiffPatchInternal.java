@@ -257,15 +257,17 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 File dexFile = classNDexInfo.get(info);
 
                 if (info.isJarMode) {
-                    TinkerZipFile dexZipFile = new TinkerZipFile(dexFile);
-                    TinkerZipEntry rawDexZipEntry = dexZipFile.getEntry(ShareConstants.DEX_IN_JAR);
-                    TinkerZipEntry newDexZipEntry = new TinkerZipEntry(rawDexZipEntry, info.rawName);
+                    TinkerZipFile dexZipFile = null;
                     InputStream inputStream = null;
                     try {
+                        dexZipFile = new TinkerZipFile(dexFile);
+                        TinkerZipEntry rawDexZipEntry = dexZipFile.getEntry(ShareConstants.DEX_IN_JAR);
+                        TinkerZipEntry newDexZipEntry = new TinkerZipEntry(rawDexZipEntry, info.rawName);
                         inputStream = dexZipFile.getInputStream(rawDexZipEntry);
                         TinkerZipUtil.extractTinkerEntry(newDexZipEntry, inputStream, out);
                     } finally {
                         StreamUtil.closeQuietly(inputStream);
+                        StreamUtil.closeQuietly(dexZipFile);
                     }
                 } else {
                     TinkerZipEntry dexZipEntry = new TinkerZipEntry(info.rawName);
@@ -597,8 +599,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             TinkerLog.i(TAG, "isExtractionSuccessful: %b", isExtractionSuccessful);
 
             if (!isExtractionSuccessful) {
-                extractTo.delete();
-                if (extractTo.exists()) {
+                final boolean succ = extractTo.delete();
+                if (!succ || extractTo.exists()) {
                     TinkerLog.e(TAG, "Failed to delete corrupted dex " + extractTo.getPath());
                 }
             }

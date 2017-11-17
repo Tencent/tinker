@@ -440,7 +440,7 @@ public class ShareTinkerInternals {
             int len = in.read(b);
             if (len > 0) {
                 for (int i = 0; i < len; i++) { // lots of '0' in tail , remove them
-                    if (b[i] > 128 || b[i] <= 0) {
+                    if ((((int) b[i]) & 0xFF) > 128 || b[i] <= 0) {
                         len = i;
                         break;
                     }
@@ -505,22 +505,25 @@ public class ShareTinkerInternals {
     }
 
     public static String getExceptionCauseString(final Throwable ex) {
+        if (ex == null) return "";
+
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final PrintStream ps = new PrintStream(bos);
 
         try {
             // print directly
             Throwable t = ex;
-            while (t.getCause() != null) {
-                t = t.getCause();
+            while (true) {
+                Throwable cause = t.getCause();
+                if (cause == null) {
+                    break;
+                }
+                t = cause;
             }
             t.printStackTrace(ps);
             return toVisualString(bos.toString());
         } finally {
-            try {
-                bos.close();
-            } catch (IOException e) {
-            }
+            SharePatchFileUtil.closeQuietly(ps);
         }
     }
 

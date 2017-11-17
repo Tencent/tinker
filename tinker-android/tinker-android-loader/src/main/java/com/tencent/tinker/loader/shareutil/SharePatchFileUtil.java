@@ -140,16 +140,26 @@ public class SharePatchFileUtil {
     @SuppressLint("NewApi")
     public static void closeQuietly(Object obj) {
         if (obj == null) return;
-        try {
-            if (obj instanceof Closeable) {
+        if (obj instanceof Closeable) {
+            try {
                 ((Closeable) obj).close();
-            } else if (Build.VERSION.SDK_INT >= 19 && obj instanceof AutoCloseable) {
-                ((AutoCloseable) obj).close();
-            } else if (obj instanceof ZipFile) {
-                ((ZipFile) obj).close();
+            } catch (Throwable ignored) {
+                // Ignored.
             }
-        } catch (Throwable ignored) {
-            // ignored.
+        } else if (Build.VERSION.SDK_INT >= 19 && obj instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable) obj).close();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+        } else if (obj instanceof ZipFile) {
+            try {
+                ((ZipFile) obj).close();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+        } else {
+            throw new IllegalArgumentException("obj: " + obj + " cannot be closed.");
         }
     }
 
@@ -279,20 +289,21 @@ public class SharePatchFileUtil {
                     Log.e(TAG, "There's no entry named: " + ShareConstants.DEX_IN_JAR + " in " + file.getAbsolutePath());
                     return false;
                 }
+                InputStream is = null;
+                try {
+                    is = dexJar.getInputStream(classesDex);
+                    fileMd5 = getMD5(is);
+                } catch (Throwable e) {
+                    Log.e(TAG, "exception occurred when get md5: " + file.getAbsolutePath(), e);
+                } finally {
+                    closeQuietly(is);
+                }
                 fileMd5 = getMD5(dexJar.getInputStream(classesDex));
             } catch (Throwable e) {
                 Log.e(TAG, "Bad dex jar file: " + file.getAbsolutePath(), e);
                 return false;
             } finally {
-                // Bugfix: some device redefined ZipFile, which is not implemented closeable.
-                // SharePatchFileUtil.closeZip(dexJar);
-                if (dexJar != null) {
-                    try {
-                        dexJar.close();
-                    } catch (Throwable thr) {
-                        // Ignored.
-                    }
-                }
+                closeZip(dexJar);
             }
         }
 

@@ -163,7 +163,8 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
 
         //tinker/patch.info/patch-641e634c/patch-641e634c.apk
-        File patchVersionFile = new File(patchVersionDirectoryFile.getAbsolutePath(), SharePatchFileUtil.getPatchVersionFile(version));
+        final String patchVersionFileRelPath = SharePatchFileUtil.getPatchVersionFile(version);
+        File patchVersionFile = (patchVersionFileRelPath != null ? new File(patchVersionDirectoryFile.getAbsolutePath(), patchVersionFileRelPath) : null);
 
         if (!SharePatchFileUtil.isLegalFile(patchVersionFile)) {
             Log.w(TAG, "tryLoadPatchFiles:onPatchVersionFileNotFound");

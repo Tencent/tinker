@@ -307,8 +307,9 @@ public final class IncrementComponentManager {
         sPackageName = context.getPackageName();
         final String xmlMeta = checker.getMetaContentMap().get(EnvConsts.INCCOMPONENT_META_FILE);
         StringReader sr = new StringReader(xmlMeta);
+        XmlPullParser parser = null;
         try {
-            final XmlPullParser parser = Xml.newPullParser();
+            parser = Xml.newPullParser();
             parser.setInput(sr);
             int event = parser.getEventType();
             while (event != XmlPullParser.END_DOCUMENT) {
@@ -336,6 +337,13 @@ public final class IncrementComponentManager {
         } catch (XmlPullParserException e) {
             throw new IOException(e);
         } finally {
+            if (parser != null) {
+                try {
+                    parser.setInput(null);
+                } catch (Throwable ignored) {
+                    // Ignored.
+                }
+            }
             SharePatchFileUtil.closeQuietly(sr);
         }
     }
