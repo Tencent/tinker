@@ -28,6 +28,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * sometimes, you may want to install tinker later, or never install tinker in some process.
@@ -317,7 +318,8 @@ public class TinkerApplicationHelper {
                 File patchVersionDirectory = new File(patchDirectory.getAbsolutePath() + "/" + SharePatchFileUtil.getPatchVersionDirectory(currentVersion));
                 String libPrePath = patchVersionDirectory.getAbsolutePath() + "/" + ShareConstants.SO_PATH;
 
-                for (String name : loadLibraries.keySet()) {
+                for (Map.Entry<String, String> libEntry : loadLibraries.entrySet()) {
+                    final String name = libEntry.getKey();
                     if (name.equals(relativeLibPath)) {
                         String patchLibraryPath = libPrePath + "/" + name;
                         File library = new File(patchLibraryPath);

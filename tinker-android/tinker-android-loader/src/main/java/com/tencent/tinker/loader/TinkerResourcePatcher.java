@@ -25,8 +25,10 @@ import android.util.ArrayMap;
 import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareConstants;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -271,11 +273,14 @@ class TinkerResourcePatcher {
     }
 
     private static boolean checkResUpdate(Context context) {
+        InputStream is = null;
         try {
-            context.getAssets().open(TEST_ASSETS_VALUE);
+            is = context.getAssets().open(TEST_ASSETS_VALUE);
         } catch (Throwable e) {
             Log.e(TAG, "checkResUpdate failed, can't find test resource assets file " + TEST_ASSETS_VALUE + " e:" + e.getMessage());
             return false;
+        } finally {
+            SharePatchFileUtil.closeQuietly(is);
         }
         Log.i(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
         return true;
