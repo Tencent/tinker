@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.lib.patch;
 
+import com.tencent.tinker.commons.util.StreamUtil;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -25,6 +26,8 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -53,22 +56,22 @@ public class BasePatchInternal {
         boolean isExtractionSuccessful = false;
         while (numAttempts < MAX_EXTRACT_ATTEMPTS && !isExtractionSuccessful) {
             numAttempts++;
-            BufferedInputStream bis = new BufferedInputStream(zipFile.getInputStream(entryFile));
-            FileOutputStream fos = new FileOutputStream(extractTo);
-            BufferedOutputStream out = new BufferedOutputStream(fos);
+            InputStream is = null;
+            OutputStream os = null;
 
             TinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
 
             try {
+                is = new BufferedInputStream(zipFile.getInputStream(entryFile));
+                os = new BufferedOutputStream(new FileOutputStream(extractTo));
                 byte[] buffer = new byte[ShareConstants.BUFFER_SIZE];
-                int length = bis.read(buffer);
-                while (length != -1) {
-                    out.write(buffer, 0, length);
-                    length = bis.read(buffer);
+                int length = 0;
+                while ((length = is.read(buffer)) > 0) {
+                    os.write(buffer, 0, length);
                 }
             } finally {
-                SharePatchFileUtil.closeQuietly(out);
-                SharePatchFileUtil.closeQuietly(bis);
+                StreamUtil.closeQuietly(os);
+                StreamUtil.closeQuietly(is);
             }
             if (targetMd5 != null) {
                 if (isDex) {

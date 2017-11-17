@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.build.aapt;
 
+import com.tencent.tinker.commons.util.StreamUtil;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -292,14 +294,16 @@ public final class FileUtil {
                     }
                 }
                 if (contains) {
-                    InputStream inputStream = zipFile.getInputStream(zipEntry);
                     String outputFullFilename = outputDirectoryAbsolutePath + Constant.Symbol.SLASH_LEFT + zipEntryName;
                     if (zipEntry.isDirectory()) {
                         createDirectory(outputFullFilename);
                     } else {
+                        InputStream inputStream = null;
                         createFile(outputFullFilename);
-                        OutputStream outputStream = new FileOutputStream(outputFullFilename);
+                        OutputStream outputStream = null;
                         try {
+                            inputStream = zipFile.getInputStream(zipEntry);
+                            outputStream = new FileOutputStream(outputFullFilename);
                             byte[] buffer = new byte[Constant.Capacity.BYTES_PER_KB];
                             int length = -1;
                             while ((length = inputStream.read(buffer, 0, buffer.length)) != -1) {
@@ -307,12 +311,8 @@ public final class FileUtil {
                                 outputStream.flush();
                             }
                         } finally {
-                            if (inputStream != null) {
-                                inputStream.close();
-                            }
-                            if (outputStream != null) {
-                                outputStream.close();
-                            }
+                            StreamUtil.closeQuietly(outputStream);
+                            StreamUtil.closeQuietly(inputStream);
                         }
                         storeFileList.add(outputFullFilename);
                     }
@@ -321,13 +321,7 @@ public final class FileUtil {
         } catch (Exception e) {
             throw new FileUtilException(e);
         } finally {
-            try {
-                if (zipFile != null) {
-                    zipFile.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            StreamUtil.closeQuietly(zipFile);
         }
         return storeFileList;
     }
@@ -454,18 +448,8 @@ public final class FileUtil {
         } catch (Exception e) {
             throw new FileUtilException(e);
         } finally {
-            try {
-                if (zipOutputStream != null) {
-                    zipOutputStream.finish();
-                    zipOutputStream.flush();
-                    zipOutputStream.close();
-                }
-                if (zipFile != null) {
-                    zipFile.close();
-                }
-            } catch (Exception e) {
-                throw new FileUtilException(e);
-            }
+            StreamUtil.closeQuietly(zipOutputStream);
+            StreamUtil.closeQuietly(zipFile);
         }
     }
 
@@ -497,13 +481,7 @@ public final class FileUtil {
         } catch (Exception e) {
             throw new FileUtilException(e);
         } finally {
-            try {
-                if (zipOutputStream != null) {
-                    zipOutputStream.close();
-                }
-            } catch (Exception e) {
-                throw new FileUtilException(e);
-            }
+            StreamUtil.closeQuietly(zipOutputStream);
         }
     }
 
@@ -527,9 +505,7 @@ public final class FileUtil {
         } catch (ZipException e) {
             // do nothing
         } finally {
-            if (inputStream != null) {
-                inputStream.close();
-            }
+            StreamUtil.closeQuietly(inputStream);
             zipOutputStream.closeEntry();
         }
     }
@@ -549,20 +525,8 @@ public final class FileUtil {
         } catch (FileNotFoundException e) {
             throw new FileUtilException(e);
         } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
-            if (byteArrayOutputStream != null) {
-                try {
-                    byteArrayOutputStream.close();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
+            StreamUtil.closeQuietly(byteArrayOutputStream);
+            StreamUtil.closeQuietly(inputStream);
         }
         return byteArrayOutputStream.toByteArray();
     }
@@ -574,29 +538,18 @@ public final class FileUtil {
      * @param byteArray
      */
     public static void writeFile(String outputFullFilename, byte[] byteArray) {
-        InputStream inputStream = new ByteArrayInputStream(byteArray);
+        InputStream inputStream = null;
         FileUtil.createFile(outputFullFilename);
         OutputStream outputStream = null;
         try {
+            inputStream = new ByteArrayInputStream(byteArray);
             outputStream = new FileOutputStream(outputFullFilename);
             copyStream(inputStream, outputStream);
         } catch (FileNotFoundException e) {
             throw new FileUtilException(e);
         } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
+            StreamUtil.closeQuietly(outputStream);
+            StreamUtil.closeQuietly(inputStream);
         }
     }
 
@@ -640,25 +593,13 @@ public final class FileUtil {
                     } catch (Exception e) {
                         throw new FileUtilException(e);
                     } finally {
-                        if (inputStream != null) {
-                            try {
-                                inputStream.close();
-                            } catch (IOException e) {
-                                throw new FileUtilException(e);
-                            }
-                        }
+                        StreamUtil.closeQuietly(inputStream);
                     }
                 }
             } catch (Exception e) {
                 throw new FileUtilException(e);
             } finally {
-                if (outputStream != null) {
-                    try {
-                        outputStream.close();
-                    } catch (IOException e) {
-                        throw new FileUtilException(e);
-                    }
-                }
+                StreamUtil.closeQuietly(outputStream);
             }
         }
     }
@@ -873,20 +814,8 @@ public final class FileUtil {
         } catch (Exception e) {
             throw new FileUtilException(e);
         } finally {
-            if (newZipFile != null) {
-                try {
-                    newZipFile.close();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
-            if (zipOutputStream != null) {
-                try {
-                    zipOutputStream.finish();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
+            StreamUtil.closeQuietly(zipOutputStream);
+            StreamUtil.closeQuietly(newZipFile);
         }
     }
 
@@ -905,13 +834,7 @@ public final class FileUtil {
         } catch (Exception e) {
             throw new FileUtilException(e);
         } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
+            StreamUtil.closeQuietly(inputStream);
         }
     }
 
@@ -946,20 +869,8 @@ public final class FileUtil {
         } catch (Exception e) {
             throw new FileUtilException(e);
         } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    throw new FileUtilException(e);
-                }
-            }
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (Exception e) {
-                    throw new FileUtilException(e);
-                }
-            }
+            StreamUtil.closeQuietly(outputStream);
+            StreamUtil.closeQuietly(bufferedReader);
         }
     }
 
@@ -1122,13 +1033,7 @@ public final class FileUtil {
             } catch (Exception e) {
                 throw new FileUtilException(e);
             } finally {
-                if (inputStream != null) {
-                    try {
-                        inputStream.close();
-                    } catch (Exception e) {
-                        throw new FileUtilException(e);
-                    }
-                }
+                StreamUtil.closeQuietly(inputStream);
             }
         }
         return properties;
@@ -1164,14 +1069,7 @@ public final class FileUtil {
             } catch (Exception e) {
                 throw new FileUtilException(e);
             } finally {
-                if (outputStream != null) {
-                    try {
-                        outputStream.flush();
-                        outputStream.close();
-                    } catch (Exception e) {
-                        throw new FileUtilException(e);
-                    }
-                }
+                StreamUtil.closeQuietly(outputStream);
             }
         }
     }

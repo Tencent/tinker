@@ -18,6 +18,7 @@ package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.decoder.ResDiffDecoder;
 import com.tencent.tinker.build.patch.Configuration;
+import com.tencent.tinker.commons.util.StreamUtil;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
@@ -122,11 +123,15 @@ public class Utils {
     public static String genResOutputFile(File output, File newZipFile, Configuration config,
                                     ArrayList<String> addedSet, ArrayList<String> modifiedSet, ArrayList<String> deletedSet,
                                     ArrayList<String> largeModifiedSet, HashMap<String, ResDiffDecoder.LargeModeInfo> largeModifiedMap) throws IOException {
-        TinkerZipFile oldApk = new TinkerZipFile(config.mOldApkFile);
-        TinkerZipFile newApk = new TinkerZipFile(newZipFile);
-        TinkerZipOutputStream out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(output)));
+        TinkerZipFile oldApk = null;
+        TinkerZipFile newApk = null;
+        TinkerZipOutputStream out = null;
 
         try {
+            oldApk = new TinkerZipFile(config.mOldApkFile);
+            newApk = new TinkerZipFile(newZipFile);
+            out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(output)));
+
             final Enumeration<? extends TinkerZipEntry> entries = oldApk.entries();
             while (entries.hasMoreElements()) {
                 TinkerZipEntry zipEntry = entries.nextElement();
@@ -189,9 +194,9 @@ public class Utils {
                 TinkerZipUtil.extractTinkerEntry(newApk, modZipEntry, out);
             }
         } finally {
-            out.close();
-            oldApk.close();
-            newApk.close();
+            StreamUtil.closeQuietly(out);
+            StreamUtil.closeQuietly(oldApk);
+            StreamUtil.closeQuietly(newApk);
         }
         return MD5.getMD5(output);
     }
@@ -242,15 +247,24 @@ public class Utils {
             ps.directory(path);
         }
         Process pr = ps.start();
-        BufferedReader ins = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-        String line;
-        while ((line = ins.readLine()) != null) {
-            System.out.println(line);
+        BufferedReader ins = null;
+        try {
+            ins = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+            String line;
+            while ((line = ins.readLine()) != null) {
+                System.out.println(line);
+            }
+            if (pr.waitFor() != 0) {
+                throw new RuntimeException("exec cmd failed! args: " + args);
+            }
+        } finally {
+            try {
+                pr.destroy();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+            StreamUtil.closeQuietly(ins);
         }
-        if (pr.waitFor() != 0) {
-            throw new RuntimeException("exec cmd failed! args: " + args);
-        }
-        ins.close();
     }
 
 }

@@ -20,11 +20,13 @@ import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -368,6 +370,14 @@ public class Configuration {
             factory.setNamespaceAware(false);
             factory.setValidating(false);
             DocumentBuilder builder = factory.newDocumentBuilder();
+            // Block any external content resolving actions since we don't need them and a report
+            // says these actions may cause security problems.
+            builder.setEntityResolver(new EntityResolver() {
+                @Override
+                public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+                    return new InputSource();
+                }
+            });
             Document document = builder.parse(source);
             NodeList issues = document.getElementsByTagName(TAG_ISSUE);
             for (int i = 0, count = issues.getLength(); i < count; i++) {
@@ -398,13 +408,7 @@ public class Configuration {
                 }
             }
         } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    System.exit(-1);
-                }
-            }
+            StreamUtil.closeQuietly(input);
         }
     }
 

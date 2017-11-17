@@ -102,11 +102,9 @@ public class Tinker {
         if (!sInstalled) {
             throw new TinkerRuntimeException("you must install tinker before get tinker sInstance");
         }
-        if (sInstance == null) {
-            synchronized (Tinker.class) {
-                if (sInstance == null) {
-                    sInstance = new Builder(context).build();
-                }
+        synchronized (Tinker.class) {
+            if (sInstance == null) {
+                sInstance = new Builder(context).build();
             }
         }
         return sInstance;
