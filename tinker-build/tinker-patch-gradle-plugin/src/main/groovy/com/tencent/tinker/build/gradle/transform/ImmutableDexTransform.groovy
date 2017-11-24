@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2016 THL A29 Limited, a Tencent company. All rights reserved.
  *
- * Licensed under the BSD 3-Clause License (the "License"); you may not use this file except in
+ * Licensed under the BSD 3-Clause License (the "License") you may not use this file except in
  * compliance with the License. You may obtain a copy of the License at
  *
  * https://opensource.org/licenses/BSD-3-Clause
@@ -18,9 +18,9 @@ package com.tencent.tinker.build.gradle.transform
 
 import com.android.annotations.NonNull
 import com.android.build.api.transform.Format
-import com.android.build.api.transform.JarInput;
+import com.android.build.api.transform.JarInput
 import com.android.build.api.transform.QualifiedContent
-import com.android.build.api.transform.Transform;
+import com.android.build.api.transform.Transform
 import com.android.build.api.transform.TransformException
 import com.android.build.api.transform.TransformInput
 import com.android.build.api.transform.TransformInvocation
@@ -45,7 +45,7 @@ import org.gradle.api.execution.TaskExecutionGraphListener
 import org.gradle.api.logging.Logging
 import org.gradle.api.tasks.JavaExec
 
-import java.lang.reflect.Field;
+import java.lang.reflect.Field
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -57,7 +57,7 @@ public class ImmutableDexTransform extends Transform {
 
     public static final String TASK_WORK_DIR = "keep_dex"
 
-    private static final Joiner PATH_JOINER = Joiner.on(File.separatorChar);
+    private static final Joiner PATH_JOINER = Joiner.on(File.separatorChar)
 
     Project project
 
@@ -95,7 +95,7 @@ public class ImmutableDexTransform extends Transform {
         baseDexDir = getDirInWorkDir("base_dex")
         dxOutDir = outputProvider.getContentLocation("main",
                 getOutputTypes(), getScopes(),
-                Format.DIRECTORY);
+                Format.DIRECTORY)
 
         classPreDir.mkdirs()
         baseDexDir.mkdirs()
@@ -119,7 +119,7 @@ public class ImmutableDexTransform extends Transform {
     @NonNull
     @Override
     public Set<QualifiedContent.ContentType> getOutputTypes() {
-        return dexTransform.getOutputTypes();
+        return dexTransform.getOutputTypes()
     }
 
     @NonNull
@@ -164,9 +164,9 @@ public class ImmutableDexTransform extends Transform {
     void transform(TransformInvocation transformInvocation) throws TransformException, IOException, InterruptedException {
 
         // because multi dex is enable,we only process jar file.
-        List<JarInput> jarInputs = Lists.newArrayList();
+        List<JarInput> jarInputs = Lists.newArrayList()
         for (TransformInput input : transformInvocation.getInputs()) {
-            jarInputs.addAll(input.getJarInputs());
+            jarInputs.addAll(input.getJarInputs())
         }
         //because the multi-dex is turned on,so the jarInput.size()==1 in theory.
         if (jarInputs.size() != 1) {
@@ -176,7 +176,7 @@ public class ImmutableDexTransform extends Transform {
         }
 
         //init
-        initFileEnv(transformInvocation.getOutputProvider());
+        initFileEnv(transformInvocation.getOutputProvider())
         //get all old dex
         ArrayList<File> oldDexList = new ArrayList<>()
         traversal(new ZipFile(oldApkPath), { ZipEntry zipEntry, byte[] bytes ->
@@ -325,7 +325,7 @@ public class ImmutableDexTransform extends Transform {
     private String rePathToClassPath(String rePath) {
         int eIndex = rePath.lastIndexOf(".class")
         if (eIndex >= 0) {
-            return "L${rePath.substring(0, eIndex)};"
+            return "L${rePath.substring(0, eIndex)}"
         } else {
             return ""
         }
@@ -341,11 +341,11 @@ public class ImmutableDexTransform extends Transform {
                 ArrayList<String> execArgs = new ArrayList()
                 execArgs.add("--dex")
                 if (dexOptions.getJumboMode()) {
-                    execArgs.add("--force-jumbo");
+                    execArgs.add("--force-jumbo")
                 }
                 if (dexOptions.getIncremental()) {
-                    execArgs.add("--incremental");
-                    execArgs.add("--no-strict");
+                    execArgs.add("--incremental")
+                    execArgs.add("--no-strict")
                 }
                 execArgs.add("--output=${dxOutDir.absolutePath}/${classIndexName}.dex".toString())
                 execArgs.add(classZip.absolutePath)
@@ -387,12 +387,12 @@ public class ImmutableDexTransform extends Transform {
                             field.setAccessible(true)
                             field.set(task, hookDexTransform)
                             project.logger.warn("transform class after hook: " + task.transform.getClass())
-                            break;
+                            break
                         }
                     }
                 }
             }
-        });
+        })
 
     }
 
@@ -503,14 +503,14 @@ public class ImmutableDexTransform extends Transform {
 
     public static void traversal(ZipFile zipFile, Closure callback) {
         try {
-            Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
+            Enumeration<? extends ZipEntry> enumeration = zipFile.entries()
             while (enumeration.hasMoreElements()) {
-                ZipEntry entry = enumeration.nextElement();
+                ZipEntry entry = enumeration.nextElement()
                 callback.call(entry, zipFile.getInputStream(entry).bytes)
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            Utils.closeQuietly(zipFile);
+            e.printStackTrace()
+            Utils.closeQuietly(zipFile)
         }
     }
 }
