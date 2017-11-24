@@ -360,7 +360,7 @@ public class ImmutableDexTransform extends Transform {
 
     public static void inject(Project project, def variant) {
         project.logger.info("prepare inject dex transform ")
-        if (!variant.apkVariantData.variantConfiguration.isMultiDexEnabled()) {
+        if (!variant.variantData.variantConfiguration.isMultiDexEnabled()) {
             project.logger.warn("multidex is diable. we will not replace the dex transform.")
             return
         }
