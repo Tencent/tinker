@@ -28,10 +28,12 @@ import com.android.build.api.transform.TransformOutputProvider
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.DexTransform
 import com.google.common.base.Joiner
+import com.google.common.collect.ImmutableSet
 import com.google.common.collect.Lists
 import com.tencent.tinker.android.dex.ClassDef
 import com.tencent.tinker.android.dex.Dex
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
+import com.tencent.tinker.build.gradle.task.TinkerPatchSchemaTask
 import com.tencent.tinker.build.immutable.ClassSimDef
 import com.tencent.tinker.build.immutable.DexRefData
 import com.tencent.tinker.build.util.FileOperation
@@ -67,8 +69,6 @@ public class ImmutableDexTransform extends Transform {
 
     File baseDexDir
 
-    File dxOutDir
-
     File mainDexListFile
 
     String varName
@@ -93,17 +93,12 @@ public class ImmutableDexTransform extends Transform {
     public void initFileEnv(TransformOutputProvider outputProvider) {
         classPreDir = getDirInWorkDir("class_pre")
         baseDexDir = getDirInWorkDir("base_dex")
-        dxOutDir = outputProvider.getContentLocation("main",
-                getOutputTypes(), getScopes(),
-                Format.DIRECTORY)
 
         classPreDir.mkdirs()
         baseDexDir.mkdirs()
-        dxOutDir.mkdirs()
 
         FileOperation.cleanDir(classPreDir)
         FileOperation.cleanDir(baseDexDir)
-        FileOperation.cleanDir(dxOutDir)
     }
 
     private File getDirInWorkDir(String name) {
@@ -162,7 +157,6 @@ public class ImmutableDexTransform extends Transform {
 
     @Override
     void transform(TransformInvocation transformInvocation) throws TransformException, IOException, InterruptedException {
-
         // because multi dex is enable,we only process jar file.
         List<JarInput> jarInputs = Lists.newArrayList()
         for (TransformInput input : transformInvocation.getInputs()) {
@@ -255,11 +249,16 @@ public class ImmutableDexTransform extends Transform {
 
         //a list for all dex's path,use for checkClassConsistence mtd
         ArrayList<String> dexPathList = new ArrayList<>()
+
+        def dxOutDir = transformInvocation.outputProvider.getContentLocation("main",
+                getOutputTypes(), jarInputs.first().getScopes(), Format.DIRECTORY)
+        FileOperation.cleanDir(dxOutDir)
+
         classPreDir.eachFile { classZip ->
             String classIndexName = classZip.name - ".jar"
             String dexPath = "${dxOutDir.absolutePath}/${classIndexName}.dex"
             dexPathList.add(dexPath)
-            doDex(classIndexName, classZip, project.android.getDexOptions())
+            doDex(dexPath, classZip, project.android.getDexOptions())
         }
 
         checkClassConsistence(dexPathList, allClassSet)
@@ -325,17 +324,17 @@ public class ImmutableDexTransform extends Transform {
     private String rePathToClassPath(String rePath) {
         int eIndex = rePath.lastIndexOf(".class")
         if (eIndex >= 0) {
-            return "L${rePath.substring(0, eIndex)}"
+            return "L${rePath.substring(0, eIndex)};"
         } else {
             return ""
         }
     }
 
 
-    private void doDex(String classIndexName, File classZip, def dexOptions) {
+    private void doDex(String dexPath, File classZip, def dexOptions) {
 
         def dexJar = "${project.android.getSdkDirectory()}/build-tools/${project.android.buildToolsVersion}/lib/dx.jar"
-        def task = project.tasks.create("dx" + classIndexName + varName, JavaExec.class, new Action<JavaExec>() {
+        def task = project.tasks.create("dx" + (classZip.name - ".jar") + varName, JavaExec.class, new Action<JavaExec>() {
             @Override
             void execute(JavaExec javaExec) {
                 ArrayList<String> execArgs = new ArrayList()
@@ -347,7 +346,7 @@ public class ImmutableDexTransform extends Transform {
                     execArgs.add("--incremental")
                     execArgs.add("--no-strict")
                 }
-                execArgs.add("--output=${dxOutDir.absolutePath}/${classIndexName}.dex".toString())
+                execArgs.add("--output=${dexPath}")
                 execArgs.add(classZip.absolutePath)
                 project.logger.info(execArgs.toString())
                 javaExec.setClasspath(project.files(dexJar))
