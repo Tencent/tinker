@@ -69,6 +69,9 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             //disable aapt2
             reflectAapt2Flag()
+
+            //disable dex archive mode if keepDexApply option was enabled.
+            disableDexArchiveOnDemand()
         } catch (Throwable e) {
             //no preDexLibraries field, just continue
         }
@@ -246,7 +249,31 @@ class TinkerPatchPlugin implements Plugin<Project> {
             defValField.setAccessible(true)
             defValField.set(enableAAPT2EnumObj, false)
         } catch (Throwable thr) {
-            project.logger.error("relectAapt2Flag error: ${thr.getMessage()}.")
+            // To some extends, class not found means we are in lower version of android gradle
+            // plugin, so just ignore that exception.
+            if (!(thr instanceof ClassNotFoundException)) {
+                project.logger.error("reflectAapt2Flag error: ${thr.getMessage()}.")
+            }
+        }
+    }
+
+    void disableDexArchiveOnDemand() {
+        if (project.buildConfig.keepDexApply) {
+            try {
+                def booleanOptClazz = Class.forName('com.android.build.gradle.options.BooleanOption')
+                def enableDexArchiveField = booleanOptClazz.getDeclaredField('ENABLE_DEX_ARCHIVE')
+                enableDexArchiveField.setAccessible(true)
+                def enableDexArchiveEnumObj = enableDexArchiveField.get(null)
+                def defValField = enableDexArchiveEnumObj.getClass().getDeclaredField('defaultValue')
+                defValField.setAccessible(true)
+                defValField.set(enableDexArchiveEnumObj, false)
+            } catch (Throwable thr) {
+                // To some extends, class not found means we are in lower version of android gradle
+                // plugin, so just ignore that exception.
+                if (!(thr instanceof ClassNotFoundException)) {
+                    project.logger.error("reflectDexArchiveFlag error: ${thr.getMessage()}.")
+                }
+            }
         }
     }
 
