@@ -66,6 +66,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             //open jumboMode
             android.dexOptions.jumboMode = true
+
+            //disable aapt2
             reflectAapt2Flag()
         } catch (Throwable e) {
             //no preDexLibraries field, just continue
@@ -84,6 +86,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
             project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")
             project.logger.error("enable dx jumboMode to reduce package size.")
             project.logger.error("disable preDexLibraries to prevent ClassDefNotFoundException when your app is booting.")
+            project.logger.error("disable aapt2 so far for resource id keeping.")
             project.logger.error("")
             project.logger.error("tinker will change your build configs:")
             project.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
