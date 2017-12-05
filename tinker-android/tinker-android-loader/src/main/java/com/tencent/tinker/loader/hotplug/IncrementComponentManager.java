@@ -121,51 +121,82 @@ public final class IncrementComponentManager {
             } else if ("multiprocess".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_MULTIPROCESS;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_MULTIPROCESS;
                 }
             } else if ("finishOnTaskLaunch".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_FINISH_ON_TASK_LAUNCH;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_FINISH_ON_TASK_LAUNCH;
                 }
             } else if ("clearTaskOnLaunch".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_CLEAR_TASK_ON_LAUNCH;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_CLEAR_TASK_ON_LAUNCH;
                 }
             } else if ("noHistory".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_NO_HISTORY;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_NO_HISTORY;
                 }
             } else if ("alwaysRetainTaskState".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_ALWAYS_RETAIN_TASK_STATE;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_ALWAYS_RETAIN_TASK_STATE;
                 }
             } else if ("stateNotNeeded".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_STATE_NOT_NEEDED;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_STATE_NOT_NEEDED;
                 }
             } else if ("excludeFromRecents".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS;
                 }
             } else if ("allowTaskReparenting".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_ALLOW_TASK_REPARENTING;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_ALLOW_TASK_REPARENTING;
                 }
             } else if ("finishOnCloseSystemDialogs".equals(attrName)) {
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= ActivityInfo.FLAG_FINISH_ON_CLOSE_SYSTEM_DIALOGS;
+                } else {
+                    result.flags &= ~ActivityInfo.FLAG_FINISH_ON_CLOSE_SYSTEM_DIALOGS;
                 }
             } else if ("showOnLockScreen".equals(attrName) || "showForAllUsers".equals(attrName)) {
-                if (Build.VERSION.SDK_INT >= 23 && "true".equalsIgnoreCase(attrValue)) {
-                    result.flags |= ShareReflectUtil.getValueOfStaticIntField(ActivityInfo.class,
-                            "FLAG_SHOW_FOR_ALL_USERS", 0);
+                if (Build.VERSION.SDK_INT >= 23) {
+                    final int flag = ShareReflectUtil
+                            .getValueOfStaticIntField(ActivityInfo.class, "FLAG_SHOW_FOR_ALL_USERS", 0);
+                    if ("true".equalsIgnoreCase(attrValue)) {
+                        result.flags |= flag;
+                    } else {
+                        result.flags &= ~flag;
+                    }
                 }
             } else if ("immersive".equals(attrName)) {
-                if (Build.VERSION.SDK_INT >= 18 && "true".equalsIgnoreCase(attrValue)) {
-                    result.flags |= ActivityInfo.FLAG_IMMERSIVE;
+                if (Build.VERSION.SDK_INT >= 18) {
+                    if ("true".equalsIgnoreCase(attrValue)) {
+                        result.flags |= ActivityInfo.FLAG_IMMERSIVE;
+                    } else {
+                        result.flags &= ~ActivityInfo.FLAG_IMMERSIVE;
+                    }
                 }
             } else if ("hardwareAccelerated".equals(attrName)) {
-                if (Build.VERSION.SDK_INT >= 11 && "true".equalsIgnoreCase(attrValue)) {
-                    result.flags |= ActivityInfo.FLAG_HARDWARE_ACCELERATED;
+                if (Build.VERSION.SDK_INT >= 11) {
+                    if ("true".equalsIgnoreCase(attrValue)) {
+                        result.flags |= ActivityInfo.FLAG_HARDWARE_ACCELERATED;
+                    } else {
+                        result.flags &= ~ActivityInfo.FLAG_HARDWARE_ACCELERATED;
+                    }
                 }
             } else if ("documentLaunchMode".equals(attrName)) {
                 if (Build.VERSION.SDK_INT >= 21) {
@@ -184,20 +215,36 @@ public final class IncrementComponentManager {
                     result.persistableMode = Integer.decode(attrValue);
                 }
             } else if ("allowEmbedded".equals(attrName)) {
+                final int flag = ShareReflectUtil
+                        .getValueOfStaticIntField(ActivityInfo.class, "FLAG_ALLOW_EMBEDDED", 0);
                 if ("true".equalsIgnoreCase(attrValue)) {
-                    result.flags |= ShareReflectUtil.getValueOfStaticIntField(ActivityInfo.class, "FLAG_ALLOW_EMBEDDED", 0);
+                    result.flags |= flag;
+                } else {
+                    result.flags &= ~flag;
                 }
             } else if ("autoRemoveFromRecents".equals(attrName)) {
-                if (Build.VERSION.SDK_INT >= 21 && "true".equalsIgnoreCase(attrValue)) {
-                    result.flags |= ActivityInfo.FLAG_AUTO_REMOVE_FROM_RECENTS;
+                if (Build.VERSION.SDK_INT >= 21) {
+                    if ("true".equalsIgnoreCase(attrValue)) {
+                        result.flags |= ActivityInfo.FLAG_AUTO_REMOVE_FROM_RECENTS;
+                    } else {
+                        result.flags &= ~ActivityInfo.FLAG_AUTO_REMOVE_FROM_RECENTS;
+                    }
                 }
             } else if ("relinquishTaskIdentity".equals(attrName)) {
-                if (Build.VERSION.SDK_INT >= 21 && "true".equalsIgnoreCase(attrValue)) {
-                    result.flags |= ActivityInfo.FLAG_RELINQUISH_TASK_IDENTITY;
+                if (Build.VERSION.SDK_INT >= 21) {
+                    if ("true".equalsIgnoreCase(attrValue)) {
+                        result.flags |= ActivityInfo.FLAG_RELINQUISH_TASK_IDENTITY;
+                    } else {
+                        result.flags &= ~ActivityInfo.FLAG_RELINQUISH_TASK_IDENTITY;
+                    }
                 }
             } else if ("resumeWhilePausing".equals(attrName)) {
-                if (Build.VERSION.SDK_INT >= 21 && "true".equalsIgnoreCase(attrValue)) {
-                    result.flags |= ActivityInfo.FLAG_RESUME_WHILE_PAUSING;
+                if (Build.VERSION.SDK_INT >= 21) {
+                    if ("true".equalsIgnoreCase(attrValue)) {
+                        result.flags |= ActivityInfo.FLAG_RESUME_WHILE_PAUSING;
+                    } else {
+                        result.flags &= ~ActivityInfo.FLAG_RESUME_WHILE_PAUSING;
+                    }
                 }
             } else if ("screenOrientation".equals(attrName)) {
                 result.screenOrientation = parseScreenOrientation(attrValue);
