@@ -18,6 +18,7 @@ package com.tencent.tinker.build.gradle.transform
 
 import com.android.annotations.NonNull
 import com.android.build.api.transform.*
+import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.DexTransform
 import com.google.common.base.Joiner
@@ -77,7 +78,11 @@ public class ImmutableDexTransform extends Transform {
         this.varName = variant.name.capitalize()
         this.varDirName = variant.getDirName()
         this.oldApkPath = project.tinkerPatch.oldApk
-        this.mainDexListFile = dexTransform.mainDexListFile
+        if (dexTransform.mainDexListFile instanceof File) {
+            this.mainDexListFile = dexTransform.mainDexListFile
+        } else {
+            this.mainDexListFile = dexTransform.mainDexListFile.getSingleFile()
+        }
     }
 
     public void initFileEnv(TransformOutputProvider outputProvider) {
@@ -241,7 +246,7 @@ public class ImmutableDexTransform extends Transform {
         ArrayList<String> dexPathList = new ArrayList<>()
 
         def dxOutDir = transformInvocation.outputProvider.getContentLocation("main",
-                getOutputTypes(), jarInputs.first().getScopes(), Format.DIRECTORY)
+                getOutputTypes(), TransformManager.SCOPE_FULL_PROJECT, Format.DIRECTORY)
         if (dxOutDir.exists()) {
             FileOperation.cleanDir(dxOutDir)
         } else {
