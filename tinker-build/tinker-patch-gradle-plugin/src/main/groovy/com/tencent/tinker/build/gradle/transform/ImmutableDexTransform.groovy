@@ -17,23 +17,14 @@
 package com.tencent.tinker.build.gradle.transform
 
 import com.android.annotations.NonNull
-import com.android.build.api.transform.Format
-import com.android.build.api.transform.JarInput
-import com.android.build.api.transform.QualifiedContent
-import com.android.build.api.transform.Transform
-import com.android.build.api.transform.TransformException
-import com.android.build.api.transform.TransformInput
-import com.android.build.api.transform.TransformInvocation
-import com.android.build.api.transform.TransformOutputProvider
+import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.DexTransform
 import com.google.common.base.Joiner
-import com.google.common.collect.ImmutableSet
 import com.google.common.collect.Lists
 import com.tencent.tinker.android.dex.ClassDef
 import com.tencent.tinker.android.dex.Dex
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
-import com.tencent.tinker.build.gradle.task.TinkerPatchSchemaTask
 import com.tencent.tinker.build.immutable.ClassSimDef
 import com.tencent.tinker.build.immutable.DexRefData
 import com.tencent.tinker.build.util.FileOperation
@@ -44,7 +35,6 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionGraph
 import org.gradle.api.execution.TaskExecutionGraphListener
-import org.gradle.api.logging.Logging
 import org.gradle.api.tasks.JavaExec
 
 import java.lang.reflect.Field
@@ -252,7 +242,11 @@ public class ImmutableDexTransform extends Transform {
 
         def dxOutDir = transformInvocation.outputProvider.getContentLocation("main",
                 getOutputTypes(), jarInputs.first().getScopes(), Format.DIRECTORY)
-        FileOperation.cleanDir(dxOutDir)
+        if (dxOutDir.exists()) {
+            FileOperation.cleanDir(dxOutDir)
+        } else {
+            dxOutDir.mkdirs()
+        }
 
         classPreDir.eachFile { classZip ->
             String classIndexName = classZip.name - ".jar"
