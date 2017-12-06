@@ -86,8 +86,8 @@ public class BasePatchInternal {
             TinkerLog.i(TAG, "isExtractionSuccessful: %b", isExtractionSuccessful);
 
             if (!isExtractionSuccessful) {
-                extractTo.delete();
-                if (extractTo.exists()) {
+                final boolean succ = extractTo.delete();
+                if (!succ || extractTo.exists()) {
                     TinkerLog.e(TAG, "Failed to delete corrupted dex " + extractTo.getPath());
                 }
             }

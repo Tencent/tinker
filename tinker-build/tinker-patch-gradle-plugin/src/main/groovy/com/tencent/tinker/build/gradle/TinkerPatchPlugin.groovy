@@ -66,7 +66,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             //open jumboMode
             android.dexOptions.jumboMode = true
+
+            //disable aapt2
             reflectAapt2Flag()
+
+            //disable dex archive mode
+            disableArchiveDex()
         } catch (Throwable e) {
             //no preDexLibraries field, just continue
         }
@@ -84,6 +89,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
             project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")
             project.logger.error("enable dx jumboMode to reduce package size.")
             project.logger.error("disable preDexLibraries to prevent ClassDefNotFoundException when your app is booting.")
+            project.logger.error("disable aapt2 so far for resource id keeping.")
+            project.logger.error("disable archive dex mode so far for keeping dex apply.")
             project.logger.error("")
             project.logger.error("tinker will change your build configs:")
             project.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
@@ -243,7 +250,29 @@ class TinkerPatchPlugin implements Plugin<Project> {
             defValField.setAccessible(true)
             defValField.set(enableAAPT2EnumObj, false)
         } catch (Throwable thr) {
-            project.logger.error("relectAapt2Flag error: ${thr.getMessage()}.")
+            // To some extends, class not found means we are in lower version of android gradle
+            // plugin, so just ignore that exception.
+            if (!(thr instanceof ClassNotFoundException)) {
+                project.logger.error("reflectAapt2Flag error: ${thr.getMessage()}.")
+            }
+        }
+    }
+
+    void disableArchiveDex() {
+        try {
+            def booleanOptClazz = Class.forName('com.android.build.gradle.options.BooleanOption')
+            def enableDexArchiveField = booleanOptClazz.getDeclaredField('ENABLE_DEX_ARCHIVE')
+            enableDexArchiveField.setAccessible(true)
+            def enableDexArchiveEnumObj = enableDexArchiveField.get(null)
+            def defValField = enableDexArchiveEnumObj.getClass().getDeclaredField('defaultValue')
+            defValField.setAccessible(true)
+            defValField.set(enableDexArchiveEnumObj, false)
+        } catch (Throwable thr) {
+            // To some extends, class not found means we are in lower version of android gradle
+            // plugin, so just ignore that exception.
+            if (!(thr instanceof ClassNotFoundException)) {
+                project.logger.error("reflectDexArchiveFlag error: ${thr.getMessage()}.")
+            }
         }
     }
 

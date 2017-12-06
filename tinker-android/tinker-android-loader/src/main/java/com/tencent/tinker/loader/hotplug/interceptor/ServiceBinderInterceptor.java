@@ -27,7 +27,6 @@ import java.util.Set;
 
 public class ServiceBinderInterceptor extends Interceptor<IBinder> {
     private static final String TAG = "Tinker.SvcBndrIntrcptr";
-    private static final ClassLoader MY_CLASSLOADER = ServiceBinderInterceptor.class.getClassLoader();
 
     private final Context mBaseContext;
     private final String mServiceName;
@@ -76,7 +75,7 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
             // Already intercepted, just return the target.
             return target;
         } else {
-            return createProxy(target.getClass().getClassLoader(), getAllInterfacesThroughDeriveChain(target.getClass()),
+            return createProxy(getAllInterfacesThroughDeriveChain(target.getClass()),
                     new FakeClientBinderHandler(target, mBinderInvocationHandler));
         }
     }
@@ -145,20 +144,39 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T createProxy(ClassLoader cl, Class<?>[] itfs, InvocationHandler handler) {
+    private static <T> T createProxy(Class<?>[] itfs, InvocationHandler handler) {
         final Class<?>[] mergedItfs = new Class<?>[itfs.length + 1];
         System.arraycopy(itfs, 0, mergedItfs, 0, itfs.length);
         mergedItfs[itfs.length] = ITinkerHotplugProxy.class;
+        ClassLoader cl = null;
         try {
-            return (T) Proxy.newProxyInstance(MY_CLASSLOADER, mergedItfs, handler);
+            cl = Thread.currentThread().getContextClassLoader();
+            return (T) Proxy.newProxyInstance(cl, mergedItfs, handler);
         } catch (Throwable thr) {
-            if (cl != null && cl != MY_CLASSLOADER) {
-                try {
-                    return (T) Proxy.newProxyInstance(cl, mergedItfs, handler);
-                } catch (Throwable thr2) {
-                    throw new RuntimeException("cl: " + cl, thr);
-                }
+            final Set<ClassLoader> uniqueCls = new HashSet<>(4);
+            for (Class<?> itf : mergedItfs) {
+                uniqueCls.add(itf.getClassLoader());
+            }
+            if (uniqueCls.size() == 1) {
+                cl = uniqueCls.iterator().next();
             } else {
+                cl = new ClassLoader() {
+                    @Override
+                    protected Class<?> loadClass(String className, boolean resolve)
+                            throws ClassNotFoundException {
+                        for (ClassLoader cl : uniqueCls) {
+                            final Class<?> res = cl.loadClass(className);
+                            if (res != null) {
+                                return res;
+                            }
+                        }
+                        throw new ClassNotFoundException("cannot find class: " + className);
+                    }
+                };
+            }
+            try {
+                return (T) Proxy.newProxyInstance(cl, mergedItfs, handler);
+            } catch (Throwable thr2) {
                 throw new RuntimeException("cl: " + cl, thr);
             }
         }
@@ -209,8 +227,7 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
                 final InvocationHandler fakeInterfaceHandler
                         = new FakeInterfaceHandler(originalInterface, (IBinder) fakeClientBinder, mBinderInvocationHandler);
 
-                return createProxy(originalInterface.getClass().getClassLoader(),
-                        getAllInterfacesThroughDeriveChain(originalInterface.getClass()), fakeInterfaceHandler);
+                return createProxy(getAllInterfacesThroughDeriveChain(originalInterface.getClass()), fakeInterfaceHandler);
             } else {
                 return method.invoke(mOriginalClientBinder, args);
             }

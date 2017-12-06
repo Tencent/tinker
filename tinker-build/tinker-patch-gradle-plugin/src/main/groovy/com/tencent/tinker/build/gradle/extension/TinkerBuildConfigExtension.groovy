@@ -72,7 +72,7 @@ public class TinkerBuildConfigExtension {
      * if keepDexApply is true,class in which dex refer to the old apk.
      * open this can reduce the dex diff file size.
      */
-    boolean keepDexApply;
+    boolean keepDexApply
 
     public TinkerBuildConfigExtension(Project project) {
         this.project = project
