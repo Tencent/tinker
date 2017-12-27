@@ -35,10 +35,19 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import tinker.net.dongliu.apk.parser.ApkParser;
+import tinker.net.dongliu.apk.parser.struct.resource.ResourceEntry;
+import tinker.net.dongliu.apk.parser.struct.resource.ResourcePackage;
+import tinker.net.dongliu.apk.parser.struct.resource.Type;
 
 /**
  * Created by zhangshaowen on 16/8/8.
@@ -57,6 +66,9 @@ public class ResDiffDecoder extends BaseDecoder {
     private ArrayList<String>              largeModifiedSet;
     private HashMap<String, LargeModeInfo> largeModifiedMap;
     private ArrayList<String>              deletedSet;
+
+    private ApkParser                      newApkParser;
+    private Set<String>                    newApkAnimResNames;
 
     public ResDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
         super(config);
@@ -78,12 +90,20 @@ public class ResDiffDecoder extends BaseDecoder {
         largeModifiedMap = new HashMap<>();
         deletedSet = new ArrayList<>();
         storedSet = new ArrayList<>();
+
+        newApkParser = new ApkParser(config.mNewApkFile);
+        newApkAnimResNames = new HashSet<>();
     }
 
     @Override
     public void clean() {
         metaWriter.close();
         logWriter.close();
+        try {
+            newApkParser.close();
+        } catch (Throwable ignored) {
+            // Ignored.
+        }
     }
 
     /**
@@ -98,6 +118,39 @@ public class ResDiffDecoder extends BaseDecoder {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void onAllPatchesStart() throws IOException, TinkerPatchException {
+        newApkParser.parseResourceTable();
+        final Map<String, ResourcePackage> newApkResPkgNameMap = newApkParser.getResourceTable().getPackageNameMap();
+        do {
+            if (newApkResPkgNameMap == null) {
+                break;
+            }
+
+            final ResourcePackage newApkResPackage = newApkResPkgNameMap.get(newApkParser.getApkMeta().getPackageName());
+            if (newApkResPackage == null) {
+                break;
+            }
+
+            final Map<String, List<Type>> newApkResTypesNameMap = newApkResPackage.getTypesNameMap();
+            if (newApkResTypesNameMap == null) {
+                break;
+            }
+
+            final List<Type> newApkAnimResTypes = newApkResTypesNameMap.get("anim");
+            if (newApkAnimResTypes == null) {
+                break;
+            }
+
+            for (Type animType : newApkAnimResTypes) {
+                final Map<String, ResourceEntry> resEntryMap = animType.getResourceEntryNameHashMap();
+                if (resEntryMap != null) {
+                    newApkAnimResNames.addAll(resEntryMap.keySet());
+                }
+            }
+        } while (false);
     }
 
     @Override
@@ -216,11 +269,6 @@ public class ResDiffDecoder extends BaseDecoder {
         }
     }
 
-    @Override
-    public void onAllPatchesStart() throws IOException, TinkerPatchException {
-
-    }
-
     private void addAssetsFileForTestResource() throws IOException {
         File dest = new File(config.mTempResultDir + "/" + TEST_RESOURCE_ASSETS_PATH);
         FileOperation.copyResourceUsingStream(TEST_RESOURCE_NAME, dest);
@@ -282,6 +330,12 @@ public class ResDiffDecoder extends BaseDecoder {
         removeIgnoreChangeFile(addedSet);
         removeIgnoreChangeFile(largeModifiedSet);
 
+        // after ignore-changes resource files are being removed, we now check if there's any anim
+        // resources in added and modified files.
+        checkIfSpecificResWasAnimRes(addedSet);
+        checkIfSpecificResWasAnimRes(modifiedSet);
+        checkIfSpecificResWasAnimRes(largeModifiedSet);
+
         // last add test res in assets for user cannot ignore it;
         addAssetsFileForTestResource();
 
@@ -335,6 +389,51 @@ public class ResDiffDecoder extends BaseDecoder {
         writeMetaFile(deletedSet, TypedValue.DEL);
         writeMetaFile(storedSet, TypedValue.STORED);
 
+    }
+
+    private void checkIfSpecificResWasAnimRes(Collection<String> specificFileNames) {
+        final Set<String> changedAnimResNames = new HashSet<>();
+        for (String resFileName : specificFileNames) {
+            String resName = resFileName;
+            int lastPathSepPos = resFileName.lastIndexOf('/');
+            if (lastPathSepPos < 0) {
+                lastPathSepPos = resFileName.lastIndexOf('\\');
+            }
+            if (lastPathSepPos >= 0) {
+                resName = resName.substring(lastPathSepPos + 1);
+            }
+            final int firstDotPos = resName.indexOf('.');
+            if (firstDotPos >= 0) {
+                resName = resName.substring(0, firstDotPos);
+            }
+            if (newApkAnimResNames.contains(resName)) {
+                if (Utils.isStringMatchesPatterns(resFileName, config.mResIgnoreChangeWarningPattern)) {
+                    Logger.d("\nAnimation resource: " + resFileName
+                            + " was changed, but it's filtered by ignoreChangeWarning pattern, just ignore.\n");
+                } else {
+                    changedAnimResNames.add(resFileName);
+                }
+            }
+        }
+        if (!changedAnimResNames.isEmpty()) {
+            if (config.mIgnoreWarning) {
+                //ignoreWarning, just log
+                Logger.e("Warning:ignoreWarning is true, but we found animation resource is changed. "
+                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
+                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
+                        + "related res: " + changedAnimResNames + "\n");
+            } else {
+                Logger.e("Warning:ignoreWarning is false, but we found animation resource is changed. "
+                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
+                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
+                        + "related res: " + changedAnimResNames + "\n");
+                throw new TinkerPatchException(
+                        "ignoreWarning is false, but we found animation resource is changed. "
+                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
+                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
+                        + "related res: " + changedAnimResNames);
+            }
+        }
     }
 
     private void getCompressMethodFromApk() {
