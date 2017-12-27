@@ -303,42 +303,51 @@ public class TinkerApplicationHelper {
         String relativeLibPath = relativePath + "/" + libname;
 
         //TODO we should add cpu abi, and the real path later
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)
-            && TinkerApplicationHelper.isTinkerLoadSuccess(applicationLike)) {
-            HashMap<String, String> loadLibraries = TinkerApplicationHelper.getLoadLibraryAndMd5(applicationLike);
-            if (loadLibraries != null) {
-                String currentVersion = TinkerApplicationHelper.getCurrentVersion(applicationLike);
-                if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
-                    return false;
-                }
-                File patchDirectory = SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
-                if (patchDirectory == null) {
-                    return false;
-                }
-                File patchVersionDirectory = new File(patchDirectory.getAbsolutePath() + "/" + SharePatchFileUtil.getPatchVersionDirectory(currentVersion));
-                String libPrePath = patchVersionDirectory.getAbsolutePath() + "/" + ShareConstants.SO_PATH;
+        if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
+            return false;
+        }
+        if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
+            return false;
+        }
 
-                for (Map.Entry<String, String> libEntry : loadLibraries.entrySet()) {
-                    final String name = libEntry.getKey();
-                    if (name.equals(relativeLibPath)) {
-                        String patchLibraryPath = libPrePath + "/" + name;
-                        File library = new File(patchLibraryPath);
-                        if (library.exists()) {
-                            //whether we check md5 when load
-                            boolean verifyMd5 = applicationLike.getTinkerLoadVerifyFlag();
-                            if (verifyMd5 && !SharePatchFileUtil.verifyFileMd5(library, loadLibraries.get(name))) {
-                                //do not report, because tinker is not install
-                                TinkerLog.i(TAG, "loadLibraryFromTinker md5mismatch fail:" + patchLibraryPath);
-                            } else {
-                                System.load(patchLibraryPath);
-                                TinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
-                                return true;
-                            }
-                        }
-                    }
-                }
+        final HashMap<String, String> loadLibraries = TinkerApplicationHelper.getLoadLibraryAndMd5(applicationLike);
+        if (loadLibraries == null) {
+            return false;
+        }
+
+        final String currentVersion = TinkerApplicationHelper.getCurrentVersion(applicationLike);
+        if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
+            return false;
+        }
+        final File patchDirectory = SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
+        if (patchDirectory == null) {
+            return false;
+        }
+        final File patchVersionDirectory = new File(patchDirectory.getAbsolutePath() + "/" + SharePatchFileUtil.getPatchVersionDirectory(currentVersion));
+        final String libPrePath = patchVersionDirectory.getAbsolutePath() + "/" + ShareConstants.SO_PATH;
+
+        for (Map.Entry<String, String> libEntry : loadLibraries.entrySet()) {
+            final String name = libEntry.getKey();
+            if (!name.equals(relativeLibPath)) {
+                continue;
+            }
+            final String patchLibraryPath = libPrePath + "/" + name;
+            final File library = new File(patchLibraryPath);
+            if (!library.exists()) {
+                continue;
+            }
+            //whether we check md5 when load
+            final boolean verifyMd5 = applicationLike.getTinkerLoadVerifyFlag();
+            if (verifyMd5 && !SharePatchFileUtil.verifyFileMd5(library, loadLibraries.get(name))) {
+                //do not report, because tinker is not install
+                TinkerLog.i(TAG, "loadLibraryFromTinker md5mismatch fail:" + patchLibraryPath);
+            } else {
+                System.load(patchLibraryPath);
+                TinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
+                return true;
             }
         }
+
         return false;
     }
 }
