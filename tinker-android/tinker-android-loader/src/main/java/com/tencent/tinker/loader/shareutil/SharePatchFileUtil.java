@@ -275,7 +275,7 @@ public class SharePatchFileUtil {
             return false;
         }
         //if it is not the raw dex, we check the stream instead
-        String fileMd5;
+        String fileMd5 = "";
 
         if (isRawDexFile(file.getName())) {
             fileMd5 = getMD5(file);
@@ -298,7 +298,6 @@ public class SharePatchFileUtil {
                 } finally {
                     closeQuietly(is);
                 }
-                fileMd5 = getMD5(dexJar.getInputStream(classesDex));
             } catch (Throwable e) {
                 Log.e(TAG, "Bad dex jar file: " + file.getAbsolutePath(), e);
                 return false;
