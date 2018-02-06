@@ -7,7 +7,7 @@ buildscript {
     }
     dependencies {
         if (project.hasProperty('GRADLE_3') && GRADLE_3.equalsIgnoreCase('TRUE')) {
-            classpath 'com.android.tools.build:gradle:3.0.0-rc2'
+            classpath 'com.android.tools.build:gradle:3.1.0-alpha06'
         } else {
             classpath 'com.android.tools.build:gradle:2.3.3'
         }

@@ -52,6 +52,7 @@ public class TinkerResourceExtension {
     public TinkerResourceExtension() {
         pattern = []
         ignoreChange = []
+        ignoreChangeWarning = []
         largeModSize = 100
     }
     void checkParameter() {

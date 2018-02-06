@@ -13,13 +13,6 @@ dependencies {
         //use to test multiDex
 //    implementation group: 'com.google.guava', name: 'guava', version: '19.0'
 //    implementation "org.scala-lang:scala-library:2.11.7"
-
-        //use for local maven test
-//        implementation("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
-//        implementation("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
-//        implementation("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
-//        implementation("com.tencent.tinker:tinker-ziputils:${TINKER_VERSION}") { changing = true }
-//        implementation("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
     } else {
         compile fileTree(dir: 'libs', include: ['*.jar'])
         testCompile 'junit:junit:4.12'
@@ -32,13 +25,6 @@ dependencies {
         //use to test multiDex
 //    compile group: 'com.google.guava', name: 'guava', version: '19.0'
 //    compile "org.scala-lang:scala-library:2.11.7"
-
-        //use for local maven test
-//        compile("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
-//        compile("com.tencent.tinker:aosp-dexutils:${TINKER_VERSION}") { changing = true }
-//        compile("com.tencent.tinker:bsdiff-util:${TINKER_VERSION}") { changing = true }
-//        compile("com.tencent.tinker:tinker-ziputils:${TINKER_VERSION}") { changing = true }
-//        compile("com.tencent.tinker:tinker-commons:${TINKER_VERSION}") { changing = true }
     }
 }
 
