@@ -21,6 +21,7 @@ import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
@@ -151,6 +152,15 @@ public class TinkerPatchService extends IntentService {
 //            TinkerLog.i(TAG, "for Android 7.1, we just ignore increasingPriority job");
 //            return;
 //        }
+        if (Build.VERSION.SDK_INT >= 27) {
+            final ApplicationInfo appInfo = getApplicationInfo();
+            if (appInfo == null || appInfo.targetSdkVersion >= 27) {
+                TinkerLog.i(TAG, "for Android O MR_1, we just ignore increasingPriority "
+                        + "job when app's target sdk >= 27 to avoid crash.");
+                return;
+            }
+        }
+
         TinkerLog.i(TAG, "try to increase patch process priority");
         try {
             Notification notification = new Notification();
@@ -194,6 +204,5 @@ public class TinkerPatchService extends IntentService {
             return null;
         }
     }
-
 }
 
