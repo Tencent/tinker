@@ -65,7 +65,9 @@ public class SystemClassLoaderAdder {
             }
             //because in dalvik, if inner class is not the same classloader with it wrapper class.
             //it won't fail at dex2opt
-            if (Build.VERSION.SDK_INT >= 23) {
+            if (Build.VERSION.SDK_INT >= 26) {
+                V26.install(classLoader, files, dexOptDir);
+            } else if (Build.VERSION.SDK_INT >= 23) {
                 V23.install(classLoader, files, dexOptDir);
             } else if (Build.VERSION.SDK_INT >= 19) {
                 V19.install(classLoader, files, dexOptDir);
@@ -182,6 +184,53 @@ public class SystemClassLoaderAdder {
         });
 
         return result;
+    }
+
+    /**
+     * Installer for platform version 26.
+     */
+    private static final class V26 {
+
+        private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
+                                    File optimizedDirectory)
+                throws IllegalArgumentException, IllegalAccessException,
+                NoSuchFieldException, InvocationTargetException, NoSuchMethodException, IOException {
+            Field pathListField = ShareReflectUtil.findField(loader, "pathList");
+            Object dexPathList = pathListField.get(loader);
+            ArrayList<IOException> suppressedExceptions = new ArrayList<IOException>();
+            ShareReflectUtil.expandFieldArray(dexPathList, "dexElements", makePathElements(dexPathList,
+                    new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
+                    suppressedExceptions, loader));
+            if (suppressedExceptions.size() > 0) {
+                for (IOException e : suppressedExceptions) {
+                    Log.w(TAG, "Exception in makePathElement", e);
+                    throw e;
+                }
+            }
+        }
+
+        private static Object[] makePathElements(
+                Object dexPathList, ArrayList<File> files, File optimizedDirectory,
+                ArrayList<IOException> suppressedExceptions, ClassLoader cl)
+                throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+
+            Method makeDexElements;
+            try {
+                makeDexElements = ShareReflectUtil.findMethod(dexPathList, "makeDexElements", List.class, File.class,
+                        List.class, ClassLoader.class);
+            } catch (NoSuchMethodException e) {
+                Log.e(TAG, "NoSuchMethodException: makeDexElements(List,File,List,ClassLoader) failure");
+                try {
+                    makeDexElements = ShareReflectUtil.findMethod(dexPathList, "makePathElements",
+                            ArrayList.class, File.class, ArrayList.class, ClassLoader.class);
+                } catch (NoSuchMethodException e1) {
+                    Log.e(TAG, "NoSuchMethodException: makeDexElements(ArrayList,File,ArrayList,ClassLoader) failure");
+                    throw e1;
+                }
+            }
+
+            return (Object[]) makeDexElements.invoke(dexPathList, files, optimizedDirectory, suppressedExceptions, cl);
+        }
     }
 
     /**
