@@ -161,6 +161,12 @@ public class TinkerPatchService extends IntentService {
             }
         }
 
+        if ("ZUK".equals(Build.MANUFACTURER)) {
+            TinkerLog.i(TAG, "for ZUK device, we just ignore increasingPriority "
+                    + "job to avoid crash.");
+            return;
+        }
+
         TinkerLog.i(TAG, "try to increase patch process priority");
         try {
             Notification notification = new Notification();
