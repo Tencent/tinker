@@ -19,6 +19,7 @@ package com.tencent.tinker.loader;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.Context;
+import android.content.res.Resources;
 import android.os.Build;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -115,15 +116,19 @@ class AndroidNClassLoader extends PathClassLoader {
     }
 
     private static void reflectPackageInfoClassloader(Application application, ClassLoader reflectClassLoader) throws Exception {
-        String defBase = "mBase";
-        String defPackageInfo = "mPackageInfo";
-        String defClassLoader = "mClassLoader";
+        Context baseContext = (Context) ShareReflectUtil.findField(application, "mBase").get(application);
+        Object basePackageInfo = ShareReflectUtil.findField(baseContext, "mPackageInfo").get(baseContext);
+        ShareReflectUtil.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
 
-        Context baseContext = (Context) ShareReflectUtil.findField(application, defBase).get(application);
-        Object basePackageInfo = ShareReflectUtil.findField(baseContext, defPackageInfo).get(baseContext);
-        Field classLoaderField = ShareReflectUtil.findField(basePackageInfo, defClassLoader);
+        Resources res = (Resources) ShareReflectUtil.findMethod(basePackageInfo, "getResources").invoke(basePackageInfo);
+        ShareReflectUtil.findField(res, "mClassLoader").set(res, reflectClassLoader);
+
+        Object drawableInflater = ShareReflectUtil.findField(res, "mDrawableInflater").get(res);
+        if (drawableInflater != null) {
+            ShareReflectUtil.findField(drawableInflater, "mClassLoader").set(drawableInflater, reflectClassLoader);
+        }
+
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
-        classLoaderField.set(basePackageInfo, reflectClassLoader);
     }
 
     public static AndroidNClassLoader inject(PathClassLoader originClassLoader, Application application) throws Exception {
