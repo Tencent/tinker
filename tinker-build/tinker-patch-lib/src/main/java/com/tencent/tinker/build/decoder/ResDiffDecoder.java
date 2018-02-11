@@ -45,6 +45,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import tinker.net.dongliu.apk.parser.ApkParser;
+import tinker.net.dongliu.apk.parser.struct.ResourceValue;
 import tinker.net.dongliu.apk.parser.struct.resource.ResourceEntry;
 import tinker.net.dongliu.apk.parser.struct.resource.ResourcePackage;
 import tinker.net.dongliu.apk.parser.struct.resource.Type;
@@ -145,9 +146,15 @@ public class ResDiffDecoder extends BaseDecoder {
             }
 
             for (Type animType : newApkAnimResTypes) {
-                final Map<String, ResourceEntry> resEntryMap = animType.getResourceEntryNameHashMap();
-                if (resEntryMap != null) {
-                    newApkAnimResNames.addAll(resEntryMap.keySet());
+                for (ResourceEntry value : animType.getResourceEntryNameHashMap().values()) {
+                    if (value == null) {
+                        continue;
+                    }
+                    final ResourceValue resValue = value.getValue();
+                    if (resValue == null) {
+                        continue;
+                    }
+                    newApkAnimResNames.add(resValue.toStringValue());
                 }
             }
         } while (false);
