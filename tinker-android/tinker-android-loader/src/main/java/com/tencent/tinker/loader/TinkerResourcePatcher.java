@@ -21,6 +21,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -179,6 +180,10 @@ class TinkerResourcePatcher {
             return;
         }
 
+        if (context == null) {
+            return;
+        }
+
         for (Field field : new Field[]{packagesFiled, resourcePackagesFiled}) {
             Object value = field.get(currentActivityThread);
 
@@ -188,7 +193,7 @@ class TinkerResourcePatcher {
                 if (loadedApk == null) {
                     continue;
                 }
-                if (externalResourceFile != null) {
+                if (externalResourceFile != null && TextUtils.equals(context.getPackageName(), LoadedApkCompat.getPackageNameForLoadedApkOrThrow(loadedApk))) {
                     resDir.set(loadedApk, externalResourceFile);
                 }
             }
