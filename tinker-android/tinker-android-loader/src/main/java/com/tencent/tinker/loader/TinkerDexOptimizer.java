@@ -33,7 +33,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import dalvik.system.DexClassLoader;
+import dalvik.system.DexFile;
+
 
 /**
  * Created by tangyinsheng on 2016/11/15.
@@ -122,11 +123,10 @@ public final class TinkerDexOptimizer {
                     callback.onStart(dexFile, optimizedDir);
                 }
                 String optimizedPath = SharePatchFileUtil.optimizedPathFor(this.dexFile, this.optimizedDir);
-                // After Android O, DexClassLoader use quicken mode by default.
-                if (useInterpretMode && Build.VERSION.SDK_INT < 26) {
+                if (useInterpretMode) {
                     interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
                 } else {
-                    new DexClassLoader(dexFile.getAbsolutePath(), optimizedPath, null, ClassLoader.getSystemClassLoader());
+                    DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
                 }
                 if (callback != null) {
                     callback.onSuccess(dexFile, optimizedDir, new File(optimizedPath));
