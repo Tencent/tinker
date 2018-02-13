@@ -45,30 +45,27 @@ import static android.os.Build.VERSION_CODES.KITKAT;
  * Thanks for Android Fragmentation
  */
 class TinkerResourcePatcher {
-    private static final String TAG               = "Tinker.ResourcePatcher";
+    private static final String TAG = "Tinker.ResourcePatcher";
     private static final String TEST_ASSETS_VALUE = "only_use_to_test_tinker_resource.txt";
-//    private static final String MIUI_RESOURCE_CLASSNAME = "android.content.res.MiuiResources";
 
     // original object
-    private static Collection<WeakReference<Resources>> references            = null;
-    private static Object                               currentActivityThread = null;
-    private static AssetManager                         newAssetManager       = null;
-    //    private static ArrayMap<?, WeakReference<?>>         resourceImpls            = null;
+    private static Collection<WeakReference<Resources>> references = null;
+    private static Object currentActivityThread = null;
+    private static AssetManager newAssetManager = null;
 
     // method
-    private static Method addAssetPathMethod       = null;
+    private static Method addAssetPathMethod = null;
     private static Method ensureStringBlocksMethod = null;
 
     // field
-    private static Field assetsFiled           = null;
-    private static Field resourcesImplFiled    = null;
-    private static Field resDir                = null;
-    private static Field packagesFiled         = null;
+    private static Field assetsFiled = null;
+    private static Field resourcesImplFiled = null;
+    private static Field resDir = null;
+    private static Field packagesFiled = null;
     private static Field resourcePackagesFiled = null;
-    private static Field publicSourceDirField  = null;
+    private static Field publicSourceDirField = null;
 
-//    private static boolean isMiuiSystem = false;
-
+    @SuppressWarnings("unchecked")
     public static void isResourceCanPatch(Context context) throws Throwable {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
         //     used as the asset path for new Resources objects.
@@ -125,7 +122,7 @@ class TinkerResourcePatcher {
                 Field fMActiveResources = resourcesManagerClass.getDeclaredField("mActiveResources");
                 fMActiveResources.setAccessible(true);
                 ArrayMap<?, WeakReference<Resources>> activeResources19 =
-                    (ArrayMap<?, WeakReference<Resources>>) fMActiveResources.get(resourcesManager);
+                        (ArrayMap<?, WeakReference<Resources>>) fMActiveResources.get(resourcesManager);
                 references = activeResources19.values();
             } catch (NoSuchFieldException ignore) {
                 // N moved the resources to mResourceReferences
@@ -137,7 +134,7 @@ class TinkerResourcePatcher {
             Field fMActiveResources = activityThread.getDeclaredField("mActiveResources");
             fMActiveResources.setAccessible(true);
             HashMap<?, WeakReference<Resources>> activeResources7 =
-                (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
+                    (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
             references = activeResources7.values();
         }
         // check resource
@@ -160,12 +157,11 @@ class TinkerResourcePatcher {
             assetsFiled = Resources.class.getDeclaredField("mAssets");
             assetsFiled.setAccessible(true);
         }
-//        final Resources resources = context.getResources();
-//        isMiuiSystem = resources != null && MIUI_RESOURCE_CLASSNAME.equals(resources.getClass().getName());
 
         try {
             publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
         } catch (NoSuchFieldException ignore) {
+            // Ignored.
         }
     }
 
@@ -183,16 +179,18 @@ class TinkerResourcePatcher {
             Object value = field.get(currentActivityThread);
 
             for (Map.Entry<String, WeakReference<?>> entry
-                : ((Map<String, WeakReference<?>>) value).entrySet()) {
+                    : ((Map<String, WeakReference<?>>) value).entrySet()) {
                 Object loadedApk = entry.getValue().get();
                 if (loadedApk == null) {
                     continue;
                 }
-                if (externalResourceFile != null) {
+                final String resDirPath = (String) resDir.get(loadedApk);
+                if (context.getApplicationInfo().sourceDir.equals(resDirPath)) {
                     resDir.set(loadedApk, externalResourceFile);
                 }
             }
         }
+        
         // Create a new AssetManager instance and point it to the resources installed under
         if (((Integer) addAssetPathMethod.invoke(newAssetManager, externalResourceFile)) == 0) {
             throw new IllegalStateException("Could not create new AssetManager");
@@ -250,9 +248,9 @@ class TinkerResourcePatcher {
     private static void clearPreloadTypedArrayIssue(Resources resources) {
         // Perform this trick not only in Miui system since we can't predict if any other
         // manufacturer would do the same modification to Android.
-//        if (!isMiuiSystem) {
-//            return;
-//        }
+        // if (!isMiuiSystem) {
+        //     return;
+        // }
         Log.w(TAG, "try to clear typedArray cache!");
         // Clear typedArray cache.
         try {
