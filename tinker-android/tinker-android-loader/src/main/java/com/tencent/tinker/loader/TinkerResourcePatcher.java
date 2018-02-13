@@ -39,6 +39,9 @@ import java.util.Map;
 
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.KITKAT;
+import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findConstructor;
+import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findField;
+import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findMethod;
 
 /**
  * Created by zhangshaowen on 16/9/21.
@@ -64,6 +67,7 @@ class TinkerResourcePatcher {
     private static Field packagesFiled = null;
     private static Field resourcePackagesFiled = null;
     private static Field publicSourceDirField = null;
+    private static Field stringBlocksField = null;
 
     @SuppressWarnings("unchecked")
     public static void isResourceCanPatch(Context context) throws Throwable {
@@ -83,57 +87,43 @@ class TinkerResourcePatcher {
             loadedApkClass = Class.forName("android.app.ActivityThread$PackageInfo");
         }
 
-
-        resDir = loadedApkClass.getDeclaredField("mResDir");
-        resDir.setAccessible(true);
-        packagesFiled = activityThread.getDeclaredField("mPackages");
-        packagesFiled.setAccessible(true);
-
-        resourcePackagesFiled = activityThread.getDeclaredField("mResourcePackages");
-        resourcePackagesFiled.setAccessible(true);
+        resDir = findField(loadedApkClass, "mResDir");
+        packagesFiled = findField(activityThread, "mPackages");
+        resourcePackagesFiled = findField(activityThread, "mResourcePackages");
 
         // Create a new AssetManager instance and point it to the resources
-        AssetManager assets = context.getAssets();
-        // Baidu os
-        if (assets.getClass().getName().equals("android.content.res.BaiduAssetManager")) {
-            Class baiduAssetManager = Class.forName("android.content.res.BaiduAssetManager");
-            newAssetManager = (AssetManager) baiduAssetManager.getConstructor().newInstance();
-        } else {
-            newAssetManager = AssetManager.class.getConstructor().newInstance();
-        }
-
-        addAssetPathMethod = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
-        addAssetPathMethod.setAccessible(true);
+        final AssetManager assets = context.getAssets();
+        addAssetPathMethod = findMethod(assets, "addAssetPath", String.class);
 
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
-        ensureStringBlocksMethod = AssetManager.class.getDeclaredMethod("ensureStringBlocks");
-        ensureStringBlocksMethod.setAccessible(true);
+        stringBlocksField = findField(assets, "mStringBlocks");
+        ensureStringBlocksMethod = findMethod(assets, "ensureStringBlocks");
+
+        // Use class fetched from instance to avoid some ROMs that use customized AssetManager
+        // class. (e.g. Baidu OS)
+        newAssetManager = (AssetManager) findConstructor(assets).newInstance();
 
         // Iterate over all known Resources objects
         if (SDK_INT >= KITKAT) {
             //pre-N
             // Find the singleton instance of ResourcesManager
-            Class<?> resourcesManagerClass = Class.forName("android.app.ResourcesManager");
-            Method mGetInstance = resourcesManagerClass.getDeclaredMethod("getInstance");
-            mGetInstance.setAccessible(true);
-            Object resourcesManager = mGetInstance.invoke(null);
+            final Class<?> resourcesManagerClass = Class.forName("android.app.ResourcesManager");
+            final Method mGetInstance = findMethod(resourcesManagerClass, "getInstance");
+            final Object resourcesManager = mGetInstance.invoke(null);
             try {
-                Field fMActiveResources = resourcesManagerClass.getDeclaredField("mActiveResources");
-                fMActiveResources.setAccessible(true);
-                ArrayMap<?, WeakReference<Resources>> activeResources19 =
+                Field fMActiveResources = findField(resourcesManagerClass, "mActiveResources");
+                final ArrayMap<?, WeakReference<Resources>> activeResources19 =
                         (ArrayMap<?, WeakReference<Resources>>) fMActiveResources.get(resourcesManager);
                 references = activeResources19.values();
             } catch (NoSuchFieldException ignore) {
                 // N moved the resources to mResourceReferences
-                Field mResourceReferences = resourcesManagerClass.getDeclaredField("mResourceReferences");
-                mResourceReferences.setAccessible(true);
+                final Field mResourceReferences = findField(resourcesManagerClass, "mResourceReferences");
                 references = (Collection<WeakReference<Resources>>) mResourceReferences.get(resourcesManager);
             }
         } else {
-            Field fMActiveResources = activityThread.getDeclaredField("mActiveResources");
-            fMActiveResources.setAccessible(true);
-            HashMap<?, WeakReference<Resources>> activeResources7 =
+            final Field fMActiveResources = findField(activityThread, "mActiveResources");
+            final HashMap<?, WeakReference<Resources>> activeResources7 =
                     (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
             references = activeResources7.values();
         }
@@ -141,25 +131,25 @@ class TinkerResourcePatcher {
         if (references == null) {
             throw new IllegalStateException("resource references is null");
         }
+
+        final Resources resources = context.getResources();
+
         // fix jianGuo pro has private field 'mAssets' with Resource
         // try use mResourcesImpl first
         if (SDK_INT >= 24) {
             try {
                 // N moved the mAssets inside an mResourcesImpl field
-                resourcesImplFiled = Resources.class.getDeclaredField("mResourcesImpl");
-                resourcesImplFiled.setAccessible(true);
+                resourcesImplFiled = findField(resources, "mResourcesImpl");
             } catch (Throwable ignore) {
                 // for safety
-                assetsFiled = Resources.class.getDeclaredField("mAssets");
-                assetsFiled.setAccessible(true);
+                assetsFiled = findField(resources, "mAssets");
             }
         } else {
-            assetsFiled = Resources.class.getDeclaredField("mAssets");
-            assetsFiled.setAccessible(true);
+            assetsFiled = findField(resources, "mAssets");
         }
 
         try {
-            publicSourceDirField = ShareReflectUtil.findField(ApplicationInfo.class, "publicSourceDir");
+            publicSourceDirField = findField(ApplicationInfo.class, "publicSourceDir");
         } catch (NoSuchFieldException ignore) {
             // Ignored.
         }
@@ -175,22 +165,24 @@ class TinkerResourcePatcher {
             return;
         }
 
+        final ApplicationInfo appInfo = context.getApplicationInfo();
+
         for (Field field : new Field[]{packagesFiled, resourcePackagesFiled}) {
-            Object value = field.get(currentActivityThread);
+            final Object value = field.get(currentActivityThread);
 
             for (Map.Entry<String, WeakReference<?>> entry
                     : ((Map<String, WeakReference<?>>) value).entrySet()) {
-                Object loadedApk = entry.getValue().get();
+                final Object loadedApk = entry.getValue().get();
                 if (loadedApk == null) {
                     continue;
                 }
                 final String resDirPath = (String) resDir.get(loadedApk);
-                if (context.getApplicationInfo().sourceDir.equals(resDirPath)) {
+                if (appInfo.sourceDir.equals(resDirPath)) {
                     resDir.set(loadedApk, externalResourceFile);
                 }
             }
         }
-        
+
         // Create a new AssetManager instance and point it to the resources installed under
         if (((Integer) addAssetPathMethod.invoke(newAssetManager, externalResourceFile)) == 0) {
             throw new IllegalStateException("Could not create new AssetManager");
@@ -198,28 +190,29 @@ class TinkerResourcePatcher {
 
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
+        stringBlocksField.set(newAssetManager, null);
         ensureStringBlocksMethod.invoke(newAssetManager);
 
         for (WeakReference<Resources> wr : references) {
-            Resources resources = wr.get();
-            //pre-N
-            if (resources != null) {
-                // Set the AssetManager of the Resources instance to our brand new one
-                try {
-                    assetsFiled.set(resources, newAssetManager);
-                } catch (Throwable ignore) {
-                    // N
-                    Object resourceImpl = resourcesImplFiled.get(resources);
-                    // for Huawei HwResourcesImpl
-                    Field implAssets = ShareReflectUtil.findField(resourceImpl, "mAssets");
-                    implAssets.setAccessible(true);
-                    implAssets.set(resourceImpl, newAssetManager);
-                }
-
-                clearPreloadTypedArrayIssue(resources);
-
-                resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
+            final Resources resources = wr.get();
+            if (resources == null) {
+                continue;
             }
+            // Set the AssetManager of the Resources instance to our brand new one
+            try {
+                //pre-N
+                assetsFiled.set(resources, newAssetManager);
+            } catch (Throwable ignore) {
+                // N
+                final Object resourceImpl = resourcesImplFiled.get(resources);
+                // for Huawei HwResourcesImpl
+                final Field implAssets = findField(resourceImpl, "mAssets");
+                implAssets.set(resourceImpl, newAssetManager);
+            }
+
+            clearPreloadTypedArrayIssue(resources);
+
+            resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
         }
 
         // Handle issues caused by WebView on Android N.
@@ -254,11 +247,11 @@ class TinkerResourcePatcher {
         Log.w(TAG, "try to clear typedArray cache!");
         // Clear typedArray cache.
         try {
-            Field typedArrayPoolField = ShareReflectUtil.findField(Resources.class, "mTypedArrayPool");
+            final Field typedArrayPoolField = findField(Resources.class, "mTypedArrayPool");
 
             final Object origTypedArrayPool = typedArrayPoolField.get(resources);
 
-            Field poolField = ShareReflectUtil.findField(origTypedArrayPool, "mPool");
+            final Field poolField = findField(origTypedArrayPool, "mPool");
 
             final Constructor<?> typedArrayConstructor = origTypedArrayPool.getClass().getConstructor(int.class);
             typedArrayConstructor.setAccessible(true);
