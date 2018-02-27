@@ -60,6 +60,10 @@ public class InputParam {
      */
     public final ArrayList<String>       resourceIgnoreChangePattern;
     /**
+     * tinkerPatch.resource ignoreChangeWarning
+     */
+    public final ArrayList<String>       resourceIgnoreChangeWarningPattern;
+    /**
      * tinkerPath.resource largeModSize
      */
     public final int                     largeModSize;
@@ -97,6 +101,7 @@ public class InputParam {
         ArrayList<String> soFilePattern,
         ArrayList<String> resourceFilePattern,
         ArrayList<String> resourceIgnoreChangePattern,
+        ArrayList<String> resourceIgnoreChangeWarningPattern,
         int largeModSize,
         boolean useApplyResource,
         HashMap<String, String> configFields,
@@ -123,6 +128,7 @@ public class InputParam {
         this.soFilePattern = soFilePattern;
         this.resourceFilePattern = resourceFilePattern;
         this.resourceIgnoreChangePattern = resourceIgnoreChangePattern;
+        this.resourceIgnoreChangeWarningPattern = resourceIgnoreChangeWarningPattern;
         this.largeModSize = largeModSize;
         this.useApplyResource = useApplyResource;
 
@@ -168,6 +174,10 @@ public class InputParam {
          */
         private ArrayList<String>       resourceIgnoreChangePattern;
         /**
+         * tinkerPatch.resource ignoreChangeWarning
+         */
+        private ArrayList<String>       resourceIgnoreChangeWarningPattern;
+        /**
          * tinkerPath.resource largeModSize
          */
         private  int                    largeModSize;
@@ -210,6 +220,11 @@ public class InputParam {
 
         public Builder setResourceIgnoreChangePattern(ArrayList<String> resourceIgnoreChangePattern) {
             this.resourceIgnoreChangePattern = resourceIgnoreChangePattern;
+            return this;
+        }
+
+        public Builder setResourceIgnoreChangeWarningPattern(ArrayList<String> resourceIgnoreChangeWarningPattern) {
+            this.resourceIgnoreChangeWarningPattern = resourceIgnoreChangeWarningPattern;
             return this;
         }
 
@@ -318,6 +333,7 @@ public class InputParam {
                     soFilePattern,
                     resourceFilePattern,
                     resourceIgnoreChangePattern,
+                    resourceIgnoreChangeWarningPattern,
                     largeModSize,
                     useApplyResource,
                     configFields,

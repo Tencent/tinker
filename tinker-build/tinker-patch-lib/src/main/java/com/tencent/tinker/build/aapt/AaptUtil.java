@@ -51,7 +51,7 @@ public final class AaptUtil {
 
     private static final XPathExpression ANDROID_ID_USAGE = createExpression("//@*[starts-with(., '@') and " + "not(starts-with(., '@+')) and " + "not(starts-with(., '@android:')) and " + "not(starts-with(., '@null'))]");
 
-    private static final XPathExpression ANDROID_ID_DEFINITION = createExpression("//@*[starts-with(., '@+') and " + "not(starts-with(., '@+android:id'))]");
+    private static final XPathExpression ANDROID_ID_DEFINITION = createExpression("//@*[starts-with(., '@+') and " + "not(starts-with(., '@+android:id')) and " + "not(starts-with(., '@+id/android:'))]");
 
     private static final Map<String, RType> RESOURCE_TYPES = getResourceTypes();
     private static final List<String>       IGNORED_TAGS   = Arrays.asList("eat-comment", "skip");
