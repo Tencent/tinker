@@ -272,7 +272,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     }
                 } else {
                     TinkerZipEntry dexZipEntry = new TinkerZipEntry(info.rawName);
-                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newDexCrC), out);
+                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newOrPatchedDexCrC), out);
                 }
 
             }
