@@ -120,7 +120,7 @@ class AndroidNClassLoader extends PathClassLoader {
         Object basePackageInfo = ShareReflectUtil.findField(baseContext, "mPackageInfo").get(baseContext);
         ShareReflectUtil.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
 
-        Resources res = (Resources) ShareReflectUtil.findMethod(basePackageInfo, "getResources").invoke(basePackageInfo);
+        Resources res = application.getResources();
         ShareReflectUtil.findField(res, "mClassLoader").set(res, reflectClassLoader);
 
         Object drawableInflater = ShareReflectUtil.findField(res, "mDrawableInflater").get(res);
