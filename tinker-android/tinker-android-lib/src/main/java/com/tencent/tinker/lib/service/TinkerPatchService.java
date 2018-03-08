@@ -153,12 +153,9 @@ public class TinkerPatchService extends IntentService {
 //            return;
 //        }
         if (Build.VERSION.SDK_INT >= 27) {
-            final ApplicationInfo appInfo = getApplicationInfo();
-            if (appInfo == null || appInfo.targetSdkVersion >= 27) {
-                TinkerLog.i(TAG, "for Android O MR_1, we just ignore increasingPriority "
-                        + "job when app's target sdk >= 27 to avoid crash.");
-                return;
-            }
+            TinkerLog.i(TAG, "for system version higher than Android O MR_1, we just ignore increasingPriority "
+                    + "job to avoid crash or toasts.");
+            return;
         }
 
         if ("ZUK".equals(Build.MANUFACTURER)) {

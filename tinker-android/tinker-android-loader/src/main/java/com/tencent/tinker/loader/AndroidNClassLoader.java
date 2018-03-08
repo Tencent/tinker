@@ -120,12 +120,17 @@ class AndroidNClassLoader extends PathClassLoader {
         Object basePackageInfo = ShareReflectUtil.findField(baseContext, "mPackageInfo").get(baseContext);
         ShareReflectUtil.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
 
-        Resources res = application.getResources();
-        ShareReflectUtil.findField(res, "mClassLoader").set(res, reflectClassLoader);
+        // There's compatibility risk here when omit these hacking logic.
+        // However I still have no idea about how to solve it without touching the Android P's
+        // dark greylist API.
+        if (Build.VERSION.SDK_INT < 27) {
+            Resources res = application.getResources();
+            ShareReflectUtil.findField(res, "mClassLoader").set(res, reflectClassLoader);
 
-        Object drawableInflater = ShareReflectUtil.findField(res, "mDrawableInflater").get(res);
-        if (drawableInflater != null) {
-            ShareReflectUtil.findField(drawableInflater, "mClassLoader").set(drawableInflater, reflectClassLoader);
+            Object drawableInflater = ShareReflectUtil.findField(res, "mDrawableInflater").get(res);
+            if (drawableInflater != null) {
+                ShareReflectUtil.findField(drawableInflater, "mClassLoader").set(drawableInflater, reflectClassLoader);
+            }
         }
 
         Thread.currentThread().setContextClassLoader(reflectClassLoader);

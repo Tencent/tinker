@@ -30,7 +30,6 @@ import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -89,7 +88,9 @@ class TinkerResourcePatcher {
 
         resDir = findField(loadedApkClass, "mResDir");
         packagesFiled = findField(activityThread, "mPackages");
-        resourcePackagesFiled = findField(activityThread, "mResourcePackages");
+        if (Build.VERSION.SDK_INT < 27) {
+            resourcePackagesFiled = findField(activityThread, "mResourcePackages");
+        }
 
         // Create a new AssetManager instance and point it to the resources
         final AssetManager assets = context.getAssets();
@@ -167,7 +168,13 @@ class TinkerResourcePatcher {
 
         final ApplicationInfo appInfo = context.getApplicationInfo();
 
-        for (Field field : new Field[]{packagesFiled, resourcePackagesFiled}) {
+        final Field[] packagesFields;
+        if (Build.VERSION.SDK_INT < 27) {
+            packagesFields = new Field[]{packagesFiled, resourcePackagesFiled};
+        } else {
+            packagesFields = new Field[]{packagesFiled};
+        }
+        for (Field field : packagesFields) {
             final Object value = field.get(currentActivityThread);
 
             for (Map.Entry<String, WeakReference<?>> entry
@@ -248,16 +255,13 @@ class TinkerResourcePatcher {
         // Clear typedArray cache.
         try {
             final Field typedArrayPoolField = findField(Resources.class, "mTypedArrayPool");
-
             final Object origTypedArrayPool = typedArrayPoolField.get(resources);
-
-            final Field poolField = findField(origTypedArrayPool, "mPool");
-
-            final Constructor<?> typedArrayConstructor = origTypedArrayPool.getClass().getConstructor(int.class);
-            typedArrayConstructor.setAccessible(true);
-            final int poolSize = ((Object[]) poolField.get(origTypedArrayPool)).length;
-            final Object newTypedArrayPool = typedArrayConstructor.newInstance(poolSize);
-            typedArrayPoolField.set(resources, newTypedArrayPool);
+            final Method acquireMethod = findMethod(origTypedArrayPool, "acquire");
+            while (true) {
+                if (acquireMethod.invoke(origTypedArrayPool) == null) {
+                    break;
+                }
+            }
         } catch (Throwable ignored) {
             Log.e(TAG, "clearPreloadTypedArrayIssue failed, ignore error: " + ignored);
         }
