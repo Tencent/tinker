@@ -21,7 +21,6 @@ import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
@@ -152,8 +151,8 @@ public class TinkerPatchService extends IntentService {
 //            TinkerLog.i(TAG, "for Android 7.1, we just ignore increasingPriority job");
 //            return;
 //        }
-        if (Build.VERSION.SDK_INT >= 27) {
-            TinkerLog.i(TAG, "for system version higher than Android O MR_1, we just ignore increasingPriority "
+        if (Build.VERSION.SDK_INT >= 26) {
+            TinkerLog.i(TAG, "for system version >= Android O, we just ignore increasingPriority "
                     + "job to avoid crash or toasts.");
             return;
         }
