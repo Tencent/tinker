@@ -171,7 +171,7 @@ def getTinkerIdValue() {
 }
 
 def buildWithTinker() {
-    return hasProperty("TINKER_ENABLE") ? TINKER_ENABLE : ext.tinkerEnabled
+    return hasProperty("TINKER_ENABLE") ? Boolean.parseBoolean(TINKER_ENABLE) : ext.tinkerEnabled
 }
 
 def getTinkerBuildFlavorDirectory() {
