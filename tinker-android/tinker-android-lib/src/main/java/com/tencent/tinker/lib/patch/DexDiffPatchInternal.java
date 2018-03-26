@@ -59,8 +59,9 @@ import java.util.zip.ZipOutputStream;
 public class DexDiffPatchInternal extends BasePatchInternal {
     protected static final String TAG = "Tinker.DexDiffPatchInternal";
 
-    protected static final int WAIT_ASYN_OAT_TIME = 15 * 1000;
-    protected static final int MAX_WAIT_COUNT     = 30;
+    protected static final int WAIT_ASYN_OAT_TIME = 10 * 1000;
+    protected static final int MAX_WAIT_COUNT     = 120;
+
 
     private static ArrayList<File>                      optFiles      = new ArrayList<>();
     private static ArrayList<ShareDexDiffPatchInfo>     patchList     = new ArrayList<>();
@@ -93,7 +94,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             return true;
         }
         // should use patch list size
-        int size = patchList.size() * 8;
+        int size = patchList.size() * 30;
         if (size > MAX_WAIT_COUNT) {
             size = MAX_WAIT_COUNT;
         }
@@ -271,7 +272,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     }
                 } else {
                     TinkerZipEntry dexZipEntry = new TinkerZipEntry(info.rawName);
-                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newDexCrC), out);
+                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newOrPatchedDexCrC), out);
                 }
 
             }

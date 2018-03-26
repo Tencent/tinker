@@ -98,7 +98,7 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
             return patchServiceProcessName;
         }
         //may be null, and you may like to hardcode instead
-        String serviceName = TinkerServiceInternals.getServiceProcessName(context, TinkerPatchService.class);
+        String serviceName = TinkerServiceInternals.getServiceProcessName(context, TinkerPatchService.getRealRunnerClass());
         if (serviceName == null) {
             return null;
         }

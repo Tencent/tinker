@@ -69,6 +69,7 @@ public class Configuration {
     protected static final String ATTR_DEX_MODE                  = "dexMode";
     protected static final String ATTR_PATTERN                   = "pattern";
     protected static final String ATTR_IGNORE_CHANGE             = "ignoreChange";
+    protected static final String ATTR_IGNORE_CHANGE_WARNING     = "ignoreChangeWarning";
     protected static final String ATTR_RES_LARGE_MOD             = "largeModSize";
 
     protected static final String ATTR_LOADER       = "loader";
@@ -106,6 +107,7 @@ public class Configuration {
      */
     public HashSet<Pattern> mResFilePattern;
     public HashSet<Pattern> mResIgnoreChangePattern;
+    public HashSet<Pattern> mResIgnoreChangeWarningPattern;
     public HashSet<String>  mResRawPattern;
     public int              mLargeModSize;
     /**
@@ -154,6 +156,7 @@ public class Configuration {
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
         mResIgnoreChangePattern = new HashSet<>();
+        mResIgnoreChangeWarningPattern = new HashSet<>();
 
         mPackageFields = new HashMap<>();
         mOutFolder = outputFile.getAbsolutePath();
@@ -184,6 +187,7 @@ public class Configuration {
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
         mResIgnoreChangePattern = new HashSet<>();
+        mResIgnoreChangeWarningPattern = new HashSet<>();
 
         mPackageFields = new HashMap<>();
 
@@ -202,6 +206,10 @@ public class Configuration {
 
         for (String item : param.resourceIgnoreChangePattern) {
             addToPatterns(item, mResIgnoreChangePattern);
+        }
+
+        for (String item : param.resourceIgnoreChangeWarningPattern) {
+            addToPatterns(item, mResIgnoreChangeWarningPattern);
         }
         mLargeModSize = param.largeModSize;
         //only gradle have the param
@@ -286,6 +294,9 @@ public class Configuration {
         }
         for (Pattern name : mResIgnoreChangePattern) {
             sb.append("resIgnore change:" + name.toString() + "\n");
+        }
+        for (Pattern name : mResIgnoreChangeWarningPattern) {
+            sb.append("resIgnore change warning:" + name.toString() + "\n");
         }
         sb.append("largeModSize:" + mLargeModSize + "kb\n");
         sb.append("useApplyResource:" + mUseApplyResource + "\n");
@@ -557,6 +568,8 @@ public class Configuration {
                         addToPatterns(value, mResFilePattern);
                     } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
                         addToPatterns(value, mResIgnoreChangePattern);
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE_WARNING)) {
+                        addToPatterns(value, mResIgnoreChangeWarningPattern);
                     } else if (tagName.equals(ATTR_RES_LARGE_MOD)) {
                         mLargeModSize = Integer.valueOf(value);
                     } else {

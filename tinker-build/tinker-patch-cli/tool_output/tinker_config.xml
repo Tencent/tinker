@@ -83,6 +83,8 @@
         <!--it support * or ? pattern.-->
         <!--Such as I want assets/meta.txt use the base.apk version whatever it is change ir not.-->
         <ignoreChange value="assets/sample_meta.txt"/>
+        <!--ignore any warning caused by add, delete or modify changes on resources specified by this pattern.-->
+        <ignoreChangeWarning value="" />
         <!--default 100kb-->
         <!--for modify resource, if it is larger than 'largeModSize'-->
         <!--we would like to use bsdiff algorithm to reduce patch file size-->

@@ -108,7 +108,7 @@ public class ShareTinkerInternals {
                 newName = "classes.dex";
             }
             return new ShareDexDiffPatchInfo(newName, rawDexInfo.path, rawDexInfo.destMd5InDvm, rawDexInfo.destMd5InArt,
-                rawDexInfo.dexDiffMd5, rawDexInfo.oldDexCrC, rawDexInfo.newDexCrC, rawDexInfo.dexMode);
+                rawDexInfo.dexDiffMd5, rawDexInfo.oldDexCrC, rawDexInfo.newOrPatchedDexCrC, rawDexInfo.dexMode);
         }
 
         return null;

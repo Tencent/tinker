@@ -28,7 +28,7 @@ public class ShareDexDiffPatchInfo {
     public final String destMd5InDvm;
     public final String destMd5InArt;
     public final String oldDexCrC;
-    public final String newDexCrC;
+    public final String newOrPatchedDexCrC;
 
     public final String dexDiffMd5;
 
@@ -45,7 +45,7 @@ public class ShareDexDiffPatchInfo {
 
 
     public ShareDexDiffPatchInfo(String name, String path, String destMd5InDvm, String destMd5InArt,
-                                 String dexDiffMd5, String oldDexCrc, String newDexCrC, String dexMode) {
+                                 String dexDiffMd5, String oldDexCrc, String newOrPatchedDexCrC, String dexMode) {
         // TODO Auto-generated constructor stub
         this.rawName = name;
         this.path = path;
@@ -53,7 +53,7 @@ public class ShareDexDiffPatchInfo {
         this.destMd5InArt = destMd5InArt;
         this.dexDiffMd5 = dexDiffMd5;
         this.oldDexCrC = oldDexCrc;
-        this.newDexCrC = newDexCrC;
+        this.newOrPatchedDexCrC = newOrPatchedDexCrC;
         this.dexMode = dexMode;
         if (dexMode.equals(ShareConstants.DEXMODE_JAR)) {
             this.isJarMode = true;
@@ -127,7 +127,7 @@ public class ShareDexDiffPatchInfo {
         sb.append(",");
         sb.append(oldDexCrC);
         sb.append(",");
-        sb.append(newDexCrC);
+        sb.append(newOrPatchedDexCrC);
         sb.append(",");
         sb.append(dexDiffMd5);
         sb.append(",");
