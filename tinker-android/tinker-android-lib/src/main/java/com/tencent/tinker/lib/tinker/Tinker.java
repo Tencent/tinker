@@ -102,11 +102,9 @@ public class Tinker {
         if (!sInstalled) {
             throw new TinkerRuntimeException("you must install tinker before get tinker sInstance");
         }
-        if (sInstance == null) {
-            synchronized (Tinker.class) {
-                if (sInstance == null) {
-                    sInstance = new Builder(context).build();
-                }
+        synchronized (Tinker.class) {
+            if (sInstance == null) {
+                sInstance = new Builder(context).build();
             }
         }
         return sInstance;
@@ -266,6 +264,21 @@ public class Tinker {
         SharePatchFileUtil.deleteDir(patchDirectory);
     }
 
+    /**
+     * rollback patch should restart all process
+     */
+    public void rollbackPatch() {
+        if (!isTinkerLoaded()) {
+            TinkerLog.w(TAG, "rollbackPatch: tinker is not loaded, just return");
+            return;
+        }
+        // kill all other process
+        ShareTinkerInternals.killAllOtherProcess(context);
+        // clean patch
+        cleanPatch();
+        // kill itself
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
     /**
      * clean the patch version files, such as tinker/patch-641e634c
      *

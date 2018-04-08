@@ -29,6 +29,8 @@ import android.os.SystemClock;
 import com.tencent.tinker.loader.TinkerLoader;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.TinkerUncaughtHandler;
+import com.tencent.tinker.loader.hotplug.ComponentHotplug;
+import com.tencent.tinker.loader.hotplug.UnsupportedEnvironmentException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -64,6 +66,7 @@ public abstract class TinkerApplication extends Application {
     private final boolean tinkerLoadVerifyFlag;
     private final String  delegateClassName;
     private final String  loaderClassName;
+
     /**
      * if we have load patch, we should use safe mode
      */
@@ -92,7 +95,6 @@ public abstract class TinkerApplication extends Application {
         this.delegateClassName = delegateClassName;
         this.loaderClassName = loaderClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
-
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
@@ -156,9 +158,9 @@ public abstract class TinkerApplication extends Application {
             //reflect tinker loader, because loaderClass may be define by user!
             Class<?> tinkerLoadClass = Class.forName(loaderClassName, false, getClassLoader());
 
-            Method loadMethod = tinkerLoadClass.getMethod(TINKER_LOADER_METHOD, TinkerApplication.class, int.class, boolean.class);
+            Method loadMethod = tinkerLoadClass.getMethod(TINKER_LOADER_METHOD, TinkerApplication.class);
             Constructor<?> constructor = tinkerLoadClass.getConstructor();
-            tinkerResultIntent = (Intent) loadMethod.invoke(constructor.newInstance(), this, tinkerFlags, tinkerLoadVerifyFlag);
+            tinkerResultIntent = (Intent) loadMethod.invoke(constructor.newInstance(), this);
         } catch (Throwable e) {
             //has exception, put exception error code
             ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION);
@@ -170,6 +172,11 @@ public abstract class TinkerApplication extends Application {
     public void onCreate() {
         super.onCreate();
         ensureDelegate();
+        try {
+            ComponentHotplug.ensureComponentHotplugInstalled(this);
+        } catch (UnsupportedEnvironmentException e) {
+            throw new TinkerRuntimeException("failed to make sure that ComponentHotplug logic is fine.", e);
+        }
         applicationLike.onCreate();
     }
 
@@ -242,7 +249,24 @@ public abstract class TinkerApplication extends Application {
         return service;
     }
 
+    @Override
+    public Context getBaseContext() {
+        Context base = super.getBaseContext();
+        if (applicationLike != null) {
+            return applicationLike.getBaseContext(base);
+        }
+        return base;
+    }
+
     public void setUseSafeMode(boolean useSafeMode) {
         this.useSafeMode = useSafeMode;
+    }
+
+    public boolean isTinkerLoadVerifyFlag() {
+        return tinkerLoadVerifyFlag;
+    }
+
+    public int getTinkerFlags() {
+        return tinkerFlags;
     }
 }

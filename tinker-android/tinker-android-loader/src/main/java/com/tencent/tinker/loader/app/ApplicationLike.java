@@ -114,5 +114,9 @@ public abstract class ApplicationLike implements ApplicationLifeCycle {
     public Object getSystemService(String name, Object service) {
         return service;
     }
+
+    public Context getBaseContext(Context base) {
+        return base;
+    }
 }
 

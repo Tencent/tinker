@@ -18,6 +18,7 @@ package com.tencent.tinker.build.gradle.task
 
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
+import com.tencent.tinker.commons.util.StreamUtil
 import groovy.xml.Namespace
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -62,27 +63,34 @@ public class TinkerManifestTask extends DefaultTask {
 
     void writeManifestMeta(String path, String name, String value) {
         def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
+        def isr = null
+        def pw = null
+        try {
+            isr = new InputStreamReader(new FileInputStream(path), "utf-8")
+            def xml = new XmlParser().parse(isr)
+            def application = xml.application[0]
+            if (application) {
+                def metaDataTags = application['meta-data']
 
-        def xml = new XmlParser().parse(new InputStreamReader(new FileInputStream(path), "utf-8"))
+                // remove any old TINKER_ID elements
+                def tinkerId = metaDataTags.findAll {
+                    it.attributes()[ns.name].equals(name)
+                }.each {
+                    it.parent().remove(it)
+                }
 
-        def application = xml.application[0]
-        if (application) {
-            def metaDataTags = application['meta-data']
+                // Add the new TINKER_ID element
+                application.appendNode('meta-data', [(ns.name): name, (ns.value): value])
 
-            // remove any old TINKER_ID elements
-            def tinkerId = metaDataTags.findAll {
-                it.attributes()[ns.name].equals(name)
-            }.each {
-                it.parent().remove(it)
+                // Write the manifest file
+                pw = new PrintWriter(path, "utf-8")
+                def printer = new XmlNodePrinter(pw)
+                printer.preserveWhitespace = true
+                printer.print(xml)
             }
-
-            // Add the new TINKER_ID element
-            application.appendNode('meta-data', [(ns.name): name, (ns.value): value])
-
-            // Write the manifest file
-            def printer = new XmlNodePrinter(new PrintWriter(path, "utf-8"))
-            printer.preserveWhitespace = true
-            printer.print(xml)
+        } finally {
+            StreamUtil.closeQuietly(pw)
+            StreamUtil.closeQuietly(isr)
         }
     }
 
@@ -103,14 +111,21 @@ public class TinkerManifestTask extends DefaultTask {
     }
 
     String readManifestApplicationName(String path) {
-        def xml = new XmlParser().parse(new InputStreamReader(new FileInputStream(path), "utf-8"))
-        def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
+        def isr = null
+        try {
+            isr = new InputStreamReader(new FileInputStream(path), "utf-8")
+            def xml = new XmlParser().parse(isr)
+            def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
 
-        def application = xml.application[0]
-        if (application) {
-            return application.attributes()[ns.name]
+            def application = xml.application[0]
+            if (application) {
+                return application.attributes()[ns.name]
+            } else {
+                return null
+            }
+        } finally {
+            StreamUtil.closeQuietly(isr)
         }
-        return null
     }
 }
 

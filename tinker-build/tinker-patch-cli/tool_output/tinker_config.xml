@@ -24,6 +24,20 @@
 
         <!--if you don't set sevenZip path, we just use 7za to try-->
         <sevenZipPath value="/usr/local/bin/7za"/>
+
+        <!--Whether tinker should treat the base apk as the one being protected by app-->
+        <!--protection tools.-->
+        <!--If this attribute is true, the generated patch package will contain a-->
+        <!--dex including all changed classes instead of any dexdiff patch-info files.-->
+        <isProtectedApp value="false"/>
+
+        <!--Whether tinker should support component hotplug (add new component dynamically).-->
+        <!--If this attribute is true, the component added in new apk will be available after-->
+        <!--patch is successfully loaded. Otherwise an error would be announced when generating patch-->
+        <!--on compile-time.-->
+        <!---->
+        <!--Notice that currently this feature is incubating and only support NON-EXPORTED Activity-->
+        <supportHotplugComponent value="false"/>
     </issue>
 
     <issue id="dex">
@@ -52,7 +66,7 @@
         <!--it support * or ? pattern.-->
         <!--for library in assets, we would just recover them in the patch directory-->
         <!--you can get them in TinkerLoadResult with Tinker-->
-        <pattern value="lib/armeabi/*.so"/>
+        <pattern value="lib/*/*.so"/>
     </issue>
 
     <issue id="resource">
@@ -69,6 +83,8 @@
         <!--it support * or ? pattern.-->
         <!--Such as I want assets/meta.txt use the base.apk version whatever it is change ir not.-->
         <ignoreChange value="assets/sample_meta.txt"/>
+        <!--ignore any warning caused by add, delete or modify changes on resources specified by this pattern.-->
+        <ignoreChangeWarning value="" />
         <!--default 100kb-->
         <!--for modify resource, if it is larger than 'largeModSize'-->
         <!--we would like to use bsdiff algorithm to reduce patch file size-->

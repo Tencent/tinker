@@ -20,11 +20,13 @@ import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -59,13 +61,16 @@ public class Configuration {
     protected static final String ATTR_VALUE = "value";
     protected static final String ATTR_NAME  = "name";
 
-    protected static final String ATTR_IGNORE_WARNING    = "ignoreWarning";
-    protected static final String ATTR_USE_SIGN          = "useSign";
-    protected static final String ATTR_SEVEN_ZIP_PATH    = "sevenZipPath";
-    protected static final String ATTR_DEX_MODE          = "dexMode";
-    protected static final String ATTR_PATTERN           = "pattern";
-    protected static final String ATTR_RES_IGNORE_CHANGE = "ignoreChange";
-    protected static final String ATTR_RES_LARGE_MOD     = "largeModSize";
+    protected static final String ATTR_IGNORE_WARNING            = "ignoreWarning";
+    protected static final String ATTR_IS_PROTECTED_APP          = "isProtectedApp";
+    protected static final String ATTR_SUPPORT_HOTPLUG_COMPONENT = "supportHotplugComponent";
+    protected static final String ATTR_USE_SIGN                  = "useSign";
+    protected static final String ATTR_SEVEN_ZIP_PATH            = "sevenZipPath";
+    protected static final String ATTR_DEX_MODE                  = "dexMode";
+    protected static final String ATTR_PATTERN                   = "pattern";
+    protected static final String ATTR_IGNORE_CHANGE             = "ignoreChange";
+    protected static final String ATTR_IGNORE_CHANGE_WARNING     = "ignoreChangeWarning";
+    protected static final String ATTR_RES_LARGE_MOD             = "largeModSize";
 
     protected static final String ATTR_LOADER       = "loader";
     protected static final String ATTR_CONFIG_FIELD = "configField";
@@ -77,13 +82,14 @@ public class Configuration {
     /**
      * base config data
      */
-    public String           mOldApkPath;
-    public String           mNewApkPath;
-    public String           mOutFolder;
-    public File             mOldApkFile;
-    public File             mNewApkFile;
-    public boolean          mIgnoreWarning;
-
+    public String  mOldApkPath;
+    public String  mNewApkPath;
+    public String  mOutFolder;
+    public File    mOldApkFile;
+    public File    mNewApkFile;
+    public boolean mIgnoreWarning;
+    public boolean mIsProtectedApp;
+    public boolean mSupportHotplugComponent;
     /**
      * lib config
      */
@@ -93,12 +99,15 @@ public class Configuration {
      */
     public HashSet<Pattern> mDexFilePattern;
     public HashSet<String>  mDexLoaderPattern;
+    public HashSet<String>  mDexIgnoreWarningLoaderPattern;
+
     public boolean          mDexRaw;
     /**
      * resource config
      */
     public HashSet<Pattern> mResFilePattern;
     public HashSet<Pattern> mResIgnoreChangePattern;
+    public HashSet<Pattern> mResIgnoreChangeWarningPattern;
     public HashSet<String>  mResRawPattern;
     public int              mLargeModSize;
     /**
@@ -142,10 +151,12 @@ public class Configuration {
         mSoFilePattern = new HashSet<>();
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
+        mDexIgnoreWarningLoaderPattern = new HashSet<>();
 
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
         mResIgnoreChangePattern = new HashSet<>();
+        mResIgnoreChangeWarningPattern = new HashSet<>();
 
         mPackageFields = new HashMap<>();
         mOutFolder = outputFile.getAbsolutePath();
@@ -171,10 +182,12 @@ public class Configuration {
         mSoFilePattern = new HashSet<>();
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
+        mDexIgnoreWarningLoaderPattern = new HashSet<>();
 
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
         mResIgnoreChangePattern = new HashSet<>();
+        mResIgnoreChangeWarningPattern = new HashSet<>();
 
         mPackageFields = new HashMap<>();
 
@@ -194,12 +207,16 @@ public class Configuration {
         for (String item : param.resourceIgnoreChangePattern) {
             addToPatterns(item, mResIgnoreChangePattern);
         }
+
+        for (String item : param.resourceIgnoreChangeWarningPattern) {
+            addToPatterns(item, mResIgnoreChangeWarningPattern);
+        }
         mLargeModSize = param.largeModSize;
         //only gradle have the param
         mUseApplyResource = param.useApplyResource;
 
         mDexLoaderPattern.addAll(param.dexLoaderPattern);
-
+        mDexIgnoreWarningLoaderPattern.addAll(param.dexIgnoreWarningLoaderPattern);
         //can be only raw or jar
         if (param.dexMode.equals("raw")) {
             mDexRaw = true;
@@ -214,6 +231,10 @@ public class Configuration {
         mOutFolder = param.outFolder;
 
         mIgnoreWarning = param.ignoreWarning;
+
+        mIsProtectedApp = param.isProtectedApp;
+
+        mSupportHotplugComponent = param.supportHotplugComponent;
 
         mSevenZipPath = param.sevenZipPath;
         mPackageFields = param.configFields;
@@ -236,6 +257,7 @@ public class Configuration {
         sb.append("newApk:" + mNewApkPath + "\n");
         sb.append("outputFolder:" + mOutFolder + "\n");
         sb.append("isIgnoreWarning:" + mIgnoreWarning + "\n");
+        sb.append("isProtectedApp:" + mIsProtectedApp + "\n");
         sb.append("7-ZipPath:" + mSevenZipPath + "\n");
         sb.append("useSignAPk:" + mUseSignAPk + "\n");
 
@@ -257,6 +279,9 @@ public class Configuration {
         for (String name : mDexLoaderPattern) {
             sb.append("dex loader:" + name + "\n");
         }
+        for (String name : mDexIgnoreWarningLoaderPattern) {
+            sb.append("dex ignore warning loader:" + name.toString() + "\n");
+        }
 
         sb.append("lib configs: \n");
         for (Pattern name : mSoFilePattern) {
@@ -269,6 +294,9 @@ public class Configuration {
         }
         for (Pattern name : mResIgnoreChangePattern) {
             sb.append("resIgnore change:" + name.toString() + "\n");
+        }
+        for (Pattern name : mResIgnoreChangeWarningPattern) {
+            sb.append("resIgnore change warning:" + name.toString() + "\n");
         }
         sb.append("largeModSize:" + mLargeModSize + "kb\n");
         sb.append("useApplyResource:" + mUseApplyResource + "\n");
@@ -353,6 +381,14 @@ public class Configuration {
             factory.setNamespaceAware(false);
             factory.setValidating(false);
             DocumentBuilder builder = factory.newDocumentBuilder();
+            // Block any external content resolving actions since we don't need them and a report
+            // says these actions may cause security problems.
+            builder.setEntityResolver(new EntityResolver() {
+                @Override
+                public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+                    return new InputSource();
+                }
+            });
             Document document = builder.parse(source);
             NodeList issues = document.getElementsByTagName(TAG_ISSUE);
             for (int i = 0, count = issues.getLength(); i < count; i++) {
@@ -383,13 +419,7 @@ public class Configuration {
                 }
             }
         } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    System.exit(-1);
-                }
-            }
+            StreamUtil.closeQuietly(input);
         }
     }
 
@@ -409,6 +439,10 @@ public class Configuration {
                     }
                     if (tagName.equals(ATTR_IGNORE_WARNING)) {
                         mIgnoreWarning = value.equals("true");
+                    } else if (tagName.equals(ATTR_IS_PROTECTED_APP)) {
+                        mIsProtectedApp = value.equals("true");
+                    } else if (tagName.equals(ATTR_SUPPORT_HOTPLUG_COMPONENT)) {
+                        mSupportHotplugComponent = value.equals("true");
                     } else if (tagName.equals(ATTR_USE_SIGN)) {
                         mUseSignAPk = value.equals("true");
                     } else if (tagName.equals(ATTR_SEVEN_ZIP_PATH)) {
@@ -489,6 +523,8 @@ public class Configuration {
                         addToPatterns(value, mDexFilePattern);
                     } else if (tagName.equals(ATTR_LOADER)) {
                         mDexLoaderPattern.add(value);
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
+                        mDexIgnoreWarningLoaderPattern.add(value);
                     } else {
                         System.err.println("unknown dex tag " + tagName);
                     }
@@ -530,8 +566,10 @@ public class Configuration {
                     if (tagName.equals(ATTR_PATTERN)) {
                         mResRawPattern.add(value);
                         addToPatterns(value, mResFilePattern);
-                    } else if (tagName.equals(ATTR_RES_IGNORE_CHANGE)) {
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
                         addToPatterns(value, mResIgnoreChangePattern);
+                    } else if (tagName.equals(ATTR_IGNORE_CHANGE_WARNING)) {
+                        addToPatterns(value, mResIgnoreChangeWarningPattern);
                     } else if (tagName.equals(ATTR_RES_LARGE_MOD)) {
                         mLargeModSize = Integer.valueOf(value);
                     } else {
@@ -576,4 +614,3 @@ public class Configuration {
     }
 
 }
-

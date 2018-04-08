@@ -47,7 +47,7 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
-        Log.e(TAG, "catch exception when loading tinker:" + Log.getStackTraceString(ex));
+        Log.e(TAG, "TinkerUncaughtHandler catch exception:" + Log.getStackTraceString(ex));
         ueh.uncaughtException(thread, ex);
 
         if (crashFile != null) {

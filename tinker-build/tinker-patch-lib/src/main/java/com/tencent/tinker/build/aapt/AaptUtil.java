@@ -18,6 +18,7 @@ package com.tencent.tinker.build.aapt;
 
 import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -50,7 +51,7 @@ public final class AaptUtil {
 
     private static final XPathExpression ANDROID_ID_USAGE = createExpression("//@*[starts-with(., '@') and " + "not(starts-with(., '@+')) and " + "not(starts-with(., '@android:')) and " + "not(starts-with(., '@null'))]");
 
-    private static final XPathExpression ANDROID_ID_DEFINITION = createExpression("//@*[starts-with(., '@+') and " + "not(starts-with(., '@+android:id'))]");
+    private static final XPathExpression ANDROID_ID_DEFINITION = createExpression("//@*[starts-with(., '@+') and " + "not(starts-with(., '@+android:id')) and " + "not(starts-with(., '@+id/android:'))]");
 
     private static final Map<String, RType> RESOURCE_TYPES = getResourceTypes();
     private static final List<String>       IGNORED_TAGS   = Arrays.asList("eat-comment", "skip");
@@ -80,7 +81,7 @@ public final class AaptUtil {
 
     public static AaptResourceCollector collectResource(List<String> resourceDirectoryList, Map<RType, Set<RDotTxtEntry>> rTypeResourceMap) {
         AaptResourceCollector resourceCollector = new AaptResourceCollector(rTypeResourceMap);
-        List<com.tencent.tinker.build.aapt.RDotTxtEntry> references = new ArrayList<com.tencent.tinker.build.aapt.RDotTxtEntry>();
+        List<RDotTxtEntry> references = new ArrayList<>();
         for (String resourceDirectory : resourceDirectoryList) {
             try {
                 collectResources(resourceDirectory, resourceCollector);
@@ -304,7 +305,7 @@ public final class AaptUtil {
                 resourceCollector.addResource(RType.STYLEABLE, IdType.INT, String.format("%s_%s", resourceName, attrName), Integer.toString(count++));
 
                 if (!rawAttrName.startsWith("android:")) {
-                    resourceCollector.addIntResourceIfNotPresent(RType.ATTR, attrName);
+                    resourceCollector.addIntResourceIfNotPresent(RType.ATTR, rawAttrName);
                     resourceCollector.addRTypeResourceName(RType.ATTR, rawAttrName, nodeToString(attrNode, true), resourceDirectory);
                 }
             }
@@ -397,10 +398,7 @@ public final class AaptUtil {
         } catch (Exception e) {
             throw new AaptUtilException(e);
         } finally {
-            if (writer != null) {
-                writer.flush();
-                writer.close();
-            }
+            StreamUtil.closeQuietly(writer);
         }
     }
 

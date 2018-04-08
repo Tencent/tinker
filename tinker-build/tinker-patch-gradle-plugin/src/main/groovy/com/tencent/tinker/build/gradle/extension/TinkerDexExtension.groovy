@@ -44,6 +44,7 @@ public class TinkerDexExtension {
      */
     Iterable<String> loader;
 
+    Iterable<String> ignoreWarningLoader;
 
     private Project project;
 
@@ -51,6 +52,7 @@ public class TinkerDexExtension {
         dexMode = "jar"
         pattern = []
         loader = []
+        ignoreWarningLoader = []
         this.project = project
     }
 
@@ -65,6 +67,7 @@ public class TinkerDexExtension {
         """| dexMode = ${dexMode}
            | pattern = ${pattern}
            | loader = ${loader}
+           | ignoreWarningLoader = ${ignoreWarningLoader}
         """.stripMargin()
     }
 }

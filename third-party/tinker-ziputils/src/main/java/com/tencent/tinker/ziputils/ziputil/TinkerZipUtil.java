@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.commons.resutil;
+package com.tencent.tinker.ziputils.ziputil;
 
-import com.tencent.tinker.commons.ziputil.TinkerZipEntry;
-import com.tencent.tinker.commons.ziputil.TinkerZipFile;
-import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
-
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,7 +25,7 @@ import java.io.InputStream;
 /**
  * Created by zhangshaowen on 16/8/10.
  */
-public class ResUtil {
+public class TinkerZipUtil {
     private static final int BUFFER_SIZE = 16384;
 
     public static void extractTinkerEntry(TinkerZipFile apk, TinkerZipEntry zipEntry, TinkerZipOutputStream outputStream) throws IOException {
@@ -49,6 +46,16 @@ public class ResUtil {
         }
     }
 
+    public static void extractTinkerEntry(TinkerZipEntry zipEntry, InputStream inputStream, TinkerZipOutputStream outputStream) throws IOException {
+        outputStream.putNextEntry(zipEntry);
+        byte[] buffer = new byte[BUFFER_SIZE];
+
+        for (int length = inputStream.read(buffer); length != -1; length = inputStream.read(buffer)) {
+            outputStream.write(buffer, 0, length);
+        }
+        outputStream.closeEntry();
+    }
+
     public static void extractLargeModifyFile(TinkerZipEntry sourceArscEntry, File newFile, long newFileCrc, TinkerZipOutputStream outputStream) throws IOException {
         TinkerZipEntry newArscZipEntry = new TinkerZipEntry(sourceArscEntry);
 
@@ -56,9 +63,9 @@ public class ResUtil {
         newArscZipEntry.setSize(newFile.length());
         newArscZipEntry.setCompressedSize(newFile.length());
         newArscZipEntry.setCrc(newFileCrc);
-        FileInputStream in = null;
+        BufferedInputStream in = null;
         try {
-            in = new FileInputStream(newFile);
+            in = new BufferedInputStream(new FileInputStream(newFile));
             outputStream.putNextEntry(new TinkerZipEntry(newArscZipEntry));
             byte[] buffer = new byte[BUFFER_SIZE];
 

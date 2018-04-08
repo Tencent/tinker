@@ -30,7 +30,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,16 +43,41 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
-    private static final String TAG = "Tinker.TinkerInternals";
+    private static final String  TAG       = "Tinker.TinkerInternals";
     private static final boolean VM_IS_ART = isVmArt(System.getProperty("java.vm.version"));
+    private static final boolean VM_IS_JIT = isVmJitInternal();
+
+    private static final String  PATCH_PROCESS_NAME    = ":patch";
+    private static       Boolean isPatchProcess        = null;
     /**
      * or you may just hardcode them in your app
      */
-    private static String processName = null;
-    private static String tinkerID = null;
+    private static       String  processName           = null;
+    private static       String  tinkerID              = null;
+    private static       String  currentInstructionSet = null;
 
     public static boolean isVmArt() {
         return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
+    }
+
+    public static boolean isVmJit() {
+        return VM_IS_JIT && Build.VERSION.SDK_INT < 24;
+    }
+
+    public static boolean isAfterAndroidO() {
+        return Build.VERSION.SDK_INT > 25;
+    }
+
+    public static String getCurrentInstructionSet() throws Exception {
+        if (currentInstructionSet != null) {
+            return currentInstructionSet;
+        }
+        Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
+        Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
+
+        currentInstructionSet = (String) currentGet.invoke(null);
+        Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
+        return currentInstructionSet;
     }
 
     public static boolean isSystemOTA(String lastFingerPrint) {
@@ -72,6 +99,21 @@ public class ShareTinkerInternals {
         }
     }
 
+    public static ShareDexDiffPatchInfo changeTestDexToClassN(ShareDexDiffPatchInfo rawDexInfo, int index) {
+        if (rawDexInfo.rawName.startsWith(ShareConstants.TEST_DEX_NAME)) {
+            String newName;
+            if (index != 1) {
+                newName = "classes" + index + ".dex";
+            } else {
+                newName = "classes.dex";
+            }
+            return new ShareDexDiffPatchInfo(newName, rawDexInfo.path, rawDexInfo.destMd5InDvm, rawDexInfo.destMd5InArt,
+                rawDexInfo.dexDiffMd5, rawDexInfo.oldDexCrC, rawDexInfo.newOrPatchedDexCrC, rawDexInfo.dexMode);
+        }
+
+        return null;
+    }
+
     public static boolean isNullOrNil(final String object) {
         if ((object == null) || (object.length() <= 0)) {
             return true;
@@ -81,6 +123,7 @@ public class ShareTinkerInternals {
 
     /**
      * thinker package check
+     *
      * @param context
      * @param tinkerFlag
      * @param patchFile
@@ -94,6 +137,7 @@ public class ShareTinkerInternals {
         }
         return returnCode;
     }
+
     /**
      * check patch file signature and TINKER_ID
      *
@@ -157,6 +201,7 @@ public class ShareTinkerInternals {
     /**
      * not like {@cod ShareSecurityCheck.getPackagePropertiesIfPresent}
      * we don't check Signatures or other files, we just get the package meta's properties directly
+     *
      * @param patchFile
      * @return
      */
@@ -246,6 +291,7 @@ public class ShareTinkerInternals {
 
     /**
      * you can set Tinker disable in runtime at some times!
+     *
      * @param context
      */
     public static void setTinkerDisableWithSharedPreferences(Context context) {
@@ -255,6 +301,7 @@ public class ShareTinkerInternals {
 
     /**
      * can't load or receive any patch!
+     *
      * @param context
      * @return
      */
@@ -279,13 +326,40 @@ public class ShareTinkerInternals {
     }
 
     public static boolean isInMainProcess(Context context) {
-        String pkgName = context.getPackageName();
+        String mainProcessName = null;
+        ApplicationInfo applicationInfo = context.getApplicationInfo();
+        if (applicationInfo != null) {
+            mainProcessName = applicationInfo.processName;
+        }
+        if (isNullOrNil(mainProcessName)) {
+            mainProcessName = context.getPackageName();
+        }
         String processName = getProcessName(context);
         if (processName == null || processName.length() == 0) {
             processName = "";
         }
 
-        return pkgName.equals(processName);
+        return mainProcessName.equals(processName);
+    }
+
+    public static boolean isInPatchProcess(Context context) {
+        if (isPatchProcess != null) {
+            return isPatchProcess;
+        }
+
+        isPatchProcess = getProcessName(context).endsWith(PATCH_PROCESS_NAME);
+        return isPatchProcess;
+    }
+
+    public static String getCurrentOatMode(Context context, String current) {
+        if (current.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH)) {
+            if (isInMainProcess(context)) {
+                current = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
+            } else {
+                current = ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH;
+            }
+        }
+        return current;
     }
 
     public static void killAllOtherProcess(Context context) {
@@ -293,9 +367,15 @@ public class ShareTinkerInternals {
         if (am == null) {
             return;
         }
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = am
+            .getRunningAppProcesses();
+
+        if (appProcessList == null) {
+            return;
+        }
         // NOTE: getRunningAppProcess() ONLY GIVE YOU THE PROCESS OF YOUR OWN PACKAGE IN ANDROID M
         // BUT THAT'S ENOUGH HERE
-        for (ActivityManager.RunningAppProcessInfo ai : am.getRunningAppProcesses()) {
+        for (ActivityManager.RunningAppProcessInfo ai : appProcessList) {
             // KILL OTHER PROCESS OF MINE
             if (ai.uid == android.os.Process.myUid() && ai.pid != android.os.Process.myPid()) {
                 android.os.Process.killProcess(ai.pid);
@@ -331,19 +411,26 @@ public class ShareTinkerInternals {
         ActivityManager activityManager =
             (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
 
-        try {
-            for (ActivityManager.RunningAppProcessInfo process : activityManager.getRunningAppProcesses()) {
-                if (process.pid == myPid) {
-                    myProcess = process;
-                    break;
+        if (activityManager != null) {
+            List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
+                .getRunningAppProcesses();
+
+            if (appProcessList != null) {
+                try {
+                    for (ActivityManager.RunningAppProcessInfo process : appProcessList) {
+                        if (process.pid == myPid) {
+                            myProcess = process;
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
+                }
+
+                if (myProcess != null) {
+                    return myProcess.processName;
                 }
             }
-        } catch (Exception e) {
-            Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-        }
-
-        if (myProcess != null) {
-            return myProcess.processName;
         }
 
         byte[] b = new byte[128];
@@ -353,7 +440,7 @@ public class ShareTinkerInternals {
             int len = in.read(b);
             if (len > 0) {
                 for (int i = 0; i < len; i++) { // lots of '0' in tail , remove them
-                    if (b[i] > 128 || b[i] <= 0) {
+                    if ((((int) b[i]) & 0xFF) > 128 || b[i] <= 0) {
                         len = i;
                         break;
                     }
@@ -362,7 +449,7 @@ public class ShareTinkerInternals {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
         } finally {
             try {
                 if (in != null) {
@@ -377,6 +464,7 @@ public class ShareTinkerInternals {
 
     /**
      * vm whether it is art
+     *
      * @return
      */
     private static boolean isVmArt(String versionString) {
@@ -398,23 +486,44 @@ public class ShareTinkerInternals {
         return isArt;
     }
 
+    private static boolean isVmJitInternal() {
+        try {
+            Class<?> clazz = Class.forName("android.os.SystemProperties");
+            Method mthGet = clazz.getDeclaredMethod("get", String.class);
+
+            String jit = (String) mthGet.invoke(null, "dalvik.vm.usejit");
+            String jitProfile = (String) mthGet.invoke(null, "dalvik.vm.usejitprofiles");
+
+            //usejit is true and usejitprofiles is null
+            if (!isNullOrNil(jit) && isNullOrNil(jitProfile) && jit.equals("true")) {
+                return true;
+            }
+        } catch (Throwable e) {
+            Log.e(TAG, "isVmJitInternal ex:" + e);
+        }
+        return false;
+    }
+
     public static String getExceptionCauseString(final Throwable ex) {
+        if (ex == null) return "";
+
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final PrintStream ps = new PrintStream(bos);
 
         try {
             // print directly
             Throwable t = ex;
-            while (t.getCause() != null) {
-                t = t.getCause();
+            while (true) {
+                Throwable cause = t.getCause();
+                if (cause == null) {
+                    break;
+                }
+                t = cause;
             }
             t.printStackTrace(ps);
             return toVisualString(bos.toString());
         } finally {
-            try {
-                bos.close();
-            } catch (IOException e) {
-            }
+            SharePatchFileUtil.closeQuietly(ps);
         }
     }
 

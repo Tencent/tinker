@@ -26,6 +26,8 @@ import com.tencent.tinker.build.util.DexClassesComparator.DexClassInfo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,19 +47,25 @@ public final class ExcludedClassModifiedChecker {
     private static final int STMCODE_ERROR_LOADER_CLASS_FOUND_IN_SECONDARY_NEW_DEX = 0x06;
     private static final int STMCODE_ERROR_LOADER_CLASS_CHANGED                    = 0x07;
     private static final int STMCODE_END                                           = 0x08;
-    private final Configuration config;
+    private final Configuration        config;
     private final DexClassesComparator dexCmptor;
-    private Dex oldDex = null;
-    private Dex newDex = null;
-    private List<DexClassInfo> deletedClassInfos = null;
-    private List<DexClassInfo> addedClassInfos = null;
-    private Map<String, DexClassInfo[]> changedClassInfosMap = null;
-    private Set<String> oldClassesDescToCheck = new HashSet<>();
-    private Set<String> newClassesDescToCheck = new HashSet<>();
+    private Dex                         oldDex                = null;
+    private Dex                         newDex                = null;
+    private List<DexClassInfo>          deletedClassInfos     = null;
+    private List<DexClassInfo>          addedClassInfos       = null;
+    private Map<String, DexClassInfo[]> changedClassInfosMap  = null;
+    private Set<String>                 oldClassesDescToCheck = new HashSet<>();
+    private Set<String>                 newClassesDescToCheck = new HashSet<>();
+    private HashSet<Pattern>            ignoreChangeWarning   = new HashSet<>();
 
     public ExcludedClassModifiedChecker(Configuration config) {
         this.config = config;
         this.dexCmptor = new DexClassesComparator(config.mDexLoaderPattern);
+        for (String classname : config.mDexIgnoreWarningLoaderPattern) {
+            ignoreChangeWarning.add(Pattern.compile(
+                PatternUtils.dotClassNamePatternToDescriptorRegEx(classname)
+            ));
+        }
     }
 
     public void checkIfExcludedClassWasModifiedInNewDex(File oldFile, File newFile) throws IOException, TinkerPatchException {
@@ -82,7 +90,7 @@ public final class ExcludedClassModifiedChecker {
                  * 2. Primary new dex is missing.
                  * 3. There are not any loader classes in primary old dex.
                  * 4. There are some new loader classes added in new primary dex.
-                 * 5. Loader classes in old primary dex are modified, deleted in new primary dex.
+                 * 5. Loader classes in old primary dex are modified in new primary dex.
                  * 6. Loader classes are found in secondary old dexes.
                  * 7. Loader classes are found in secondary new dexes.
                  */
@@ -98,14 +106,22 @@ public final class ExcludedClassModifiedChecker {
                             dexCmptor.startCheck(oldDex, newDex);
                             deletedClassInfos = dexCmptor.getDeletedClassInfos();
                             addedClassInfos = dexCmptor.getAddedClassInfos();
-                            changedClassInfosMap = dexCmptor.getChangedClassDescToInfosMap();
+                            changedClassInfosMap = new HashMap<>(dexCmptor.getChangedClassDescToInfosMap());
 
                             // All loader classes are in new dex, while none of them in old one.
                             if (deletedClassInfos.isEmpty() && changedClassInfosMap.isEmpty() && !addedClassInfos.isEmpty()) {
                                 stmCode = STMCODE_ERROR_LOADER_CLASS_NOT_IN_PRIMARY_OLD_DEX;
                             } else {
-                                if (deletedClassInfos.isEmpty() && addedClassInfos.isEmpty()) {
+                                if (addedClassInfos.isEmpty()) {
                                     // class descriptor is completely matches, see if any contents changes.
+                                    ArrayList<String> removeClasses = new ArrayList<>();
+                                    for (String classname : changedClassInfosMap.keySet()) {
+                                        if (Utils.checkFileInPattern(ignoreChangeWarning, classname)) {
+                                            Logger.e("loader class pattern: " + classname + " has changed, but it match ignore change pattern, just ignore!");
+                                            removeClasses.add(classname);
+                                        }
+                                    }
+                                    changedClassInfosMap.keySet().removeAll(removeClasses);
                                     if (changedClassInfosMap.isEmpty()) {
                                         stmCode = STMCODE_END;
                                     } else {
@@ -169,10 +185,8 @@ public final class ExcludedClassModifiedChecker {
                 }
                 case STMCODE_ERROR_LOADER_CLASS_IN_PRIMARY_DEX_MISMATCH: {
                     throw new TinkerPatchException(
-                        "loader classes in old primary dex are mismatched to those in new primary dex, \n"
-                            + "if deleted classes is not empty, check if your dex division strategy is fine. \n"
-                            + "added classes: " + Utils.collectionToString(addedClassInfos) + "\n"
-                            + "deleted classes: " + Utils.collectionToString(deletedClassInfos)
+                        "there's loader classes added in new primary dex, such these changes will not take effect.\n"
+                            + "added classes: " + Utils.collectionToString(addedClassInfos)
                     );
                 }
                 case STMCODE_ERROR_LOADER_CLASS_FOUND_IN_SECONDARY_OLD_DEX: {
@@ -183,7 +197,7 @@ public final class ExcludedClassModifiedChecker {
                 }
                 case STMCODE_ERROR_LOADER_CLASS_CHANGED: {
                     String msg =
-                        "some loader class has been changed in new dex."
+                        "some loader class has been changed in new primary dex."
                             + " Such these changes will not take effect!!"
                             + " related classes: "
                             + Utils.collectionToString(changedClassInfosMap.keySet());

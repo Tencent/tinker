@@ -35,8 +35,20 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import tinker.net.dongliu.apk.parser.ApkParser;
+import tinker.net.dongliu.apk.parser.struct.ResourceValue;
+import tinker.net.dongliu.apk.parser.struct.resource.ResourceEntry;
+import tinker.net.dongliu.apk.parser.struct.resource.ResourcePackage;
+import tinker.net.dongliu.apk.parser.struct.resource.Type;
 
 /**
  * Created by zhangshaowen on 16/8/8.
@@ -45,15 +57,19 @@ public class ResDiffDecoder extends BaseDecoder {
     private static final String TEST_RESOURCE_NAME        = "only_use_to_test_tinker_resource.txt";
     private static final String TEST_RESOURCE_ASSETS_PATH = "assets/" + TEST_RESOURCE_NAME;
 
-    private static final String TEMP_RES_ZIP  = "temp_res.zip";
-    private static final String TEMP_RES_7ZIP = "temp_res_7ZIP.zip";
-    private final InfoWriter                     logWriter;
-    private final InfoWriter                     metaWriter;
-    private       ArrayList<String>              addedSet;
-    private       ArrayList<String>              modifiedSet;
-    private       ArrayList<String>              largeModifiedSet;
-    private       HashMap<String, LargeModeInfo> largeModifiedMap;
-    private ArrayList<String> deletedSet;
+    private static final String TEMP_RES_ZIP = "temp_res.zip";
+    private final InfoWriter        logWriter;
+    private final InfoWriter        metaWriter;
+    private       ArrayList<String> addedSet;
+    private       ArrayList<String> modifiedSet;
+    private       ArrayList<String> storedSet;
+
+    private ArrayList<String>              largeModifiedSet;
+    private HashMap<String, LargeModeInfo> largeModifiedMap;
+    private ArrayList<String>              deletedSet;
+
+    private ApkParser                      newApkParser;
+    private Set<String>                    newApkAnimResNames;
 
     public ResDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
         super(config);
@@ -74,20 +90,74 @@ public class ResDiffDecoder extends BaseDecoder {
         largeModifiedSet = new ArrayList<>();
         largeModifiedMap = new HashMap<>();
         deletedSet = new ArrayList<>();
+        storedSet = new ArrayList<>();
+
+        newApkParser = new ApkParser(config.mNewApkFile);
+        newApkAnimResNames = new HashSet<>();
     }
 
     @Override
     public void clean() {
         metaWriter.close();
         logWriter.close();
+        try {
+            newApkParser.close();
+        } catch (Throwable ignored) {
+            // Ignored.
+        }
     }
 
+    /**
+     * last modify or store files
+     *
+     * @param file
+     * @return
+     */
     private boolean checkLargeModFile(File file) {
         long length = file.length();
         if (length > config.mLargeModSize * TypedValue.K_BYTES) {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void onAllPatchesStart() throws IOException, TinkerPatchException {
+        newApkParser.parseResourceTable();
+        final Map<String, ResourcePackage> newApkResPkgNameMap = newApkParser.getResourceTable().getPackageNameMap();
+        do {
+            if (newApkResPkgNameMap == null) {
+                break;
+            }
+
+            final ResourcePackage newApkResPackage = newApkResPkgNameMap.get(newApkParser.getApkMeta().getPackageName());
+            if (newApkResPackage == null) {
+                break;
+            }
+
+            final Map<String, List<Type>> newApkResTypesNameMap = newApkResPackage.getTypesNameMap();
+            if (newApkResTypesNameMap == null) {
+                break;
+            }
+
+            final List<Type> newApkAnimResTypes = newApkResTypesNameMap.get("anim");
+            if (newApkAnimResTypes == null) {
+                break;
+            }
+
+            for (Type animType : newApkAnimResTypes) {
+                for (ResourceEntry value : animType.getResourceEntryNameHashMap().values()) {
+                    if (value == null) {
+                        continue;
+                    }
+                    final ResourceValue resValue = value.getValue();
+                    if (resValue == null) {
+                        continue;
+                    }
+                    newApkAnimResNames.add(resValue.toStringValue());
+                }
+            }
+        } while (false);
     }
 
     @Override
@@ -144,11 +214,11 @@ public class ResDiffDecoder extends BaseDecoder {
                 return false;
             }
         }
-        dealWithModeFile(name, newMd5, oldFile, newFile, outputFile);
+        dealWithModifyFile(name, newMd5, oldFile, newFile, outputFile);
         return true;
     }
 
-    private boolean dealWithModeFile(String name, String newMd5, File oldFile, File newFile, File outputFile) throws IOException {
+    private boolean dealWithModifyFile(String name, String newMd5, File oldFile, File newFile, File outputFile) throws IOException {
         if (checkLargeModFile(newFile)) {
             if (!outputFile.getParentFile().exists()) {
                 outputFile.getParentFile().mkdirs();
@@ -204,11 +274,6 @@ public class ResDiffDecoder extends BaseDecoder {
             }
             logWriter.writeLineToInfoFile(log);
         }
-    }
-
-    @Override
-    public void onAllPatchesStart() throws IOException, TinkerPatchException {
-
     }
 
     private void addAssetsFileForTestResource() throws IOException {
@@ -272,6 +337,12 @@ public class ResDiffDecoder extends BaseDecoder {
         removeIgnoreChangeFile(addedSet);
         removeIgnoreChangeFile(largeModifiedSet);
 
+        // after ignore-changes resource files are being removed, we now check if there's any anim
+        // resources in added and modified files.
+        checkIfSpecificResWasAnimRes(addedSet);
+        checkIfSpecificResWasAnimRes(modifiedSet);
+        checkIfSpecificResWasAnimRes(largeModifiedSet);
+
         // last add test res in assets for user cannot ignore it;
         addAssetsFileForTestResource();
 
@@ -279,7 +350,7 @@ public class ResDiffDecoder extends BaseDecoder {
         final File tempResFiles = config.mTempResultDir;
 
         //gen zip resources_out.zip
-        FileOperation.zipInputDir(tempResFiles, tempResZip);
+        FileOperation.zipInputDir(tempResFiles, tempResZip, null);
         File extractToZip = new File(config.mOutFolder + File.separator + TypedValue.RES_OUT);
 
         String resZipMd5 = Utils.genResOutputFile(extractToZip, tempResZip, config,
@@ -292,25 +363,6 @@ public class ResDiffDecoder extends BaseDecoder {
         //delete temp file
         FileOperation.deleteFile(tempResZip);
 
-        //gen zip resources_out_7z.zip
-        File extractTo7Zip = new File(config.mOutFolder + File.separator + TypedValue.RES_OUT_7ZIP);
-        File tempRes7Zip = new File(config.mOutFolder + File.separator + TEMP_RES_7ZIP);
-
-        //ensure 7zip is enable
-        if (FileOperation.sevenZipInputDir(tempResFiles, tempRes7Zip, config)) {
-            //7zip whether actual exist
-            if (tempRes7Zip.exists()) {
-
-                String res7zipMd5 = Utils.genResOutputFile(extractTo7Zip, tempRes7Zip, config,
-                    addedSet, modifiedSet, deletedSet, largeModifiedSet, largeModifiedMap);
-                //delete temp file
-                FileOperation.deleteFile(tempRes7Zip);
-                Logger.e("Final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5);
-                logWriter.writeLineToInfoFile(
-                    String.format("Final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5)
-                );
-            }
-        }
         //first, write resource meta first
         //use resources.arsc's base crc to identify base.apk
         String arscBaseCrc = FileOperation.getZipEntryCrc(config.mOldApkFile, TypedValue.RES_ARSC);
@@ -333,11 +385,90 @@ public class ResDiffDecoder extends BaseDecoder {
         for (String item : patterns) {
             writeMetaFile(item);
         }
+
+        //add store files
+        getCompressMethodFromApk();
+
         //write meta file, write large modify first
         writeMetaFile(largeModifiedSet, TypedValue.LARGE_MOD);
         writeMetaFile(modifiedSet, TypedValue.MOD);
         writeMetaFile(addedSet, TypedValue.ADD);
         writeMetaFile(deletedSet, TypedValue.DEL);
+        writeMetaFile(storedSet, TypedValue.STORED);
+
+    }
+
+    private void checkIfSpecificResWasAnimRes(Collection<String> specificFileNames) {
+        final Set<String> changedAnimResNames = new HashSet<>();
+        for (String resFileName : specificFileNames) {
+            String resName = resFileName;
+            int lastPathSepPos = resFileName.lastIndexOf('/');
+            if (lastPathSepPos < 0) {
+                lastPathSepPos = resFileName.lastIndexOf('\\');
+            }
+            if (lastPathSepPos >= 0) {
+                resName = resName.substring(lastPathSepPos + 1);
+            }
+            final int firstDotPos = resName.indexOf('.');
+            if (firstDotPos >= 0) {
+                resName = resName.substring(0, firstDotPos);
+            }
+            if (newApkAnimResNames.contains(resName)) {
+                if (Utils.isStringMatchesPatterns(resFileName, config.mResIgnoreChangeWarningPattern)) {
+                    Logger.d("\nAnimation resource: " + resFileName
+                            + " was changed, but it's filtered by ignoreChangeWarning pattern, just ignore.\n");
+                } else {
+                    changedAnimResNames.add(resFileName);
+                }
+            }
+        }
+        if (!changedAnimResNames.isEmpty()) {
+            if (config.mIgnoreWarning) {
+                //ignoreWarning, just log
+                Logger.e("Warning:ignoreWarning is true, but we found animation resource is changed. "
+                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
+                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
+                        + "related res: " + changedAnimResNames + "\n");
+            } else {
+                Logger.e("Warning:ignoreWarning is false, but we found animation resource is changed. "
+                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
+                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
+                        + "related res: " + changedAnimResNames + "\n");
+                throw new TinkerPatchException(
+                        "ignoreWarning is false, but we found animation resource is changed. "
+                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
+                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
+                        + "related res: " + changedAnimResNames);
+            }
+        }
+    }
+
+    private void getCompressMethodFromApk() {
+        ZipFile zipFile = null;
+        try {
+            zipFile = new ZipFile(config.mNewApkFile);
+            ArrayList<String> sets = new ArrayList<>();
+            sets.addAll(modifiedSet);
+            sets.addAll(addedSet);
+
+            ZipEntry zipEntry;
+            for (String name : sets) {
+                zipEntry = zipFile.getEntry(name);
+                if (zipEntry != null && zipEntry.getMethod() == ZipEntry.STORED) {
+                    storedSet.add(name);
+                }
+            }
+
+        } catch (Throwable throwable) {
+
+        } finally {
+            if (zipFile != null) {
+                try {
+                    zipFile.close();
+                } catch (IOException e) {
+                }
+            }
+        }
     }
 
     private void removeIgnoreChangeFile(ArrayList<String> array) {
@@ -370,6 +501,9 @@ public class ResDiffDecoder extends BaseDecoder {
                     break;
                 case TypedValue.DEL:
                     title = TypedValue.DEL_TITLE + set.size();
+                    break;
+                case TypedValue.STORED:
+                    title = TypedValue.STORE_TITLE + set.size();
                     break;
             }
             metaWriter.writeLineToInfoFile(title);

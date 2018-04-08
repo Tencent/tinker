@@ -10,6 +10,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':third-party:aosp-dexutils')
     compile project(':third-party:bsdiff-util')
+    compile project(':third-party:tinker-ziputils')
 }
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {

@@ -19,6 +19,7 @@ package com.tencent.tinker.loader.shareutil;
 import android.content.Context;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -105,6 +106,68 @@ public class ShareReflectUtil {
     }
 
     /**
+     * Locates a given method anywhere in the class inheritance hierarchy.
+     *
+     * @param clazz          a class to search the method into.
+     * @param name           method name
+     * @param parameterTypes method parameter types
+     * @return a method object
+     * @throws NoSuchMethodException if the method cannot be located
+     */
+    public static Method findMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        for (; clazz != null; clazz = clazz.getSuperclass()) {
+            try {
+                Method method = clazz.getDeclaredMethod(name, parameterTypes);
+
+                if (!method.isAccessible()) {
+                    method.setAccessible(true);
+                }
+
+                return method;
+            } catch (NoSuchMethodException e) {
+                // ignore and search next
+            }
+        }
+
+        throw new NoSuchMethodException("Method "
+                + name
+                + " with parameters "
+                + Arrays.asList(parameterTypes)
+                + " not found in " + clazz);
+    }
+
+    /**
+     * Locates a given constructor anywhere in the class inheritance hierarchy.
+     *
+     * @param instance       an object to search the constructor into.
+     * @param parameterTypes constructor parameter types
+     * @return a constructor object
+     * @throws NoSuchMethodException if the constructor cannot be located
+     */
+    public static Constructor<?> findConstructor(Object instance, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        for (Class<?> clazz = instance.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+            try {
+                Constructor<?> ctor = clazz.getDeclaredConstructor(parameterTypes);
+
+                if (!ctor.isAccessible()) {
+                    ctor.setAccessible(true);
+                }
+
+                return ctor;
+            } catch (NoSuchMethodException e) {
+                // ignore and search next
+            }
+        }
+
+        throw new NoSuchMethodException("Constructor"
+                + " with parameters "
+                + Arrays.asList(parameterTypes)
+                + " not found in " + instance.getClass());
+    }
+
+    /**
      * Replace the value of a field containing a non null array, by a new array containing the
      * elements of the original array plus the elements of extraElements.
      *
@@ -182,4 +245,19 @@ public class ShareReflectUtil {
         }
     }
 
+    /**
+     * Handy method for fetching hidden integer constant value in system classes.
+     *
+     * @param clazz
+     * @param fieldName
+     * @return
+     */
+    public static int getValueOfStaticIntField(Class<?> clazz, String fieldName, int defVal) {
+        try {
+            final Field field = findField(clazz, fieldName);
+            return field.getInt(null);
+        } catch (Throwable thr) {
+            return defVal;
+        }
+    }
 }

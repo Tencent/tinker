@@ -18,10 +18,11 @@ package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.decoder.ResDiffDecoder;
 import com.tencent.tinker.build.patch.Configuration;
-import com.tencent.tinker.commons.resutil.ResUtil;
-import com.tencent.tinker.commons.ziputil.TinkerZipEntry;
-import com.tencent.tinker.commons.ziputil.TinkerZipFile;
-import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -74,6 +75,14 @@ public class Utils {
         return input;
     }
 
+    public static boolean isNullOrNil(final String object) {
+        return (object == null) || (object.length() <= 0);
+    }
+
+    public static boolean isNullOrNil(final Collection<?> collection) {
+        return (collection == null || collection.isEmpty());
+    }
+
     public static boolean isStringMatchesPatterns(String str, Collection<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(str).matches()) {
@@ -114,11 +123,15 @@ public class Utils {
     public static String genResOutputFile(File output, File newZipFile, Configuration config,
                                     ArrayList<String> addedSet, ArrayList<String> modifiedSet, ArrayList<String> deletedSet,
                                     ArrayList<String> largeModifiedSet, HashMap<String, ResDiffDecoder.LargeModeInfo> largeModifiedMap) throws IOException {
-        TinkerZipFile oldApk = new TinkerZipFile(config.mOldApkFile);
-        TinkerZipFile newApk = new TinkerZipFile(newZipFile);
-        TinkerZipOutputStream out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(output)));
+        TinkerZipFile oldApk = null;
+        TinkerZipFile newApk = null;
+        TinkerZipOutputStream out = null;
 
         try {
+            oldApk = new TinkerZipFile(config.mOldApkFile);
+            newApk = new TinkerZipFile(newZipFile);
+            out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(output)));
+
             final Enumeration<? extends TinkerZipEntry> entries = oldApk.entries();
             while (entries.hasMoreElements()) {
                 TinkerZipEntry zipEntry = entries.nextElement();
@@ -137,7 +150,7 @@ public class Utils {
                         && !modifiedSet.contains(name)
                         && !largeModifiedSet.contains(name)
                         && !name.equals(TypedValue.RES_MANIFEST)) {
-                        ResUtil.extractTinkerEntry(oldApk, zipEntry, out);
+                        TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
                     }
                 }
             }
@@ -148,7 +161,7 @@ public class Utils {
                     String.format("can't found resource file %s from old apk file %s", TypedValue.RES_MANIFEST, config.mOldApkFile.getAbsolutePath())
                 );
             }
-            ResUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
+            TinkerZipUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
 
             for (String name : largeModifiedSet) {
                 TinkerZipEntry largeZipEntry = oldApk.getEntry(name);
@@ -158,7 +171,7 @@ public class Utils {
                     );
                 }
                 ResDiffDecoder.LargeModeInfo largeModeInfo = largeModifiedMap.get(name);
-                ResUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.path, largeModeInfo.crc, out);
+                TinkerZipUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.path, largeModeInfo.crc, out);
             }
 
             for (String name : addedSet) {
@@ -168,7 +181,7 @@ public class Utils {
                         String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
                     );
                 }
-                ResUtil.extractTinkerEntry(newApk, addZipEntry, out);
+                TinkerZipUtil.extractTinkerEntry(newApk, addZipEntry, out);
             }
 
             for (String name : modifiedSet) {
@@ -178,12 +191,12 @@ public class Utils {
                         String.format("can't found add resource file %s from new apk file %s", name, config.mNewApkFile.getAbsolutePath())
                     );
                 }
-                ResUtil.extractTinkerEntry(newApk, modZipEntry, out);
+                TinkerZipUtil.extractTinkerEntry(newApk, modZipEntry, out);
             }
         } finally {
-            out.close();
-            oldApk.close();
-            newApk.close();
+            StreamUtil.closeQuietly(out);
+            StreamUtil.closeQuietly(oldApk);
+            StreamUtil.closeQuietly(newApk);
         }
         return MD5.getMD5(output);
     }
@@ -234,15 +247,24 @@ public class Utils {
             ps.directory(path);
         }
         Process pr = ps.start();
-        BufferedReader ins = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-        String line;
-        while ((line = ins.readLine()) != null) {
-            System.out.println(line);
+        BufferedReader ins = null;
+        try {
+            ins = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+            String line;
+            while ((line = ins.readLine()) != null) {
+                System.out.println(line);
+            }
+            if (pr.waitFor() != 0) {
+                throw new RuntimeException("exec cmd failed! args: " + args);
+            }
+        } finally {
+            try {
+                pr.destroy();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+            StreamUtil.closeQuietly(ins);
         }
-        if (pr.waitFor() != 0) {
-            throw new RuntimeException("exec cmd failed! args: " + args);
-        }
-        ins.close();
     }
 
 }

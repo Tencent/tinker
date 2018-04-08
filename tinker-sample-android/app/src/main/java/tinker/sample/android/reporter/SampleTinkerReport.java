@@ -54,14 +54,17 @@ public class SampleTinkerReport {
     public static final int KEY_TRY_APPLY_MEMORY_LIMIT            = 78;
     public static final int KEY_TRY_APPLY_CRASH_LIMIT             = 79;
     public static final int KEY_TRY_APPLY_CONDITION_NOT_SATISFIED = 80;
+    public static final int KEY_TRY_APPLY_JIT                     = 81;
 
     //Key -- apply detail
     public static final int KEY_APPLIED_UPGRADE      = 100;
     public static final int KEY_APPLIED_UPGRADE_FAIL = 101;
 
     public static final int KEY_APPLIED_EXCEPTION                               = 120;
-    public static final int KEY_APPLIED_DEXOPT                                  = 121;
-    public static final int KEY_APPLIED_INFO_CORRUPTED                          = 122;
+    public static final int KEY_APPLIED_DEXOPT_OTHER                            = 121;
+    public static final int KEY_APPLIED_DEXOPT_EXIST                            = 122;
+    public static final int KEY_APPLIED_DEXOPT_FORMAT                           = 123;
+    public static final int KEY_APPLIED_INFO_CORRUPTED                          = 124;
     //package check
     public static final int KEY_APPLIED_PACKAGE_CHECK_SIGNATURE                 = 150;
     public static final int KEY_APPLIED_PACKAGE_CHECK_DEX_META                  = 151;
@@ -74,18 +77,18 @@ public class SampleTinkerReport {
     public static final int KEY_APPLIED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = 158;
 
     //version check
-    public static final int KEY_APPLIED_VERSION_CHECK                           = 180;
+    public static final int KEY_APPLIED_VERSION_CHECK      = 180;
     //extract error
-    public static final int KEY_APPLIED_PATCH_FILE_EXTRACT                      = 181;
-    public static final int KEY_APPLIED_DEX_EXTRACT                             = 182;
-    public static final int KEY_APPLIED_LIB_EXTRACT                             = 183;
-    public static final int KEY_APPLIED_RESOURCE_EXTRACT                        = 184;
+    public static final int KEY_APPLIED_PATCH_FILE_EXTRACT = 181;
+    public static final int KEY_APPLIED_DEX_EXTRACT        = 182;
+    public static final int KEY_APPLIED_LIB_EXTRACT        = 183;
+    public static final int KEY_APPLIED_RESOURCE_EXTRACT   = 184;
     //cost time
-    public static final int KEY_APPLIED_SUCC_COST_5S_LESS                       = 200;
-    public static final int KEY_APPLIED_SUCC_COST_10S_LESS                      = 201;
-    public static final int KEY_APPLIED_SUCC_COST_30S_LESS                      = 202;
-    public static final int KEY_APPLIED_SUCC_COST_60S_LESS                      = 203;
-    public static final int KEY_APPLIED_SUCC_COST_OTHER                         = 204;
+    public static final int KEY_APPLIED_SUCC_COST_5S_LESS  = 200;
+    public static final int KEY_APPLIED_SUCC_COST_10S_LESS = 201;
+    public static final int KEY_APPLIED_SUCC_COST_30S_LESS = 202;
+    public static final int KEY_APPLIED_SUCC_COST_60S_LESS = 203;
+    public static final int KEY_APPLIED_SUCC_COST_OTHER    = 204;
 
     public static final int KEY_APPLIED_FAIL_COST_5S_LESS  = 205;
     public static final int KEY_APPLIED_FAIL_COST_10S_LESS = 206;
@@ -132,6 +135,11 @@ public class SampleTinkerReport {
     public static final int KEY_LOADED_SUCC_COST_5000_LESS = 403;
     public static final int KEY_LOADED_SUCC_COST_OTHER     = 404;
 
+    public static final int KEY_LOADED_INTERPRET_GET_INSTRUCTION_SET_ERROR = 450;
+    public static final int KEY_LOADED_INTERPRET_INTERPRET_COMMAND_ERROR   = 451;
+    public static final int KEY_LOADED_INTERPRET_TYPE_INTERPRET_OK         = 452;
+
+
     interface Reporter {
         void onReport(int key);
 
@@ -174,13 +182,16 @@ public class SampleTinkerReport {
             case ShareConstants.ERROR_PATCH_RUNNING:
                 reporter.onReport(KEY_TRY_APPLY_RUNNING);
                 break;
+            case ShareConstants.ERROR_PATCH_JIT:
+                reporter.onReport(KEY_TRY_APPLY_JIT);
+                break;
             case Utils.ERROR_PATCH_ROM_SPACE:
                 reporter.onReport(KEY_TRY_APPLY_ROM_SPACE);
                 break;
             case Utils.ERROR_PATCH_GOOGLEPLAY_CHANNEL:
                 reporter.onReport(KEY_TRY_APPLY_GOOGLEPLAY);
                 break;
-            case Utils.ERROR_PATCH_ALREADY_APPLY:
+            case ShareConstants.ERROR_PATCH_ALREADY_APPLY:
                 reporter.onReport(KEY_TRY_APPLY_ALREADY_APPLY);
                 break;
             case Utils.ERROR_PATCH_CRASH_LIMIT:
@@ -192,6 +203,7 @@ public class SampleTinkerReport {
             case Utils.ERROR_PATCH_CONDITION_NOT_SATISFIED:
                 reporter.onReport(KEY_TRY_APPLY_CONDITION_NOT_SATISFIED);
                 break;
+
         }
     }
 
@@ -288,6 +300,25 @@ public class SampleTinkerReport {
         }
     }
 
+    public static void onLoadInterpretReport(int type, Throwable e) {
+        if (reporter == null) {
+            return;
+        }
+        switch (type) {
+            case ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR:
+                reporter.onReport(KEY_LOADED_INTERPRET_GET_INSTRUCTION_SET_ERROR);
+                reporter.onReport("Tinker Exception:interpret occur exception " + Utils.getExceptionCauseString(e));
+                break;
+            case ShareConstants.TYPE_INTERPRET_COMMAND_ERROR:
+                reporter.onReport(KEY_LOADED_INTERPRET_INTERPRET_COMMAND_ERROR);
+                reporter.onReport("Tinker Exception:interpret occur exception " + Utils.getExceptionCauseString(e));
+                break;
+            case ShareConstants.TYPE_INTERPRET_OK:
+                reporter.onReport(KEY_LOADED_INTERPRET_TYPE_INTERPRET_OK);
+                break;
+        }
+    }
+
     public static void onLoadFileMisMatch(int fileType) {
         if (reporter == null) {
             return;
@@ -355,8 +386,14 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        reporter.onReport(KEY_APPLIED_DEXOPT);
-        reporter.onReport("Tinker Exception:apply tinker occur exception " + Utils.getExceptionCauseString(throwable));
+        if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)) {
+            reporter.onReport(KEY_APPLIED_DEXOPT_EXIST);
+        } else if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
+            reporter.onReport(KEY_APPLIED_DEXOPT_FORMAT);
+        } else {
+            reporter.onReport(KEY_APPLIED_DEXOPT_OTHER);
+            reporter.onReport("Tinker Exception:apply tinker occur exception " + Utils.getExceptionCauseString(throwable));
+        }
     }
 
     public static void onApplyInfoCorrupted() {

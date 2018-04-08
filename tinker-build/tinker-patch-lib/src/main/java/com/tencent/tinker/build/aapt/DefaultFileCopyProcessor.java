@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.build.aapt;
 
+import com.tencent.tinker.commons.util.StreamUtil;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,22 +43,19 @@ public class DefaultFileCopyProcessor implements FileUtil.FileCopyProcessor {
                     toFile = toFile + "_copy";
                 }
                 FileUtil.createFile(toFile);
-                InputStream inputStream = new FileInputStream(fromFile);
-                OutputStream outputStream = new FileOutputStream(toFile);
+                InputStream inputStream = null;
+                OutputStream outputStream = null;
                 try {
+                    inputStream = new FileInputStream(fromFile);
+                    outputStream = new FileOutputStream(toFile);
                     byte[] buffer = new byte[Constant.Capacity.BYTES_PER_KB];
                     int length = -1;
                     while ((length = inputStream.read(buffer, 0, buffer.length)) != -1) {
                         outputStream.write(buffer, 0, length);
-                        outputStream.flush();
                     }
                 } finally {
-                    if (inputStream != null) {
-                        inputStream.close();
-                    }
-                    if (outputStream != null) {
-                        outputStream.close();
-                    }
+                    StreamUtil.closeQuietly(outputStream);
+                    StreamUtil.closeQuietly(inputStream);
                 }
             } else {
                 FileUtil.createDirectory(to);

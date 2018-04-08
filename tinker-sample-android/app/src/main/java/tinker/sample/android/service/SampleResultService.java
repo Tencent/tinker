@@ -16,10 +16,6 @@
 
 package tinker.sample.android.service;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
@@ -28,7 +24,6 @@ import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
-import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
 import java.io.File;
 
@@ -80,7 +75,7 @@ public class SampleResultService extends DefaultTinkerResultService {
                     //we can wait process at background, such as onAppBackground
                     //or we can restart when the screen off
                     TinkerLog.i(TAG, "tinker wait screen to restart process");
-                    new ScreenState(getApplicationContext(), new ScreenState.IOnScreenOff() {
+                    new Utils.ScreenState(getApplicationContext(), new Utils.ScreenState.IOnScreenOff() {
                         @Override
                         public void onScreenOff() {
                             restartProcess();
@@ -100,33 +95,6 @@ public class SampleResultService extends DefaultTinkerResultService {
         TinkerLog.i(TAG, "app is background now, i can kill quietly");
         //you can send service or broadcast intent to restart your process
         android.os.Process.killProcess(android.os.Process.myPid());
-    }
-
-    static class ScreenState {
-        interface IOnScreenOff {
-            void onScreenOff();
-        }
-
-        ScreenState(Context context, final IOnScreenOff onScreenOffInterface) {
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(Intent.ACTION_SCREEN_OFF);
-            context.registerReceiver(new BroadcastReceiver() {
-
-                @Override
-                public void onReceive(Context context, Intent in) {
-                    String action = in == null ? "" : in.getAction();
-                    TinkerLog.i(TAG, "ScreenReceiver action [%s] ", action);
-                    if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-
-                        context.unregisterReceiver(this);
-
-                        if (onScreenOffInterface != null) {
-                            onScreenOffInterface.onScreenOff();
-                        }
-                    }
-                }
-            }, filter);
-        }
     }
 
 }

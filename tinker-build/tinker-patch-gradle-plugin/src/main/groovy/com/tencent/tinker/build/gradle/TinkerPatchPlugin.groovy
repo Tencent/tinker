@@ -20,6 +20,7 @@ import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.build.util.TypedValue
+import com.tencent.tinker.build.util.Utils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -57,6 +58,24 @@ class TinkerPatchPlugin implements Plugin<Project> {
             throw new GradleException('generateTinkerApk: Android Application plugin required')
         }
 
+        def android = project.extensions.android
+
+        try {
+            //close preDexLibraries
+            android.dexOptions.preDexLibraries = false
+
+            //open jumboMode
+            android.dexOptions.jumboMode = true
+
+            //disable aapt2
+            reflectAapt2Flag()
+
+            //disable dex archive mode
+            disableArchiveDex()
+        } catch (Throwable e) {
+            //no preDexLibraries field, just continue
+        }
+
         project.afterEvaluate {
             def configuration = project.tinkerPatch
 
@@ -65,23 +84,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 return
             }
 
-            def android = project.extensions.android
-
-            //open jumboMode
-            android.dexOptions.jumboMode = true
-
-            //close preDexLibraries
-            try {
-                android.dexOptions.preDexLibraries = false
-            } catch (Throwable e) {
-                //no preDexLibraries field, just continue
-            }
-
             project.logger.error("----------------------tinker build warning ------------------------------------")
             project.logger.error("tinker auto operation: ")
             project.logger.error("excluding annotation processor and source template from app packaging. Enable dx jumboMode to reduce package size.")
             project.logger.error("enable dx jumboMode to reduce package size.")
             project.logger.error("disable preDexLibraries to prevent ClassDefNotFoundException when your app is booting.")
+            project.logger.error("disable aapt2 so far for resource id keeping.")
+            project.logger.error("disable archive dex mode so far for keeping dex apply.")
             project.logger.error("")
             project.logger.error("tinker will change your build configs:")
             project.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
@@ -115,6 +124,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 def variantOutput = variant.outputs.first()
                 def variantName = variant.name.capitalize()
+                def variantData = variant.variantData
 
                 def instantRunTask = getInstantRunTask(project, variantName)
                 if (instantRunTask != null) {
@@ -126,32 +136,44 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = project.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
-                tinkerPatchBuildTask.dependsOn variant.assemble
 
-                tinkerPatchBuildTask.signConfig = variant.apkVariantData.variantConfiguration.signingConfig
+                tinkerPatchBuildTask.signConfig = variantData.variantConfiguration.signingConfig
 
                 variant.outputs.each { output ->
-                    tinkerPatchBuildTask.buildApkPath = output.outputFile
-                    File parentFile = output.outputFile
-                    tinkerPatchBuildTask.outputFolder = "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/" + TypedValue.PATH_DEFAULT_OUTPUT + "/" + variant.dirName
+                    setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask)
+                    setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask)
                 }
 
                 // Create a task to add a build TINKER_ID to AndroidManifest.xml
                 // This task must be called after "process${variantName}Manifest", since it
                 // requires that an AndroidManifest.xml exists in `build/intermediates`.
                 TinkerManifestTask manifestTask = project.tasks.create("tinkerProcess${variantName}Manifest", TinkerManifestTask)
-                manifestTask.manifestPath = variantOutput.processManifest.manifestOutputFile
+
+                if (variantOutput.processManifest.properties['manifestOutputFile'] != null) {
+                    manifestTask.manifestPath = variantOutput.processManifest.manifestOutputFile
+                } else if (variantOutput.processResources.properties['manifestFile'] != null) {
+                    manifestTask.manifestPath = variantOutput.processResources.manifestFile
+                }
                 manifestTask.mustRunAfter variantOutput.processManifest
 
                 variantOutput.processResources.dependsOn manifestTask
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = project.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.resDir = variantOutput.processResources.resDir
+
+                if (variantOutput.processResources.properties['resDir'] != null) {
+                    applyResourceTask.resDir = variantOutput.processResources.resDir
+                } else if (variantOutput.processResources.properties['inputResourcesDir'] != null) {
+                    applyResourceTask.resDir = variantOutput.processResources.inputResourcesDir.getFiles().first()
+                }
                 //let applyResourceTask run after manifestTask
                 applyResourceTask.mustRunAfter manifestTask
 
                 variantOutput.processResources.dependsOn applyResourceTask
+
+                if (manifestTask.manifestPath == null || applyResourceTask.resDir == null) {
+                    throw new RuntimeException("manifestTask.manifestPath or applyResourceTask.resDir is null.")
+                }
 
                 // Add this proguard settings file to the list
                 boolean proguardEnable = variant.getBuildType().buildType.minifyEnabled
@@ -169,12 +191,16 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 // Add this multidex proguard settings file to the list
-                boolean multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
+                boolean multiDexEnabled = variantData.variantConfiguration.isMultiDexEnabled()
 
                 if (multiDexEnabled) {
                     TinkerMultidexConfigTask multidexConfigTask = project.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
                     multidexConfigTask.mustRunAfter manifestTask
+
+                    // for java.io.FileNotFoundException: app/build/intermediates/multi-dex/release/manifest_keep.txt
+                    // for gradle 3.x gen manifest_keep move to processResources task
+                    multidexConfigTask.mustRunAfter variantOutput.processResources
 
                     def multidexTask = getMultiDexTask(project, variantName)
                     if (multidexTask != null) {
@@ -187,11 +213,90 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 if (configuration.buildConfig.keepDexApply
-                    && FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
+                        && FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
                     com.tencent.tinker.build.gradle.transform.ImmutableDexTransform.inject(project, variant)
                 }
             }
         }
+    }
+
+    /**
+     * Specify the output folder of tinker patch result.
+     *
+     * @param configuration the tinker configuration 'tinkerPatch'
+     * @param output the output of assemble result
+     * @param variant the variant
+     * @param tinkerPatchBuildTask the task that tinker patch uses
+     */
+    void setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask) {
+        File parentFile = output.outputFile
+        String outputFolder = "${configuration.outputFolder}";
+        if (!Utils.isNullOrNil(outputFolder)) {
+            outputFolder = "${outputFolder}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+        } else {
+            outputFolder =
+                    "${parentFile.getParentFile().getParentFile().getAbsolutePath()}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
+        }
+        tinkerPatchBuildTask.outputFolder = outputFolder
+    }
+
+    void reflectAapt2Flag() {
+        try {
+            def booleanOptClazz = Class.forName('com.android.build.gradle.options.BooleanOption')
+            def enableAAPT2Field = booleanOptClazz.getDeclaredField('ENABLE_AAPT2')
+            enableAAPT2Field.setAccessible(true)
+            def enableAAPT2EnumObj = enableAAPT2Field.get(null)
+            def defValField = enableAAPT2EnumObj.getClass().getDeclaredField('defaultValue')
+            defValField.setAccessible(true)
+            defValField.set(enableAAPT2EnumObj, false)
+        } catch (Throwable thr) {
+            // To some extends, class not found means we are in lower version of android gradle
+            // plugin, so just ignore that exception.
+            if (!(thr instanceof ClassNotFoundException)) {
+                project.logger.error("reflectAapt2Flag error: ${thr.getMessage()}.")
+            }
+        }
+    }
+
+    void disableArchiveDex() {
+        try {
+            def booleanOptClazz = Class.forName('com.android.build.gradle.options.BooleanOption')
+            def enableDexArchiveField = booleanOptClazz.getDeclaredField('ENABLE_DEX_ARCHIVE')
+            enableDexArchiveField.setAccessible(true)
+            def enableDexArchiveEnumObj = enableDexArchiveField.get(null)
+            def defValField = enableDexArchiveEnumObj.getClass().getDeclaredField('defaultValue')
+            defValField.setAccessible(true)
+            defValField.set(enableDexArchiveEnumObj, false)
+        } catch (Throwable thr) {
+            // To some extends, class not found means we are in lower version of android gradle
+            // plugin, so just ignore that exception.
+            if (!(thr instanceof ClassNotFoundException)) {
+                project.logger.error("reflectDexArchiveFlag error: ${thr.getMessage()}.")
+            }
+        }
+    }
+
+    /**
+     * Specify the new apk path. If the new apk file is specified by {@code tinkerPatch.buildConfig.newApk},
+     * just use it as the new apk input for tinker patch, otherwise use the assemble output.
+     *
+     * @param project the project which applies this plugin
+     * @param configuration the tinker configuration 'tinkerPatch'
+     * @param output the output of assemble result
+     * @param variant the variant
+     * @param tinkerPatchBuildTask the task that tinker patch uses
+     */
+    void setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask) {
+        def newApkPath = configuration.newApk
+        if (!Utils.isNullOrNil(newApkPath)) {
+            if (FileOperation.isLegalFile(newApkPath)) {
+                tinkerPatchBuildTask.buildApkPath = newApkPath
+                return
+            }
+        }
+
+        tinkerPatchBuildTask.buildApkPath = output.outputFile
+        tinkerPatchBuildTask.dependsOn variant.assemble
     }
 
     Task getMultiDexTask(Project project, String variantName) {

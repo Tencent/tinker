@@ -16,10 +16,16 @@
 
 package com.tencent.tinker.build.aapt;
 
+import com.tencent.tinker.commons.util.StreamUtil;
+
 import org.w3c.dom.Document;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -43,6 +49,14 @@ public final class JavaXmlUtil {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         try {
             documentBuilder = documentBuilderFactory.newDocumentBuilder();
+            // Block any external content resolving actions since we don't need them and a report
+            // says these actions may cause security problems.
+            documentBuilder.setEntityResolver(new EntityResolver() {
+                @Override
+                public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+                    return new InputSource();
+                }
+            });
         } catch (Exception e) {
             throw new JavaXmlUtilException(e);
         }
@@ -116,13 +130,7 @@ public final class JavaXmlUtil {
         } catch (Exception e) {
             throw new JavaXmlUtilException(e);
         } finally {
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (Exception e) {
-                    throw new JavaXmlUtilException(e);
-                }
-            }
+            StreamUtil.closeQuietly(outputStream);
         }
     }
 

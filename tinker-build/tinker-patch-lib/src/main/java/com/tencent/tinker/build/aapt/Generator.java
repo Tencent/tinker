@@ -16,8 +16,10 @@
 
 package com.tencent.tinker.build.aapt;
 
+import com.tencent.tinker.commons.util.StreamUtil;
+
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 
@@ -35,10 +37,14 @@ public final class Generator {
     public static String md5File(String fullFilename) {
         String result = null;
         if (fullFilename != null) {
+            InputStream is = null;
             try {
-                result = md5File(new FileInputStream(fullFilename));
+                is = new BufferedInputStream(new FileInputStream(fullFilename));
+                result = md5File(is);
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            } finally {
+                StreamUtil.closeQuietly(is);
             }
         }
         return result;
@@ -64,11 +70,7 @@ public final class Generator {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                StreamUtil.closeQuietly(inputStream);
             }
         }
         return result;

@@ -2,17 +2,24 @@
           xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
+
         <service
-            android:name=".service.TinkerPatchService"
+            android:name=".service.TinkerPatchService$IntentServiceRunner"
             android:exported="false"
             android:process=":patch"/>
         <service
-            android:name=".service.TinkerPatchService$InnerService"
+            android:name=".service.TinkerPatchService$IntentServiceRunner$InnerService"
+            android:exported="false"
+            android:process=":patch"/>
+        <service
+            android:name=".service.TinkerPatchService$JobServiceRunner"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false"
             android:process=":patch"/>
         <service
             android:name=".service.DefaultTinkerResultService"
             android:exported="false"/>
+
     </application>
 
 </manifest>

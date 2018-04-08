@@ -21,10 +21,7 @@ import android.content.pm.ApplicationInfo;
 import android.os.SystemClock;
 
 import com.tencent.tinker.bsdiff.BSPatch;
-import com.tencent.tinker.commons.resutil.ResUtil;
-import com.tencent.tinker.commons.ziputil.TinkerZipEntry;
-import com.tencent.tinker.commons.ziputil.TinkerZipFile;
-import com.tencent.tinker.commons.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.commons.util.StreamUtil;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -33,6 +30,10 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareResPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -94,6 +95,8 @@ public class ResDiffPatchInternal extends BasePatchInternal {
         }
         File directory = new File(dir);
 
+        File tempResFileDirectory = new File(directory, "res_temp");
+
         File resOutput = new File(directory, ShareConstants.RES_NAME);
         //check result file whether already exist
         if (resOutput.exists()) {
@@ -118,7 +121,8 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             }
             String apkPath = applicationInfo.sourceDir;
 
-            if (!checkAndExtractResourceLargeFile(context, apkPath, directory, patchFile, resPatchInfo, type)) {
+
+            if (!checkAndExtractResourceLargeFile(context, apkPath, directory, tempResFileDirectory, patchFile, resPatchInfo, type)) {
                 return false;
             }
 
@@ -146,7 +150,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                             && !resPatchInfo.modRes.contains(name)
                             && !resPatchInfo.largeModRes.contains(name)
                             && !name.equals(ShareConstants.RES_MANIFEST)) {
-                            ResUtil.extractTinkerEntry(oldApk, zipEntry, out);
+                            TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
                             totalEntryCount++;
                         }
                     }
@@ -159,7 +163,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, ShareConstants.RES_MANIFEST, type);
                     return false;
                 }
-                ResUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
+                TinkerZipUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
                 totalEntryCount++;
 
                 for (String name : resPatchInfo.largeModRes) {
@@ -170,7 +174,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                         return false;
                     }
                     ShareResPatchInfo.LargeModeInfo largeModeInfo = resPatchInfo.largeModMap.get(name);
-                    ResUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.file, largeModeInfo.crc, out);
+                    TinkerZipUtil.extractLargeModifyFile(largeZipEntry, largeModeInfo.file, largeModeInfo.crc, out);
                     totalEntryCount++;
                 }
 
@@ -181,7 +185,12 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, name, type);
                         return false;
                     }
-                    ResUtil.extractTinkerEntry(newApk, addZipEntry, out);
+                    if (resPatchInfo.storeRes.containsKey(name)) {
+                        File storeFile = resPatchInfo.storeRes.get(name);
+                        TinkerZipUtil.extractLargeModifyFile(addZipEntry, storeFile, addZipEntry.getCrc(), out);
+                    } else {
+                        TinkerZipUtil.extractTinkerEntry(newApk, addZipEntry, out);
+                    }
                     totalEntryCount++;
                 }
 
@@ -192,23 +201,23 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, name, type);
                         return false;
                     }
-                    ResUtil.extractTinkerEntry(newApk, modZipEntry, out);
+                    if (resPatchInfo.storeRes.containsKey(name)) {
+                        File storeFile = resPatchInfo.storeRes.get(name);
+                        TinkerZipUtil.extractLargeModifyFile(modZipEntry, storeFile, modZipEntry.getCrc(), out);
+                    } else {
+                        TinkerZipUtil.extractTinkerEntry(newApk, modZipEntry, out);
+                    }
                     totalEntryCount++;
                 }
+                // set comment back
+                out.setComment(oldApk.getComment());
             } finally {
-                if (out != null) {
-                    out.close();
-                }
-                if (oldApk != null) {
-                    oldApk.close();
-                }
-                if (newApk != null) {
-                    newApk.close();
-                }
+                StreamUtil.closeQuietly(out);
+                StreamUtil.closeQuietly(oldApk);
+                StreamUtil.closeQuietly(newApk);
+
                 //delete temp files
-                for (ShareResPatchInfo.LargeModeInfo largeModeInfo : resPatchInfo.largeModMap.values()) {
-                    SharePatchFileUtil.safeDeleteFile(largeModeInfo.file);
-                }
+                SharePatchFileUtil.deleteDir(tempResFileDirectory);
             }
             boolean result = SharePatchFileUtil.checkResourceArscMd5(resOutput, resPatchInfo.resArscMd5);
 
@@ -227,7 +236,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
         return true;
     }
 
-    private static boolean checkAndExtractResourceLargeFile(Context context, String apkPath, File directory,
+    private static boolean checkAndExtractResourceLargeFile(Context context, String apkPath, File directory, File tempFileDirtory,
                                                             File patchFile, ShareResPatchInfo resPatchInfo, int type) {
         long start = System.currentTimeMillis();
         Tinker manager = Tinker.with(context);
@@ -252,9 +261,33 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             }
 
             //resource arsc is not changed, just return true
-            if (resPatchInfo.largeModRes.isEmpty()) {
-                TinkerLog.i(TAG, "no large modify resources, just return");
+            if (resPatchInfo.largeModRes.isEmpty() && resPatchInfo.storeRes.isEmpty()) {
+                TinkerLog.i(TAG, "no large modify or store resources, just return");
                 return true;
+            }
+            patchZipFile = new ZipFile(patchFile);
+
+            for (String name : resPatchInfo.storeRes.keySet()) {
+                long storeStart = System.currentTimeMillis();
+                File destCopy = new File(tempFileDirtory, name);
+                SharePatchFileUtil.ensureFileDirectory(destCopy);
+
+                ZipEntry patchEntry = patchZipFile.getEntry(name);
+                if (patchEntry == null) {
+                    TinkerLog.w(TAG, "store patch entry is null. path:" + name);
+                    manager.getPatchReporter().onPatchTypeExtractFail(patchFile, destCopy, name, type);
+                    return false;
+                }
+                extract(patchZipFile, patchEntry, destCopy, null, false);
+                //fast check, only check size
+                if (patchEntry.getSize() != destCopy.length()) {
+                    TinkerLog.w(TAG, "resource meta file size mismatch, type:%s, name: %s, patch size: %d, file size; %d", ShareTinkerInternals.getTypeString(type), name, patchEntry.getSize(), destCopy.length());
+                    manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
+                    return false;
+                }
+                resPatchInfo.storeRes.put(name, destCopy);
+
+                TinkerLog.w(TAG, "success recover store file:%s, file size:%d, use time:%d", destCopy.getPath(), destCopy.length(), (System.currentTimeMillis() - storeStart));
             }
             for (String name : resPatchInfo.largeModRes) {
                 long largeStart = System.currentTimeMillis();
@@ -266,7 +299,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     return false;
                 }
 
-                largeModeInfo.file = new File(directory, name);
+                largeModeInfo.file = new File(tempFileDirtory, name);
                 SharePatchFileUtil.ensureFileDirectory(largeModeInfo.file);
 
                 //we do not check the intermediate files' md5 to save time, use check whether it is 32 length
@@ -275,7 +308,6 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
                     return false;
                 }
-                patchZipFile = new ZipFile(patchFile);
                 ZipEntry patchEntry = patchZipFile.getEntry(name);
                 if (patchEntry == null) {
                     TinkerLog.w(TAG, "large mod patch entry is null. path:" + name);
@@ -296,8 +328,8 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     newStream = patchZipFile.getInputStream(patchEntry);
                     BSPatch.patchFast(oldStream, newStream, largeModeInfo.file);
                 } finally {
-                    SharePatchFileUtil.closeQuietly(oldStream);
-                    SharePatchFileUtil.closeQuietly(newStream);
+                    StreamUtil.closeQuietly(oldStream);
+                    StreamUtil.closeQuietly(newStream);
                 }
                 //go go go bsdiff get the
                 if (!SharePatchFileUtil.verifyFileMd5(largeModeInfo.file, largeModeInfo.md5)) {
@@ -308,7 +340,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 }
                 TinkerLog.w(TAG, "success recover large modify file:%s, file size:%d, use time:%d", largeModeInfo.file.getPath(), largeModeInfo.file.length(), (System.currentTimeMillis() - largeStart));
             }
-            TinkerLog.w(TAG, "success recover all large modify use time:%d", (System.currentTimeMillis() - start));
+            TinkerLog.w(TAG, "success recover all large modify and store resources use time:%d", (System.currentTimeMillis() - start));
         } catch (Throwable e) {
 //            e.printStackTrace();
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) +  " extract failed (" + e.getMessage() + ").", e);

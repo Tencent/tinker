@@ -31,10 +31,12 @@ import java.util.regex.Pattern;
 public class ShareResPatchInfo {
     public String arscBaseCrc = null;
 
-    public String                         resArscMd5  = null;
-    public ArrayList<String>              addRes      = new ArrayList<>();
-    public ArrayList<String>              deleteRes   = new ArrayList<>();
-    public ArrayList<String>              modRes      = new ArrayList<>();
+    public String                resArscMd5 = null;
+    public ArrayList<String>     addRes     = new ArrayList<>();
+    public ArrayList<String>     deleteRes  = new ArrayList<>();
+    public ArrayList<String>     modRes     = new ArrayList<>();
+    public HashMap<String, File> storeRes   = new HashMap<>();
+
     //use linkHashMap instead?
     public ArrayList<String>              largeModRes = new ArrayList<>();
     public HashMap<String, LargeModeInfo> largeModMap = new HashMap<>();
@@ -95,6 +97,13 @@ public class ShareResPatchInfo {
                 int size = Integer.parseInt(kv[1]);
                 for (; size > 0; size--) {
                     info.deleteRes.add(lines[i + 1]);
+                    i++;
+                }
+            } else if (line.startsWith(ShareConstants.RES_STORE_TITLE)) {
+                final String[] kv = line.split(":", 2);
+                int size = Integer.parseInt(kv[1]);
+                for (; size > 0; size--) {
+                    info.storeRes.put(lines[i + 1], null);
                     i++;
                 }
             }
@@ -177,13 +186,16 @@ public class ShareResPatchInfo {
         for (String del : deleteRes) {
             sb.append("deletedSet:" + del + "\n");
         }
+        for (String store : storeRes.keySet()) {
+            sb.append("storeSet:" + store + "\n");
+        }
         return sb.toString();
     }
 
     public static class LargeModeInfo {
-        public String md5  = null;
+        public String md5 = null;
         public long crc;
-        public File   file = null;
+        public File file = null;
     }
 
 }
