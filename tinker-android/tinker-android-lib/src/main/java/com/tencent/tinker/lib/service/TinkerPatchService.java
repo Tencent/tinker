@@ -29,7 +29,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
@@ -37,12 +39,14 @@ import android.support.annotation.Nullable;
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by zhangshaowen on 16/3/14.
@@ -50,37 +54,65 @@ import java.lang.ref.WeakReference;
 public class TinkerPatchService {
     private static final String TAG = "Tinker.TinkerPatchService";
 
-    private static final String        PATCH_PATH_EXTRA      = "patch_path_extra";
-    private static final String        RESULT_CLASS_EXTRA    = "patch_result_class";
+    private static final String PATCH_PATH_EXTRA = "patch_path_extra";
+    private static final String RESULT_CLASS_EXTRA = "patch_result_class";
+    private static final int MIN_SDKVER_TO_USE_JOBSCHEDULER = 26;
 
-    private static       AbstractPatch upgradePatchProcessor = null;
-    private static       int                                    notificationId       = ShareConstants.TINKER_PATCH_SERVICE_NOTIFICATION;
-    private static       Class<? extends AbstractResultService> resultServiceClass   = null;
+    private static AbstractPatch upgradePatchProcessor = null;
+    private static int notificationId = ShareConstants.TINKER_PATCH_SERVICE_NOTIFICATION;
+    private static Class<? extends AbstractResultService> resultServiceClass = null;
+    private static Handler mHandler = new Handler(Looper.getMainLooper());
 
-    public static void runPatchService(Context context, String path) {
+    public static void runPatchService(final Context context, final String path) {
         try {
-            if (Build.VERSION.SDK_INT < 21) {
-                Intent intent = new Intent(context, IntentServiceRunner.class);
-                intent.putExtra(PATCH_PATH_EXTRA, path);
-                intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
-                context.startService(intent);
+            if (Build.VERSION.SDK_INT < MIN_SDKVER_TO_USE_JOBSCHEDULER) {
+                runPatchServiceByIntentService(context, path);
             } else {
-                final JobInfo.Builder jobInfoBuilder = new JobInfo.Builder(
-                        1, new ComponentName(context, JobServiceRunner.class)
-                );
-                final PersistableBundle extras = new PersistableBundle();
-                extras.putString(PATCH_PATH_EXTRA, path);
-                extras.putString(RESULT_CLASS_EXTRA, resultServiceClass.getName());
-                jobInfoBuilder.setExtras(extras);
-                jobInfoBuilder.setMinimumLatency(1);
-                final JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-                if (jobScheduler.schedule(jobInfoBuilder.build()) != JobScheduler.RESULT_SUCCESS) {
-                    TinkerLog.e(TAG, "start patch job service fail.");
+                if (!runPatchServiceByJobScheduler(context, path)) {
+                    TinkerLog.e(TAG, "start patch job service fail, try to fallback to intent service.");
+                    mHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            // This method will tell us whether the intent service or the job scheduler
+                            // is running.
+                            TinkerLog.i(TAG, "fallback: prepare trying to run patch service by intent service.");
+                            if (!TinkerServiceInternals.isTinkerPatchServiceRunning(context)) {
+                                runPatchServiceByIntentService(context, path);
+                            }
+                        }
+                    }, TimeUnit.SECONDS.toMillis(3));
                 }
             }
         } catch (Throwable throwable) {
             TinkerLog.e(TAG, "start patch service fail, exception:" + throwable);
         }
+    }
+
+    private static void runPatchServiceByIntentService(Context context, String path) {
+        TinkerLog.i(TAG, "run patch service by intent service.");
+        Intent intent = new Intent(context, IntentServiceRunner.class);
+        intent.putExtra(PATCH_PATH_EXTRA, path);
+        intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
+        context.startService(intent);
+    }
+
+    @TargetApi(21)
+    private static boolean runPatchServiceByJobScheduler(Context context, String path) {
+        TinkerLog.i(TAG, "run patch service by job scheduler.");
+        final JobInfo.Builder jobInfoBuilder = new JobInfo.Builder(
+                1, new ComponentName(context, JobServiceRunner.class)
+        );
+        final PersistableBundle extras = new PersistableBundle();
+        extras.putString(PATCH_PATH_EXTRA, path);
+        extras.putString(RESULT_CLASS_EXTRA, resultServiceClass.getName());
+        jobInfoBuilder.setExtras(extras);
+        jobInfoBuilder.setOverrideDeadline(5);
+        final JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        if (jobScheduler == null) {
+            TinkerLog.e(TAG, "jobScheduler is null.");
+            return false;
+        }
+        return (jobScheduler.schedule(jobInfoBuilder.build()) == JobScheduler.RESULT_SUCCESS);
     }
 
     public static void setPatchProcessor(AbstractPatch upgradePatch, Class<? extends AbstractResultService> serviceClass) {
@@ -109,7 +141,7 @@ public class TinkerPatchService {
     }
 
     public static Class<? extends Service> getRealRunnerClass() {
-        if (Build.VERSION.SDK_INT < 21) {
+        if (Build.VERSION.SDK_INT < MIN_SDKVER_TO_USE_JOBSCHEDULER) {
             return IntentServiceRunner.class;
         } else {
             return JobServiceRunner.class;
