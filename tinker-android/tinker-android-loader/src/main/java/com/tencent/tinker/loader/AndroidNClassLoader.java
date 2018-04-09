@@ -39,6 +39,8 @@ import dalvik.system.PathClassLoader;
 class AndroidNClassLoader extends PathClassLoader {
     private static final String TAG = "Tinker.NClassLoader";
 
+    private static Object oldDexPathListHolder = null;
+
     private final PathClassLoader originClassLoader;
     private String applicationClassName;
 
@@ -52,7 +54,11 @@ class AndroidNClassLoader extends PathClassLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private static Object recreateDexPathList(Object originalDexPathList, ClassLoader newDefiningContext) throws Exception {
+    private static Object recreateDexPathList(Object originalDexPathList, ClassLoader newDefiningContext, boolean createEmptyOne) throws Exception {
+        final Constructor<?> dexPathListConstructor = ShareReflectUtil.findConstructor(originalDexPathList, ClassLoader.class, String.class, String.class, File.class);
+        if (createEmptyOne) {
+            return dexPathListConstructor.newInstance(newDefiningContext, "", null, null);
+        }
         final Field dexElementsField = ShareReflectUtil.findField(originalDexPathList, "dexElements");
         final Object[] dexElements = (Object[]) dexElementsField.get(originalDexPathList);
         final Field nativeLibraryDirectoriesField = ShareReflectUtil.findField(originalDexPathList, "nativeLibraryDirectories");
@@ -92,8 +98,6 @@ class AndroidNClassLoader extends PathClassLoader {
         }
 
         final String libraryPath = libraryPathBuilder.toString();
-
-        final Constructor<?> dexPathListConstructor = ShareReflectUtil.findConstructor(originalDexPathList, ClassLoader.class, String.class, String.class, File.class);
         return dexPathListConstructor.newInstance(newDefiningContext, dexPath, libraryPath, null);
     }
 
@@ -106,11 +110,17 @@ class AndroidNClassLoader extends PathClassLoader {
         // To avoid 'dex file register with multiple classloader' exception on Android O, we must keep old
         // dexPathList in original classloader so that after the newly loaded base dex was bound to
         // AndroidNClassLoader we can still load class in base dex from original classloader.
-
-        Object newPathList = recreateDexPathList(originPathList, androidNClassLoader);
+        Object newPathList = recreateDexPathList(originPathList, androidNClassLoader, false);
 
         // Update new classloader's pathList.
         pathListField.set(androidNClassLoader, newPathList);
+
+        // Recreate old dexPathList.
+        oldDexPathListHolder = originPathList;
+        Object emptyOldPathList = recreateDexPathList(originPathList, originalClassLoader, true);
+        pathListField.set(originalClassLoader, emptyOldPathList);
+        Object recreatedOldPathList = recreateDexPathList(originPathList, originalClassLoader, false);
+        pathListField.set(originalClassLoader, recreatedOldPathList);
 
         return androidNClassLoader;
     }
