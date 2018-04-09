@@ -412,24 +412,24 @@ public class ShareTinkerInternals {
             (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
 
         if (activityManager != null) {
-            List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
-                .getRunningAppProcesses();
+            try {
+                List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
+                    .getRunningAppProcesses();
 
-            if (appProcessList != null) {
-                try {
+                if (appProcessList != null) {
                     for (ActivityManager.RunningAppProcessInfo process : appProcessList) {
                         if (process.pid == myPid) {
                             myProcess = process;
                             break;
                         }
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-                }
 
-                if (myProcess != null) {
-                    return myProcess.processName;
+                    if (myProcess != null) {
+                        return myProcess.processName;
+                    }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
             }
         }
 
