@@ -18,7 +18,6 @@ package com.tencent.tinker.loader.shareutil;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.util.Log;
 
@@ -45,29 +44,36 @@ public class SharePatchFileUtil {
 
     private static char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
+    private static File createPrivateDirWithRightPrivilegeFlags(Context context, String name) {
+        final File res = context.getDir(name, Context.MODE_PRIVATE);
+        final File expectedNameFile = new File(res.getParentFile(), name);
+        res.renameTo(expectedNameFile);
+        return expectedNameFile;
+    }
+
     /**
      * data dir, such as /data/data/tinker.sample.android/tinker
      * @param context
      * @return
      */
     public static File getPatchDirectory(Context context) {
-        ApplicationInfo applicationInfo = context.getApplicationInfo();
-        if (applicationInfo == null) {
-            // Looks like running on a test Context, so just return without patching.
-            return null;
-        }
+        // Directory created by File class only has 600 privilege, which causes dex2oat procedure
+        // fall into failure on some devices (e.g. VIVO)
+        //
+        // Although we can use File.setReadable() and File.setWritable() to fix this problem,
+        // since these methods can not change the 'group' privilege mask standalone, (instead,
+        // they change either the 'owner' privilege mask only or all privilege mask together.)
+        // for security reason we use context.getDir to create the tinker root directory.
+        //
+        // Notice: Name of directory created by context.getDir() is started with 'app_'.
+        //
+        //return new File(applicationInfo.dataDir, ShareConstants.PATCH_DIRECTORY_NAME);
 
-        return new File(applicationInfo.dataDir, ShareConstants.PATCH_DIRECTORY_NAME);
+        return createPrivateDirWithRightPrivilegeFlags(context, ShareConstants.PATCH_DIRECTORY_NAME);
     }
 
     public static File getPatchTempDirectory(Context context) {
-        ApplicationInfo applicationInfo = context.getApplicationInfo();
-        if (applicationInfo == null) {
-            // Looks like running on a test Context, so just return without patching.
-            return null;
-        }
-
-        return new File(applicationInfo.dataDir, ShareConstants.PATCH_TEMP_DIRECTORY_NAME);
+        return createPrivateDirWithRightPrivilegeFlags(context, ShareConstants.PATCH_TEMP_DIRECTORY_NAME);
     }
 
     public static File getPatchLastCrashFile(Context context) {
