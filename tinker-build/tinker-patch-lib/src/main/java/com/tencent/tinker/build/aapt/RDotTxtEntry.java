@@ -116,7 +116,7 @@ public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
     // Taken from http://developer.android.com/reference/android/R.html
     // TRANSITION for api level 19
     public enum RType {
-        ANIM, ANIMATOR, ARRAY, ATTR, BOOL, COLOR, DIMEN, DRAWABLE, FRACTION, ID, INTEGER, INTERPOLATOR, LAYOUT, MENU, MIPMAP, PLURALS, RAW, STRING, STYLE, STYLEABLE, TRANSITION, XML;
+        ANIM, ANIMATOR, ARRAY, ATTR, BOOL, COLOR, DIMEN, DRAWABLE, FONT, FRACTION, ID, INTEGER, INTERPOLATOR, LAYOUT, MENU, MIPMAP, PLURALS, RAW, STRING, STYLE, STYLEABLE, TRANSITION, XML;
 
         @Override
         public String toString() {
