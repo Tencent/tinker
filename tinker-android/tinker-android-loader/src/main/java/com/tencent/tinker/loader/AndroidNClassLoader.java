@@ -107,20 +107,21 @@ class AndroidNClassLoader extends PathClassLoader {
         final Field pathListField = ShareReflectUtil.findField(originalClassLoader, "pathList");
         final Object originPathList = pathListField.get(originalClassLoader);
 
-        // To avoid 'dex file register with multiple classloader' exception on Android O, we must keep old
-        // dexPathList in original classloader so that after the newly loaded base dex was bound to
-        // AndroidNClassLoader we can still load class in base dex from original classloader.
         Object newPathList = recreateDexPathList(originPathList, androidNClassLoader, false);
 
         // Update new classloader's pathList.
         pathListField.set(androidNClassLoader, newPathList);
 
-        // Recreate old dexPathList.
+        // Change original classloader's definingContext to avoid potential class cast exception.
+        //
+        // Here's why we aren't going to recreate DexPathList with original classloader directly:
+        //  To avoid 'dex file register with multiple classloader' exception on Android O, we must
+        //  keep old dexPathList in original classloader so that we can still load classes in
+        //  base dex from original classloader.
+        ShareReflectUtil.findField(originPathList, "definingContext").set(originPathList, androidNClassLoader);
+
+        // Keep old dexPathList to avoid gc issue.
         oldDexPathListHolder = originPathList;
-        Object emptyOldPathList = recreateDexPathList(originPathList, originalClassLoader, true);
-        pathListField.set(originalClassLoader, emptyOldPathList);
-        Object recreatedOldPathList = recreateDexPathList(originPathList, originalClassLoader, false);
-        pathListField.set(originalClassLoader, recreatedOldPathList);
 
         return androidNClassLoader;
     }
