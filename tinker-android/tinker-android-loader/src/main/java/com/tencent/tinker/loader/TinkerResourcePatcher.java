@@ -98,8 +98,12 @@ class TinkerResourcePatcher {
 
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
-        stringBlocksField = findField(assets, "mStringBlocks");
-        ensureStringBlocksMethod = findMethod(assets, "ensureStringBlocks");
+        try {
+            stringBlocksField = findField(assets, "mStringBlocks");
+            ensureStringBlocksMethod = findMethod(assets, "ensureStringBlocks");
+        } catch (Throwable ignored) {
+            // Ignored.
+        }
 
         // Use class fetched from instance to avoid some ROMs that use customized AssetManager
         // class. (e.g. Baidu OS)
@@ -197,8 +201,10 @@ class TinkerResourcePatcher {
 
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
-        stringBlocksField.set(newAssetManager, null);
-        ensureStringBlocksMethod.invoke(newAssetManager);
+        if (stringBlocksField != null && ensureStringBlocksMethod != null) {
+            stringBlocksField.set(newAssetManager, null);
+            ensureStringBlocksMethod.invoke(newAssetManager);
+        }
 
         for (WeakReference<Resources> wr : references) {
             final Resources resources = wr.get();
