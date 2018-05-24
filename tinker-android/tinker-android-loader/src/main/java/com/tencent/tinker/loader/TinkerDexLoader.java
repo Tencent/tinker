@@ -280,6 +280,9 @@ public class TinkerDexLoader {
             //check dex opt whether complete also
             File dexOptFile = new File(SharePatchFileUtil.optimizedPathFor(dexFile, optimizeDexDirectoryFile));
             if (!SharePatchFileUtil.isLegalFile(dexOptFile)) {
+                if (SharePatchFileUtil.shouldAcceptEvenIfIllegal(dexOptFile)) {
+                    continue;
+                }
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexOptFile.getAbsolutePath());
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
                 return false;
