@@ -567,9 +567,13 @@ public class Configuration {
                         mResRawPattern.add(value);
                         addToPatterns(value, mResFilePattern);
                     } else if (tagName.equals(ATTR_IGNORE_CHANGE)) {
-                        addToPatterns(value, mResIgnoreChangePattern);
+                        if (!Utils.isBlank(value)) {
+                            addToPatterns(value, mResIgnoreChangePattern);
+                        }
                     } else if (tagName.equals(ATTR_IGNORE_CHANGE_WARNING)) {
-                        addToPatterns(value, mResIgnoreChangeWarningPattern);
+                        if (!Utils.isBlank(value)) {
+                            addToPatterns(value, mResIgnoreChangeWarningPattern);
+                        }
                     } else if (tagName.equals(ATTR_RES_LARGE_MOD)) {
                         mLargeModSize = Integer.valueOf(value);
                     } else {
