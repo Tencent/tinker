@@ -384,6 +384,27 @@ public class ShareTinkerInternals {
 
     }
 
+    public static void killProcessExceptMain(Context context) {
+        final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am == null) {
+            return;
+        }
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = am.getRunningAppProcesses();
+        if (appProcessList != null) {
+            // NOTE: getRunningAppProcess() ONLY GIVE YOU THE PROCESS OF YOUR OWN PACKAGE IN ANDROID M
+            // BUT THAT'S ENOUGH HERE
+            for (ActivityManager.RunningAppProcessInfo ai : appProcessList) {
+                if (ai.uid != android.os.Process.myUid()) {
+                    continue;
+                }
+                if (ai.processName.equals(context.getPackageName())) {
+                    continue;
+                }
+                android.os.Process.killProcess(ai.pid);
+            }
+        }
+    }
+
     /**
      * add process name cache
      *
