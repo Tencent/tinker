@@ -178,11 +178,18 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         // may have directory in android o
         if (files != null) {
             for (File file : files) {
-                if (file.isFile()) {
+                final String fileName = file.getName();
+                if (file.isFile()
+                    &&  (fileName.endsWith(ShareConstants.DEX_SUFFIX)
+                      || fileName.endsWith(ShareConstants.JAR_SUFFIX)
+                      || fileName.endsWith(ShareConstants.PATCH_SUFFIX))
+                ) {
                     legalFiles.add(file);
                 }
             }
         }
+
+        TinkerLog.i(TAG, "legal files to do dexopt: " + legalFiles);
 
         final String optimizeDexDirectory = patchVersionDirectory + "/" + DEX_OPTIMIZE_PATH + "/";
         return dexOptimizeDexFiles(context, legalFiles, optimizeDexDirectory, patchFile);
