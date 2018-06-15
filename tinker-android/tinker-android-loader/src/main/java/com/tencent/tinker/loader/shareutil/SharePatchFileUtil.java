@@ -168,7 +168,7 @@ public class SharePatchFileUtil {
     }
 
     /**
-     * For some special device whose dex2oat procedure is optimized for tinker. (e.g. vivo)
+     * For some special device whose dex2oat procedure is optimized for tinker. (e.g. vivo, oppo)
      *
      * Because these devices by-pass our dex2oat request, which cause vm to load tinker's dex with interpret-mode
      * and generate nothing instead of a valid oat file. It's fine to skip the check so far.
@@ -177,7 +177,8 @@ public class SharePatchFileUtil {
      * @return
      */
     public static final boolean shouldAcceptEvenIfIllegal(File file) {
-        return "vivo".equalsIgnoreCase(Build.MANUFACTURER) && (!file.exists() || file.length() == 0);
+        return ("vivo".equalsIgnoreCase(Build.MANUFACTURER) || "oppo".equalsIgnoreCase(Build.MANUFACTURER))
+                && (!file.exists() || file.length() == 0);
     }
 
     /**
