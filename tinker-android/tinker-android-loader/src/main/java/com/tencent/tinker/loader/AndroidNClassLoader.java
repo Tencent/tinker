@@ -165,10 +165,9 @@ class AndroidNClassLoader extends PathClassLoader {
 
     public Class<?> findClass(String name) throws ClassNotFoundException {
         // loader class use default pathClassloader to load
-        if ((name != null
+        if (name != null
                 && name.startsWith("com.tencent.tinker.loader.")
-                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS))
-                || (applicationClassName != null && applicationClassName.equals(name))) {
+                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)) {
             return originClassLoader.loadClass(name);
         }
         return super.findClass(name);
