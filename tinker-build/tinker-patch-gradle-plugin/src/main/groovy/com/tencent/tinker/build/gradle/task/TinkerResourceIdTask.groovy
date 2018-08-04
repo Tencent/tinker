@@ -150,5 +150,23 @@ public class TinkerResourceIdTask extends DefaultTask {
             project.logger.error("tinker gen resource idx.xml in ${RESOURCE_IDX_XML}")
         }
     }
+
+    /**
+     * 将--stable-ids参数追加到additionalParameters上
+     */
+    List<String> addStableIdsFileToAdditionalParameters(def processAndroidResourceTask) {
+        def aaptOptions = processAndroidResourceTask.getAaptOptions()
+        List<String> additionalParameters = new ArrayList<>()
+        List<String> originalAdditionalParameters = aaptOptions.getAdditionalParameters()
+        if (originalAdditionalParameters != null) {
+            additionalParameters.addAll(originalAdditionalParameters)
+        }
+        aaptOptions.setAdditionalParameters(additionalParameters)
+        additionalParameters.add("--stable-ids")
+        additionalParameters.add(project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath())
+        project.logger.error("tinker add additionalParameters --stable-ids ${project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath()}")
+        return additionalParameters
+    }
+
 }
 
