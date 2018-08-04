@@ -22,9 +22,11 @@ import com.tencent.tinker.build.aapt.PatchUtil
 import com.tencent.tinker.build.aapt.RDotTxtEntry
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
+import groovy.io.FileType
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
+import org.gradle.util.GFileUtils
 
 /**
  * The configuration properties.
@@ -116,40 +118,39 @@ public class TinkerResourceIdTask extends DefaultTask {
         }
         return aapt2Enabled
     }
-    
-    @TaskAction
-    def applyResourceId() {
-        String resourceMappingFile = project.extensions.tinkerPatch.buildConfig.applyResourceMapping
 
-        // Parse the public.xml and ids.xml
-        if (!FileOperation.isLegalFile(resourceMappingFile)) {
-            project.logger.error("apply resource mapping file ${resourceMappingFile} is illegal, just ignore")
-            return
+    /**
+     * 获取style类型资源R.txt中名称和其原始名称的映射关系
+     */
+    private Map<String, String> getStyles() {
+        Map<String, String> styles = new HashMap<>()
+        def mergeResourcesTask = project.tasks.findByName("merge${variantName}Resources")
+        List<File> resDirCandidateList = new ArrayList<>()
+        resDirCandidateList.add(mergeResourcesTask.outputDir)
+        resDirCandidateList.add(new File(mergeResourcesTask.getIncrementalFolder(), "merged.dir"))
+        resDirCandidateList.each {
+            it.eachFileRecurse(FileType.FILES) {
+                if (it.getParentFile().getName().startsWith("values") && it.getName().startsWith("values") && it.getName().endsWith(".xml")) {
+                    File destFile = new File(project.file(RESOURCE_VALUES), "${it.getParentFile().getName()}/${it.getName()}")
+                    GFileUtils.deleteQuietly(destFile)
+                    GFileUtils.mkdirs(destFile.getParentFile())
+                    GFileUtils.copyFile(it, destFile)
+                }
+            }
         }
-        String idsXml = resDir + "/values/ids.xml";
-        String publicXml = resDir + "/values/public.xml";
-        FileOperation.deleteFile(idsXml);
-        FileOperation.deleteFile(publicXml);
-        List<String> resourceDirectoryList = new ArrayList<String>()
-        resourceDirectoryList.add(resDir)
-
-        project.logger.error("we build ${project.getName()} apk with apply resource mapping file ${resourceMappingFile}")
-        project.extensions.tinkerPatch.buildConfig.usingResourceMapping = true
-        Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap = PatchUtil.readRTxt(resourceMappingFile)
-
-        AaptResourceCollector aaptResourceCollector = AaptUtil.collectResource(resourceDirectoryList, rTypeResourceMap)
-        PatchUtil.generatePublicResourceXml(aaptResourceCollector, idsXml, publicXml)
-        File publicFile = new File(publicXml)
-        if (publicFile.exists()) {
-            FileOperation.copyFileUsingStream(publicFile, project.file(RESOURCE_PUBLIC_XML))
-            project.logger.error("tinker gen resource public.xml in ${RESOURCE_PUBLIC_XML}")
+        project.file(RESOURCE_VALUES).eachFileRecurse(FileType.FILES) {
+            new XmlParser().parse(it).each {
+                if ("style".equalsIgnoreCase("${it.name()}")) {
+                    String originalStyle = "${it.@name}".toString()
+                    //将.替换为_
+                    String sanitizeName = originalStyle.replaceAll("[.:]", "_");
+                    styles.put(sanitizeName, originalStyle)
+                }
+            }
         }
-        File idxFile = new File(idsXml)
-        if (idxFile.exists()) {
-            FileOperation.copyFileUsingStream(idxFile, project.file(RESOURCE_IDX_XML))
-            project.logger.error("tinker gen resource idx.xml in ${RESOURCE_IDX_XML}")
-        }
+        return styles
     }
+
 
     /**
      * 将--stable-ids参数追加到additionalParameters上
@@ -168,5 +169,80 @@ public class TinkerResourceIdTask extends DefaultTask {
         return additionalParameters
     }
 
+
+    @TaskAction
+    def applyResourceId() {
+        String resourceMappingFile = project.extensions.tinkerPatch.buildConfig.applyResourceMapping
+
+        // Parse the public.xml and ids.xml
+        if (!FileOperation.isLegalFile(resourceMappingFile)) {
+            project.logger.error("apply resource mapping file ${resourceMappingFile} is illegal, just ignore")
+            return
+        }
+
+        project.logger.error("we build ${project.getName()} apk with apply resource mapping file ${resourceMappingFile}")
+        project.extensions.tinkerPatch.buildConfig.usingResourceMapping = true
+        Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap = PatchUtil.readRTxt(resourceMappingFile)
+
+        if (isAapt2Enabled(project)) {
+            File stableIdsFile = project.file(RESOURCE_PUBLIC_TXT)
+            FileOperation.deleteFile(stableIdsFile);
+            List<String> sortedLines = new ArrayList<>()
+            Map<String, String> styles = getStyles()
+            rTypeResourceMap?.each { key, entries ->
+                entries.each {
+                    if (it.type == RDotTxtEntry.RType.STYLEABLE) {
+                        //styleable类型资源，直接忽略，public.xml中也不存在这种类型
+                        return
+                    } else if (it.type == RDotTxtEntry.RType.STYLE) {
+                        //style类型资源，R.txt中将实际名称中的.替换为了_，如Theme.MyTheme会变成Theme_MyTheme
+                        //但是--stable-ids中，必须是原始名称，即Theme.MyTheme，因此这里需要将其还原
+                        //因此这里取其原始名，值来自合并后的values.xml文件
+                        sortedLines.add("${applicationId}:${it.type}/${styles.get(it.name)} = ${it.idValue}")
+                    } else if (it.type == RDotTxtEntry.RType.DRAWABLE) {
+                        //drawable类型资源，存在内部类型资源，如design库中的avd_hide_password和avd_show_password
+                        //内部资源其名称是以$符开头，如$avd_hide_password__0, $avd_hide_password__1
+                        //但是R.txt中没有此类型资源，因此这里先忽略
+                        //为了方便后续扩展，这里扔到else if里单独处理，实际逻辑目前同else
+                        sortedLines.add("${applicationId}:${it.type}/${it.name} = ${it.idValue}")
+                    } else {
+                        //其他类型资源，直接按照  packageName:resType/resName = resId 进行拼接
+                        sortedLines.add("${applicationId}:${it.type}/${it.name} = ${it.idValue}")
+                    }
+                }
+            }
+            //排序的目的仅仅是为了方便查看变更内容
+            Collections.sort(sortedLines)
+
+            sortedLines.each {
+                stableIdsFile.append("${it}\n")
+            }
+
+            def processResourcesTask = project.tasks.findByName("process${variantName}Resources")
+            processResourcesTask.doFirst {
+                addStableIdsFileToAdditionalParameters(processResourcesTask)
+            }
+
+        } else {
+            String idsXml = resDir + "/values/ids.xml";
+            String publicXml = resDir + "/values/public.xml";
+            FileOperation.deleteFile(idsXml);
+            FileOperation.deleteFile(publicXml);
+            List<String> resourceDirectoryList = new ArrayList<String>()
+            resourceDirectoryList.add(resDir)
+            AaptResourceCollector aaptResourceCollector = AaptUtil.collectResource(resourceDirectoryList, rTypeResourceMap)
+            PatchUtil.generatePublicResourceXml(aaptResourceCollector, idsXml, publicXml)
+            File publicFile = new File(publicXml)
+            if (publicFile.exists()) {
+                FileOperation.copyFileUsingStream(publicFile, project.file(RESOURCE_PUBLIC_XML))
+                project.logger.error("tinker gen resource public.xml in ${RESOURCE_PUBLIC_XML}")
+            }
+            File idxFile = new File(idsXml)
+            if (idxFile.exists()) {
+                FileOperation.copyFileUsingStream(idxFile, project.file(RESOURCE_IDX_XML))
+                project.logger.error("tinker gen resource idx.xml in ${RESOURCE_IDX_XML}")
+            }
+        }
+    }
 }
 
