@@ -97,6 +97,7 @@ android {
     }
 
 //    aaptOptions{
+//        additionalParameters "--emit-ids", "${project.file('public.txt')}"
 //        cruncherEnabled false
 //    }
 
