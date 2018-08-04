@@ -36,6 +36,11 @@ public class TinkerResourceIdTask extends DefaultTask {
 
     String resDir
 
+    String variantName
+
+    String applicationId
+
+
     TinkerResourceIdTask() {
         group = 'tinker'
     }
