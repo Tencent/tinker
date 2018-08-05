@@ -174,28 +174,31 @@ public class TinkerResourceIdTask extends DefaultTask {
             project.logger.error("apply resource mapping file ${resourceMappingFile} is illegal, just ignore")
             return
         }
-        String idsXml = resDir + "/values/ids.xml";
-        String publicXml = resDir + "/values/public.xml";
-        FileOperation.deleteFile(idsXml);
-        FileOperation.deleteFile(publicXml);
-        List<String> resourceDirectoryList = new ArrayList<String>()
-        resourceDirectoryList.add(resDir)
-
         project.logger.error("we build ${project.getName()} apk with apply resource mapping file ${resourceMappingFile}")
         project.extensions.tinkerPatch.buildConfig.usingResourceMapping = true
         Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap = PatchUtil.readRTxt(resourceMappingFile)
 
-        AaptResourceCollector aaptResourceCollector = AaptUtil.collectResource(resourceDirectoryList, rTypeResourceMap)
-        PatchUtil.generatePublicResourceXml(aaptResourceCollector, idsXml, publicXml)
-        File publicFile = new File(publicXml)
-        if (publicFile.exists()) {
-            FileOperation.copyFileUsingStream(publicFile, project.file(RESOURCE_PUBLIC_XML))
-            project.logger.error("tinker gen resource public.xml in ${RESOURCE_PUBLIC_XML}")
-        }
-        File idxFile = new File(idsXml)
-        if (idxFile.exists()) {
-            FileOperation.copyFileUsingStream(idxFile, project.file(RESOURCE_IDX_XML))
-            project.logger.error("tinker gen resource idx.xml in ${RESOURCE_IDX_XML}")
+
+        if (!isAapt2EnabledCompat(project)) {
+            String idsXml = resDir + "/values/ids.xml";
+            String publicXml = resDir + "/values/public.xml";
+            FileOperation.deleteFile(idsXml);
+            FileOperation.deleteFile(publicXml);
+            List<String> resourceDirectoryList = new ArrayList<String>()
+            resourceDirectoryList.add(resDir)
+
+            AaptResourceCollector aaptResourceCollector = AaptUtil.collectResource(resourceDirectoryList, rTypeResourceMap)
+            PatchUtil.generatePublicResourceXml(aaptResourceCollector, idsXml, publicXml)
+            File publicFile = new File(publicXml)
+            if (publicFile.exists()) {
+                FileOperation.copyFileUsingStream(publicFile, project.file(RESOURCE_PUBLIC_XML))
+                project.logger.error("tinker gen resource public.xml in ${RESOURCE_PUBLIC_XML}")
+            }
+            File idxFile = new File(idsXml)
+            if (idxFile.exists()) {
+                FileOperation.copyFileUsingStream(idxFile, project.file(RESOURCE_IDX_XML))
+                project.logger.error("tinker gen resource idx.xml in ${RESOURCE_IDX_XML}")
+            }
         }
     }
 }
