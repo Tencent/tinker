@@ -136,7 +136,7 @@ public class TinkerResourceIdTask extends DefaultTask {
     /**
      * get real name for style type resources in R.txt by values files
      */
-    private Map<String, String> getStyles() {
+    Map<String, String> getStyles() {
         Map<String, String> styles = new HashMap<>()
         def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
         List<File> resDirCandidateList = new ArrayList<>()
@@ -163,6 +163,38 @@ public class TinkerResourceIdTask extends DefaultTask {
             }
         }
         return styles
+    }
+
+    /**
+     * get the sorted stable id lines
+     */
+    ArrayList<String> getSortedStableIds(Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap) {
+        List<String> sortedLines = new ArrayList<>()
+        Map<String, String> styles = getStyles()
+        rTypeResourceMap?.each { key, entries ->
+            entries.each {
+                if (it.type == RDotTxtEntry.RType.STYLEABLE) {
+                    //ignore styleable type, also public.xml ignore it.
+                    return
+                } else if (it.type == RDotTxtEntry.RType.STYLE) {
+                    //the name in R.txt for style type which has replaced . to _
+                    //so we should get the original name for it
+                    sortedLines.add("${applicationId}:${it.type}/${styles.get(it.name)} = ${it.idValue}")
+                } else if (it.type == RDotTxtEntry.RType.DRAWABLE) {
+                    //there is a special resource type for drawable which called nested resource.
+                    //such as avd_hide_password and avd_show_password resource in support design sdk.
+                    //the nested resource is start with $, such as $avd_hide_password__0 and $avd_hide_password__1
+                    //but there is none nested resource in R.txt, so ignore it just now.
+                    sortedLines.add("${applicationId}:${it.type}/${it.name} = ${it.idValue}")
+                } else {
+                    //other resource type which format is packageName:resType/resName = resId
+                    sortedLines.add("${applicationId}:${it.type}/${it.name} = ${it.idValue}")
+                }
+            }
+        }
+        //sort it and see the diff content conveniently
+        Collections.sort(sortedLines)
+        return sortedLines
     }
 
     @TaskAction
