@@ -33,8 +33,12 @@ import org.gradle.api.tasks.TaskAction
 public class TinkerResourceIdTask extends DefaultTask {
     static final String RESOURCE_PUBLIC_XML = TinkerPatchPlugin.TINKER_INTERMEDIATES + "public.xml"
     static final String RESOURCE_IDX_XML = TinkerPatchPlugin.TINKER_INTERMEDIATES + "idx.xml"
+    static final String RESOURCE_VALUES_BACKUP = TinkerPatchPlugin.TINKER_INTERMEDIATES + "values_backup"
+    static final String RESOURCE_PUBLIC_TXT = TinkerPatchPlugin.TINKER_INTERMEDIATES + "public.txt"
 
     String resDir
+    String variantName
+    String applicationId
 
     TinkerResourceIdTask() {
         group = 'tinker'
