@@ -22,9 +22,11 @@ import com.tencent.tinker.build.aapt.PatchUtil
 import com.tencent.tinker.build.aapt.RDotTxtEntry
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
+import groovy.io.FileType
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
+import org.gradle.util.GFileUtils
 
 /**
  * The configuration properties.
@@ -129,6 +131,38 @@ public class TinkerResourceIdTask extends DefaultTask {
         additionalParameters.add(project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath())
         project.logger.error("tinker add additionalParameters --stable-ids ${project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath()}")
         return additionalParameters
+    }
+
+    /**
+     * get real name for style type resources in R.txt by values files
+     */
+    private Map<String, String> getStyles() {
+        Map<String, String> styles = new HashMap<>()
+        def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
+        List<File> resDirCandidateList = new ArrayList<>()
+        resDirCandidateList.add(mergeResourcesTask.outputDir)
+        resDirCandidateList.add(new File(mergeResourcesTask.getIncrementalFolder(), "merged.dir"))
+        resDirCandidateList.each {
+            it.eachFileRecurse(FileType.FILES) {
+                if (it.getParentFile().getName().startsWith("values") && it.getName().startsWith("values") && it.getName().endsWith(".xml")) {
+                    File destFile = new File(project.file(RESOURCE_VALUES_BACKUP), "${it.getParentFile().getName()}/${it.getName()}")
+                    GFileUtils.deleteQuietly(destFile)
+                    GFileUtils.mkdirs(destFile.getParentFile())
+                    GFileUtils.copyFile(it, destFile)
+                }
+            }
+        }
+        project.file(RESOURCE_VALUES_BACKUP).eachFileRecurse(FileType.FILES) {
+            new XmlParser().parse(it).each {
+                if ("style".equalsIgnoreCase("${it.name()}")) {
+                    String originalStyle = "${it.@name}".toString()
+                    //replace . to _
+                    String sanitizeName = originalStyle.replaceAll("[.:]", "_");
+                    styles.put(sanitizeName, originalStyle)
+                }
+            }
+        }
+        return styles
     }
 
     @TaskAction
