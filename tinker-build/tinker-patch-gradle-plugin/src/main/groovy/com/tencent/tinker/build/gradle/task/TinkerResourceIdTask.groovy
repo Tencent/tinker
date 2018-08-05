@@ -24,6 +24,7 @@ import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
 import groovy.io.FileType
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GFileUtils
@@ -42,9 +43,15 @@ public class TinkerResourceIdTask extends DefaultTask {
     static final String RESOURCE_VALUES_BACKUP = TinkerPatchPlugin.TINKER_INTERMEDIATES + "values_backup"
     static final String RESOURCE_PUBLIC_TXT = TinkerPatchPlugin.TINKER_INTERMEDIATES + "public.txt"
 
+    //it's parent dir must start with values
+    static final String RESOURCE_TO_COMPILE_PUBLIC_XML = TinkerPatchPlugin.TINKER_INTERMEDIATES + "aapt2/res/values/tinker_public.xml"
+
     String resDir
     String variantName
     String applicationId
+
+    //if you need add public flag, set this filed to true. default it's false
+    boolean addPublicFlagForAapt2 = false
 
     TinkerResourceIdTask() {
         group = 'tinker'
@@ -325,6 +332,16 @@ public class TinkerResourceIdTask extends DefaultTask {
             def processResourcesTask = project.tasks.findByName("process${variantName.capitalize()}Resources")
             processResourcesTask.doFirst {
                 addStableIdsFileToAdditionalParameters(processResourcesTask)
+
+                if (addPublicFlagForAapt2) {
+                    //if we need add public flag for resource, we need to compile public.xml to .flat file
+                    //it's parent dir must start with values
+                    File publicXmlFile = project.file(RESOURCE_TO_COMPILE_PUBLIC_XML)
+                    //convert public.txt to public.xml
+                    convertPublicTxtToPublicXml(stableIdsFile, publicXmlFile, false)
+                    //dest file is mergeResourceTask output dir
+                    compileXmlForAapt2(publicXmlFile)
+                }
             }
         }
     }
