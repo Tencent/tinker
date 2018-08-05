@@ -239,6 +239,46 @@ public class TinkerResourceIdTask extends DefaultTask {
         publicXmlFile.append("</resources>")
     }
 
+    /**
+     * compile xml file to flat file
+     */
+    void compileXmlForAapt2(File xmlFile) {
+        if (xmlFile == null || !xmlFile.exists()) {
+            return
+        }
+
+        def foundVariant = null
+        project.android.applicationVariants.all { def variant ->
+            if (variant.getName() == variantName) {
+                foundVariant = variant
+            }
+        }
+
+        if (foundVariant == null) {
+            throw new GradleException("variant ${variantName} not found")
+        }
+
+        def variantData = foundVariant.getMetaClass().getProperty(foundVariant, 'variantData')
+        def variantScope = variantData.getScope()
+        def globalScope = variantScope.getGlobalScope()
+        def androidBuilder = globalScope.getAndroidBuilder()
+        def targetInfo = androidBuilder.getTargetInfo()
+        def buildTools = targetInfo.getBuildTools()
+        Map paths = buildTools.getMetaClass().getProperty(buildTools, "mPaths")
+        String aapt2Path = paths.get(resolveEnumValue("AAPT2", Class.forName('com.android.sdklib.BuildToolInfo$PathId')))
+        def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
+        if (xmlFile.exists()) {
+            project.exec { def execSpec ->
+                execSpec.executable "${aapt2Path}"
+                execSpec.args("compile")
+                execSpec.args("--legacy")
+                execSpec.args("-o")
+                execSpec.args("${mergeResourcesTask.outputDir}")
+                execSpec.args("${xmlFile}")
+            }
+        }
+    }
+
     @TaskAction
     def applyResourceId() {
         String resourceMappingFile = project.extensions.tinkerPatch.buildConfig.applyResourceMapping
