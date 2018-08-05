@@ -114,6 +114,22 @@ public class TinkerResourceIdTask extends DefaultTask {
         return aapt2Enabled
     }
 
+    /**
+     * add --stable-ids param to aaptOptions's additionalParameters
+     */
+    List<String> addStableIdsFileToAdditionalParameters(def processAndroidResourceTask) {
+        def aaptOptions = processAndroidResourceTask.getAaptOptions()
+        List<String> additionalParameters = new ArrayList<>()
+        List<String> originalAdditionalParameters = aaptOptions.getAdditionalParameters()
+        if (originalAdditionalParameters != null) {
+            additionalParameters.addAll(originalAdditionalParameters)
+        }
+        aaptOptions.setAdditionalParameters(additionalParameters)
+        additionalParameters.add("--stable-ids")
+        additionalParameters.add(project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath())
+        project.logger.error("tinker add additionalParameters --stable-ids ${project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath()}")
+        return additionalParameters
+    }
 
     @TaskAction
     def applyResourceId() {
