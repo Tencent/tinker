@@ -283,7 +283,7 @@ public class TinkerResourceIdTask extends DefaultTask {
             //noinspection UnnecessaryQualifiedReference
             aapt2Path = aapt2FromMaven.singleFile.toPath().resolve(com.android.SdkConstants.FN_AAPT2)
         } catch (Exception e) {
-            e.printStackTrace()
+            //ignore
         }
 
         project.logger.error("tinker get aapt2 path ${aapt2Path}")
