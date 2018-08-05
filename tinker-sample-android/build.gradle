@@ -11,7 +11,14 @@ buildscript {
         } else {
             classpath 'com.android.tools.build:gradle:2.3.3'
         }
-        classpath "com.tencent.tinker:tinker-patch-gradle-plugin:${TINKER_VERSION}"
+        classpath("com.tencent.tinker:tinker-patch-gradle-plugin:${TINKER_VERSION}") {
+            changing = TINKER_VERSION?.endsWith("-SNAPSHOT")
+            exclude group: 'com.android.tools.build', module: 'gradle'
+        }
+    }
+    configurations.all {
+        it.resolutionStrategy.cacheDynamicVersionsFor(5, 'minutes')
+        it.resolutionStrategy.cacheChangingModulesFor(0, 'seconds')
     }
 }
 
