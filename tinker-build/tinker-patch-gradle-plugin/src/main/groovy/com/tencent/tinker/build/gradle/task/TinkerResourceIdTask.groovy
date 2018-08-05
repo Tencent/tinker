@@ -231,6 +231,19 @@ public class TinkerResourceIdTask extends DefaultTask {
                 FileOperation.copyFileUsingStream(idxFile, project.file(RESOURCE_IDX_XML))
                 project.logger.error("tinker gen resource idx.xml in ${RESOURCE_IDX_XML}")
             }
+        } else {
+            File stableIdsFile = project.file(RESOURCE_PUBLIC_TXT)
+            FileOperation.deleteFile(stableIdsFile);
+            ArrayList<String> sortedLines = getSortedStableIds(rTypeResourceMap)
+
+            sortedLines?.each {
+                stableIdsFile.append("${it}\n")
+            }
+
+            def processResourcesTask = project.tasks.findByName("process${variantName.capitalize()}Resources")
+            processResourcesTask.doFirst {
+                addStableIdsFileToAdditionalParameters(processResourcesTask)
+            }
         }
     }
 }
