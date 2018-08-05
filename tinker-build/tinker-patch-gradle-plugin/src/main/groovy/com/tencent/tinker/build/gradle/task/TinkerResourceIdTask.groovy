@@ -23,6 +23,7 @@ import com.tencent.tinker.build.aapt.RDotTxtEntry
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -43,6 +44,76 @@ public class TinkerResourceIdTask extends DefaultTask {
     TinkerResourceIdTask() {
         group = 'tinker'
     }
+
+    /**
+     * get android gradle plugin version by reflect
+     */
+    static String getAndroidGradlePluginVersionCompat() {
+        String version = null
+        try {
+            Class versionModel = Class.forName("com.android.builder.model.Version")
+            def versionFiled = versionModel.getDeclaredField("ANDROID_GRADLE_PLUGIN_VERSION")
+            versionFiled.setAccessible(true)
+            version = versionFiled.get(null)
+        } catch (Exception e) {
+
+        }
+        return version
+    }
+
+    /**
+     * get enum obj by reflect
+     */
+    static <T> T resolveEnumValue(String value, Class<T> type) {
+        for (T constant : type.getEnumConstants()) {
+            if (constant.toString().equalsIgnoreCase(value)) {
+                return constant
+            }
+        }
+        return null
+    }
+
+    /**
+     * get com.android.build.gradle.options.ProjectOptions obj by reflect
+     */
+    static def getProjectOptions(Project project) {
+        try {
+            def basePlugin = project.getPlugins().hasPlugin('com.android.application') ? project.getPlugins().findPlugin('com.android.application') : project.getPlugins().findPlugin('com.android.library')
+            return Class.forName("com.android.build.gradle.BasePlugin").getMetaClass().getProperty(basePlugin, 'projectOptions')
+        } catch (Exception e) {
+        }
+        return null
+    }
+
+    /**
+     * get whether aapt2 is enabled
+     */
+    static boolean isAapt2EnabledCompat(Project project) {
+        if (getAndroidGradlePluginVersionCompat() >= '3.3.0') {
+            //when agp' version >= 3.3.0, use aapt2 default and no way to switch to aapt.
+            return true
+        }
+        boolean aapt2Enabled = false
+        try {
+            def projectOptions = getProjectOptions(project)
+            Object enumValue = resolveEnumValue("ENABLE_AAPT2", Class.forName("com.android.build.gradle.options.BooleanOption"))
+            aapt2Enabled = projectOptions.get(enumValue)
+        } catch (Exception e) {
+            try {
+                //retry for agp <= 2.3.3
+                //when agp <= 2.3.3, the field is store in com.android.build.gradle.AndroidGradleOptions
+                Class classAndroidGradleOptions = Class.forName("com.android.build.gradle.AndroidGradleOptions")
+                def isAapt2Enabled = classAndroidGradleOptions.getDeclaredMethod("isAapt2Enabled", Project.class)
+                isAapt2Enabled.setAccessible(true)
+                aapt2Enabled = isAapt2Enabled.invoke(null, project)
+            } catch (Exception e1) {
+                //if we can't get it, it means aapt2 is not support current.
+                aapt2Enabled = false
+            }
+        }
+        return aapt2Enabled
+    }
+
 
     @TaskAction
     def applyResourceId() {
