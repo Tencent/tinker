@@ -273,6 +273,20 @@ public class TinkerResourceIdTask extends DefaultTask {
         def buildTools = targetInfo.getBuildTools()
         Map paths = buildTools.getMetaClass().getProperty(buildTools, "mPaths")
         String aapt2Path = paths.get(resolveEnumValue("AAPT2", Class.forName('com.android.sdklib.BuildToolInfo$PathId')))
+
+        try {
+            //may be from maven, the flat magic number don't match. so we should also use the aapt2 from maven.
+            Class aapt2MavenUtilsClass = Class.forName("com.android.build.gradle.internal.res.Aapt2MavenUtils")
+            def getAapt2FromMavenMethod = aapt2MavenUtilsClass.getDeclaredMethod("getAapt2FromMaven", Class.forName("com.android.build.gradle.internal.scope.GlobalScope"))
+            getAapt2FromMavenMethod.setAccessible(true)
+            def aapt2FromMaven = getAapt2FromMavenMethod.invoke(null, globalScope)
+            //noinspection UnnecessaryQualifiedReference
+            aapt2Path = aapt2FromMaven.singleFile.toPath().resolve(com.android.SdkConstants.FN_AAPT2)
+        } catch (Exception e) {
+            e.printStackTrace()
+        }
+
+        project.logger.error("tinker get aapt2 path ${aapt2Path}")
         def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
         if (xmlFile.exists()) {
             project.exec { def execSpec ->
