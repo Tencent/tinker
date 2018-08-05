@@ -50,7 +50,7 @@ public class TinkerResourceIdTask extends DefaultTask {
     String variantName
     String applicationId
 
-    //if you need add public flag, set this filed to true. default it's false
+    //if you need add public flag, set tinker.aapt2.public = true in gradle.properties
     boolean addPublicFlagForAapt2 = false
 
     TinkerResourceIdTask() {
@@ -332,6 +332,10 @@ public class TinkerResourceIdTask extends DefaultTask {
             def processResourcesTask = project.tasks.findByName("process${variantName.capitalize()}Resources")
             processResourcesTask.doFirst {
                 addStableIdsFileToAdditionalParameters(processResourcesTask)
+
+                if (project.hasProperty("tinker.aapt2.public")) {
+                    addPublicFlagForAapt2 = project.ext["tinker.aapt2.public"]?.toString()?.toBoolean()
+                }
 
                 if (addPublicFlagForAapt2) {
                     //if we need add public flag for resource, we need to compile public.xml to .flat file
