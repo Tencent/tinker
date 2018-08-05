@@ -28,6 +28,9 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GFileUtils
 
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 /**
  * The configuration properties.
  *
@@ -195,6 +198,45 @@ public class TinkerResourceIdTask extends DefaultTask {
         //sort it and see the diff content conveniently
         Collections.sort(sortedLines)
         return sortedLines
+    }
+
+    /**
+     * convert public.txt to public.xml
+     */
+    @SuppressWarnings("GrMethodMayBeStatic")
+    void convertPublicTxtToPublicXml(File publicTxtFile, File publicXmlFile, boolean withId) {
+        if (publicTxtFile == null) {
+            return
+        }
+        GFileUtils.deleteQuietly(publicXmlFile)
+        GFileUtils.mkdirs(publicXmlFile.getParentFile())
+        GFileUtils.touch(publicXmlFile)
+
+        publicXmlFile.append("<!-- AUTO-GENERATED FILE.  DO NOT MODIFY -->")
+        publicXmlFile.append("\n")
+        publicXmlFile.append("<resources>")
+        publicXmlFile.append("\n")
+        Pattern linePattern = Pattern.compile(".*?:(.*?)/(.*?)\\s+=\\s+(.*?)")
+
+        publicTxtFile?.eachLine { def line ->
+            Matcher matcher = linePattern.matcher(line)
+            if (matcher.matches() && matcher.groupCount() == 3) {
+                String resType = matcher.group(1)
+                String resName = matcher.group(2)
+                if (resName.startsWith('$')) {
+                    project.logger.error("ignore convert to public res ${resName} because it's a nested resource")
+                } else if (resType.equalsIgnoreCase("styleable")) {
+                    project.logger.error("ignore convert to public res ${resName} because it's a styleable resource")
+                } else {
+                    if (withId) {
+                        publicXmlFile.append("\t<public type=\"${resType}\" name=\"${resName}\" id=\"${matcher.group(3)}\" />\n")
+                    } else {
+                        publicXmlFile.append("\t<public type=\"${resType}\" name=\"${resName}\" />\n")
+                    }
+                }
+            }
+        }
+        publicXmlFile.append("</resources>")
     }
 
     @TaskAction
