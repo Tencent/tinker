@@ -102,9 +102,23 @@ public class TinkerMultidexConfigTask extends DefaultTask {
             multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
         } catch (Throwable ignore) {
             try {
-                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+                def buildableArtifact = applicationVariant.getVariantData().getScope().getArtifacts().getFinalArtifactFiles(
+                        Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
+                                .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
+                                .get(null)
+                )
+
+                //noinspection GroovyUncheckedAssignmentOfMemberOfRawType,UnnecessaryQualifiedReference
+                multiDexKeepProguard = com.google.common.collect.Iterators.getOnlyElement(buildableArtifact.iterator())
             } catch (Throwable e) {
-                project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+
+            }
+            if (multiDexKeepProguard == null) {
+                try {
+                    multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+                } catch (Throwable e) {
+                    project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+                }
             }
         }
         if (multiDexKeepProguard == null) {
