@@ -16,9 +16,12 @@
 
 package com.tencent.tinker.loader;
 
+import android.support.annotation.Keep;
+
 /**
  * Created by zhangshaowen on 16/9/18.
  */
+@Keep
 public class TinkerTestDexLoad {
     public static boolean isPatch = false;
 }

@@ -33,6 +33,7 @@ import com.tencent.tinker.loader.hotplug.ComponentHotplug;
 import com.tencent.tinker.loader.hotplug.UnsupportedEnvironmentException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
+import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.lang.reflect.Constructor;
@@ -73,7 +74,7 @@ public abstract class TinkerApplication extends Application {
     private       boolean useSafeMode;
     private       Intent  tinkerResultIntent;
 
-    private ApplicationLike applicationLike = null;
+    private Object applicationLike = null;
 
     private long applicationStartElapsedTime;
     private long applicationStartMillisTime;
@@ -101,14 +102,14 @@ public abstract class TinkerApplication extends Application {
         this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
     }
 
-    private ApplicationLike createDelegate() {
+    private Object createDelegate() {
         try {
             // Use reflection to create the delegate so it doesn't need to go into the primary dex.
             // And we can also patch it
             Class<?> delegateClass = Class.forName(delegateClassName, false, getClassLoader());
             Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class,
                 long.class, long.class, Intent.class);
-            return (ApplicationLike) constructor.newInstance(this, tinkerFlags, tinkerLoadVerifyFlag,
+            return constructor.newInstance(this, tinkerFlags, tinkerLoadVerifyFlag,
                 applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent);
         } catch (Throwable e) {
             throw new TinkerRuntimeException("createDelegate failed", e);
@@ -127,17 +128,23 @@ public abstract class TinkerApplication extends Application {
      * here since {@link android.app.Application#onCreate} will not have yet been called.
      */
     private void onBaseContextAttached(Context base) {
-        applicationStartElapsedTime = SystemClock.elapsedRealtime();
-        applicationStartMillisTime = System.currentTimeMillis();
-        loadTinker();
-        ensureDelegate();
-        applicationLike.onBaseContextAttached(base);
-        //reset save mode
-        if (useSafeMode) {
-            String processName = ShareTinkerInternals.getProcessName(this);
-            String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG + processName;
-            SharedPreferences sp = getSharedPreferences(preferName, Context.MODE_PRIVATE);
-            sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
+        try {
+            applicationStartElapsedTime = SystemClock.elapsedRealtime();
+            applicationStartMillisTime = System.currentTimeMillis();
+            loadTinker();
+            ensureDelegate();
+            ShareReflectUtil.findMethod(applicationLike, "onBaseContextAttached", Context.class).invoke(applicationLike, base);
+            //reset save mode
+            if (useSafeMode) {
+                String processName = ShareTinkerInternals.getProcessName(this);
+                String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG + processName;
+                SharedPreferences sp = getSharedPreferences(preferName, Context.MODE_PRIVATE);
+                sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
+            }
+        } catch (TinkerRuntimeException e) {
+            throw e;
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException(thr.getMessage(), thr);
         }
     }
 
@@ -166,20 +173,30 @@ public abstract class TinkerApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        ensureDelegate();
         try {
-            ComponentHotplug.ensureComponentHotplugInstalled(this);
-        } catch (UnsupportedEnvironmentException e) {
-            throw new TinkerRuntimeException("failed to make sure that ComponentHotplug logic is fine.", e);
+            ensureDelegate();
+            try {
+                ComponentHotplug.ensureComponentHotplugInstalled(this);
+            } catch (UnsupportedEnvironmentException e) {
+                throw new TinkerRuntimeException("failed to make sure that ComponentHotplug logic is fine.", e);
+            }
+            ShareReflectUtil.findMethod(applicationLike, "onCreate").invoke(applicationLike);
+        } catch (TinkerRuntimeException e) {
+            throw e;
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException(thr.getMessage(), thr);
         }
-        applicationLike.onCreate();
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
         if (applicationLike != null) {
-            applicationLike.onTerminate();
+            try {
+                ShareReflectUtil.findMethod(applicationLike, "onTerminate").invoke(applicationLike);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
     }
 
@@ -187,7 +204,11 @@ public abstract class TinkerApplication extends Application {
     public void onLowMemory() {
         super.onLowMemory();
         if (applicationLike != null) {
-            applicationLike.onLowMemory();
+            try {
+                ShareReflectUtil.findMethod(applicationLike, "onLowMemory").invoke(applicationLike);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
     }
 
@@ -196,7 +217,11 @@ public abstract class TinkerApplication extends Application {
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         if (applicationLike != null) {
-            applicationLike.onTrimMemory(level);
+            try {
+                ShareReflectUtil.findMethod(applicationLike, "onTrimMemory", int.class).invoke(applicationLike, level);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
     }
 
@@ -204,7 +229,11 @@ public abstract class TinkerApplication extends Application {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         if (applicationLike != null) {
-            applicationLike.onConfigurationChanged(newConfig);
+            try {
+                ShareReflectUtil.findMethod(applicationLike, "onConfigurationChanged", Configuration.class).invoke(applicationLike, newConfig);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
     }
 
@@ -212,7 +241,11 @@ public abstract class TinkerApplication extends Application {
     public Resources getResources() {
         Resources resources = super.getResources();
         if (applicationLike != null) {
-            return applicationLike.getResources(resources);
+            try {
+                return (Resources) ShareReflectUtil.findMethod(applicationLike, "getResources", Resources.class).invoke(applicationLike, resources);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
         return resources;
     }
@@ -221,7 +254,11 @@ public abstract class TinkerApplication extends Application {
     public ClassLoader getClassLoader() {
         ClassLoader classLoader = super.getClassLoader();
         if (applicationLike != null) {
-            return applicationLike.getClassLoader(classLoader);
+            try {
+                return (ClassLoader) ShareReflectUtil.findMethod(applicationLike, "getClassLoader", ClassLoader.class).invoke(applicationLike, classLoader);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
         return classLoader;
     }
@@ -230,7 +267,11 @@ public abstract class TinkerApplication extends Application {
     public AssetManager getAssets() {
         AssetManager assetManager = super.getAssets();
         if (applicationLike != null) {
-            return applicationLike.getAssets(assetManager);
+            try {
+                return (AssetManager) ShareReflectUtil.findMethod(applicationLike, "getAssets", AssetManager.class).invoke(applicationLike, assetManager);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
         return assetManager;
     }
@@ -239,7 +280,11 @@ public abstract class TinkerApplication extends Application {
     public Object getSystemService(String name) {
         Object service = super.getSystemService(name);
         if (applicationLike != null) {
-            return applicationLike.getSystemService(name, service);
+            try {
+                return ShareReflectUtil.findMethod(applicationLike, "getSystemService", String.class, Object.class).invoke(applicationLike, name, service);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
         return service;
     }
@@ -248,7 +293,11 @@ public abstract class TinkerApplication extends Application {
     public Context getBaseContext() {
         Context base = super.getBaseContext();
         if (applicationLike != null) {
-            return applicationLike.getBaseContext(base);
+            try {
+                return (Context) ShareReflectUtil.findMethod(applicationLike, "getBaseContext", Context.class).invoke(applicationLike, base);
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            }
         }
         return base;
     }

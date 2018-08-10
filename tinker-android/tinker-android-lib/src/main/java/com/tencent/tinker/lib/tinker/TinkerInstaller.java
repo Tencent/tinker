@@ -18,13 +18,13 @@ package com.tencent.tinker.lib.tinker;
 
 import android.content.Context;
 
+import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.reporter.LoadReporter;
 import com.tencent.tinker.lib.reporter.PatchReporter;
 import com.tencent.tinker.lib.service.AbstractResultService;
 import com.tencent.tinker.lib.util.TinkerLog;
-import com.tencent.tinker.loader.app.ApplicationLike;
 
 /**
  * Created by zhangshaowen on 16/3/19.
@@ -57,8 +57,8 @@ public class TinkerInstaller {
      * @param upgradePatchProcessor
      */
     public static Tinker install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter,
-                               PatchListener listener, Class<? extends AbstractResultService> resultServiceClass,
-                               AbstractPatch upgradePatchProcessor) {
+                                 PatchListener listener, Class<? extends AbstractResultService> resultServiceClass,
+                                 AbstractPatch upgradePatchProcessor) {
 
         Tinker tinker = new Tinker.Builder(applicationLike.getApplication())
             .tinkerFlags(applicationLike.getTinkerFlags())

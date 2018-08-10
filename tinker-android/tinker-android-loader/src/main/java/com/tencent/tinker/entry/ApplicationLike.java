@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.loader.app;
+package com.tencent.tinker.entry;
 
 import android.app.Application;
 import android.content.Context;
@@ -22,10 +22,12 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.support.annotation.Keep;
 
 /**
  * Created by zhangshaowen on 16/7/28.
  */
+@Keep
 public abstract class ApplicationLike implements ApplicationLifeCycle {
     private final Application application;
     private final Intent      tinkerResultIntent;

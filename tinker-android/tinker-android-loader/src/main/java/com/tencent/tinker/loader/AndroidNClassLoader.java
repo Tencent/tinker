@@ -153,22 +153,12 @@ class AndroidNClassLoader extends PathClassLoader {
         return classLoader;
     }
 
-//    public static String getLdLibraryPath(ClassLoader loader) throws Exception {
-//        String nativeLibraryPath;
-//
-//        nativeLibraryPath = (String) loader.getClass()
-//            .getMethod("getLdLibraryPath", new Class[0])
-//            .invoke(loader, new Object[0]);
-//
-//        return nativeLibraryPath;
-//    }
-
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        // loader class use default pathClassloader to load
-        if ((name != null
-                && name.startsWith("com.tencent.tinker.loader.")
-                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS))
-                || (applicationClassName != null && applicationClassName.equals(name))) {
+        // app class use default pathClassloader to load
+        if (applicationClassName != null && applicationClassName.equals(name)) {
+            return originClassLoader.loadClass(name);
+        } else if (name != null && name.startsWith("com.tencent.tinker.loader.")
+                && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)) {
             return originClassLoader.loadClass(name);
         }
         return super.findClass(name);
