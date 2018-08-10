@@ -105,14 +105,14 @@ public class ShareConstants {
      * multi process share
      */
     public static final String TINKER_SHARE_PREFERENCE_CONFIG = "tinker_share_config";
-    public static final String TINKER_ENABLE_CONFIG           = "tinker_enable_";
+    public static final String TINKER_ENABLE_CONFIG_PREFIX    = "tinker_enable_";
 
     /**
      * only for each process
      */
-    public static final String TINKER_OWN_PREFERENCE_CONFIG = "tinker_own_config_";
-    public static final String TINKER_SAFE_MODE_COUNT       = "safe_mode_count";
-    public static final int    TINKER_SAFE_MODE_MAX_COUNT   = 3;
+    public static final String TINKER_OWN_PREFERENCE_CONFIG_PREFIX = "tinker_own_config_";
+    public static final String TINKER_SAFE_MODE_COUNT_PREFIX       = "safe_mode_count_";
+    public static final int    TINKER_SAFE_MODE_MAX_COUNT          = 3;
 
 
     /**

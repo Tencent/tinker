@@ -304,18 +304,13 @@ public class TinkerLoader extends AbstractTinkerLoader {
     }
 
     private boolean checkSafeModeCount(TinkerApplication application) {
-        String processName = ShareTinkerInternals.getProcessName(application);
-        String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG + processName;
-        //each process have its own SharedPreferences file
-        SharedPreferences sp = application.getSharedPreferences(preferName, Context.MODE_PRIVATE);
-        int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0) + 1;
-        Log.w(TAG, "tinker safe mode preferName:" + preferName + " count:" + count);
-        if (count >= ShareConstants.TINKER_SAFE_MODE_MAX_COUNT) {
-            sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
+        int count = ShareTinkerInternals.getSafeModeCount(application);
+        if (count >= ShareConstants.TINKER_SAFE_MODE_MAX_COUNT - 1) {
+            ShareTinkerInternals.setSafeModeCount(application, 0);
             return false;
         }
         application.setUseSafeMode(true);
-        sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, count).commit();
+        ShareTinkerInternals.setSafeModeCount(application, count + 1);
         return true;
     }
 }

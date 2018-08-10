@@ -136,10 +136,7 @@ public abstract class TinkerApplication extends Application {
             ShareReflectUtil.findMethod(applicationLike, "onBaseContextAttached", Context.class).invoke(applicationLike, base);
             //reset save mode
             if (useSafeMode) {
-                String processName = ShareTinkerInternals.getProcessName(this);
-                String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG + processName;
-                SharedPreferences sp = getSharedPreferences(preferName, Context.MODE_PRIVATE);
-                sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
+                ShareTinkerInternals.setSafeModeCount(this, 0);
             }
         } catch (TinkerRuntimeException e) {
             throw e;
