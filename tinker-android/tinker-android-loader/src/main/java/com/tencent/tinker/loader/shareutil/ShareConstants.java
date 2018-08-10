@@ -62,7 +62,7 @@ public class ShareConstants {
     public static final String ODEX_SUFFIX = ".odex";
 
     public static final String TEST_DEX_NAME            = "test.dex";
-    public static final String CHANGED_CLASSES_DEX_NAME = "changed_classes.dex";
+    public static final String CHANGED_CLASSES_DEX_PREFIX = "changed_classes";
     public static final String CLASS_N_APK_NAME         = "tinker_classN.apk";
 
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";

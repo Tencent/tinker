@@ -119,7 +119,7 @@ public class SystemClassLoaderAdder {
                 if (file == null) {
                     continue;
                 }
-                if (file.getName().startsWith(ShareConstants.CHANGED_CLASSES_DEX_NAME)) {
+                if (file.getName().startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
                     return true;
                 }
             }
