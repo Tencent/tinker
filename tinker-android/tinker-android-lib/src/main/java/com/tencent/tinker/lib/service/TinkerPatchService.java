@@ -107,7 +107,7 @@ public class TinkerPatchService {
     private static boolean runPatchServiceByJobScheduler(Context context, String path) {
         TinkerLog.i(TAG, "run patch service by job scheduler.");
         final JobInfo.Builder jobInfoBuilder = new JobInfo.Builder(
-                1, new ComponentName(context, JobServiceRunner.class)
+                0xF0F1F2F3, new ComponentName(context, JobServiceRunner.class)
         );
         final PersistableBundle extras = new PersistableBundle();
         extras.putString(PATCH_PATH_EXTRA, path);
