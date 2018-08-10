@@ -97,6 +97,7 @@ android {
     }
 
 //    aaptOptions{
+//        additionalParameters "--emit-ids", "${project.file('public.txt')}"
 //        cruncherEnabled false
 //    }
 
@@ -468,6 +469,24 @@ if (buildWithTinker()) {
 
                 }
             }
+        }
+    }
+}
+
+
+
+task sortPublicTxt() {
+    doLast {
+        File originalFile = project.file("public.txt")
+        File sortedFile = project.file("public_sort.txt")
+        List<String> sortedLines = new ArrayList<>()
+        originalFile.eachLine {
+            sortedLines.add(it)
+        }
+        Collections.sort(sortedLines)
+        sortedFile.delete()
+        sortedLines.each {
+            sortedFile.append("${it}\n")
         }
     }
 }
