@@ -28,9 +28,13 @@ import org.gradle.api.tasks.TaskAction
 public class TinkerMultidexConfigTask extends DefaultTask {
     static final String MULTIDEX_CONFIG_PATH = TinkerPatchPlugin.TINKER_INTERMEDIATES + "tinker_multidexkeep.pro"
     static final String MULTIDEX_CONFIG_SETTINGS =
-            "-keep public class * implements com.tencent.tinker.loader.app.ApplicationLifeCycle {\n" +
+            "-keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
                     "    <init>(...);\n" +
                     "    void onBaseContextAttached(android.content.Context);\n" +
+                    "}\n" +
+                    "\n" +
+                    "-keep public class com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
+                    "    *;\n" +
                     "}\n" +
                     "\n" +
                     "-keep public class * extends com.tencent.tinker.loader.TinkerLoader {\n" +

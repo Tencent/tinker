@@ -36,10 +36,10 @@ public class TinkerProguardConfigTask extends DefaultTask {
                     "    *;\n" +
                     "}\n" +
                     "\n" +
-                    "-keep public class com.tencent.tinker.loader.app.ApplicationLifeCycle {\n" +
+                    "-keep public class com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
                     "    *;\n" +
                     "}\n" +
-                    "-keep public class * implements com.tencent.tinker.loader.app.ApplicationLifeCycle {\n" +
+                    "-keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
                     "    *;\n" +
                     "}\n" +
                     "\n" +
