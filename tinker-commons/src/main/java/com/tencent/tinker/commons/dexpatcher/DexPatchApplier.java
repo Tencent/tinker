@@ -33,7 +33,6 @@ import com.tencent.tinker.android.dex.StringData;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.util.CompareUtils;
-import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSetRefListSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSetSectionPatchAlgorithm;
@@ -51,6 +50,8 @@ import com.tencent.tinker.commons.dexpatcher.algorithms.patch.StringDataSectionP
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.TypeIdSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.TypeListSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -257,13 +258,7 @@ public class DexPatchApplier {
             os = new BufferedOutputStream(new FileOutputStream(file));
             executeAndSaveTo(os);
         } finally {
-            if (os != null) {
-                try {
-                    os.close();
-                } catch (Exception e) {
-                    // ignored.
-                }
-            }
+            StreamUtil.closeQuietly(os);
         }
     }
 }

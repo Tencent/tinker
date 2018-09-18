@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
+import com.tencent.tinker.commons.util.StreamUtil;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerDexOptimizer;
@@ -58,8 +59,9 @@ import java.util.zip.ZipOutputStream;
 public class DexDiffPatchInternal extends BasePatchInternal {
     protected static final String TAG = "Tinker.DexDiffPatchInternal";
 
-    protected static final int WAIT_ASYN_OAT_TIME = 15 * 1000;
-    protected static final int MAX_WAIT_COUNT     = 30;
+    protected static final int WAIT_ASYN_OAT_TIME = 10 * 1000;
+    protected static final int MAX_WAIT_COUNT     = 120;
+
 
     private static ArrayList<File>                      optFiles      = new ArrayList<>();
     private static ArrayList<ShareDexDiffPatchInfo>     patchList     = new ArrayList<>();
@@ -92,7 +94,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             return true;
         }
         // should use patch list size
-        int size = patchList.size() * 8;
+        int size = patchList.size() * 30;
         if (size > MAX_WAIT_COUNT) {
             size = MAX_WAIT_COUNT;
         }
@@ -142,13 +144,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         failDexFiles.add(file);
                         lastThrowable = e;
                     } finally {
-                        if (elfFile != null) {
-                            try {
-                                elfFile.close();
-                            } catch (IOException ignore) {
-
-                            }
-                        }
+                        StreamUtil.closeQuietly(elfFile);
                     }
                 }
             }
@@ -262,18 +258,21 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 File dexFile = classNDexInfo.get(info);
 
                 if (info.isJarMode) {
-                    TinkerZipFile dexZipFile = new TinkerZipFile(dexFile);
-                    TinkerZipEntry rawDexZipEntry = dexZipFile.getEntry(ShareConstants.DEX_IN_JAR);
-                    TinkerZipEntry newDexZipEntry = new TinkerZipEntry(rawDexZipEntry, info.rawName);
-                    InputStream inputStream = dexZipFile.getInputStream(rawDexZipEntry);
+                    TinkerZipFile dexZipFile = null;
+                    InputStream inputStream = null;
                     try {
+                        dexZipFile = new TinkerZipFile(dexFile);
+                        TinkerZipEntry rawDexZipEntry = dexZipFile.getEntry(ShareConstants.DEX_IN_JAR);
+                        TinkerZipEntry newDexZipEntry = new TinkerZipEntry(rawDexZipEntry, info.rawName);
+                        inputStream = dexZipFile.getInputStream(rawDexZipEntry);
                         TinkerZipUtil.extractTinkerEntry(newDexZipEntry, inputStream, out);
                     } finally {
-                        SharePatchFileUtil.closeQuietly(inputStream);
+                        StreamUtil.closeQuietly(inputStream);
+                        StreamUtil.closeQuietly(dexZipFile);
                     }
                 } else {
                     TinkerZipEntry dexZipEntry = new TinkerZipEntry(info.rawName);
-                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newDexCrC), out);
+                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newOrPatchedDexCrC), out);
                 }
 
             }
@@ -281,7 +280,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             TinkerLog.printErrStackTrace(TAG, throwable, "merge classN file");
             result = false;
         } finally {
-            SharePatchFileUtil.closeQuietly(out);
+            StreamUtil.closeQuietly(out);
         }
 
         if (result) {
@@ -574,17 +573,14 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         while (numAttempts < MAX_EXTRACT_ATTEMPTS && !isExtractionSuccessful) {
             numAttempts++;
 
-            FileOutputStream fos = new FileOutputStream(extractTo);
-            InputStream in = zipFile.getInputStream(entryFile);
-
             ZipOutputStream zos = null;
             BufferedInputStream bis = null;
 
             TinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
             try {
                 zos = new ZipOutputStream(new
-                    BufferedOutputStream(fos));
-                bis = new BufferedInputStream(in);
+                    BufferedOutputStream(new FileOutputStream(extractTo)));
+                bis = new BufferedInputStream(zipFile.getInputStream(entryFile));
 
                 byte[] buffer = new byte[ShareConstants.BUFFER_SIZE];
                 ZipEntry entry = new ZipEntry(ShareConstants.DEX_IN_JAR);
@@ -596,16 +592,16 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 }
                 zos.closeEntry();
             } finally {
-                SharePatchFileUtil.closeQuietly(bis);
-                SharePatchFileUtil.closeQuietly(zos);
+                StreamUtil.closeQuietly(bis);
+                StreamUtil.closeQuietly(zos);
             }
 
             isExtractionSuccessful = SharePatchFileUtil.verifyDexFileMd5(extractTo, targetMd5);
             TinkerLog.i(TAG, "isExtractionSuccessful: %b", isExtractionSuccessful);
 
             if (!isExtractionSuccessful) {
-                extractTo.delete();
-                if (extractTo.exists()) {
+                final boolean succ = extractTo.delete();
+                if (!succ || extractTo.exists()) {
                     TinkerLog.e(TAG, "Failed to delete corrupted dex " + extractTo.getPath());
                 }
             }
@@ -676,21 +672,21 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             }
                             new DexPatchApplier(zis, patchFileStream).executeAndSaveTo(zos);
                         } finally {
-                            SharePatchFileUtil.closeQuietly(zis);
+                            StreamUtil.closeQuietly(zis);
                         }
                     } else {
                         new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(zos);
                     }
                     zos.closeEntry();
                 } finally {
-                    SharePatchFileUtil.closeQuietly(zos);
+                    StreamUtil.closeQuietly(zos);
                 }
             } else {
                 new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(patchedDexFile);
             }
         } finally {
-            SharePatchFileUtil.closeQuietly(oldDexStream);
-            SharePatchFileUtil.closeQuietly(patchFileStream);
+            StreamUtil.closeQuietly(oldDexStream);
+            StreamUtil.closeQuietly(patchFileStream);
         }
     }
 

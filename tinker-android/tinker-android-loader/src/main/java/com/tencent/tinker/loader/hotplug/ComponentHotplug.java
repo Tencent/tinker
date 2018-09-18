@@ -1,6 +1,7 @@
 package com.tencent.tinker.loader.hotplug;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
@@ -10,6 +11,7 @@ import com.tencent.tinker.loader.hotplug.handler.MHMessageHandler;
 import com.tencent.tinker.loader.hotplug.handler.PMSInterceptHandler;
 import com.tencent.tinker.loader.hotplug.interceptor.HandlerMessageInterceptor;
 import com.tencent.tinker.loader.hotplug.interceptor.ServiceBinderInterceptor;
+import com.tencent.tinker.loader.hotplug.interceptor.TinkerHackInstrumentation;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 
@@ -26,6 +28,7 @@ public final class ComponentHotplug {
     private static ServiceBinderInterceptor sAMSInterceptor;
     private static ServiceBinderInterceptor sPMSInterceptor;
     private static HandlerMessageInterceptor sMHMessageInterceptor;
+    private static TinkerHackInstrumentation sTinkerHackInstrumentation;
 
     public synchronized static void install(TinkerApplication app, ShareSecurityCheck checker) throws UnsupportedEnvironmentException {
         if (!sInstalled) {
@@ -33,13 +36,17 @@ public final class ComponentHotplug {
                 if (IncrementComponentManager.init(app, checker)) {
                     sAMSInterceptor = new ServiceBinderInterceptor(app, EnvConsts.ACTIVITY_MANAGER_SRVNAME, new AMSInterceptHandler(app));
                     sPMSInterceptor = new ServiceBinderInterceptor(app, EnvConsts.PACKAGE_MANAGER_SRVNAME, new PMSInterceptHandler());
-
-                    final Handler mH = fetchMHInstance(app);
-                    sMHMessageInterceptor = new HandlerMessageInterceptor(mH, new MHMessageHandler(app));
-
                     sAMSInterceptor.install();
                     sPMSInterceptor.install();
-                    sMHMessageInterceptor.install();
+
+                    if (Build.VERSION.SDK_INT < 27) {
+                        final Handler mH = fetchMHInstance(app);
+                        sMHMessageInterceptor = new HandlerMessageInterceptor(mH, new MHMessageHandler(app));
+                        sMHMessageInterceptor.install();
+                    } else {
+                        sTinkerHackInstrumentation = TinkerHackInstrumentation.create(app);
+                        sTinkerHackInstrumentation.install();
+                    }
 
                     sInstalled = true;
 
@@ -59,7 +66,11 @@ public final class ComponentHotplug {
             try {
                 sAMSInterceptor.install();
                 sPMSInterceptor.install();
-                sMHMessageInterceptor.install();
+                if (Build.VERSION.SDK_INT < 27) {
+                    sMHMessageInterceptor.install();
+                } else {
+                    sTinkerHackInstrumentation.install();
+                }
             } catch (Throwable thr) {
                 uninstall();
                 throw new UnsupportedEnvironmentException(thr);
@@ -88,7 +99,11 @@ public final class ComponentHotplug {
             try {
                 sAMSInterceptor.uninstall();
                 sPMSInterceptor.uninstall();
-                sMHMessageInterceptor.uninstall();
+                if (Build.VERSION.SDK_INT < 27) {
+                    sMHMessageInterceptor.uninstall();
+                } else {
+                    sTinkerHackInstrumentation.uninstall();
+                }
             } catch (Throwable thr) {
                 Log.e(TAG, "exception when uninstall.", thr);
             }

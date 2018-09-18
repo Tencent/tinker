@@ -17,6 +17,7 @@
 package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.patch.Configuration;
+import com.tencent.tinker.commons.util.StreamUtil;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -86,20 +87,14 @@ public class FileOperation {
         }
         long size = 0;
         if (f.exists() && f.isFile()) {
-            FileInputStream fis = null;
+            InputStream fis = null;
             try {
-                fis = new FileInputStream(f);
+                fis = new BufferedInputStream(new FileInputStream(f));
                 size = fis.available();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
-                try {
-                    if (fis != null) {
-                        fis.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                StreamUtil.closeQuietly(fis);
             }
         }
         return size;
@@ -146,12 +141,8 @@ public class FileOperation {
                 os.write(buffer, 0, length);
             }
         } finally {
-            if (is != null) {
-                is.close();
-            }
-            if (os != null) {
-                os.close();
-            }
+            StreamUtil.closeQuietly(os);
+            StreamUtil.closeQuietly(is);
         }
     }
 
@@ -172,12 +163,8 @@ public class FileOperation {
                 os.write(buffer, 0, length);
             }
         } finally {
-            if (is != null) {
-                is.close();
-            }
-            if (os != null) {
-                os.close();
-            }
+            StreamUtil.closeQuietly(os);
+            StreamUtil.closeQuietly(is);
         }
     }
 
@@ -293,32 +280,37 @@ public class FileOperation {
     private static byte[] readContents(final File file) throws IOException {
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
         final int bufferSize = TypedValue.BUFFER_SIZE;
+        InputStream in = null;
         try {
-            final FileInputStream in = new FileInputStream(file);
-            final BufferedInputStream bIn = new BufferedInputStream(in);
+            in = new BufferedInputStream(new FileInputStream(file));
             int length;
             byte[] buffer = new byte[bufferSize];
             byte[] bufferCopy;
-            while ((length = bIn.read(buffer, 0, bufferSize)) != -1) {
+            while ((length = in.read(buffer, 0, bufferSize)) > 0) {
                 bufferCopy = new byte[length];
                 System.arraycopy(buffer, 0, bufferCopy, 0, length);
                 output.write(bufferCopy);
             }
-            bIn.close();
         } finally {
-            output.close();
+            StreamUtil.closeQuietly(output);
+            StreamUtil.closeQuietly(in);
         }
         return output.toByteArray();
     }
 
     public static long getFileCrc32(File file) throws IOException {
-        InputStream inputStream = new FileInputStream(file);
-        CRC32 crc = new CRC32();
-        int cnt;
-        while ((cnt = inputStream.read()) != -1) {
-            crc.update(cnt);
+        InputStream inputStream = null;
+        try {
+            inputStream = new BufferedInputStream(new FileInputStream(file));
+            CRC32 crc = new CRC32();
+            int cnt;
+            while ((cnt = inputStream.read()) != -1) {
+                crc.update(cnt);
+            }
+            return crc.getValue();
+        } finally {
+            StreamUtil.closeQuietly(inputStream);
         }
-        return crc.getValue();
     }
 
     public static String getZipEntryCrc(File file, String entryName) {
@@ -383,21 +375,32 @@ public class FileOperation {
         String cmd = config.mSevenZipPath;
 
         ProcessBuilder pb = new ProcessBuilder(cmd, "a", "-tzip", outputFile.getAbsolutePath(), path, "-mx9");
-        Process pro;
+        pb.redirectErrorStream(true);
+        Process pro = null;
+        LineNumberReader reader = null;
         try {
             pro = pb.start();
-            InputStreamReader ir = new InputStreamReader(pro.getInputStream());
-            LineNumberReader input = new LineNumberReader(ir);
-            while (input.readLine() != null) {
+            reader = new LineNumberReader(new InputStreamReader(pro.getInputStream()));
+            while (reader.readLine() != null) {
             }
-            //destroy the stream
-            pro.waitFor();
-            pro.destroy();
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
 //            e.printStackTrace();
             FileOperation.deleteFile(outputFile);
             Logger.e("7a patch file failed, you should set the zipArtifact, or set the path directly");
             return false;
+        } finally {
+            //destroy the stream
+            try {
+                pro.waitFor();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+            try {
+                pro.destroy();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+            StreamUtil.closeQuietly(reader);
         }
         return true;
     }

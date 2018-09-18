@@ -19,6 +19,7 @@ package com.tencent.tinker.loader;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.Context;
+import android.content.res.Resources;
 import android.os.Build;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -38,6 +39,8 @@ import dalvik.system.PathClassLoader;
 class AndroidNClassLoader extends PathClassLoader {
     private static final String TAG = "Tinker.NClassLoader";
 
+    private static Object oldDexPathListHolder = null;
+
     private final PathClassLoader originClassLoader;
     private String applicationClassName;
 
@@ -51,7 +54,11 @@ class AndroidNClassLoader extends PathClassLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private static Object recreateDexPathList(Object originalDexPathList, ClassLoader newDefiningContext) throws Exception {
+    private static Object recreateDexPathList(Object originalDexPathList, ClassLoader newDefiningContext, boolean createEmptyOne) throws Exception {
+        final Constructor<?> dexPathListConstructor = ShareReflectUtil.findConstructor(originalDexPathList, ClassLoader.class, String.class, String.class, File.class);
+        if (createEmptyOne) {
+            return dexPathListConstructor.newInstance(newDefiningContext, "", null, null);
+        }
         final Field dexElementsField = ShareReflectUtil.findField(originalDexPathList, "dexElements");
         final Object[] dexElements = (Object[]) dexElementsField.get(originalDexPathList);
         final Field nativeLibraryDirectoriesField = ShareReflectUtil.findField(originalDexPathList, "nativeLibraryDirectories");
@@ -91,8 +98,6 @@ class AndroidNClassLoader extends PathClassLoader {
         }
 
         final String libraryPath = libraryPathBuilder.toString();
-
-        final Constructor<?> dexPathListConstructor = ShareReflectUtil.findConstructor(originalDexPathList, ClassLoader.class, String.class, String.class, File.class);
         return dexPathListConstructor.newInstance(newDefiningContext, dexPath, libraryPath, null);
     }
 
@@ -105,25 +110,40 @@ class AndroidNClassLoader extends PathClassLoader {
         // To avoid 'dex file register with multiple classloader' exception on Android O, we must keep old
         // dexPathList in original classloader so that after the newly loaded base dex was bound to
         // AndroidNClassLoader we can still load class in base dex from original classloader.
-
-        Object newPathList = recreateDexPathList(originPathList, androidNClassLoader);
+        Object newPathList = recreateDexPathList(originPathList, androidNClassLoader, false);
 
         // Update new classloader's pathList.
         pathListField.set(androidNClassLoader, newPathList);
+
+        // Recreate old dexPathList.
+        oldDexPathListHolder = originPathList;
+        Object emptyOldPathList = recreateDexPathList(originPathList, originalClassLoader, true);
+        pathListField.set(originalClassLoader, emptyOldPathList);
+        Object recreatedOldPathList = recreateDexPathList(originPathList, originalClassLoader, false);
+        pathListField.set(originalClassLoader, recreatedOldPathList);
 
         return androidNClassLoader;
     }
 
     private static void reflectPackageInfoClassloader(Application application, ClassLoader reflectClassLoader) throws Exception {
-        String defBase = "mBase";
-        String defPackageInfo = "mPackageInfo";
-        String defClassLoader = "mClassLoader";
+        Context baseContext = (Context) ShareReflectUtil.findField(application, "mBase").get(application);
+        Object basePackageInfo = ShareReflectUtil.findField(baseContext, "mPackageInfo").get(baseContext);
+        ShareReflectUtil.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
 
-        Context baseContext = (Context) ShareReflectUtil.findField(application, defBase).get(application);
-        Object basePackageInfo = ShareReflectUtil.findField(baseContext, defPackageInfo).get(baseContext);
-        Field classLoaderField = ShareReflectUtil.findField(basePackageInfo, defClassLoader);
+        // There's compatibility risk here when omit these hacking logic.
+        // However I still have no idea about how to solve it without touching the Android P's
+        // dark greylist API.
+        if (Build.VERSION.SDK_INT < 27) {
+            Resources res = application.getResources();
+            ShareReflectUtil.findField(res, "mClassLoader").set(res, reflectClassLoader);
+
+            Object drawableInflater = ShareReflectUtil.findField(res, "mDrawableInflater").get(res);
+            if (drawableInflater != null) {
+                ShareReflectUtil.findField(drawableInflater, "mClassLoader").set(drawableInflater, reflectClassLoader);
+            }
+        }
+
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
-        classLoaderField.set(basePackageInfo, reflectClassLoader);
     }
 
     public static AndroidNClassLoader inject(PathClassLoader originClassLoader, Application application) throws Exception {
