@@ -240,6 +240,10 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 Log.w(TAG, "tryLoadPatchFiles:onReWritePatchInfoCorrupted");
                 return;
             }
+
+            Log.i(TAG, "tryLoadPatchFiles:success to rewrite patch info, kill other process.");
+            ShareTinkerInternals.killProcessExceptMain(app);
+
             if (oatModeChanged) {
                 // delete interpret odex
                 // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
@@ -293,11 +297,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
             ComponentHotplug.install(app, securityCheck);
         }
 
-        // kill all other process if oat mode change
-        if (oatModeChanged) {
-            ShareTinkerInternals.killAllOtherProcess(app);
-            Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to kill all other process");
-        }
         //all is ok!
         ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_OK);
         Log.i(TAG, "tryLoadPatchFiles: load end, ok!");

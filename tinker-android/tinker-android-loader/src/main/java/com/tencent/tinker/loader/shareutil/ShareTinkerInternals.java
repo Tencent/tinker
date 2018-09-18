@@ -384,6 +384,27 @@ public class ShareTinkerInternals {
 
     }
 
+    public static void killProcessExceptMain(Context context) {
+        final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am == null) {
+            return;
+        }
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = am.getRunningAppProcesses();
+        if (appProcessList != null) {
+            // NOTE: getRunningAppProcess() ONLY GIVE YOU THE PROCESS OF YOUR OWN PACKAGE IN ANDROID M
+            // BUT THAT'S ENOUGH HERE
+            for (ActivityManager.RunningAppProcessInfo ai : appProcessList) {
+                if (ai.uid != android.os.Process.myUid()) {
+                    continue;
+                }
+                if (ai.processName.equals(context.getPackageName())) {
+                    continue;
+                }
+                android.os.Process.killProcess(ai.pid);
+            }
+        }
+    }
+
     /**
      * add process name cache
      *
@@ -412,24 +433,24 @@ public class ShareTinkerInternals {
             (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
 
         if (activityManager != null) {
-            List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
-                .getRunningAppProcesses();
+            try {
+                List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
+                    .getRunningAppProcesses();
 
-            if (appProcessList != null) {
-                try {
+                if (appProcessList != null) {
                     for (ActivityManager.RunningAppProcessInfo process : appProcessList) {
                         if (process.pid == myPid) {
                             myProcess = process;
                             break;
                         }
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-                }
 
-                if (myProcess != null) {
-                    return myProcess.processName;
+                    if (myProcess != null) {
+                        return myProcess.processName;
+                    }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
             }
         }
 

@@ -110,11 +110,11 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             }
         }
         List<File> failDexFiles = new ArrayList<>();
-        // check again, if still can be found, just return
+        // check again, if still can't be found, just return
         for (File file : optFiles) {
             TinkerLog.i(TAG, "check dex optimizer file exist: %s, size %d", file.getPath(), file.length());
 
-            if (!SharePatchFileUtil.isLegalFile(file)) {
+            if (!SharePatchFileUtil.isLegalFile(file) && !SharePatchFileUtil.shouldAcceptEvenIfIllegal(file)) {
                 TinkerLog.e(TAG, "final parallel dex optimizer file %s is not exist, return false", file.getName());
                 failDexFiles.add(file);
             }
@@ -127,6 +127,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         if (Build.VERSION.SDK_INT >= 21) {
             Throwable lastThrowable = null;
             for (File file : optFiles) {
+                if (SharePatchFileUtil.shouldAcceptEvenIfIllegal(file)) {
+                    continue;
+                }
                 TinkerLog.i(TAG, "check dex optimizer file format: %s, size %d", file.getName(), file.length());
                 int returnType;
                 try {
@@ -175,11 +178,18 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         // may have directory in android o
         if (files != null) {
             for (File file : files) {
-                if (file.isFile()) {
+                final String fileName = file.getName();
+                if (file.isFile()
+                    &&  (fileName.endsWith(ShareConstants.DEX_SUFFIX)
+                      || fileName.endsWith(ShareConstants.JAR_SUFFIX)
+                      || fileName.endsWith(ShareConstants.PATCH_SUFFIX))
+                ) {
                     legalFiles.add(file);
                 }
             }
         }
+
+        TinkerLog.i(TAG, "legal files to do dexopt: " + legalFiles);
 
         final String optimizeDexDirectory = patchVersionDirectory + "/" + DEX_OPTIMIZE_PATH + "/";
         return dexOptimizeDexFiles(context, legalFiles, optimizeDexDirectory, patchFile);
@@ -378,6 +388,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
     private static boolean checkAllDexOptFile(ArrayList<File> files, int count) {
         for (File file : files) {
             if (!SharePatchFileUtil.isLegalFile(file)) {
+                if (SharePatchFileUtil.shouldAcceptEvenIfIllegal(file)) {
+                    continue;
+                }
                 TinkerLog.e(TAG, "parallel dex optimizer file %s is not exist, just wait %d times", file.getName(), count);
                 return false;
             }

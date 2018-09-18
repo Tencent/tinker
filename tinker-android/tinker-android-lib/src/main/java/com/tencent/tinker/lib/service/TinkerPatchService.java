@@ -47,6 +47,7 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by zhangshaowen on 16/3/14.
@@ -68,20 +69,26 @@ public class TinkerPatchService {
             if (Build.VERSION.SDK_INT < MIN_SDKVER_TO_USE_JOBSCHEDULER) {
                 runPatchServiceByIntentService(context, path);
             } else {
-                if (!runPatchServiceByJobScheduler(context, path)) {
-                    TinkerLog.e(TAG, "start patch job service fail, try to fallback to intent service.");
-                    mHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            // This method will tell us whether the intent service or the job scheduler
-                            // is running.
-                            TinkerLog.i(TAG, "fallback: prepare trying to run patch service by intent service.");
-                            if (!TinkerServiceInternals.isTinkerPatchServiceRunning(context)) {
+                try {
+                    runPatchServiceByJobScheduler(context, path);
+                } catch (Throwable ignored) {
+                    // ignored.
+                }
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        TinkerLog.i(TAG, "check if patch service is running.");
+                        if (!TinkerServiceInternals.isTinkerPatchServiceRunning(context)) {
+                            TinkerLog.w(TAG, "patch service is not running, retry with IntentService.");
+                            try {
                                 runPatchServiceByIntentService(context, path);
+                                TinkerLog.i(TAG, "successfully start patch service with IntentService.");
+                            } catch (Throwable thr) {
+                                TinkerLog.e(TAG, "failure to start patch service with IntentService. osver: %s, manu: %s, msg: %s", Build.VERSION.SDK_INT, Build.MANUFACTURER, thr.toString());
                             }
                         }
-                    }, TimeUnit.SECONDS.toMillis(3));
-                }
+                    }
+                }, TimeUnit.SECONDS.toMillis(5));
             }
         } catch (Throwable throwable) {
             TinkerLog.e(TAG, "start patch service fail, exception:" + throwable);
@@ -140,7 +147,7 @@ public class TinkerPatchService {
         return ShareIntentUtil.getStringExtra(intent, RESULT_CLASS_EXTRA);
     }
 
-    public static Class<? extends Service> getRealRunnerClass() {
+    public static Class<? extends Service> getExpectedRealRunnerClass() {
         if (Build.VERSION.SDK_INT < MIN_SDKVER_TO_USE_JOBSCHEDULER) {
             return IntentServiceRunner.class;
         } else {
@@ -156,7 +163,16 @@ public class TinkerPatchService {
         notificationId = id;
     }
 
+    private static AtomicBoolean sIsPatchApplying = new AtomicBoolean(false);
+
     private static void doApplyPatch(Context context, Intent intent) {
+        // Since we may retry with IntentService, we should prevent
+        // racing here again.
+        if (!sIsPatchApplying.compareAndSet(false, true)) {
+            TinkerLog.w(TAG, "TinkerPatchService doApplyPatch is running by another runner.");
+            return;
+        }
+
         Tinker tinker = Tinker.with(context);
         tinker.getPatchReporter().onPatchServiceStart(intent);
 
@@ -198,6 +214,8 @@ public class TinkerPatchService {
         patchResult.e = e;
 
         AbstractResultService.runResultService(context, patchResult, getPatchResultExtra(intent));
+
+        sIsPatchApplying.set(false);
     }
 
     public static class IntentServiceRunner extends IntentService {

@@ -149,20 +149,15 @@ public abstract class TinkerApplication extends Application {
     }
 
     private void loadTinker() {
-        //disable tinker, not need to install
-        if (tinkerFlags == TINKER_DISABLE) {
-            return;
-        }
-        tinkerResultIntent = new Intent();
         try {
             //reflect tinker loader, because loaderClass may be define by user!
             Class<?> tinkerLoadClass = Class.forName(loaderClassName, false, getClassLoader());
-
             Method loadMethod = tinkerLoadClass.getMethod(TINKER_LOADER_METHOD, TinkerApplication.class);
             Constructor<?> constructor = tinkerLoadClass.getConstructor();
             tinkerResultIntent = (Intent) loadMethod.invoke(constructor.newInstance(), this);
         } catch (Throwable e) {
             //has exception, put exception error code
+            tinkerResultIntent = new Intent();
             ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION);
             tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, e);
         }

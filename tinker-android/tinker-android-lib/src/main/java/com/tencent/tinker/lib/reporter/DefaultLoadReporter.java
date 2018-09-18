@@ -91,9 +91,12 @@ public class DefaultLoadReporter implements LoadReporter {
         if (!Tinker.with(context).isMainProcess()) {
             return;
         }
-        TinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
-        //kill all other process to ensure that all process's code is the same.
-        ShareTinkerInternals.killAllOtherProcess(context);
+
+        // Unnecessary now. Since other processes are killed in TinkerLoader.
+//        TinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
+        // kill all other process to ensure that all process's code is the same.
+//        ShareTinkerInternals.killAllOtherProcess(context);
+
         // reset retry count to 1, for interpret retry
         UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(newVersion);
 
