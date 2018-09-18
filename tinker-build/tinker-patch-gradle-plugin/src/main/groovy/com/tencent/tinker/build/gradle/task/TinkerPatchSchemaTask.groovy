@@ -75,6 +75,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setSoFilePattern(new ArrayList<String>(configuration.lib.pattern))
                .setResourceFilePattern(new ArrayList<String>(configuration.res.pattern))
                .setResourceIgnoreChangePattern(new ArrayList<String>(configuration.res.ignoreChange))
+               .setResourceIgnoreChangeWarningPattern(new ArrayList<String>(configuration.res.ignoreChangeWarning))
                .setResourceLargeModSize(configuration.res.largeModSize)
                .setUseApplyResource(configuration.buildConfig.usingResourceMapping)
                .setConfigFields(new HashMap<String, String>(configuration.packageConfig.getFields()))

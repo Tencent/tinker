@@ -16,8 +16,10 @@
 
 package com.tencent.tinker.loader.shareutil;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.os.Build;
 import android.util.Log;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -132,6 +134,35 @@ public class SharePatchFileUtil {
 
     }
 
+    /**
+     * Closes the given {@code obj}. Suppresses any exceptions.
+     */
+    @SuppressLint("NewApi")
+    public static void closeQuietly(Object obj) {
+        if (obj == null) return;
+        if (obj instanceof Closeable) {
+            try {
+                ((Closeable) obj).close();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+        } else if (Build.VERSION.SDK_INT >= 19 && obj instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable) obj).close();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+        } else if (obj instanceof ZipFile) {
+            try {
+                ((ZipFile) obj).close();
+            } catch (Throwable ignored) {
+                // Ignored.
+            }
+        } else {
+            throw new IllegalArgumentException("obj: " + obj + " cannot be closed.");
+        }
+    }
+
     public static final boolean isLegalFile(File file) {
         return file != null && file.exists() && file.canRead() && file.isFile() && file.length() > 0;
     }
@@ -244,7 +275,7 @@ public class SharePatchFileUtil {
             return false;
         }
         //if it is not the raw dex, we check the stream instead
-        String fileMd5;
+        String fileMd5 = "";
 
         if (isRawDexFile(file.getName())) {
             fileMd5 = getMD5(file);
@@ -258,20 +289,20 @@ public class SharePatchFileUtil {
                     Log.e(TAG, "There's no entry named: " + ShareConstants.DEX_IN_JAR + " in " + file.getAbsolutePath());
                     return false;
                 }
-                fileMd5 = getMD5(dexJar.getInputStream(classesDex));
+                InputStream is = null;
+                try {
+                    is = dexJar.getInputStream(classesDex);
+                    fileMd5 = getMD5(is);
+                } catch (Throwable e) {
+                    Log.e(TAG, "exception occurred when get md5: " + file.getAbsolutePath(), e);
+                } finally {
+                    closeQuietly(is);
+                }
             } catch (Throwable e) {
                 Log.e(TAG, "Bad dex jar file: " + file.getAbsolutePath(), e);
                 return false;
             } finally {
-                // Bugfix: some device redefined ZipFile, which is not implemented closeable.
-                // SharePatchFileUtil.closeZip(dexJar);
-                if (dexJar != null) {
-                    try {
-                        dexJar.close();
-                    } catch (Throwable thr) {
-                        // Ignored.
-                    }
-                }
+                closeZip(dexJar);
             }
         }
 
@@ -451,19 +482,6 @@ public class SharePatchFileUtil {
         return result.getPath();
     }
 
-    /**
-     * Closes the given {@code Closeable}. Suppresses any IO exceptions.
-     */
-    public static void closeQuietly(Closeable closeable) {
-        try {
-            if (closeable != null) {
-                closeable.close();
-            }
-        } catch (IOException e) {
-            Log.w(TAG, "Failed to close resource", e);
-        }
-    }
-
     public static void closeZip(ZipFile zipFile) {
         try {
             if (zipFile != null) {
@@ -491,7 +509,7 @@ public class SharePatchFileUtil {
                     return true;
                 }
             } finally {
-                SharePatchFileUtil.closeQuietly(inputStream);
+                closeQuietly(inputStream);
             }
 
         } catch (Throwable e) {

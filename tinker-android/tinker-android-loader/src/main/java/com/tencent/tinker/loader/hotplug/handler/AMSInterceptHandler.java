@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.os.Build;
 
 import com.tencent.tinker.loader.hotplug.ActivityStubManager;
 import com.tencent.tinker.loader.hotplug.EnvConsts;
@@ -30,12 +31,15 @@ public class AMSInterceptHandler implements BinderInvocationHandler {
     private static final int INTENT_SENDER_ACTIVITY;
 
     static {
-        int val = 0;
-        try {
-            val = (int) ShareReflectUtil.findField(ActivityManager.class, "INTENT_SENDER_ACTIVITY").get(null);
-        } catch (Throwable thr) {
-            thr.printStackTrace();
-            val = 2;
+        // Hardcoded Value.
+        int val = 2;
+        if (Build.VERSION.SDK_INT < 27) {
+            try {
+                val = (int) ShareReflectUtil.findField(ActivityManager.class, "INTENT_SENDER_ACTIVITY").get(null);
+            } catch (Throwable thr) {
+                thr.printStackTrace();
+                val = 2;
+            }
         }
         INTENT_SENDER_ACTIVITY = val;
     }

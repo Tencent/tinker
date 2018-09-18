@@ -37,6 +37,12 @@ public class TinkerResourceExtension {
     Iterable<String> ignoreChange
 
     /**
+     * the resource file ignoreChangeWarning patterns, ignore any warning caused by add, delete or
+     * modify resource change.
+     */
+    Iterable<String> ignoreChangeWarning
+
+    /**
      * default 100kb
      * for modify resource, if it is larger than 'largeModSize'
      * we would like to use bsdiff algorithm to reduce patch file size
@@ -46,6 +52,7 @@ public class TinkerResourceExtension {
     public TinkerResourceExtension() {
         pattern = []
         ignoreChange = []
+        ignoreChangeWarning = []
         largeModSize = 100
     }
     void checkParameter() {
@@ -58,6 +65,7 @@ public class TinkerResourceExtension {
     public String toString() {
         """| pattern = ${pattern}
            | exclude = ${ignoreChange}
+           | ignoreWarning = ${ignoreChangeWarning}
            | largeModSize = ${largeModSize}kb
         """.stripMargin()
     }

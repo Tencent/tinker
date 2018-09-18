@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
@@ -30,13 +31,16 @@ public class MHMessageHandler implements MessageHandler {
     private static final int LAUNCH_ACTIVITY;
 
     static {
-        int launchActivity = 0;
-        try {
-            final Class<?> hClazz = Class.forName("android.app.ActivityThread$H");
-            launchActivity = ShareReflectUtil.findField(hClazz, "LAUNCH_ACTIVITY").getInt(null);
-        } catch (Throwable thr) {
-            // Fallback to default value.
-            launchActivity = 100;
+        // Hardcoded Value.
+        int launchActivity = 100;
+        if (Build.VERSION.SDK_INT < 27) {
+            try {
+                final Class<?> hClazz = Class.forName("android.app.ActivityThread$H");
+                launchActivity = ShareReflectUtil.findField(hClazz, "LAUNCH_ACTIVITY").getInt(null);
+            } catch (Throwable thr) {
+                // Fallback to default value.
+                launchActivity = 100;
+            }
         }
         LAUNCH_ACTIVITY = launchActivity;
     }

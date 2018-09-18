@@ -21,10 +21,13 @@ import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TypedValue;
+import com.tencent.tinker.commons.util.StreamUtil;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.Key;
 import java.security.KeyStore;
 import java.util.ArrayList;
@@ -84,23 +87,28 @@ public class PatchBuilder {
     }
 
     private String getSignatureAlgorithm() throws Exception {
-        FileInputStream fileIn = new FileInputStream(config.mSignatureFile);
-        KeyStore keyStore = KeyStore.getInstance("JKS");
-        keyStore.load(fileIn, config.mStorePass.toCharArray());
-        Key key = keyStore.getKey(config.mStoreAlias, config.mKeyPass.toCharArray());
-        String keyAlgorithm = key.getAlgorithm();
-        String signatureAlgorithm;
-        if (keyAlgorithm.equalsIgnoreCase("DSA")) {
-            signatureAlgorithm = "SHA1withDSA";
-        } else if (keyAlgorithm.equalsIgnoreCase("RSA")) {
-            signatureAlgorithm = "SHA1withRSA";
-        } else if (keyAlgorithm.equalsIgnoreCase("EC")) {
-            signatureAlgorithm = "SHA1withECDSA";
-        } else {
-            throw new RuntimeException("private key is not a DSA or "
-                    + "RSA key");
+        InputStream is = null;
+        try {
+            is = new BufferedInputStream(new FileInputStream(config.mSignatureFile));
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            keyStore.load(is, config.mStorePass.toCharArray());
+            Key key = keyStore.getKey(config.mStoreAlias, config.mKeyPass.toCharArray());
+            String keyAlgorithm = key.getAlgorithm();
+            String signatureAlgorithm;
+            if (keyAlgorithm.equalsIgnoreCase("DSA")) {
+                signatureAlgorithm = "SHA1withDSA";
+            } else if (keyAlgorithm.equalsIgnoreCase("RSA")) {
+                signatureAlgorithm = "SHA1withRSA";
+            } else if (keyAlgorithm.equalsIgnoreCase("EC")) {
+                signatureAlgorithm = "SHA1withECDSA";
+            } else {
+                throw new RuntimeException("private key is not a DSA or "
+                        + "RSA key");
+            }
+            return signatureAlgorithm;
+        } finally {
+            StreamUtil.closeQuietly(is);
         }
-        return signatureAlgorithm;
     }
 
     /**

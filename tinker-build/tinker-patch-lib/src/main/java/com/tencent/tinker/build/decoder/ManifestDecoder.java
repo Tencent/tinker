@@ -91,11 +91,6 @@ public class ManifestDecoder extends BaseDecoder {
             final String newXml = newAndroidManifest.xml.trim();
             final boolean isManifestChanged = !oldXml.equals(newXml);
 
-            if (!config.mSupportHotplugComponent && isManifestChanged) {
-                announceWarningOrException("manifest was changed, while hot plug component support mode is disabled. "
-                        + "Such changes will not take effect.");
-            }
-
             if (!isManifestChanged) {
                 Logger.d("\nManifest has no changes, skip rest decode works.");
                 return false;
@@ -110,6 +105,11 @@ public class ManifestDecoder extends BaseDecoder {
 
             final boolean hasIncComponent = (!incActivities.isEmpty() || !incServices.isEmpty()
                     || !incProviders.isEmpty() || !incReceivers.isEmpty());
+
+            if (!config.mSupportHotplugComponent && hasIncComponent) {
+                announceWarningOrException("manifest was changed, while hot plug component support mode is disabled. "
+                        + "Such changes will not take effect.");
+            }
 
             // generate increment manifest.
             if (hasIncComponent) {

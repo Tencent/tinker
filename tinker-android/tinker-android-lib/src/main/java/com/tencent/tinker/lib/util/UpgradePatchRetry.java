@@ -19,6 +19,7 @@ package com.tencent.tinker.lib.util;
 import android.content.Context;
 import android.content.Intent;
 
+import com.tencent.tinker.commons.util.StreamUtil;
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
@@ -266,7 +267,7 @@ public class UpgradePatchRetry {
             } catch (IOException e) {
                 TinkerLog.e(TAG, "fail to readRetryProperty:" + e);
             } finally {
-                SharePatchFileUtil.closeQuietly(inputStream);
+                StreamUtil.closeQuietly(inputStream);
             }
 
             return new RetryInfo(md5, times);
@@ -293,7 +294,7 @@ public class UpgradePatchRetry {
 //                e.printStackTrace();
                 TinkerLog.printErrStackTrace(TAG, e, "retry write property fail");
             } finally {
-                SharePatchFileUtil.closeQuietly(outputStream);
+                StreamUtil.closeQuietly(outputStream);
             }
 
         }
