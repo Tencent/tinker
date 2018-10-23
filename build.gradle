@@ -25,9 +25,9 @@ allprojects {
 
 ext {
     minSdkVersion = 10
-    compileSdkVersion = 23
-    targetSdkVersion = compileSdkVersion
-    buildToolsVersion = '23.0.2'
+    compileSdkVersion = 26
+    targetSdkVersion = 23
+    buildToolsVersion = '26.0.2'
     supportLibVersion = '25.1.0'
     javaVersion = JavaVersion.VERSION_1_7
 
