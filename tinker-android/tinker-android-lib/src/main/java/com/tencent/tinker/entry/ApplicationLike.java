@@ -101,22 +101,27 @@ public abstract class ApplicationLike implements ApplicationLifeCycle {
 
     }
     //some get methods that may be overwrite
+    @Keep
     public Resources getResources(Resources resources) {
         return resources;
     }
 
+    @Keep
     public ClassLoader getClassLoader(ClassLoader classLoader) {
         return classLoader;
     }
 
+    @Keep
     public AssetManager getAssets(AssetManager assetManager) {
        return assetManager;
     }
 
+    @Keep
     public Object getSystemService(String name, Object service) {
         return service;
     }
 
+    @Keep
     public Context getBaseContext(Context base) {
         return base;
     }
