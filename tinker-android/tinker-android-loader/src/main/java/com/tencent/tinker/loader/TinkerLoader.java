@@ -127,7 +127,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
         boolean versionChanged = !(oldVersion.equals(newVersion));
-        boolean oatModeChanged = oatDex.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH) && mainProcess;
+        boolean oatModeChanged = oatDex.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH);
         oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
 
@@ -229,8 +229,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 
         //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if ((mainProcess && versionChanged)
-             || oatModeChanged) {
+        if (mainProcess && (versionChanged || oatModeChanged)) {
             patchInfo.oldVersion = version;
             patchInfo.oatDir = oatDex;
 
