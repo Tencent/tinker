@@ -19,13 +19,13 @@ package com.tencent.tinker.lib.library;
 import android.content.Context;
 import android.os.Build;
 
-import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
+import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -71,15 +71,15 @@ public class TinkerLoadLibrary {
     /**
      * The same as {@link #loadArmLibrary(Context, String)} but it can be called before
      * calling {@link TinkerInstaller#install}
-     * @param appLike
+     * @param application
      * @param libName
      */
-    public static void loadArmLibraryWithoutTinkerInstalled(ApplicationLike appLike, String libName) {
-        if (libName == null || libName.isEmpty() || appLike == null) {
-            throw new TinkerRuntimeException("libName or appLike is null!");
+    public static void loadArmLibraryWithoutTinkerInstalled(TinkerApplication application, String libName) {
+        if (libName == null || libName.isEmpty() || application == null) {
+            throw new TinkerRuntimeException("libName or application is null!");
         }
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(appLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(appLike, "lib/armeabi", libName)) {
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(application)) {
+            if (TinkerApplicationHelper.loadLibraryFromTinker(application, "lib/armeabi", libName)) {
                 return;
             }
         }
@@ -110,15 +110,15 @@ public class TinkerLoadLibrary {
     /**
      * The same as {@link #loadArmV7Library(Context, String)} but it can be called before
      * calling {@link TinkerInstaller#install}
-     * @param appLike
+     * @param application
      * @param libName
      */
-    public static void loadArmV7LibraryWithoutTinkerInstalled(ApplicationLike appLike, String libName) {
-        if (libName == null || libName.isEmpty() || appLike == null) {
+    public static void loadArmV7LibraryWithoutTinkerInstalled(TinkerApplication application, String libName) {
+        if (libName == null || libName.isEmpty() || application == null) {
             throw new TinkerRuntimeException("libName or appLike is null!");
         }
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(appLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(appLike, "lib/armeabi-v7a", libName)) {
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(application)) {
+            if (TinkerApplicationHelper.loadLibraryFromTinker(application, "lib/armeabi-v7a", libName)) {
                 return;
             }
         }
@@ -211,18 +211,18 @@ public class TinkerLoadLibrary {
     /**
      * The same as {@link #installNavitveLibraryABI(Context, String)} but it can be called before
      * calling {@link TinkerInstaller#install}
-     * @param appLike
+     * @param application
      * @param currentABI
      * @return
      */
-    public static boolean installNativeLibraryABIWithoutTinkerInstalled(ApplicationLike appLike, String currentABI) {
-        final String currentVersion = TinkerApplicationHelper.getCurrentVersion(appLike);
+    public static boolean installNativeLibraryABIWithoutTinkerInstalled(TinkerApplication application, String currentABI) {
+        final String currentVersion = TinkerApplicationHelper.getCurrentVersion(application);
         if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
             TinkerLog.e(TAG, "failed to get current patch version.");
             return false;
         }
 
-        final File patchDirectory = SharePatchFileUtil.getPatchDirectory(appLike.getApplication());
+        final File patchDirectory = SharePatchFileUtil.getPatchDirectory(application);
         if (patchDirectory == null) {
             TinkerLog.e(TAG, "failed to get current patch directory.");
             return false;
@@ -235,7 +235,7 @@ public class TinkerLoadLibrary {
             return false;
         }
 
-        final ClassLoader classLoader = appLike.getApplication().getClassLoader();
+        final ClassLoader classLoader = application.getClassLoader();
         if (classLoader == null) {
             TinkerLog.e(TAG, "classloader is null");
             return false;

@@ -67,7 +67,7 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
     private void tinkerPreVerifiedCrashHandler(Throwable ex) {
         ApplicationLike applicationLike = TinkerManager.getTinkerApplicationLike();
         if (applicationLike == null || applicationLike.getApplication() == null) {
-            TinkerLog.w(TAG, "applicationlike is null");
+            TinkerLog.w(TAG, "application is null");
             return;
         }
 

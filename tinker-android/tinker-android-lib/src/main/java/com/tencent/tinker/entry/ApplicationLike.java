@@ -28,6 +28,7 @@ import android.support.annotation.Keep;
  * Created by zhangshaowen on 16/7/28.
  */
 @Keep
+@Deprecated
 public abstract class ApplicationLike implements ApplicationLifeCycle {
     private final Application application;
     private final Intent      tinkerResultIntent;

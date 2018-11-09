@@ -65,61 +65,30 @@ public abstract class TinkerApplication extends Application {
      * default:false
      */
     private final boolean tinkerLoadVerifyFlag;
-    private final String  delegateClassName;
     private final String  loaderClassName;
 
     /**
      * if we have load patch, we should use safe mode
      */
     private       boolean useSafeMode;
+
+    public Intent getTinkerResultIntent() {
+        return tinkerResultIntent;
+    }
+
     private       Intent  tinkerResultIntent;
-
-    private Object applicationLike = null;
-
-    private long applicationStartElapsedTime;
-    private long applicationStartMillisTime;
 
     /**
      * current build.
      */
     protected TinkerApplication(int tinkerFlags) {
-        this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike", TinkerLoader.class.getName(), false);
+        this(tinkerFlags, TinkerLoader.class.getName(), false);
     }
 
-    /**
-     * @param delegateClassName The fully-qualified name of the {@link ApplicationLifeCycle} class
-     *                          that will act as the delegate for application lifecycle callbacks.
-     */
-    protected TinkerApplication(int tinkerFlags, String delegateClassName,
-                                String loaderClassName, boolean tinkerLoadVerifyFlag) {
+    protected TinkerApplication(int tinkerFlags, String loaderClassName, boolean tinkerLoadVerifyFlag) {
         this.tinkerFlags = tinkerFlags;
-        this.delegateClassName = delegateClassName;
         this.loaderClassName = loaderClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
-    }
-
-    protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
-    }
-
-    private Object createDelegate() {
-        try {
-            // Use reflection to create the delegate so it doesn't need to go into the primary dex.
-            // And we can also patch it
-            Class<?> delegateClass = Class.forName(delegateClassName, false, getClassLoader());
-            Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class,
-                long.class, long.class, Intent.class);
-            return constructor.newInstance(this, tinkerFlags, tinkerLoadVerifyFlag,
-                applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent);
-        } catch (Throwable e) {
-            throw new TinkerRuntimeException("createDelegate failed", e);
-        }
-    }
-
-    private synchronized void ensureDelegate() {
-        if (applicationLike == null) {
-            applicationLike = createDelegate();
-        }
     }
 
     /**
@@ -129,15 +98,7 @@ public abstract class TinkerApplication extends Application {
      */
     private void onBaseContextAttached(Context base) {
         try {
-            applicationStartElapsedTime = SystemClock.elapsedRealtime();
-            applicationStartMillisTime = System.currentTimeMillis();
             loadTinker();
-            ensureDelegate();
-            ShareReflectUtil.findMethod(applicationLike, "onBaseContextAttached", Context.class).invoke(applicationLike, base);
-            //reset save mode
-            if (useSafeMode) {
-                ShareTinkerInternals.setSafeModeCount(this, 0);
-            }
         } catch (TinkerRuntimeException e) {
             throw e;
         } catch (Throwable thr) {
@@ -152,11 +113,18 @@ public abstract class TinkerApplication extends Application {
         onBaseContextAttached(base);
     }
 
+    protected void onAfterAttachBaseContext() {
+        //reset save mode
+        if (useSafeMode) {
+            ShareTinkerInternals.setSafeModeCount(this, 0);
+        }
+    }
+
     private void loadTinker() {
         try {
             //reflect tinker loader, because loaderClass may be define by user!
             Class<?> tinkerLoadClass = Class.forName(loaderClassName, false, getClassLoader());
-            Method loadMethod = tinkerLoadClass.getMethod(TINKER_LOADER_METHOD, TinkerApplication.class);
+            Method loadMethod = tinkerLoadClass.getMethod(TINKER_LOADER_METHOD, com.tencent.tinker.loader.app.TinkerApplication.class);
             Constructor<?> constructor = tinkerLoadClass.getConstructor();
             tinkerResultIntent = (Intent) loadMethod.invoke(constructor.newInstance(), this);
         } catch (Throwable e) {
@@ -171,132 +139,16 @@ public abstract class TinkerApplication extends Application {
     public void onCreate() {
         super.onCreate();
         try {
-            ensureDelegate();
             try {
-                ComponentHotplug.ensureComponentHotplugInstalled(this);
+                ComponentHotplug.ensureComponentHotplugInstalled(null);
             } catch (UnsupportedEnvironmentException e) {
                 throw new TinkerRuntimeException("failed to make sure that ComponentHotplug logic is fine.", e);
             }
-            ShareReflectUtil.findMethod(applicationLike, "onCreate").invoke(applicationLike);
         } catch (TinkerRuntimeException e) {
             throw e;
         } catch (Throwable thr) {
             throw new TinkerRuntimeException(thr.getMessage(), thr);
         }
-    }
-
-    @Override
-    public void onTerminate() {
-        super.onTerminate();
-        if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onTerminate").invoke(applicationLike);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onLowMemory").invoke(applicationLike);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-    }
-
-    @TargetApi(14)
-    @Override
-    public void onTrimMemory(int level) {
-        super.onTrimMemory(level);
-        if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onTrimMemory", int.class).invoke(applicationLike, level);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onConfigurationChanged", Configuration.class).invoke(applicationLike, newConfig);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-    }
-
-    @Override
-    public Resources getResources() {
-        Resources resources = super.getResources();
-        if (applicationLike != null) {
-            try {
-                return (Resources) ShareReflectUtil.findMethod(applicationLike, "getResources", Resources.class).invoke(applicationLike, resources);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-        return resources;
-    }
-
-    @Override
-    public ClassLoader getClassLoader() {
-        ClassLoader classLoader = super.getClassLoader();
-        if (applicationLike != null) {
-            try {
-                return (ClassLoader) ShareReflectUtil.findMethod(applicationLike, "getClassLoader", ClassLoader.class).invoke(applicationLike, classLoader);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-        return classLoader;
-    }
-
-    @Override
-    public AssetManager getAssets() {
-        AssetManager assetManager = super.getAssets();
-        if (applicationLike != null) {
-            try {
-                return (AssetManager) ShareReflectUtil.findMethod(applicationLike, "getAssets", AssetManager.class).invoke(applicationLike, assetManager);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-        return assetManager;
-    }
-
-    @Override
-    public Object getSystemService(String name) {
-        Object service = super.getSystemService(name);
-        if (applicationLike != null) {
-            try {
-                return ShareReflectUtil.findMethod(applicationLike, "getSystemService", String.class, Object.class).invoke(applicationLike, name, service);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-        return service;
-    }
-
-    @Override
-    public Context getBaseContext() {
-        Context base = super.getBaseContext();
-        if (applicationLike != null) {
-            try {
-                return (Context) ShareReflectUtil.findMethod(applicationLike, "getBaseContext", Context.class).invoke(applicationLike, base);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
-        }
-        return base;
     }
 
     public void setUseSafeMode(boolean useSafeMode) {

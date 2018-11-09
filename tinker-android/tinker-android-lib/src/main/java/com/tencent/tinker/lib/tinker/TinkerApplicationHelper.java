@@ -18,9 +18,9 @@ package com.tencent.tinker.lib.tinker;
 
 import android.content.Intent;
 
-import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
+import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -44,83 +44,83 @@ public class TinkerApplicationHelper {
      *
      * @return
      */
-    public static boolean isTinkerEnableAll(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static boolean isTinkerEnableAll(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-        int tinkerFlags = applicationLike.getTinkerFlags();
+        int tinkerFlags = application.getTinkerFlags();
         return ShareTinkerInternals.isTinkerEnabledAll(tinkerFlags);
     }
 
     /**
      * same as {@code Tinker.isEnabledForDex}
      *
-     * @param applicationLike
+     * @param application
      * @return
      */
-    public static boolean isTinkerEnableForDex(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static boolean isTinkerEnableForDex(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-        int tinkerFlags = applicationLike.getTinkerFlags();
+        int tinkerFlags = application.getTinkerFlags();
         return ShareTinkerInternals.isTinkerEnabledForDex(tinkerFlags);
     }
 
     /**
      * same as {@code Tinker.isEnabledForNativeLib}
      *
-     * @param applicationLike
+     * @param application
      * @return
      */
-    public static boolean isTinkerEnableForNativeLib(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static boolean isTinkerEnableForNativeLib(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-        int tinkerFlags = applicationLike.getTinkerFlags();
+        int tinkerFlags = application.getTinkerFlags();
         return ShareTinkerInternals.isTinkerEnabledForNativeLib(tinkerFlags);
     }
 
     /**
      * same as {@code Tinker.isTinkerEnabledForResource}
      *
-     * @param applicationLike
+     * @param application
      * @return
      */
-    public static boolean isTinkerEnableForResource(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static boolean isTinkerEnableForResource(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-        int tinkerFlags = applicationLike.getTinkerFlags();
+        int tinkerFlags = application.getTinkerFlags();
         return ShareTinkerInternals.isTinkerEnabledForResource(tinkerFlags);
     }
 
     /**
      * same as {@code Tinker.getPatchDirectory}
      *
-     * @param applicationLike
+     * @param application
      * @return
      */
-    public static File getTinkerPatchDirectory(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static File getTinkerPatchDirectory(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
 
-        return SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
+        return SharePatchFileUtil.getPatchDirectory(application);
     }
 
     /**
      * whether tinker is success loaded
      * same as {@code Tinker.isTinkerLoaded}
      *
-     * @param applicationLike
+     * @param application
      * @return
      */
-    public static boolean isTinkerLoadSuccess(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static boolean isTinkerLoadSuccess(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
 
-        Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
+        Intent tinkerResultIntent = application.getTinkerResultIntent();
 
         if (tinkerResultIntent == null) {
             return false;
@@ -136,12 +136,12 @@ public class TinkerApplicationHelper {
      *
      * @return
      */
-    public static HashMap<String, String> getLoadDexesAndMd5(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static HashMap<String, String> getLoadDexesAndMd5(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
 
-        Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
+        Intent tinkerResultIntent = application.getTinkerResultIntent();
 
         if (tinkerResultIntent == null) {
             return null;
@@ -161,12 +161,12 @@ public class TinkerApplicationHelper {
      *
      * @return
      */
-    public static HashMap<String, String> getLoadLibraryAndMd5(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static HashMap<String, String> getLoadLibraryAndMd5(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
 
-        Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
+        Intent tinkerResultIntent = application.getTinkerResultIntent();
 
         if (tinkerResultIntent == null) {
             return null;
@@ -185,12 +185,12 @@ public class TinkerApplicationHelper {
      *
      * @return
      */
-    public static HashMap<String, String> getPackageConfigs(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static HashMap<String, String> getPackageConfigs(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
 
-        Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
+        Intent tinkerResultIntent = application.getTinkerResultIntent();
 
         if (tinkerResultIntent == null) {
             return null;
@@ -208,19 +208,19 @@ public class TinkerApplicationHelper {
      *
      * @return
      */
-    public static String getCurrentVersion(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static String getCurrentVersion(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
 
-        Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
+        Intent tinkerResultIntent = application.getTinkerResultIntent();
 
         if (tinkerResultIntent == null) {
             return null;
         }
         final String oldVersion = ShareIntentUtil.getStringExtra(tinkerResultIntent, ShareIntentUtil.INTENT_PATCH_OLD_VERSION);
         final String newVersion = ShareIntentUtil.getStringExtra(tinkerResultIntent, ShareIntentUtil.INTENT_PATCH_NEW_VERSION);
-        final boolean isMainProcess = ShareTinkerInternals.isInMainProcess(applicationLike.getApplication());
+        final boolean isMainProcess = ShareTinkerInternals.isInMainProcess(application);
         if (oldVersion != null && newVersion != null) {
             if (isMainProcess) {
                 return newVersion;
@@ -235,16 +235,16 @@ public class TinkerApplicationHelper {
      * clean all patch files without install tinker
      * same as {@code Tinker.cleanPatch}
      *
-     * @param applicationLike
+     * @param application
      */
-    public static void cleanPatch(ApplicationLike applicationLike) {
-        if (applicationLike == null || applicationLike.getApplication() == null) {
+    public static void cleanPatch(TinkerApplication application) {
+        if (application == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-        if (TinkerApplicationHelper.isTinkerLoadSuccess(applicationLike)) {
+        if (TinkerApplicationHelper.isTinkerLoadSuccess(application)) {
             TinkerLog.e(TAG, "it is not safety to clean patch when tinker is loaded, you should kill all your process after clean!");
         }
-        SharePatchFileUtil.deleteDir(SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication()));
+        SharePatchFileUtil.deleteDir(SharePatchFileUtil.getPatchDirectory(application));
     }
 
     /**
@@ -253,13 +253,13 @@ public class TinkerApplicationHelper {
      * and you can load patch dex and library without install tinker!
      * }
      */
-    public static void loadArmV7aLibrary(ApplicationLike applicationLike, String libName) {
-        if (libName == null || libName.isEmpty() || applicationLike == null) {
+    public static void loadArmV7aLibrary(TinkerApplication application, String libName) {
+        if (libName == null || libName.isEmpty() || application == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
 
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi-v7a", libName)) {
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(application)) {
+            if (TinkerApplicationHelper.loadLibraryFromTinker(application, "lib/armeabi-v7a", libName)) {
                 return;
             }
 
@@ -273,13 +273,13 @@ public class TinkerApplicationHelper {
      * in some process, you may not want to install tinker
      * and you can load patch dex and library without install tinker!
      */
-    public static void loadArmLibrary(ApplicationLike applicationLike, String libName) {
-        if (libName == null || libName.isEmpty() || applicationLike == null) {
+    public static void loadArmLibrary(TinkerApplication application, String libName) {
+        if (libName == null || libName.isEmpty() || application == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
 
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi", libName)) {
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(application)) {
+            if (TinkerApplicationHelper.loadLibraryFromTinker(application, "lib/armeabi", libName)) {
                 return;
             }
 
@@ -291,35 +291,35 @@ public class TinkerApplicationHelper {
      * you can use these api to load tinker library without tinker is installed!
      * same as {@code TinkerInstaller#loadLibraryFromTinker}
      *
-     * @param applicationLike
+     * @param application
      * @param relativePath
      * @param libname
      * @return
      * @throws UnsatisfiedLinkError
      */
-    public static boolean loadLibraryFromTinker(ApplicationLike applicationLike, String relativePath, String libname) throws UnsatisfiedLinkError {
+    public static boolean loadLibraryFromTinker(TinkerApplication application, String relativePath, String libname) throws UnsatisfiedLinkError {
         libname = libname.startsWith("lib") ? libname : "lib" + libname;
         libname = libname.endsWith(".so") ? libname : libname + ".so";
         String relativeLibPath = relativePath + "/" + libname;
 
         //TODO we should add cpu abi, and the real path later
-        if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
+        if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(application)) {
             return false;
         }
-        if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
+        if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(application)) {
             return false;
         }
 
-        final HashMap<String, String> loadLibraries = TinkerApplicationHelper.getLoadLibraryAndMd5(applicationLike);
+        final HashMap<String, String> loadLibraries = TinkerApplicationHelper.getLoadLibraryAndMd5(application);
         if (loadLibraries == null) {
             return false;
         }
 
-        final String currentVersion = TinkerApplicationHelper.getCurrentVersion(applicationLike);
+        final String currentVersion = TinkerApplicationHelper.getCurrentVersion(application);
         if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
             return false;
         }
-        final File patchDirectory = SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
+        final File patchDirectory = SharePatchFileUtil.getPatchDirectory(application);
         if (patchDirectory == null) {
             return false;
         }
@@ -337,7 +337,7 @@ public class TinkerApplicationHelper {
                 continue;
             }
             //whether we check md5 when load
-            final boolean verifyMd5 = applicationLike.getTinkerLoadVerifyFlag();
+            final boolean verifyMd5 = application.isTinkerLoadVerifyFlag();
             if (verifyMd5 && !SharePatchFileUtil.verifyFileMd5(library, loadLibraries.get(name))) {
                 //do not report, because tinker is not install
                 TinkerLog.i(TAG, "loadLibraryFromTinker md5mismatch fail:" + patchLibraryPath);
