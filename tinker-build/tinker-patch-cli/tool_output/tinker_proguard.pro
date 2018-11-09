@@ -7,13 +7,6 @@
     *;
 }
 
--keep public class com.tencent.tinker.entry.ApplicationLifeCycle {
-    *;
-}
--keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {
-    *;
-}
-
 -keep public class com.tencent.tinker.loader.TinkerLoader {
     *;
 }
