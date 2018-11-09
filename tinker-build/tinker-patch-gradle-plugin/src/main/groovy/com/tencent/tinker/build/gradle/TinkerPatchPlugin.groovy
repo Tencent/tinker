@@ -69,6 +69,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             //disable dex archive mode
             disableArchiveDex()
+            //禁止打了运行时注解的类全部打到主dex中
+            android.dexOptions.keepRuntimeAnnotatedClasses = false
         } catch (Throwable e) {
             //no preDexLibraries field, just continue
         }
