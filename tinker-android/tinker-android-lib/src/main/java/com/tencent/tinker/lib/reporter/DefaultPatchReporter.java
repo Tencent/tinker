@@ -87,7 +87,7 @@ public class DefaultPatchReporter implements PatchReporter {
             || errorCode == ShareConstants.ERROR_PACKAGE_CHECK_LIB_META_CORRUPTED
             || errorCode == ShareConstants.ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED) {
             //delete temp files
-            Tinker.with(context).cleanPatchByVersion(patchFile);
+            Tinker.with(context).cleanPatchByPatchApk(patchFile);
         }
     }
 
@@ -124,7 +124,7 @@ public class DefaultPatchReporter implements PatchReporter {
         TinkerLog.i(TAG, "patchReporter onPatchTypeExtractFail: file extract fail type: %s, path: %s, extractTo: %s, filename: %s",
             ShareTinkerInternals.getTypeString(fileType), patchFile.getPath(), extractTo.getPath(), filename);
         //delete temp files
-        Tinker.with(context).cleanPatchByVersion(patchFile);
+        Tinker.with(context).cleanPatchByPatchApk(patchFile);
     }
 
     /**
@@ -147,7 +147,7 @@ public class DefaultPatchReporter implements PatchReporter {
             shouldRetry = true;
             deleteOptFiles(dexFiles);
         } else {
-            Tinker.with(context).cleanPatchByVersion(patchFile);
+            Tinker.with(context).cleanPatchByPatchApk(patchFile);
         }
     }
 
@@ -205,7 +205,7 @@ public class DefaultPatchReporter implements PatchReporter {
         //don't accept request any more!
         Tinker.with(context).setTinkerDisable();
         ////delete temp files, I think we don't have to clean all patch
-        Tinker.with(context).cleanPatchByVersion(patchFile);
+        Tinker.with(context).cleanPatchByPatchApk(patchFile);
     }
 
     private void deleteOptFiles(List<File> dexFiles) {

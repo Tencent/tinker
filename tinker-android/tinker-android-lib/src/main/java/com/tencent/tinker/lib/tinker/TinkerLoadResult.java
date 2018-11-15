@@ -113,7 +113,7 @@ public class TinkerLoadResult {
                 resourceDirectory = new File(patchVersionDirectory, ShareConstants.RES_PATH);
                 resourceFile = new File(resourceDirectory, ShareConstants.RES_NAME);
             }
-            patchInfo = new SharePatchInfo(oldVersion, newVersion, Build.FINGERPRINT, oatDir);
+            patchInfo = new SharePatchInfo(oldVersion, newVersion, false, Build.FINGERPRINT, oatDir);
             versionChanged = !(oldVersion.equals(newVersion));
         }
 

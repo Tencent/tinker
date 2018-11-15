@@ -71,7 +71,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
             Log.w(TAG, "tryLoadPatchFiles: we don't load patch with :patch process itself, just return");
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
             return;
-
         }
         //tinker
         File patchDirectoryFile = SharePatchFileUtil.getPatchDirectory(app);
@@ -120,17 +119,39 @@ public class TinkerLoader extends AbstractTinkerLoader {
             return;
         }
 
+        boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
+        boolean isRemoveNewVersion = patchInfo.isRemoveNewVersion;
+
+        // So far new version is not loaded in main process and other processes.
+        // We can remove new version directory safely.
+        if (mainProcess && isRemoveNewVersion) {
+            Log.w(TAG, "found clean patch mark and we are in main process, delete patch file now.");
+            String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
+            if (patchName != null) {
+                String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
+                SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                if (oldVersion.equals(newVersion)) {
+                    // !oldVersion.equals(newVersion) means new patch is applied, just fall back to old one in that case.
+                    // Or we will set oldVersion and newVersion to empty string to clean patch.
+                    oldVersion = "";
+                }
+                newVersion = oldVersion;
+                patchInfo.oldVersion = oldVersion;
+                patchInfo.newVersion = newVersion;
+                SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+                ShareTinkerInternals.killProcessExceptMain(app);
+            }
+        }
+
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OLD_VERSION, oldVersion);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_NEW_VERSION, newVersion);
 
-        boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
         boolean versionChanged = !(oldVersion.equals(newVersion));
         boolean oatModeChanged = oatDex.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH);
         oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
 
         String version = oldVersion;
-
         if (versionChanged && mainProcess) {
             version = newVersion;
         }
