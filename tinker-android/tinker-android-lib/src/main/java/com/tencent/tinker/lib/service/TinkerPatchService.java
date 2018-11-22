@@ -55,7 +55,11 @@ public class TinkerPatchService extends TinkerJobIntentService {
         Intent intent = new Intent(context, TinkerPatchService.class);
         intent.putExtra(PATCH_PATH_EXTRA, path);
         intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
-        enqueueWork(context, TinkerPatchService.class, JOB_ID, intent);
+        try {
+            enqueueWork(context, TinkerPatchService.class, JOB_ID, intent);
+        } catch (Throwable thr) {
+            TinkerLog.e(TAG, "run patch service fail, exception:" + thr);
+        }
     }
 
     public static void setPatchProcessor(AbstractPatch upgradePatch, Class<? extends AbstractResultService> serviceClass) {

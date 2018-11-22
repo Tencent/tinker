@@ -266,8 +266,10 @@ public class Tinker {
         }
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
         final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
-        patchInfo.isRemoveNewVersion = true;
-        SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+        if (patchInfo != null) {
+            patchInfo.isRemoveNewVersion = true;
+            SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+        }
     }
 
     /**
