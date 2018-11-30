@@ -165,6 +165,28 @@ class AndroidNClassLoader extends PathClassLoader {
         } else if (name != null && name.startsWith("com.tencent.tinker.loader.")
                 && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)) {
             return originClassLoader.loadClass(name);
+        } else if (name != null && name.startsWith("org.apache.http.")) {
+            // Here's the whole story:
+            //   Some app use apache wrapper library to access Apache utilities. Classes in apache wrapper
+            //   library may be conflict with those preloaded in BootClassLoader.
+            //   So with the build option:
+            //       useLibrary 'org.apache.http.legacy'
+            //   appears, the Android Framework will inject a jar called 'org.apache.http.legacy.boot.jar'
+            //   in front of the path of user's apk. After that, PathList in app's PathClassLoader should
+            //   look like this:
+            //       ["/system/framework/org.apache.http.legacy.boot.jar", "path-to-user-apk", "path-to-other-preload-jar"]
+            //   When app runs to the code refer to Apache classes, the referred classes in the first
+            //   jar override those in user's app, which avoids any conflicts and crashes.
+            //
+            //   When it comes to Tinker, to block the cached instances in class table of app's
+            //   PathClassLoader we use this AndroidNClassLoader to replace the original PathClassLoader.
+            //   At the beginning it's fine to imitate system's behavior and construct the PathList in AndroidNClassLoader
+            //   like below:
+            //       ["/system/framework/org.apache.http.legacy.boot.jar", "path-to-new-dexes", "path-to-other-preload-jar"]
+            //   However, the ART VM of Android P adds a new feature that checks whether the inlined class is loaded by the same
+            //   ClassLoader that loads the callsite's class. If any Apache classes is inlined in old dex(oat), after we replacing
+            //   the App's ClassLoader we will receive an assert since the Apache classes is loaded by another ClassLoader now.
+            return originClassLoader.loadClass(name);
         }
         try {
             return super.findClass(name);
