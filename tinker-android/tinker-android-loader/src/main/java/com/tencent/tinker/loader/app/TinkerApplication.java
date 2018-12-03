@@ -121,6 +121,19 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
+    private Method appLikeOnBaseContextAttached = null;
+
+    private void invokeAppLikeOnBaseContextAttached(Object appLike, Context base) throws TinkerRuntimeException {
+        try {
+            if (appLikeOnBaseContextAttached == null) {
+                appLikeOnBaseContextAttached = ShareReflectUtil.findMethod(applicationLike, "onBaseContextAttached", Context.class);
+            }
+            appLikeOnBaseContextAttached.invoke(appLike, base);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke onBaseContextAttached of appLike.", thr);
+        }
+    }
+
     /**
      * Hook for sub-classes to run logic after the {@link Application#attachBaseContext} has been
      * called but before the delegate is created. Implementors should be very careful what they do
@@ -132,7 +145,7 @@ public abstract class TinkerApplication extends Application {
             applicationStartMillisTime = System.currentTimeMillis();
             loadTinker();
             ensureDelegate();
-            ShareReflectUtil.findMethod(applicationLike, "onBaseContextAttached", Context.class).invoke(applicationLike, base);
+            invokeAppLikeOnBaseContextAttached(applicationLike, base);
             //reset save mode
             if (useSafeMode) {
                 ShareTinkerInternals.setSafeModeCount(this, 0);
@@ -166,6 +179,19 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
+    private Method appLikeOnCreate = null;
+
+    private void invokeAppLikeOnCreate(Object appLike) throws TinkerRuntimeException {
+        try {
+            if (appLikeOnCreate == null) {
+                appLikeOnCreate = ShareReflectUtil.findMethod(applicationLike, "onCreate");
+            }
+            appLikeOnCreate.invoke(appLike);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke onCreate of appLike.", thr);
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -176,7 +202,7 @@ public abstract class TinkerApplication extends Application {
             } catch (UnsupportedEnvironmentException e) {
                 throw new TinkerRuntimeException("failed to make sure that ComponentHotplug logic is fine.", e);
             }
-            ShareReflectUtil.findMethod(applicationLike, "onCreate").invoke(applicationLike);
+            invokeAppLikeOnCreate(applicationLike);
         } catch (TinkerRuntimeException e) {
             throw e;
         } catch (Throwable thr) {
@@ -184,15 +210,37 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
+    private Method appLikeOnTerminate = null;
+
+    private void invokeAppLikeOnTerminate(Object appLike) throws TinkerRuntimeException {
+        try {
+            if (appLikeOnTerminate == null) {
+                appLikeOnTerminate = ShareReflectUtil.findMethod(applicationLike, "onTerminate");
+            }
+            appLikeOnTerminate.invoke(appLike);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke onTerminate of appLike.", thr);
+        }
+    }
+
     @Override
     public void onTerminate() {
         super.onTerminate();
         if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onTerminate").invoke(applicationLike);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            invokeAppLikeOnTerminate(applicationLike);
+        }
+    }
+
+    private Method appLikeOnLowMemory = null;
+
+    private void invokeAppLikeOnLowMemory(Object appLike) throws TinkerRuntimeException {
+        try {
+            if (appLikeOnLowMemory == null) {
+                appLikeOnLowMemory = ShareReflectUtil.findMethod(applicationLike, "onLowMemory");
             }
+            appLikeOnLowMemory.invoke(appLike);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke onLowMemory of appLike.", thr);
         }
     }
 
@@ -200,11 +248,20 @@ public abstract class TinkerApplication extends Application {
     public void onLowMemory() {
         super.onLowMemory();
         if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onLowMemory").invoke(applicationLike);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            invokeAppLikeOnLowMemory(applicationLike);
+        }
+    }
+
+    private Method appLikeOnTrimMemory = null;
+
+    private void invokeAppLikeOnTrimMemory(Object appLike, int level) throws TinkerRuntimeException {
+        try {
+            if (appLikeOnTrimMemory == null) {
+                appLikeOnTrimMemory = ShareReflectUtil.findMethod(applicationLike, "onTrimMemory", int.class);
             }
+            appLikeOnTrimMemory.invoke(appLike, level);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke onTrimMemory of appLike.", thr);
         }
     }
 
@@ -213,11 +270,20 @@ public abstract class TinkerApplication extends Application {
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onTrimMemory", int.class).invoke(applicationLike, level);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            invokeAppLikeOnTrimMemory(applicationLike, level);
+        }
+    }
+
+    private Method appLikeOnConfigurationChanged = null;
+
+    private void invokeAppLikeOnConfigurationChanged(Object appLike, Configuration newConfig) throws TinkerRuntimeException {
+        try {
+            if (appLikeOnConfigurationChanged == null) {
+                appLikeOnConfigurationChanged = ShareReflectUtil.findMethod(applicationLike, "onConfigurationChanged", Configuration.class);
             }
+            appLikeOnConfigurationChanged.invoke(appLike, newConfig);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke onConfigurationChanged of appLike.", thr);
         }
     }
 
@@ -225,11 +291,20 @@ public abstract class TinkerApplication extends Application {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         if (applicationLike != null) {
-            try {
-                ShareReflectUtil.findMethod(applicationLike, "onConfigurationChanged", Configuration.class).invoke(applicationLike, newConfig);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
+            invokeAppLikeOnConfigurationChanged(applicationLike, newConfig);
+        }
+    }
+
+    private Method appLikeGetResources = null;
+
+    private Resources invokeAppLikeGetResources(Object appLike, Resources resources) throws TinkerRuntimeException {
+        try {
+            if (appLikeGetResources == null) {
+                appLikeGetResources = ShareReflectUtil.findMethod(applicationLike, "getResources", Resources.class);
             }
+            return (Resources) appLikeGetResources.invoke(appLike, resources);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke getResources of appLike.", thr);
         }
     }
 
@@ -237,63 +312,95 @@ public abstract class TinkerApplication extends Application {
     public Resources getResources() {
         Resources resources = super.getResources();
         if (applicationLike != null) {
-            try {
-                return (Resources) ShareReflectUtil.findMethod(applicationLike, "getResources", Resources.class).invoke(applicationLike, resources);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
+            return invokeAppLikeGetResources(applicationLike, resources);
         }
         return resources;
+    }
+
+    private Method appLikeGetClassLoader = null;
+
+    private ClassLoader invokeAppLikeGetClassLoader(Object appLike, ClassLoader classLoader) throws TinkerRuntimeException {
+        try {
+            if (appLikeGetClassLoader == null) {
+                appLikeGetClassLoader = ShareReflectUtil.findMethod(applicationLike, "getClassLoader", ClassLoader.class);
+            }
+            return (ClassLoader) appLikeGetClassLoader.invoke(appLike, classLoader);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke getClassLoader of appLike.", thr);
+        }
     }
 
     @Override
     public ClassLoader getClassLoader() {
         ClassLoader classLoader = super.getClassLoader();
         if (applicationLike != null) {
-            try {
-                return (ClassLoader) ShareReflectUtil.findMethod(applicationLike, "getClassLoader", ClassLoader.class).invoke(applicationLike, classLoader);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
+            return invokeAppLikeGetClassLoader(applicationLike, classLoader);
         }
         return classLoader;
+    }
+
+    private Method appLikeGetAssets = null;
+
+    private AssetManager invokeAppLikeGetAssets(Object appLike, AssetManager assetManager) throws TinkerRuntimeException {
+        try {
+            if (appLikeGetAssets == null) {
+                appLikeGetAssets = ShareReflectUtil.findMethod(applicationLike, "getAssets", AssetManager.class);
+            }
+            return (AssetManager) appLikeGetAssets.invoke(appLike, assetManager);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke getAssets of appLike.", thr);
+        }
     }
 
     @Override
     public AssetManager getAssets() {
         AssetManager assetManager = super.getAssets();
         if (applicationLike != null) {
-            try {
-                return (AssetManager) ShareReflectUtil.findMethod(applicationLike, "getAssets", AssetManager.class).invoke(applicationLike, assetManager);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
+            return invokeAppLikeGetAssets(applicationLike, assetManager);
         }
         return assetManager;
+    }
+
+    private Method appLikeGetSystemService = null;
+
+    private Object invokeAppLikeGetSystemService(Object appLike, String name, Object service) throws TinkerRuntimeException {
+        try {
+            if (appLikeGetSystemService == null) {
+                appLikeGetSystemService = ShareReflectUtil.findMethod(applicationLike, "getSystemService", String.class, Object.class);
+            }
+            return appLikeGetSystemService.invoke(appLike, name, service);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke getSystemService of appLike.", thr);
+        }
     }
 
     @Override
     public Object getSystemService(String name) {
         Object service = super.getSystemService(name);
         if (applicationLike != null) {
-            try {
-                return ShareReflectUtil.findMethod(applicationLike, "getSystemService", String.class, Object.class).invoke(applicationLike, name, service);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
+            return invokeAppLikeGetSystemService(applicationLike, name, service);
         }
         return service;
+    }
+
+    private Method appLikeGetBaseContext = null;
+
+    private Object invokeAppLikeGetBaseContext(Object appLike, Context base) throws TinkerRuntimeException {
+        try {
+            if (appLikeGetBaseContext == null) {
+                appLikeGetBaseContext = ShareReflectUtil.findMethod(applicationLike, "getBaseContext", Context.class);
+            }
+            return appLikeGetBaseContext.invoke(appLike, base);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("fail to invoke getBaseContext of appLike.", thr);
+        }
     }
 
     @Override
     public Context getBaseContext() {
         Context base = super.getBaseContext();
         if (applicationLike != null) {
-            try {
-                return (Context) ShareReflectUtil.findMethod(applicationLike, "getBaseContext", Context.class).invoke(applicationLike, base);
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException(thr.getMessage(), thr);
-            }
+            return (Context) invokeAppLikeGetBaseContext(applicationLike, base);
         }
         return base;
     }
