@@ -172,7 +172,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 // We found some case that applyResourceTask run after mergeResourcesTask, it caused 'applyResourceMapping' config not work.
                 // The task need merged resources to calculate ids.xml, it must depends on merge resources task.
                 def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
-                applyResourceTask dependsOn mergeResourcesTask
+                applyResourceTask.dependsOn mergeResourcesTask
 
                 if (manifestTask.manifestPath == null || applyResourceTask.resDir == null) {
                     throw new RuntimeException("manifestTask.manifestPath or applyResourceTask.resDir is null.")
