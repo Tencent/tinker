@@ -332,7 +332,12 @@ public abstract class TinkerJobIntentService extends Service {
                 if (mParams == null) {
                     return null;
                 }
-                work = mParams.dequeueWork();
+                try {
+                    work = mParams.dequeueWork();
+                } catch (Throwable thr) {
+                    Log.w(TAG, "exception occurred.", thr);
+                    work = null;
+                }
             }
             if (work != null) {
                 work.getIntent().setExtrasClassLoader(mService.getClassLoader());
