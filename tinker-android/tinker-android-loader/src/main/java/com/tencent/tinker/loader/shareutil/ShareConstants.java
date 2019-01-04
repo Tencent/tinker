@@ -59,6 +59,7 @@ public class ShareConstants {
 
     public static final String DEX_SUFFIX  = ".dex";
     public static final String JAR_SUFFIX  = ".jar";
+    public static final String APK_SUFFIX  = ".apk";
     public static final String ODEX_SUFFIX = ".odex";
 
     public static final String TEST_DEX_NAME            = "test.dex";

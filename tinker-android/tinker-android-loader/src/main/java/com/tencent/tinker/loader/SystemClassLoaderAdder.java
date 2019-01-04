@@ -25,6 +25,7 @@ import android.util.Log;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,10 +35,12 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import dalvik.system.DexFile;
@@ -119,8 +122,27 @@ public class SystemClassLoaderAdder {
                 if (file == null) {
                     continue;
                 }
-                if (file.getName().startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
+                final String fileName = file.getName();
+                if (fileName.startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
                     return true;
+                } else if (fileName.endsWith(ShareConstants.APK_SUFFIX) || file.getName().endsWith(ShareConstants.JAR_SUFFIX)) {
+                    ZipFile zf = null;
+                    try {
+                        zf = new ZipFile(file);
+                        final Enumeration<? extends ZipEntry> entries = zf.entries();
+                        while (entries.hasMoreElements()) {
+                            final ZipEntry entry = entries.nextElement();
+                            if (entry.getName().startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    } catch (IOException e) {
+                        // Usually we shouldn't reach here.
+                        return false;
+                    } finally {
+                        SharePatchFileUtil.closeZip(zf);
+                    }
                 }
             }
         }
