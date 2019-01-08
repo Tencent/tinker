@@ -69,6 +69,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             //disable dex archive mode
             disableArchiveDex()
+            //禁止打了运行时注解的类全部打到主dex中
+            android.dexOptions.keepRuntimeAnnotatedClasses = false
         } catch (Throwable e) {
             //no preDexLibraries field, just continue
         }
@@ -168,6 +170,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 applyResourceTask.mustRunAfter manifestTask
 
                 variantOutput.processResources.dependsOn applyResourceTask
+                // Fix issue-866.
+                // We found some case that applyResourceTask run after mergeResourcesTask, it caused 'applyResourceMapping' config not work.
+                // The task need merged resources to calculate ids.xml, it must depends on merge resources task.
+                def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
+                applyResourceTask.dependsOn mergeResourcesTask
 
                 if (manifestTask.manifestPath == null || applyResourceTask.resDir == null) {
                     throw new RuntimeException("manifestTask.manifestPath or applyResourceTask.resDir is null.")
