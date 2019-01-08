@@ -25,7 +25,6 @@ import android.util.Log;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
-import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 import java.io.IOException;
