@@ -2,10 +2,11 @@
 buildscript {
     repositories {
         mavenLocal()
+        google()
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.0'
+        classpath 'com.android.tools.build:gradle:3.2.1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
         classpath "com.github.dcendents:android-maven-gradle-plugin:2.1"
     }
@@ -14,6 +15,7 @@ buildscript {
 allprojects {
     repositories {
         mavenLocal()
+        google()
         jcenter()
     }
 
@@ -27,8 +29,8 @@ ext {
     minSdkVersion = 10
     compileSdkVersion = 26
     targetSdkVersion = 23
-    buildToolsVersion = '26.0.2'
-    supportLibVersion = '25.1.0'
+    buildToolsVersion = '28.0.3'
+    supportLibVersion = '28.0.0'
     javaVersion = JavaVersion.VERSION_1_7
 
     GROUP = 'com.tencent.tinker'

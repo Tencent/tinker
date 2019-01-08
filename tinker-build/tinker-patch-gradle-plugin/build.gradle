@@ -5,12 +5,12 @@ version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
 
 dependencies {
-    compile gradleApi()
-    compile localGroovy()
-//    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':tinker-build:tinker-patch-lib')
-    compile 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
-    compile 'com.android.tools.build:gradle:2.1.0'
+    implementation gradleApi()
+    implementation localGroovy()
+//    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(':tinker-build:tinker-patch-lib')
+    implementation 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
+    implementation 'com.android.tools.build:gradle:3.2.1'
 }
 
 repositories {

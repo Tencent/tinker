@@ -5,7 +5,11 @@ dependencies {
         implementation fileTree(dir: 'libs', include: ['*.jar'])
         testImplementation 'junit:junit:4.12'
         implementation "com.android.support:appcompat-v7:23.1.1"
-        implementation("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
+        api("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
+
+        // Maven local cannot handle transist dependencies.
+        implementation("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
+
         annotationProcessor("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
         compileOnly("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
 

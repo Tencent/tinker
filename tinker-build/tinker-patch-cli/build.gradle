@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
@@ -6,8 +6,8 @@ group rootProject.ext.GROUP
 [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':tinker-build:tinker-patch-lib')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(':tinker-build:tinker-patch-lib')
 }
 
 jar {
