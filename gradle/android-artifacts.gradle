@@ -84,23 +84,50 @@ publishing {
             artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
             artifact androidJavadocsJar
             pom.withXml {
-                def dependenciesNode = asNode().appendNode('dependencies')
-                configurations.compile.allDependencies.each {
-                    if (it.group != null && it.name != null) {
-                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                        dependencyNode.appendNode('groupId', it.group)
-                        dependencyNode.appendNode('artifactId', it.name)
-                        dependencyNode.appendNode('version', it.version)
+                // Resolve dependencies
+                final depsNode = asNode().appendNode('dependencies')
+                final addDep = { Dependency dep, String scope ->
+                    if (dep.group == null || dep.version == null || dep.name == null
+                            || dep.name == "unspecified")
+                        return // ignore invalid dependencies
 
-                        if (it.excludeRules.size() > 0) {
-                            def exclusionsNode = dependencyNode.appendNode('exclusions')
-                            it.excludeRules.each { rule ->
-                                def exclusionNode = exclusionsNode.appendNode('exclusion')
-                                exclusionNode.appendNode('groupId', rule.group)
-                                exclusionNode.appendNode('artifactId', rule.module)
-                            }
+                    // Determine actual artifactId for the dependency
+                    def artifactId = dep.name
+                    if (dep instanceof ProjectDependency) {
+                        def p = (dep as ProjectDependency).dependencyProject
+                        if (p.hasProperty('artifactId'))
+                            artifactId = p.property('artifactId')
+                    }
+
+                    def node = depsNode.appendNode('dependency')
+                    node.appendNode('groupId', dep.group)
+                    node.appendNode('artifactId', artifactId)
+                    node.appendNode('version', dep.version)
+                    node.appendNode('scope', scope)
+
+                    if (!dep.transitive) {
+                        // If this dependency is transitive, we should force exclude all its dependencies them from the POM
+                        final exclusionNode = node.appendNode('exclusions').appendNode('exclusion')
+                        exclusionNode.appendNode('groupId', '*')
+                        exclusionNode.appendNode('artifactId', '*')
+                    } else if (!dep.properties.excludeRules.empty) {
+                        // Otherwise add specified exclude rules
+                        final exclusionNode = node.appendNode('exclusions').appendNode('exclusion')
+                        dep.properties.excludeRules.each { ExcludeRule rule ->
+                            exclusionNode.appendNode('groupId', rule.group ?: '*')
+                            exclusionNode.appendNode('artifactId', rule.module ?: '*')
                         }
                     }
+                }
+
+                [
+                        'compile':          'compile',
+                        'api':              'compile',
+                        'implementation':   'runtime',
+                        'compileOnly':      'compile',
+                        'runtimeOnly':      'runtime'
+                ].each { conf, scope ->
+                    project.configurations[conf].allDependencies.each { addDep(it, scope) }
                 }
             }
         }
