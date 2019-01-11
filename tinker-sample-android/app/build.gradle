@@ -79,7 +79,7 @@ android {
     defaultConfig {
         applicationId "tinker.sample.android"
         minSdkVersion 14
-        targetSdkVersion 27
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0.0"
         /**
