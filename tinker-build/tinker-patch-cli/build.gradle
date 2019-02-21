@@ -16,11 +16,7 @@ jar {
         attributes 'Manifest-Version': version
     }
     from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    } {
-        exclude "META-INF/*.SF"
-        exclude "META-INF/*.DSA"
-        exclude "META-INF/*.RSA"
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
