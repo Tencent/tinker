@@ -19,10 +19,10 @@ package com.tencent.tinker.build.util;
 import com.tencent.tinker.build.decoder.ResDiffDecoder;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.commons.util.StreamUtil;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -141,8 +141,8 @@ public class Utils {
                     );
                 }
                 String name = zipEntry.getName();
-                if (name.contains("../")) {
-                    continue;
+                if (!TinkerZipUtil.validateZipEntryName(output.getParentFile(), name)) {
+                    throw new IOException("Bad ZipEntry name: " + name);
                 }
                 if (Utils.checkFileInPattern(config.mResFilePattern, name)) {
                     //won't contain in add set.

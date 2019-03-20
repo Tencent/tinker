@@ -18,12 +18,13 @@ package com.tencent.tinker.lib.tinker;
 
 import android.content.Intent;
 
+import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
-import com.tencent.tinker.loader.app.ApplicationLike;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
@@ -241,10 +242,22 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-        if (TinkerApplicationHelper.isTinkerLoadSuccess(applicationLike)) {
-            TinkerLog.e(TAG, "it is not safety to clean patch when tinker is loaded, you should kill all your process after clean!");
+        final File tinkerDir = SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
+        if (!tinkerDir.exists()) {
+            TinkerLog.w(TAG, "try to clean patch while there're not any applied patches.");
+            return;
         }
-        SharePatchFileUtil.deleteDir(SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication()));
+        final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(tinkerDir.getAbsolutePath());
+        if (!patchInfoFile.exists()) {
+            TinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
+            return;
+        }
+        final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());
+        final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+        if (patchInfo != null) {
+            patchInfo.isRemoveNewVersion = true;
+            SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+        }
     }
 
     /**

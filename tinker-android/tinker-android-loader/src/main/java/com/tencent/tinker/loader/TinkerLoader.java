@@ -16,9 +16,7 @@
 
 package com.tencent.tinker.loader;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
@@ -73,7 +71,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
             Log.w(TAG, "tryLoadPatchFiles: we don't load patch with :patch process itself, just return");
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_DISABLE);
             return;
-
         }
         //tinker
         File patchDirectoryFile = SharePatchFileUtil.getPatchDirectory(app);
@@ -122,17 +119,39 @@ public class TinkerLoader extends AbstractTinkerLoader {
             return;
         }
 
+        boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
+        boolean isRemoveNewVersion = patchInfo.isRemoveNewVersion;
+
+        // So far new version is not loaded in main process and other processes.
+        // We can remove new version directory safely.
+        if (mainProcess && isRemoveNewVersion) {
+            Log.w(TAG, "found clean patch mark and we are in main process, delete patch file now.");
+            String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
+            if (patchName != null) {
+                String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
+                SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                if (oldVersion.equals(newVersion)) {
+                    // !oldVersion.equals(newVersion) means new patch is applied, just fall back to old one in that case.
+                    // Or we will set oldVersion and newVersion to empty string to clean patch.
+                    oldVersion = "";
+                }
+                newVersion = oldVersion;
+                patchInfo.oldVersion = oldVersion;
+                patchInfo.newVersion = newVersion;
+                SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+                ShareTinkerInternals.killProcessExceptMain(app);
+            }
+        }
+
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OLD_VERSION, oldVersion);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_NEW_VERSION, newVersion);
 
-        boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
         boolean versionChanged = !(oldVersion.equals(newVersion));
-        boolean oatModeChanged = oatDex.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH) && mainProcess;
+        boolean oatModeChanged = oatDex.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH);
         oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
 
         String version = oldVersion;
-
         if (versionChanged && mainProcess) {
             version = newVersion;
         }
@@ -229,8 +248,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 
         //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if ((mainProcess && versionChanged)
-             || oatModeChanged) {
+        if (mainProcess && (versionChanged || oatModeChanged)) {
             patchInfo.oldVersion = version;
             patchInfo.oatDir = oatDex;
 
@@ -304,18 +322,13 @@ public class TinkerLoader extends AbstractTinkerLoader {
     }
 
     private boolean checkSafeModeCount(TinkerApplication application) {
-        String processName = ShareTinkerInternals.getProcessName(application);
-        String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG + processName;
-        //each process have its own SharedPreferences file
-        SharedPreferences sp = application.getSharedPreferences(preferName, Context.MODE_PRIVATE);
-        int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0) + 1;
-        Log.w(TAG, "tinker safe mode preferName:" + preferName + " count:" + count);
-        if (count >= ShareConstants.TINKER_SAFE_MODE_MAX_COUNT) {
-            sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, 0).commit();
+        int count = ShareTinkerInternals.getSafeModeCount(application);
+        if (count >= ShareConstants.TINKER_SAFE_MODE_MAX_COUNT - 1) {
+            ShareTinkerInternals.setSafeModeCount(application, 0);
             return false;
         }
         application.setUseSafeMode(true);
-        sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT, count).commit();
+        ShareTinkerInternals.setSafeModeCount(application, count + 1);
         return true;
     }
 }

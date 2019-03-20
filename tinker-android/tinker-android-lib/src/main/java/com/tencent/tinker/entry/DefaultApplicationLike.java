@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.loader.app;
+package com.tencent.tinker.entry;
 
 /**
  * Created by zhangshaowen on 16/3/8.
@@ -24,11 +24,13 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.support.annotation.Keep;
 import android.util.Log;
 
 /**
  * Empty implementation of {@link ApplicationLike}.
  */
+@Keep
 public class DefaultApplicationLike extends ApplicationLike {
     private static final String TAG = "Tinker.DefaultAppLike";
 

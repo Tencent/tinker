@@ -14,10 +14,11 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile project(':tinker-commons')
-    compile project(':tinker-android:tinker-android-loader')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation 'junit:junit:4.12'
+    implementation "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
+    implementation project(':tinker-android:tinker-android-loader')
+    api project(':tinker-commons')
 }
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {

@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
@@ -7,10 +7,10 @@ group rootProject.ext.GROUP
 
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':third-party:aosp-dexutils')
-    compile project(':third-party:bsdiff-util')
-    compile project(':third-party:tinker-ziputils')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    api project(':third-party:aosp-dexutils')
+    api project(':third-party:bsdiff-util')
+    api project(':third-party:tinker-ziputils')
 }
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {

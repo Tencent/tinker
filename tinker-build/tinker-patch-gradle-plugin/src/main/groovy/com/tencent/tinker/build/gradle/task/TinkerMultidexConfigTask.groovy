@@ -28,9 +28,13 @@ import org.gradle.api.tasks.TaskAction
 public class TinkerMultidexConfigTask extends DefaultTask {
     static final String MULTIDEX_CONFIG_PATH = TinkerPatchPlugin.TINKER_INTERMEDIATES + "tinker_multidexkeep.pro"
     static final String MULTIDEX_CONFIG_SETTINGS =
-            "-keep public class * implements com.tencent.tinker.loader.app.ApplicationLifeCycle {\n" +
+            "-keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
                     "    <init>(...);\n" +
                     "    void onBaseContextAttached(android.content.Context);\n" +
+                    "}\n" +
+                    "\n" +
+                    "-keep public class com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
+                    "    *;\n" +
                     "}\n" +
                     "\n" +
                     "-keep public class * extends com.tencent.tinker.loader.TinkerLoader {\n" +
@@ -102,9 +106,23 @@ public class TinkerMultidexConfigTask extends DefaultTask {
             multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
         } catch (Throwable ignore) {
             try {
-                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+                def buildableArtifact = applicationVariant.getVariantData().getScope().getArtifacts().getFinalArtifactFiles(
+                        Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
+                                .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
+                                .get(null)
+                )
+
+                //noinspection GroovyUncheckedAssignmentOfMemberOfRawType,UnnecessaryQualifiedReference
+                multiDexKeepProguard = com.google.common.collect.Iterators.getOnlyElement(buildableArtifact.iterator())
             } catch (Throwable e) {
-                project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+
+            }
+            if (multiDexKeepProguard == null) {
+                try {
+                    multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+                } catch (Throwable e) {
+                    project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+                }
             }
         }
         if (multiDexKeepProguard == null) {

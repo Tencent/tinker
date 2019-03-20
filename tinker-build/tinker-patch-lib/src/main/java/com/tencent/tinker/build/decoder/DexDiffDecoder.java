@@ -66,7 +66,7 @@ import java.util.zip.ZipEntry;
  */
 public class DexDiffDecoder extends BaseDecoder {
     private static final String TEST_DEX_NAME = "test.dex";
-    private static final String CHANGED_CLASSES_DEX_NAME = "changed_classes.dex";
+    private static final String CHANGED_CLASSES_DEX_NAME_PREFIX = "changed_classes";
 
     private final InfoWriter logWriter;
     private final InfoWriter metaWriter;
@@ -204,9 +204,6 @@ public class DexDiffDecoder extends BaseDecoder {
     @SuppressWarnings("NewApi")
     private void generateChangedClassesDexFile() throws IOException {
         final String dexMode = config.mDexRaw ? "raw" : "jar";
-        final File dest = new File(config.mTempResultDir + "/" + CHANGED_CLASSES_DEX_NAME);
-
-        Logger.d("\nBuilding changed classes dex: %s, size: %d\n", dest.getAbsolutePath(), dest.length());
 
         List<File> oldDexList = new ArrayList<>();
         List<File> newDexList = new ArrayList<>();
@@ -243,10 +240,22 @@ public class DexDiffDecoder extends BaseDecoder {
             descOfChangedClasses.add(classInfo.classDesc);
         }
 
-        DexBuilder dexBuilder = DexBuilder.makeDexBuilder();
+        StringBuilder metaBuilder = new StringBuilder();
+        int changedDexId = 1;
         for (Dex dex : owners) {
             Set<String> descOfChangedClassesInCurrDex = ownerToDescOfChangedClassesMap.get(dex);
             DexFile dexFile = new DexBackedDexFile(org.jf.dexlib2.Opcodes.forApi(20), dex.getBytes());
+            boolean isCurrentDexHasChangedClass = false;
+            for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
+                if (descOfChangedClassesInCurrDex.contains(classDef.getType())) {
+                    isCurrentDexHasChangedClass = true;
+                    break;
+                }
+            }
+            if (!isCurrentDexHasChangedClass) {
+                continue;
+            }
+            DexBuilder dexBuilder = DexBuilder.makeDexBuilder();
             for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
                 if (!descOfChangedClassesInCurrDex.contains(classDef.getType())) {
                     continue;
@@ -295,20 +304,36 @@ public class DexDiffDecoder extends BaseDecoder {
                         builderMethods
                 );
             }
+
+            // Write constructed changed classes dex to file and record it in meta file.
+            final String changedDexName = CHANGED_CLASSES_DEX_NAME_PREFIX + changedDexId + ".dex";
+            final File dest = new File(config.mTempResultDir + "/" + changedDexName);
+            final FileDataStore fileDataStore = new FileDataStore(dest);
+            dexBuilder.writeTo(fileDataStore);
+            final String md5 = MD5.getMD5(dest);
+            appendMetaLine(metaBuilder, changedDexName, "", md5, md5, 0, 0, 0, dexMode);
+            ++changedDexId;
         }
 
-        // Write constructed changed classes dex to file and record it in meta file.
-        FileDataStore fileDataStore = new FileDataStore(dest);
-        dexBuilder.writeTo(fileDataStore);
-
-        final String md5 = MD5.getMD5(dest);
-
-        String meta = CHANGED_CLASSES_DEX_NAME + "," + "" + "," + md5 + "," + md5 + "," + 0
-                + "," + 0 + "," + 0 + "," + dexMode;
-
-        Logger.d("\nDexDecoder:write changed classes dex meta file data: %s", meta);
-
+        final String meta = metaBuilder.toString();
+        Logger.d("\nDexDecoder:write changed classes dex meta file data:\n%s", meta);
         metaWriter.writeLineToInfoFile(meta);
+    }
+
+    private void appendMetaLine(StringBuilder sb, Object... vals) {
+        if (vals == null || vals.length == 0) {
+            return;
+        }
+        boolean isFirstItem = true;
+        for (Object val : vals) {
+            if (isFirstItem) {
+                isFirstItem = false;
+            } else {
+                sb.append(',');
+            }
+            sb.append(val);
+        }
+        sb.append('\n');
     }
 
     @SuppressWarnings("NewApi")

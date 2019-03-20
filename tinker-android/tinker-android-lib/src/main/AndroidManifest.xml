@@ -6,28 +6,24 @@
         <!--
             Notice:
             Following service must run in the same process.
-              TinkerPatchService$IntentServiceRunner
-              TinkerPatchService$IntentServiceRunner$InnerService
-              TinkerPatchService$JobServiceRunner
+              TinkerPatchService
+              TinkerPatchService$InnerService
         -->
         <!-- ########################################################################### -->
         <service
-            android:name=".service.TinkerPatchService$IntentServiceRunner"
-            android:exported="false"
-            android:process=":patch"/>
-        <service
-            android:name=".service.TinkerPatchService$IntentServiceRunner$InnerService"
-            android:exported="false"
-            android:process=":patch"/>
-        <service
-            android:name=".service.TinkerPatchService$JobServiceRunner"
+            android:name=".service.TinkerPatchService"
             android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"
+            android:process=":patch"/>
+        <service
+            android:name=".service.TinkerPatchService$InnerService"
             android:exported="false"
             android:process=":patch"/>
         <!-- ########################################################################### -->
 
         <service
             android:name=".service.DefaultTinkerResultService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false"/>
 
     </application>

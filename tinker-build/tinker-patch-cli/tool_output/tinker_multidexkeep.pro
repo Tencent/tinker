@@ -1,5 +1,5 @@
 #tinker multidex keep patterns:
--keep public class * implements com.tencent.tinker.loader.app.ApplicationLifeCycle {
+-keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {
     <init>();
     void onBaseContextAttached(android.content.Context);
 }

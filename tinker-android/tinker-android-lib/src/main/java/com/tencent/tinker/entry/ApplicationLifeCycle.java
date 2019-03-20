@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.loader.app;
+package com.tencent.tinker.entry;
 
 /**
  * Created by zhangshaowen on 16/3/8.

@@ -277,6 +277,11 @@ public final class AaptUtil {
             if (name.startsWith("android:")) {
                 continue;
             }
+
+            if (rawRType.startsWith("tools:")) {
+                continue;
+            }
+
             if (!RESOURCE_TYPES.containsKey(rawRType)) {
                 throw new AaptUtilException("Invalid reference '" + resourceName + "' in '" + xmlFullFilename + "'");
             }

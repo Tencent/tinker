@@ -5,7 +5,11 @@ dependencies {
         implementation fileTree(dir: 'libs', include: ['*.jar'])
         testImplementation 'junit:junit:4.12'
         implementation "com.android.support:appcompat-v7:23.1.1"
-        implementation("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
+        api("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
+
+        // Maven local cannot handle transist dependencies.
+        implementation("com.tencent.tinker:tinker-android-loader:${TINKER_VERSION}") { changing = true }
+
         annotationProcessor("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
         compileOnly("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
 
@@ -75,7 +79,7 @@ android {
     defaultConfig {
         applicationId "tinker.sample.android"
         minSdkVersion 14
-        targetSdkVersion 22
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0.0"
         /**
@@ -97,6 +101,7 @@ android {
     }
 
 //    aaptOptions{
+//        additionalParameters "--emit-ids", "${project.file('public.txt')}"
 //        cruncherEnabled false
 //    }
 
@@ -468,6 +473,24 @@ if (buildWithTinker()) {
 
                 }
             }
+        }
+    }
+}
+
+
+
+task sortPublicTxt() {
+    doLast {
+        File originalFile = project.file("public.txt")
+        File sortedFile = project.file("public_sort.txt")
+        List<String> sortedLines = new ArrayList<>()
+        originalFile.eachLine {
+            sortedLines.add(it)
+        }
+        Collections.sort(sortedLines)
+        sortedFile.delete()
+        sortedLines.each {
+            sortedFile.append("${it}\n")
         }
     }
 }

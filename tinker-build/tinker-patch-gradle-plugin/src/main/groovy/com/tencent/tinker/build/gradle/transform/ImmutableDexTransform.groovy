@@ -371,6 +371,9 @@ public class ImmutableDexTransform extends Transform {
             @Override
             public void graphPopulated(TaskExecutionGraph taskGraph) {
                 for (Task task : taskGraph.getAllTasks()) {
+                    if (task.project != project) {
+                        continue
+                    }
                     if (task instanceof TransformTask && task.name.toLowerCase().contains(variant.name.toLowerCase())) {
 
                         if (((TransformTask) task).getTransform() instanceof DexTransform && !(((TransformTask) task).getTransform() instanceof ImmutableDexTransform)) {

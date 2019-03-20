@@ -79,4 +79,17 @@ public class TinkerZipUtil {
             }
         }
     }
+
+    public static boolean validateZipEntryName(File destDir, String entryName) {
+        if (entryName == null || entryName.isEmpty()) {
+            return false;
+        }
+        try {
+            final String canonicalDestinationDir = destDir.getCanonicalPath();
+            final File destEntryFile = destDir.toPath().resolve(entryName).toFile();
+            return destEntryFile.getCanonicalPath().startsWith(canonicalDestinationDir + File.separator);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
 }
