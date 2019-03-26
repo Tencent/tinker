@@ -332,12 +332,7 @@ public abstract class TinkerJobIntentService extends Service {
                 if (mParams == null) {
                     return null;
                 }
-                try {
-                    work = mParams.dequeueWork();
-                } catch (Throwable thr) {
-                    Log.w(TAG, "exception occurred.", thr);
-                    work = null;
-                }
+                work = mParams.dequeueWork();
             }
             if (work != null) {
                 work.getIntent().setExtrasClassLoader(mService.getClassLoader());
@@ -408,15 +403,27 @@ public abstract class TinkerJobIntentService extends Service {
     final class CommandProcessor extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
-            GenericWorkItem work;
-
             if (DEBUG) Log.d(TAG, "Starting to dequeue work...");
 
-            while ((work = dequeueWork()) != null) {
+            while (true) {
+                GenericWorkItem work = null;
+                try {
+                    work = dequeueWork();
+                    if (work == null) {
+                        break;
+                    }
+                } catch (SecurityException ignored) {
+                    // Ignored.
+                    continue;
+                }
                 if (DEBUG) Log.d(TAG, "Processing next work: " + work);
                 onHandleWork(work.getIntent());
                 if (DEBUG) Log.d(TAG, "Completing work: " + work);
-                work.complete();
+                try {
+                    work.complete();
+                } catch (SecurityException ignored) {
+                    // Ignored.
+                }
             }
 
             if (DEBUG) Log.d(TAG, "Done processing work!");

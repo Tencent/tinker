@@ -32,7 +32,6 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
  */
 public abstract class AbstractResultService extends TinkerJobIntentService {
     private static final String TAG = "Tinker.AbstractResultService";
-    private static final int JOB_ID = 0xf3f4f5f6;
 
     private static final String RESULT_EXTRA = "result_extra";
 
@@ -51,10 +50,19 @@ public abstract class AbstractResultService extends TinkerJobIntentService {
             Intent intent = new Intent();
             intent.setClassName(context, resultServiceClass);
             intent.putExtra(RESULT_EXTRA, result);
-            enqueueWork(context, new ComponentName(context, resultServiceClass), JOB_ID, intent);
+
+            final int jobId = 0xA3A4A5A6 ^ ("tinker_" + context.getPackageName()).hashCode();
+            TinkerLog.i(TAG, "jobId of result service is: %s", jobId);
+
+            enqueueWork(context, new ComponentName(context, resultServiceClass), jobId, intent);
         } catch (Throwable throwable) {
             TinkerLog.e(TAG, "run result service fail, exception:" + throwable);
         }
+    }
+
+    @Override
+    public boolean onStopCurrentWork() {
+        return false;
     }
 
     @Override

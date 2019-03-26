@@ -41,8 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TinkerPatchService extends TinkerJobIntentService {
     private static final String TAG = "Tinker.TinkerPatchService";
 
-    private static final int JOB_ID = 0xf0f1f2f3;
-
     private static final String PATCH_PATH_EXTRA = "patch_path_extra";
     private static final String RESULT_CLASS_EXTRA = "patch_result_class";
 
@@ -56,7 +54,9 @@ public class TinkerPatchService extends TinkerJobIntentService {
         intent.putExtra(PATCH_PATH_EXTRA, path);
         intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
         try {
-            enqueueWork(context, TinkerPatchService.class, JOB_ID, intent);
+            final int jobId = 0xA9A8A2A3 ^ ("tinker_" + context.getPackageName()).hashCode();
+            TinkerLog.i(TAG, "jobId of tinker patch service is: %s", jobId);
+            enqueueWork(context, TinkerPatchService.class, jobId, intent);
         } catch (Throwable thr) {
             TinkerLog.e(TAG, "run patch service fail, exception:" + thr);
         }
@@ -154,6 +154,11 @@ public class TinkerPatchService extends TinkerJobIntentService {
     protected void onHandleWork(Intent intent) {
         increasingPriority();
         doApplyPatch(this, intent);
+    }
+
+    @Override
+    public boolean onStopCurrentWork() {
+        return false;
     }
 
     private void increasingPriority() {
