@@ -248,27 +248,19 @@ public class TinkerLoader extends AbstractTinkerLoader {
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 
         //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if (mainProcess && (versionChanged || oatModeChanged)) {
-            patchInfo.oldVersion = version;
-            patchInfo.oatDir = oatDex;
-
-            //update old version to new
-            if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
-                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
-                Log.w(TAG, "tryLoadPatchFiles:onReWritePatchInfoCorrupted");
-                return;
+        if (mainProcess) {
+            if (versionChanged) {
+                patchInfo.oldVersion = version;
             }
-
-            Log.i(TAG, "tryLoadPatchFiles:success to rewrite patch info, kill other process.");
-            ShareTinkerInternals.killProcessExceptMain(app);
-
             if (oatModeChanged) {
+                patchInfo.oatDir = oatDex;
                 // delete interpret odex
                 // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
                 Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to delete interpret optimize files");
                 SharePatchFileUtil.deleteDir(patchVersionDirectory + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
             }
         }
+
         if (!checkSafeModeCount(app)) {
             resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, new TinkerRuntimeException("checkSafeModeCount fail"));
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION);
@@ -313,6 +305,19 @@ public class TinkerLoader extends AbstractTinkerLoader {
         // Init component hotplug support.
         if (isEnabledForDex && isEnabledForResource) {
             ComponentHotplug.install(app, securityCheck);
+        }
+
+        // Before successfully exit, we should update stored version info and kill other process
+        // to make them load latest patch when we first applied newer one.
+        if (mainProcess && versionChanged) {
+            //update old version to new
+            if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
+                Log.w(TAG, "tryLoadPatchFiles:onReWritePatchInfoCorrupted");
+                return;
+            }
+
+            ShareTinkerInternals.killProcessExceptMain(app);
         }
 
         //all is ok!
