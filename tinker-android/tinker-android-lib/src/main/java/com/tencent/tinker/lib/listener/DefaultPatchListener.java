@@ -25,6 +25,7 @@ import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
@@ -95,6 +96,19 @@ public class DefaultPatchListener implements PatchListener {
                     return ShareConstants.ERROR_PATCH_ALREADY_APPLY;
                 }
             }
+        }
+
+        // Hit if we have already applied patch but main process did not restart.
+        final String patchDirectory = manager.getPatchDirectory().getAbsolutePath();
+        File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory);
+        File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory);
+        try {
+            SharePatchInfo currInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+            if (currInfo != null && !ShareTinkerInternals.isNullOrNil(currInfo.newVersion) && !currInfo.isRemoveNewVersion) {
+                return ShareConstants.ERROR_PATCH_ALREADY_APPLY;
+            }
+        } catch (Throwable ignored) {
+            // Ignored.
         }
 
         if (!UpgradePatchRetry.getInstance(context).onPatchListenerCheck(patchMd5)) {

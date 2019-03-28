@@ -22,6 +22,7 @@ import android.os.Build;
 import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
@@ -93,6 +94,16 @@ public class UpgradePatch extends AbstractPatch {
                 return false;
             }
 
+            if (!ShareTinkerInternals.isNullOrNil(oldInfo.newVersion) && oldInfo.newVersion.equals(patchMd5) && !oldInfo.isRemoveNewVersion) {
+                TinkerLog.e(TAG, "patch already applied, md5: %s", patchMd5);
+
+                // Reset patch apply retry count to let us be able to reapply without triggering
+                // patch apply disable when we apply it successfully previously.
+                UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(patchMd5);
+
+                return true;
+            }
+
             if (!SharePatchFileUtil.checkIfMd5Valid(patchMd5)) {
                 TinkerLog.e(TAG, "UpgradePatch tryPatch:onPatchVersionCheckFail md5 %s is valid", patchMd5);
                 manager.getPatchReporter().onPatchVersionCheckFail(patchFile, oldInfo, patchMd5);
@@ -159,6 +170,10 @@ public class UpgradePatch extends AbstractPatch {
             manager.getPatchReporter().onPatchInfoCorrupted(patchFile, newInfo.oldVersion, newInfo.newVersion);
             return false;
         }
+
+        // Reset patch apply retry count to let us be able to reapply without triggering
+        // patch apply disable when we apply it successfully previously.
+        UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(patchMd5);
 
         TinkerLog.w(TAG, "UpgradePatch tryPatch: done, it is ok");
         return true;

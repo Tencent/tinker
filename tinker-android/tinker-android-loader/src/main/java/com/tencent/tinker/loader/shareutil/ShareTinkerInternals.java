@@ -296,7 +296,7 @@ public class ShareTinkerInternals {
      */
     public static void setTinkerDisableWithSharedPreferences(Context context) {
         SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-        String keyName = ShareConstants.TINKER_ENABLE_CONFIG_PREFIX + ShareConstants.TINKER_VERSION;
+        String keyName = getTinkerSwitchSPKey(context);
         sp.edit().putBoolean(keyName, false).commit();
     }
 
@@ -311,8 +311,16 @@ public class ShareTinkerInternals {
             return false;
         }
         SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-        String keyName = ShareConstants.TINKER_ENABLE_CONFIG_PREFIX + ShareConstants.TINKER_VERSION;
+        String keyName = getTinkerSwitchSPKey(context);
         return sp.getBoolean(keyName, true);
+    }
+
+    private static String getTinkerSwitchSPKey(Context context) {
+        String tmpTinkerId = getManifestTinkerID(context);
+        if (isNullOrNil(tmpTinkerId)) {
+            tmpTinkerId = "@@";
+        }
+        return ShareConstants.TINKER_ENABLE_CONFIG_PREFIX + ShareConstants.TINKER_VERSION + "_" + tmpTinkerId;
     }
 
     public static int getSafeModeCount(Context context) {
