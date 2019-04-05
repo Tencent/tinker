@@ -177,7 +177,8 @@ public class SharePatchFileUtil {
      * @return
      */
     public static final boolean shouldAcceptEvenIfIllegal(File file) {
-        return ("vivo".equalsIgnoreCase(Build.MANUFACTURER) || "oppo".equalsIgnoreCase(Build.MANUFACTURER))
+        return ("vivo".equalsIgnoreCase(Build.MANUFACTURER) || "oppo".equalsIgnoreCase(Build.MANUFACTURER)
+                || (Build.VERSION.SDK_INT > 28) || (Build.VERSION.SDK_INT == 28 && Build.VERSION.PREVIEW_SDK_INT > 0))
                 && (!file.exists() || file.length() == 0);
     }
 
