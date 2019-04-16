@@ -47,8 +47,8 @@ def gitSha() {
 def javaVersion = JavaVersion.VERSION_1_7
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
 
     compileOptions {
         sourceCompatibility javaVersion
