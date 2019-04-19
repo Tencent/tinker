@@ -54,9 +54,6 @@ public class ShareConstants {
     public static final String INTERPRET_DEX_OPTIMIZE_PATH = "interpet";
     public static final String CHANING_DEX_OPTIMIZE_PATH   = "changing";
 
-    public static final Pattern CLASS_N_PATTERN = Pattern.compile("classes(?:[2-9]{0,1}|[1-9][0-9]+)\\.dex(\\.jar)?");
-
-
     public static final String DEX_SUFFIX  = ".dex";
     public static final String JAR_SUFFIX  = ".jar";
     public static final String APK_SUFFIX  = ".apk";
@@ -65,6 +62,9 @@ public class ShareConstants {
     public static final String TEST_DEX_NAME            = "test.dex";
     public static final String CHANGED_CLASSES_DEX_PREFIX = "changed_classes";
     public static final String CLASS_N_APK_NAME         = "tinker_classN.apk";
+
+    public static final Pattern CLASS_N_PATTERN = Pattern.compile(
+            String.format("(%s|classes)(?:[2-9]{0,1}|[1-9][0-9]+)\\.dex(\\.jar)?", CHANGED_CLASSES_DEX_PREFIX));
 
     public static final String CHECK_DEX_INSTALL_FAIL = "checkDexInstall failed";
     public static final String CHECK_RES_INSTALL_FAIL = "checkResInstall failed";
