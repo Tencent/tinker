@@ -116,32 +116,33 @@ public class SystemClassLoaderAdder {
     }
 
     private static boolean checkIsProtectedApp(List<File> files) {
-        if (!files.isEmpty()) {
-            for (File file : files) {
-                if (file == null) {
-                    continue;
-                }
-                final String fileName = file.getName();
-                if (fileName.startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
-                    return true;
-                } else if (fileName.endsWith(ShareConstants.APK_SUFFIX) || file.getName().endsWith(ShareConstants.JAR_SUFFIX)) {
-                    ZipFile zf = null;
-                    try {
-                        zf = new ZipFile(file);
-                        final Enumeration<? extends ZipEntry> entries = zf.entries();
-                        while (entries.hasMoreElements()) {
-                            final ZipEntry entry = entries.nextElement();
-                            if (entry.getName().startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
-                                return true;
-                            }
+        if (files.isEmpty()) {
+            return false;
+        }
+        for (File file : files) {
+            if (file == null) {
+                continue;
+            }
+            final String fileName = file.getName();
+            if (fileName.startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
+                return true;
+            } else if (fileName.endsWith(ShareConstants.APK_SUFFIX) || file.getName().endsWith(ShareConstants.JAR_SUFFIX)) {
+                ZipFile zf = null;
+                try {
+                    zf = new ZipFile(file);
+                    final Enumeration<? extends ZipEntry> entries = zf.entries();
+                    while (entries.hasMoreElements()) {
+                        final ZipEntry entry = entries.nextElement();
+                        if (entry.getName().startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
+                            return true;
                         }
-                        return false;
-                    } catch (IOException e) {
-                        // Usually we shouldn't reach here.
-                        return false;
-                    } finally {
-                        SharePatchFileUtil.closeZip(zf);
                     }
+                    return false;
+                } catch (IOException e) {
+                    // Usually we shouldn't reach here.
+                    return false;
+                } finally {
+                    SharePatchFileUtil.closeZip(zf);
                 }
             }
         }
