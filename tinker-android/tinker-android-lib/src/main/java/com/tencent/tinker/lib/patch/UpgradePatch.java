@@ -31,6 +31,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 
 /**
@@ -81,6 +82,15 @@ public class UpgradePatch extends AbstractPatch {
         File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory);
         File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory);
 
+        final Map<String, String> pkgProps = signatureCheck.getPackagePropertiesIfPresent();
+        if (pkgProps == null) {
+            TinkerLog.e(TAG, "UpgradePatch packageProperties is null, do we process a valid patch apk ?");
+            return false;
+        }
+
+        final String isProtectedAppStr = pkgProps.get(ShareConstants.PKGMETA_KEY_IS_PROTECTED_APP);
+        final boolean isProtectedApp = !"0".equals(isProtectedAppStr);
+
         SharePatchInfo oldInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
 
         //it is a new patch, so we should not find a exist
@@ -112,9 +122,9 @@ public class UpgradePatch extends AbstractPatch {
             // if it is interpret now, use changing flag to wait main process
             final String finalOatDir = oldInfo.oatDir.equals(ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH)
                 ? ShareConstants.CHANING_DEX_OPTIMIZE_PATH : oldInfo.oatDir;
-            newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, false, Build.FINGERPRINT, finalOatDir);
+            newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, isProtectedApp, false, Build.FINGERPRINT, finalOatDir);
         } else {
-            newInfo = new SharePatchInfo("", patchMd5, false, Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH);
+            newInfo = new SharePatchInfo("", patchMd5, isProtectedApp, false, Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH);
         }
 
         //it is a new patch, we first delete if there is any files

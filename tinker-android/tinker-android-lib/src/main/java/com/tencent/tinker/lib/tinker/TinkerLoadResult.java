@@ -113,7 +113,8 @@ public class TinkerLoadResult {
                 resourceDirectory = new File(patchVersionDirectory, ShareConstants.RES_PATH);
                 resourceFile = new File(resourceDirectory, ShareConstants.RES_NAME);
             }
-            patchInfo = new SharePatchInfo(oldVersion, newVersion, false, Build.FINGERPRINT, oatDir);
+            final boolean isProtectedApp = ShareIntentUtil.getBooleanExtra(intentResult, ShareIntentUtil.INTENT_IS_PROTECTED_APP, false);
+            patchInfo = new SharePatchInfo(oldVersion, newVersion, isProtectedApp, false, Build.FINGERPRINT, oatDir);
             versionChanged = !(oldVersion.equals(newVersion));
         }
 

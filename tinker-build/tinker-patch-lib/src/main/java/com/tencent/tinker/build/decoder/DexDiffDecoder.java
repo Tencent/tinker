@@ -307,11 +307,10 @@ public class DexDiffDecoder extends BaseDecoder {
 
             // Write constructed changed classes dex to file and record it in meta file.
             String changedDexName = null;
-            // Make name of dex satisfied pattern defined in ShareConstants.
             if (changedDexId == 1) {
-                changedDexName = CHANGED_CLASSES_DEX_NAME_PREFIX + ".dex";
+                changedDexName = "classes.dex";
             } else {
-                changedDexName = CHANGED_CLASSES_DEX_NAME_PREFIX + changedDexId + ".dex";
+                changedDexName = "classes" + changedDexId + ".dex";
             }
             final File dest = new File(config.mTempResultDir + "/" + changedDexName);
             final FileDataStore fileDataStore = new FileDataStore(dest);
