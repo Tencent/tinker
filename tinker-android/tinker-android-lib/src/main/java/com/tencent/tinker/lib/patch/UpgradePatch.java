@@ -89,7 +89,7 @@ public class UpgradePatch extends AbstractPatch {
         }
 
         final String isProtectedAppStr = pkgProps.get(ShareConstants.PKGMETA_KEY_IS_PROTECTED_APP);
-        final boolean isProtectedApp = !"0".equals(isProtectedAppStr);
+        final boolean isProtectedApp = (isProtectedAppStr != null && !isProtectedAppStr.isEmpty() && !"0".equals(isProtectedAppStr));
 
         SharePatchInfo oldInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
 

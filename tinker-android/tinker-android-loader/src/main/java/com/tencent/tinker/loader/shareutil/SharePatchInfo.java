@@ -134,8 +134,10 @@ public class SharePatchInfo {
                 properties.load(inputStream);
                 oldVer = properties.getProperty(OLD_VERSION);
                 newVer = properties.getProperty(NEW_VERSION);
-                isProtectedApp = !"0".equals(properties.getProperty(IS_PROTECTED_APP));
-                isRemoveNewVersion = !"0".equals(properties.getProperty(IS_REMOVE_NEW_VERSION));
+                final String isProtectedAppStr = properties.getProperty(IS_PROTECTED_APP);
+                isProtectedApp = (isProtectedAppStr != null && !isProtectedAppStr.isEmpty() && !"0".equals(isProtectedAppStr));
+                final String isRemoveNewVersionStr = properties.getProperty(IS_REMOVE_NEW_VERSION);
+                isRemoveNewVersion = (isRemoveNewVersionStr != null && !isRemoveNewVersionStr.isEmpty() && !"0".equals(isRemoveNewVersionStr));
                 lastFingerPrint = properties.getProperty(FINGER_PRINT);
                 oatDir = properties.getProperty(OAT_DIR);
             } catch (IOException e) {
