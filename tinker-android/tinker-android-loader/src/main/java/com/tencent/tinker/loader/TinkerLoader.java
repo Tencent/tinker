@@ -141,8 +141,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 newVersion = oldVersion;
                 patchInfo.oldVersion = oldVersion;
                 patchInfo.newVersion = newVersion;
+                patchInfo.isRemoveNewVersion = false;
                 SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
                 ShareTinkerInternals.killProcessExceptMain(app);
+
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
+                return;
             }
         }
 
