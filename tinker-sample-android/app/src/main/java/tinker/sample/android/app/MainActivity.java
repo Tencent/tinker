@@ -16,11 +16,16 @@
 
 package tinker.sample.android.app;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.TypedValue;
@@ -42,6 +47,8 @@ import tinker.sample.android.util.Utils;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "Tinker.MainActivity";
 
+    private TextView mTvMessage = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
         //test resource change
         Log.e(TAG, "i am on onCreate string:" + getResources().getString(R.string.test_resource));
 //        Log.e(TAG, "i am on patch onCreate");
+
+        mTvMessage = findViewById(R.id.tv_message);
+
+        askForRequiredPermissions();
 
         Button loadPatchButton = (Button) findViewById(R.id.loadPatch);
 
@@ -107,6 +118,26 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void askForRequiredPermissions() {
+        if (Build.VERSION.SDK_INT < 23) {
+            return;
+        }
+        if (!hasRequiredPermissions()) {
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+        }
+    }
+
+    private boolean hasRequiredPermissions() {
+        if (Build.VERSION.SDK_INT >= 16) {
+            final int res = ContextCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
+            return res == PackageManager.PERMISSION_GRANTED;
+        } else {
+            // When SDK_INT is below 16, READ_EXTERNAL_STORAGE will also be granted if WRITE_EXTERNAL_STORAGE is granted.
+            final int res = ContextCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            return res == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
     public boolean showInfo(Context context) {
         // add more Build Info
         final StringBuilder sb = new StringBuilder();
@@ -157,6 +188,13 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         Utils.setBackground(false);
 
+        if (hasRequiredPermissions()) {
+            mTvMessage.setVisibility(View.GONE);
+        } else {
+            mTvMessage.setText(R.string.msg_no_permissions);
+            mTvMessage.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+            mTvMessage.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
