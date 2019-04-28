@@ -108,6 +108,9 @@ public class TinkerLoader extends AbstractTinkerLoader {
             return;
         }
 
+        final boolean isProtectedApp = patchInfo.isProtectedApp;
+        resultIntent.putExtra(ShareIntentUtil.INTENT_IS_PROTECTED_APP, isProtectedApp);
+
         String oldVersion = patchInfo.oldVersion;
         String newVersion = patchInfo.newVersion;
         String oatDex = patchInfo.oatDir;
@@ -138,8 +141,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 newVersion = oldVersion;
                 patchInfo.oldVersion = oldVersion;
                 patchInfo.newVersion = newVersion;
+                patchInfo.isRemoveNewVersion = false;
                 SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
                 ShareTinkerInternals.killProcessExceptMain(app);
+
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
+                return;
             }
         }
 
@@ -270,7 +277,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //now we can load patch jar
         if (isEnabledForDex) {
-            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, patchVersionDirectory, oatDex, resultIntent, isSystemOTA);
+            boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, patchVersionDirectory, oatDex, resultIntent, isSystemOTA, isProtectedApp);
 
             if (isSystemOTA) {
                 // update fingerprint after load success

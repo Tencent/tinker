@@ -68,7 +68,7 @@ public class TinkerDexLoader {
      * @param application The application.
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    public static boolean loadTinkerJars(final TinkerApplication application, String directory, String oatDir, Intent intentResult, boolean isSystemOTA) {
+    public static boolean loadTinkerJars(final TinkerApplication application, String directory, String oatDir, Intent intentResult, boolean isSystemOTA, boolean isProtectedApp) {
         if (loadDexList.isEmpty() && classNDexInfo.isEmpty()) {
             Log.w(TAG, "there is no dex to load");
             return true;
@@ -191,7 +191,7 @@ public class TinkerDexLoader {
             }
         }
         try {
-            SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles);
+            SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles, isProtectedApp);
         } catch (Throwable e) {
             Log.e(TAG, "install dexes failed");
 //            e.printStackTrace();

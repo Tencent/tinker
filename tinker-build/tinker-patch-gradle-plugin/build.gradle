@@ -10,7 +10,7 @@ dependencies {
 //    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':tinker-build:tinker-patch-lib')
     implementation 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
-    implementation 'com.android.tools.build:gradle:3.2.1'
+    compileOnly 'com.android.tools.build:gradle:3.1.4'
 }
 
 repositories {

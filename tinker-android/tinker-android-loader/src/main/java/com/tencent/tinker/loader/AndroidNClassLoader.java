@@ -165,7 +165,7 @@ class AndroidNClassLoader extends PathClassLoader {
         } else if (name != null && name.startsWith("com.tencent.tinker.loader.")
                 && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)) {
             return originClassLoader.loadClass(name);
-        } else if (name != null &&  (name.startsWith("org.apache.commons.codec.") 
+        } else if (name != null &&  (name.startsWith("org.apache.commons.codec.")
                                      || name.startsWith("org.apache.commons.logging.")
                                      || name.startsWith("org.apache.http."))) {
             // Here's the whole story:

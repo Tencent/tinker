@@ -175,10 +175,10 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         File dexFiles = new File(dir);
         File[] files = dexFiles.listFiles();
         List<File> legalFiles = new ArrayList<>();
-        // may have directory in android o
         if (files != null) {
             for (File file : files) {
                 final String fileName = file.getName();
+                // may have directory in android o
                 if (file.isFile()
                     &&  (fileName.endsWith(ShareConstants.DEX_SUFFIX)
                       || fileName.endsWith(ShareConstants.JAR_SUFFIX)

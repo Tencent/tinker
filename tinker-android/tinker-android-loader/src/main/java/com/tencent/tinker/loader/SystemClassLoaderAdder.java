@@ -34,12 +34,10 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import dalvik.system.DexFile;
@@ -55,14 +53,14 @@ public class SystemClassLoaderAdder {
     private static int sPatchDexCount = 0;
 
     @SuppressLint("NewApi")
-    public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files)
+    public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
         throws Throwable {
         Log.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
 
         if (!files.isEmpty()) {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
-            if (Build.VERSION.SDK_INT >= 24 && !checkIsProtectedApp(files)) {
+            if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
                 classLoader = AndroidNClassLoader.inject(loader, application);
             }
             //because in dalvik, if inner class is not the same classloader with it wrapper class.
@@ -113,39 +111,6 @@ public class SystemClassLoaderAdder {
         boolean isPatch = (boolean) filed.get(null);
         Log.w(TAG, "checkDexInstall result:" + isPatch);
         return isPatch;
-    }
-
-    private static boolean checkIsProtectedApp(List<File> files) {
-        if (!files.isEmpty()) {
-            for (File file : files) {
-                if (file == null) {
-                    continue;
-                }
-                final String fileName = file.getName();
-                if (fileName.startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
-                    return true;
-                } else if (fileName.endsWith(ShareConstants.APK_SUFFIX) || file.getName().endsWith(ShareConstants.JAR_SUFFIX)) {
-                    ZipFile zf = null;
-                    try {
-                        zf = new ZipFile(file);
-                        final Enumeration<? extends ZipEntry> entries = zf.entries();
-                        while (entries.hasMoreElements()) {
-                            final ZipEntry entry = entries.nextElement();
-                            if (entry.getName().startsWith(ShareConstants.CHANGED_CLASSES_DEX_PREFIX)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    } catch (IOException e) {
-                        // Usually we shouldn't reach here.
-                        return false;
-                    } finally {
-                        SharePatchFileUtil.closeZip(zf);
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     private static List<File> createSortedAdditionalPathEntries(List<File> additionalPathEntries) {

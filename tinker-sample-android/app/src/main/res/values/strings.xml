@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">tinker-sample-android</string>
     <string name="test_resource">I am in the base apk</string>
+
+    <string name="msg_no_permissions">Please grant external storage accessing permissions to this app. Otherwise patch loading may be failed.</string>
+
     <!--<string name="test_resource">I am in the patch apk</string>-->
 </resources>
