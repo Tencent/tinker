@@ -47,11 +47,8 @@ def gitSha() {
 def javaVersion = JavaVersion.VERSION_1_7
 
 android {
-    compileSdkVersion 26
-
-    if (!is_gradle_3()) {
-        buildToolsVersion '26.0.2'
-    }
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
 
     compileOptions {
         sourceCompatibility javaVersion
@@ -417,7 +414,18 @@ if (buildWithTinker()) {
                         def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
 
                         def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
-                        from variant.outputs.first().outputFile
+
+                        if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
+                            def packageAndroidArtifact = variant.packageApplicationProvider.get()
+                            if (packageAndroidArtifact != null) {
+                                from new File(packageAndroidArtifact.outputDirectory, variant.outputs.first().apkData.outputFileName)
+                            } else {
+                                from variant.outputs.first().mainOutputFile.outputFile
+                            }
+                        } else {
+                            from variant.outputs.first().outputFile
+                        }
+
                         into destPath
                         rename { String fileName ->
                             fileName.replace("${fileNamePrefix}.apk", "${newFileNamePrefix}.apk")

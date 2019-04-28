@@ -147,29 +147,52 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 // requires that an AndroidManifest.xml exists in `build/intermediates`.
                 TinkerManifestTask manifestTask = project.tasks.create("tinkerProcess${variantName}Manifest", TinkerManifestTask)
 
-                if (variantOutput.processManifest.properties['manifestOutputFile'] != null) {
+
+                if (variantOutput.metaClass.hasProperty(variantOutput, 'processResourcesProvider')) {
+                    manifestTask.manifestPath = variantOutput.processResourcesProvider.get().manifestFile
+                } else if (variantOutput.processManifest.properties['manifestOutputFile'] != null) {
                     manifestTask.manifestPath = variantOutput.processManifest.manifestOutputFile
                 } else if (variantOutput.processResources.properties['manifestFile'] != null) {
                     manifestTask.manifestPath = variantOutput.processResources.manifestFile
                 }
-                manifestTask.mustRunAfter variantOutput.processManifest
 
-                variantOutput.processResources.dependsOn manifestTask
+
+                if (variantOutput.metaClass.hasProperty(variantOutput, 'processManifestProvider')) {
+                    manifestTask.mustRunAfter variantOutput.processManifestProvider.get()
+                } else {
+                    manifestTask.mustRunAfter variantOutput.processManifest
+                }
+
+
+                if (variantOutput.metaClass.hasProperty(variantOutput, 'processResourcesProvider')) {
+                    variantOutput.processResourcesProvider.get().dependsOn manifestTask
+                } else {
+                    variantOutput.processResources.dependsOn manifestTask
+                }
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = project.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
                 applyResourceTask.applicationId = variantData.getApplicationId()
                 applyResourceTask.variantName = variant.name
 
-                if (variantOutput.processResources.properties['resDir'] != null) {
+
+                if (variantOutput.metaClass.hasProperty(variantOutput, 'processResourcesProvider')) {
+                    applyResourceTask.resDir = variantOutput.processResourcesProvider.get().inputResourcesDir.getFiles().first()
+                } else if (variantOutput.processResources.properties['resDir'] != null) {
                     applyResourceTask.resDir = variantOutput.processResources.resDir
                 } else if (variantOutput.processResources.properties['inputResourcesDir'] != null) {
                     applyResourceTask.resDir = variantOutput.processResources.inputResourcesDir.getFiles().first()
                 }
+
                 //let applyResourceTask run after manifestTask
                 applyResourceTask.mustRunAfter manifestTask
 
-                variantOutput.processResources.dependsOn applyResourceTask
+                if (variantOutput.metaClass.hasProperty(variantOutput, 'processResourcesProvider')) {
+                    variantOutput.processResourcesProvider.get().dependsOn applyResourceTask
+                } else {
+                    variantOutput.processResources.dependsOn applyResourceTask
+                }
+
                 // Fix issue-866.
                 // We found some case that applyResourceTask run after mergeResourcesTask, it caused 'applyResourceMapping' config not work.
                 // The task need merged resources to calculate ids.xml, it must depends on merge resources task.
@@ -205,7 +228,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                     // for java.io.FileNotFoundException: app/build/intermediates/multi-dex/release/manifest_keep.txt
                     // for gradle 3.x gen manifest_keep move to processResources task
-                    multidexConfigTask.mustRunAfter variantOutput.processResources
+
+                    if (variantOutput.metaClass.hasProperty(variantOutput, 'processResourcesProvider')) {
+                        multidexConfigTask.mustRunAfter variantOutput.processResourcesProvider.get()
+                    } else {
+                        multidexConfigTask.mustRunAfter variantOutput.processResources
+                    }
+
 
                     def multidexTask = getMultiDexTask(project, variantName)
                     if (multidexTask != null) {
@@ -234,7 +263,21 @@ class TinkerPatchPlugin implements Plugin<Project> {
      * @param tinkerPatchBuildTask the task that tinker patch uses
      */
     void setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask) {
-        File parentFile = output.outputFile
+        File parentFile = null
+
+        if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
+            def packageAndroidArtifact = variant.packageApplicationProvider.get()
+            if (packageAndroidArtifact != null) {
+                parentFile = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+            } else {
+                parentFile = output.mainOutputFile.outputFile
+            }
+        } else {
+            parentFile = output.outputFile
+        }
+
+
+
         String outputFolder = "${configuration.outputFolder}";
         if (!Utils.isNullOrNil(outputFolder)) {
             outputFolder = "${outputFolder}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
@@ -282,8 +325,24 @@ class TinkerPatchPlugin implements Plugin<Project> {
             }
         }
 
-        tinkerPatchBuildTask.buildApkPath = output.outputFile
-        tinkerPatchBuildTask.dependsOn variant.assemble
+        if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
+            def packageAndroidArtifact = variant.packageApplicationProvider.get()
+            if (packageAndroidArtifact != null) {
+                tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+            } else {
+                tinkerPatchBuildTask.buildApkPath = output.mainOutputFile.outputFile
+            }
+        } else {
+            tinkerPatchBuildTask.buildApkPath = output.outputFile
+        }
+
+        if (variant.metaClass.hasProperty(variant, 'assembleProvider')) {
+            tinkerPatchBuildTask.dependsOn variant.assembleProvider.get()
+        } else {
+            tinkerPatchBuildTask.dependsOn variant.assemble
+        }
+
+
     }
 
     Task getMultiDexTask(Project project, String variantName) {
