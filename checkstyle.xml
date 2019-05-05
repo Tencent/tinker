@@ -17,9 +17,9 @@
  -->
 
 <module name="Checker">
-    <!--<module name="SuppressionFilter">-->
-    <!--<property name="file" value="suppressions.xml" default="suppressions.xml"/>-->
-    <!--</module>-->
+    <module name="SuppressionFilter">
+        <property name="file" default="suppressions.xml" value="${checkstyleSuppressionsPath}"/>
+    </module>
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="warning"/>
     <!--<property name="localeLanguage" value="en"/>-->
