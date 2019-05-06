@@ -526,23 +526,23 @@ public class BSDiff {
         return diffBytes;
     }
 
-//    /**
-//     * Run JBDiff from the command line. Params: oldfile newfile difffile. diff
-//     * file will be created.
-//     */
-//    public static void main(String[] arg) throws IOException {
-//
-//        if (arg.length != 3) {
-//            System.err.println("usage example: java -Xmx250m JBDiff oldfile newfile patchfile\n");
-//            return;
-//        }
-//        File oldFile = new File(arg[0]);
-//        File newFile = new File(arg[1]);
-//        File diffFile = new File(arg[2]);
-//
-//        bsdiff(oldFile, newFile, diffFile);
-//
-//    }
+    //    /**
+    //     * Run JBDiff from the command line. Params: oldfile newfile difffile. diff
+    //     * file will be created.
+    //     */
+    //    public static void main(String[] arg) throws IOException {
+    //
+    //        if (arg.length != 3) {
+    //            System.err.println("usage example: java -Xmx250m JBDiff oldfile newfile patchfile\n");
+    //            return;
+    //        }
+    //        File oldFile = new File(arg[0]);
+    //        File newFile = new File(arg[1]);
+    //        File diffFile = new File(arg[2]);
+    //
+    //        bsdiff(oldFile, newFile, diffFile);
+    //
+    //    }
 
     private static class IntByRef {
         private int value;

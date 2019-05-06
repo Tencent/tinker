@@ -101,6 +101,7 @@ public class SystemClassLoaderAdder {
             try {
                 ShareReflectUtil.reduceFieldArray(classLoader, "mDexs", sPatchDexCount);
             } catch (Exception e) {
+                // Ignored.
             }
         }
     }
@@ -365,7 +366,7 @@ public class SystemClassLoaderAdder {
             try {
                 ShareReflectUtil.expandFieldArray(loader, "mDexs", extraDexs);
             } catch (Exception e) {
-
+                // Ignored.
             }
         }
     }

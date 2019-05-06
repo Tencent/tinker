@@ -127,9 +127,9 @@ public class UpgradePatch extends AbstractPatch {
             newInfo = new SharePatchInfo("", patchMd5, isProtectedApp, false, Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH);
         }
 
-        //it is a new patch, we first delete if there is any files
-        //don't delete dir for faster retry
-//        SharePatchFileUtil.deleteDir(patchVersionDirectory);
+        // it is a new patch, we first delete if there is any files
+        // don't delete dir for faster retry
+        // SharePatchFileUtil.deleteDir(patchVersionDirectory);
         final String patchName = SharePatchFileUtil.getPatchVersionDirectory(patchMd5);
 
         final String patchVersionDirectory = patchDirectory + "/" + patchName;
@@ -147,7 +147,6 @@ public class UpgradePatch extends AbstractPatch {
                     destPatchFile.getAbsolutePath(), destPatchFile.length());
             }
         } catch (IOException e) {
-//            e.printStackTrace();
             TinkerLog.e(TAG, "UpgradePatch tryPatch:copy patch file fail from %s to %s", patchFile.getPath(), destPatchFile.getPath());
             manager.getPatchReporter().onPatchTypeExtractFail(patchFile, destPatchFile, patchFile.getName(), ShareConstants.TYPE_PATCH_FILE);
             return false;

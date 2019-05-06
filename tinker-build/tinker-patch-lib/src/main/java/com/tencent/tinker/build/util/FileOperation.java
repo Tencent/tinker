@@ -252,15 +252,15 @@ public class FileOperation {
                 rootpath = rootpath.replace("\\", "/");
             }
             ZipEntry entry = new ZipEntry(rootpath);
-//            if (compressMethod == ZipEntry.DEFLATED) {
+            // if (compressMethod == ZipEntry.DEFLATED) {
             entry.setMethod(ZipEntry.DEFLATED);
-//            } else {
-//                entry.setMethod(ZipEntry.STORED);
-//                entry.setSize(fileContents.length);
-//                final CRC32 checksumCalculator = new CRC32();
-//                checksumCalculator.update(fileContents);
-//                entry.setCrc(checksumCalculator.getValue());
-//            }
+            // } else {
+            //     entry.setMethod(ZipEntry.STORED);
+            //     entry.setSize(fileContents.length);
+            //     final CRC32 checksumCalculator = new CRC32();
+            //     checksumCalculator.update(fileContents);
+            //     entry.setCrc(checksumCalculator.getValue());
+            // }
             zipout.putNextEntry(entry);
             zipout.write(fileContents);
             zipout.flush();
@@ -375,7 +375,6 @@ public class FileOperation {
             while (reader.readLine() != null) {
             }
         } catch (IOException e) {
-//            e.printStackTrace();
             FileOperation.deleteFile(outputFile);
             Logger.e("7a patch file failed, you should set the zipArtifact, or set the path directly");
             return false;

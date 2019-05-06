@@ -277,6 +277,8 @@ public class AndroidParser {
                                 NamedNodeMap attributes = child.getAttributes();
                                 metaDatas.put(getAttribute(attributes, "android:name"), getAttribute(attributes, "android:value"));
                                 break;
+                            default:
+                                break;
                         }
                     }
                 }

@@ -73,7 +73,7 @@ public class ShareConstants {
     public static final String CHECK_DEX_OAT_EXIST_FAIL  = "checkDexOptExist failed";
     public static final String CHECK_DEX_OAT_FORMAT_FAIL = "checkDexOptFormat failed";
 
-//    public static final String CHECK_VM_PROPERTY_FAIL = "checkVmArtProperty failed";
+    // public static final String CHECK_VM_PROPERTY_FAIL = "checkVmArtProperty failed";
 
 
     public static final String RES_META_FILE       = "assets/res_meta.txt";

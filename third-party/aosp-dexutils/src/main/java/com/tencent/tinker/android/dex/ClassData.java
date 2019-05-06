@@ -18,6 +18,7 @@ package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 import com.tencent.tinker.android.dex.util.CompareUtils;
+import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class ClassData extends Item<ClassData> {
     public Field[] staticFields;
@@ -50,6 +51,19 @@ public final class ClassData extends Item<ClassData> {
             return res;
         }
         return CompareUtils.aArrCompare(virtualMethods, other.virtualMethods);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeHelper.hash(staticFields, instanceFields, directMethods, virtualMethods);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ClassData)) {
+            return false;
+        }
+        return this.compareTo((ClassData) obj) == 0;
     }
 
     @Override
@@ -106,6 +120,19 @@ public final class ClassData extends Item<ClassData> {
             }
             return CompareUtils.sCompare(accessFlags, other.accessFlags);
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof Field)) {
+                return false;
+            }
+            return this.compareTo((Field) obj) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return HashCodeHelper.hash(fieldIndex, accessFlags);
+        }
     }
 
     public static class Method implements Comparable<Method> {
@@ -130,6 +157,19 @@ public final class ClassData extends Item<ClassData> {
                 return res;
             }
             return CompareUtils.sCompare(codeOffset, other.codeOffset);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof Method)) {
+                return false;
+            }
+            return this.compareTo((Method) obj) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return HashCodeHelper.hash(methodIndex, accessFlags, codeOffset);
         }
     }
 }

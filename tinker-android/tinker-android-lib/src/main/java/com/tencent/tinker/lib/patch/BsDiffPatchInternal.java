@@ -65,7 +65,7 @@ public class BsDiffPatchInternal extends BasePatchInternal {
 
     private static boolean patchLibraryExtractViaBsDiff(Context context, String patchVersionDirectory, String meta, File patchFile) {
         String dir = patchVersionDirectory + "/" + SO_PATH + "/";
-        return extractBsDiffInternals(context, dir, meta, patchFile, TYPE_Library);
+        return extractBsDiffInternals(context, dir, meta, patchFile, TYPE_LIBRARY);
     }
 
     private static boolean extractBsDiffInternals(Context context, String dir, String meta, File patchFile, int type) {
@@ -200,7 +200,6 @@ public class BsDiffPatchInternal extends BasePatchInternal {
             }
 
         } catch (Throwable e) {
-//            e.printStackTrace();
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) + " extract failed (" + e.getMessage() + ").", e);
         } finally {
             SharePatchFileUtil.closeZip(apk);

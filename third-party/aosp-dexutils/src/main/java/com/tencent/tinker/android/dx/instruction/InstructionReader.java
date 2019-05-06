@@ -392,6 +392,9 @@ public final class InstructionReader {
                             codeIn.setBaseAddress(target + 1, currentAddress);
                             break;
                         }
+                        default: {
+                            break;
+                        }
                     }
 
                     iv.visitOneRegisterInsn(currentAddress, opcode, 0, InstructionCodec.INDEX_TYPE_NONE, target, 0L, a);

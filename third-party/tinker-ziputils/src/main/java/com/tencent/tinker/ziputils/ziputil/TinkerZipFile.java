@@ -141,7 +141,7 @@ public class TinkerZipFile implements Closeable, ZipConstants {
         }
         raf = new RandomAccessFile(filename, "r");
 
-         readCentralDir();
+        readCentralDir();
         // guard.open("close");
     }
 

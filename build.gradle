@@ -57,3 +57,5 @@ ext {
     BINTRAY_ORGANIZATION = "tinker"
 
 }
+
+apply from: rootProject.file('gradle/check.gradle')

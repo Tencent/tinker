@@ -238,6 +238,7 @@ class TinkerResourcePatcher {
                     publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
                 }
             } catch (Throwable ignore) {
+                // Ignored.
             }
         }
 

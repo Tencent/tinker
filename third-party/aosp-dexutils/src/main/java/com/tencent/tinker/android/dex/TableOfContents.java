@@ -424,6 +424,11 @@ public final class TableOfContents {
             }
 
             @Override
+            public int hashCode() {
+                return super.hashCode();
+            }
+
+            @Override
             @SuppressWarnings("unchecked")
             public boolean equals(Object obj) {
                 return compareTo((T) obj) == 0;

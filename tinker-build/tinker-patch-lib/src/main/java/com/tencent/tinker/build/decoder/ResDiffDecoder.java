@@ -271,6 +271,8 @@ public class ResDiffDecoder extends BaseDecoder {
                     log = "large modify resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
                         + FileOperation.getFileSizes(newFile);
                     break;
+                default:
+                    break;
             }
             logWriter.writeLineToInfoFile(log);
         }
@@ -460,12 +462,13 @@ public class ResDiffDecoder extends BaseDecoder {
             }
 
         } catch (Throwable throwable) {
-
+            // Ignored.
         } finally {
             if (zipFile != null) {
                 try {
                     zipFile.close();
                 } catch (IOException e) {
+                    // Ignored.
                 }
             }
         }
@@ -504,6 +507,8 @@ public class ResDiffDecoder extends BaseDecoder {
                     break;
                 case TypedValue.STORED:
                     title = TypedValue.STORE_TITLE + set.size();
+                    break;
+                default:
                     break;
             }
             metaWriter.writeLineToInfoFile(title);

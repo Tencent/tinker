@@ -18,6 +18,7 @@ package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 import com.tencent.tinker.android.dex.util.CompareUtils;
+import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class MethodId extends Item<MethodId> {
     public int declaringClassIndex;
@@ -39,6 +40,19 @@ public final class MethodId extends Item<MethodId> {
             return CompareUtils.uCompare(nameIndex, other.nameIndex);
         }
         return CompareUtils.uCompare(protoIndex, other.protoIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeHelper.hash(declaringClassIndex, protoIndex, nameIndex);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof MethodId)) {
+            return false;
+        }
+        return this.compareTo((MethodId) obj) == 0;
     }
 
     @Override

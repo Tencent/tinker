@@ -19,6 +19,8 @@ package com.tencent.tinker.android.dex;
 import com.tencent.tinker.android.dex.TableOfContents.Section;
 import com.tencent.tinker.android.dex.util.CompareUtils;
 
+import java.util.Arrays;
+
 /**
  * *** This file is NOT a part of AOSP. ***
  *
@@ -48,6 +50,19 @@ public class AnnotationSetRefList extends Section.Item<AnnotationSetRefList> {
         }
 
         return 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(annotationSetRefItems);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof AnnotationSetRefList)) {
+            return false;
+        }
+        return this.compareTo((AnnotationSetRefList) obj) == 0;
     }
 
     @Override

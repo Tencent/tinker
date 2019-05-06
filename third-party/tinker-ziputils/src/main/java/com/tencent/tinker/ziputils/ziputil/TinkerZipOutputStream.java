@@ -474,10 +474,10 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         writeIntAsUint16(out, flags);
         writeIntAsUint16(out, method);
 
-        //zhangshaowen edit here, we just want the same time and modDate
-//        if (currentEntry.getTime() == -1) {
-//            currentEntry.setTime(System.currentTimeMillis());
-//        }
+        // zhangshaowen edit here, we just want the same time and modDate
+        // if (currentEntry.getTime() == -1) {
+        //     currentEntry.setTime(System.currentTimeMillis());
+        // }
         writeIntAsUint16(out, currentEntry.time);
         writeIntAsUint16(out, currentEntry.modDate);
         if (method == STORED) {

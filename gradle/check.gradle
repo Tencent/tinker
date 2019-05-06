@@ -1,20 +1,134 @@
-apply plugin: 'checkstyle'
-
-
-checkstyle {
-    configFile rootProject.file('checkstyle.xml')
-    toolVersion '6.19'
-    ignoreFailures false
-    showViolations true
+if (project == rootProject) {
+    task('checkAll') {
+        group 'verification'
+        doFirst {
+            logger.lifecycle 'Run checkAll task'
+        }
+        outputs.upToDateWhen { false }
+    }
+    task('checkIncremental') {
+        group 'verification'
+        doFirst {
+            logger.lifecycle 'Run checkIncremental task'
+        }
+        outputs.upToDateWhen { false }
+    }
+    return
 }
 
-task('checkstyle', type: Checkstyle) {
-    source 'src/main/java'
-    include '**/*.java'
-    classpath = files()
+
+// ----------
+// Changed Files
+// ----------
+def reportsDir = "${rootProject.buildDir}/reports/${project.name}"
+def projectHeader = project.path.replaceAll(':', '/').substring(1)
+
+logger.lifecycle "Analyze code of module '${project.path}':"
+logger.lifecycle "Reading changed files..."
+
+if (!project.ext.has('filesChanged')) {
+    project.ext.filesChanged = []
+
+    if ("jenkins" == System.env.BUILDER_MODEL) {
+        logger.lifecycle 'Check MR changed files'
+        def inputFile = 'changed_file_list.txt'
+        if (project.hasProperty('changed_files')) { inputFile = project.properties['changed_files'] }
+        def file = rootProject.file(inputFile)
+        if (file.exists()) {
+            file.eachLine {
+                if (it.startsWith(projectHeader)) project.ext.filesChanged << it
+            }
+        }
+    } else {
+        logger.lifecycle 'Check git-diff changed files'
+        String command = "git diff --name-only --diff-filter=ACMRTUXB ${projectHeader}"
+        String changeInfo = command.execute(null, rootProject.rootDir).text.trim()
+        if (changeInfo && !changeInfo.isEmpty()) {
+            project.ext.filesChanged = changeInfo.split("\n").toList()
+        }
+    }
 }
 
-check.dependsOn('checkstyle')
+if (filesChanged.size() == 0) {
+    logger.lifecycle "No files changed found, skip analyzing."
+} else {
+    logger.lifecycle "Files changed found:"
+    filesChanged.each { project.logger.lifecycle it }
+}
+
+
+// ----------
+// CheckStyle, :checkstyleAll, :checkstyleIncremental
+// ----------
+def checkStyleConfig = rootProject.file('checkstyle.xml')
+if (checkStyleConfig.exists()) {
+    if (!project.plugins.hasPlugin('checkstyle')) {
+        apply plugin: 'checkstyle'
+    }
+
+    checkstyle {
+        configFile checkStyleConfig
+        configProperties.checkstyleSuppressionsPath = rootProject.file("suppressions.xml").absolutePath
+        toolVersion '8.19'
+        ignoreFailures true
+        showViolations true
+    }
+
+    task('checkstyleAll', type: Checkstyle) {
+        group 'verification'
+        classpath = files()
+        source 'src/main'
+
+        include '**/*.java'
+        exclude '**/gen/**'
+        reports {
+            html { enabled = false }
+            xml {
+                enabled = true
+                destination file("$reportsDir/checkstyle.xml")
+            }
+        }
+        outputs.upToDateWhen { false }
+    }
+
+    if (filesChanged.size > 0) {
+        def task = task('checkstyleIncremental', type: Checkstyle) {
+            group 'verification'
+            classpath = files()
+            source 'src'
+
+            exclude '**/gen/**'
+            exclude '**/test/**'
+            exclude '**/*.gradle'
+            exclude '**/proto/*.java'
+            exclude '**/protobuf/*.java'
+            exclude '**/com/google/**/*.java'
+
+            for (String item: filesChanged) {
+                if (item.contains('src/')) {
+                    include "**/${item.substring(item.lastIndexOf('src/') + 'src/'.length())}"
+                }
+            }
+            reports {
+                html { enabled = false }
+                xml {
+                    enabled = true
+                    destination file("$reportsDir/checkstyle.xml")
+                }
+            }
+            outputs.upToDateWhen { false }
+        }
+    }
+
+    project.afterEvaluate {
+        tasks.findByName('checkstyleAll')?.with { rootProject.tasks.findByName('checkAll')?.finalizedBy(it) }
+        tasks.findByName('checkstyleIncremental')?.with { rootProject.tasks.findByName('checkIncremental')?.finalizedBy(it) }
+    }
+
+} else {
+    logger.lifecycle "Can not find CheckStyle config file, skip."
+}
+
 
 
 //apply plugin: 'pmd'

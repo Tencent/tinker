@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- can't split long messages between lines -->
+    <suppress checks="RegexpSingleline" files="google_checks\.xml" lines="42,83"/>
+
+    <suppress checks="FileLength"
+              files="TokenTypes.java|IndentationCheckTest.java"
+              lines="1"/>
+
+    <!-- illegal words are part of Javadoc -->
+    <suppress checks="TodoComment" files=".*TodoCommentCheck\.java"/>
+
+    <!-- 'Abstract' pattern is used to show it is checking for abstract class name -->
+    <suppress checks="AbstractClassNameCheck"
+              files="AbstractClassNameCheck.java"/>
+    <!-- test should be named as their main class -->
+    <suppress checks="AbstractClassNameCheck"
+              files="AbstractCheckTest.java|AbstractClassNameCheckTest.java|
+                     |AbstractTypeAwareCheckTest.java|AbstractJavadocCheckTest.java|
+                     |AbstractViolationReporterTest.java|AbstractFileSetCheckTest.java"/>
+
+    <!-- Tone down the checking for test code -->
+    <suppress checks="ExecutableStatementCount|JavaNCSS|BooleanExpressionComplexity|
+                      |NestedIfDepth|MethodLength"
+              files="[\\/]XdocsPagesTest\.java"/>
+
+    <suppress checks="JavadocPackage" files=".*[\\/]src[\\/](test|it)[\\/]"/>
+    <!-- we do not need javadocs in all classes except for *Support classes -->
+    <suppress checks="JavadocMethod" files=".*[\\/]src[\\/](test|it)[\\/].*(?&lt;!Support)\.java"/>
+    <!-- till https://github.com/checkstyle/checkstyle/issues/6336 -->
+    <suppress checks="JavadocMethod" files=".*AbstractIndentationTestSupport\.java"/>
+    <suppress checks="JavadocMethod" files=".*AbstractModuleTestSupport\.java"/>
+    <suppress checks="JavadocMethod" files=".*AbstractXpathTestSupport\.java"/>
+    <suppress checks="JavadocMethod" files=".*AbstractModuleTestSupport\.java"/>
+    <suppress checks="JavadocMethod" files=".*AbstractPathTestSupport\.java"/>
+    <suppress checks="JavadocMethod" files=".*AbstractXmlTestSupport\.java"/>
+
+    <!--The Check generates too many violations, fixing them will make code unmanageable.-->
+    <suppress checks="MagicNumber" files="(ParseTreeTablePresentation|MainFrame)\.java"/>
+
+    <!-- Methods that build fake AST are very long-->
+    <suppress checks="MethodLength" files=".*(Generated)?Java(doc)?TokenTypesTest\.java"/>
+    <suppress checks="ExecutableStatementCount"
+              files=".*(Generated)?Java(doc)?TokenTypesTest\.java"/>
+    <suppress checks="JavaNCSS" files=".*(Generated)?Java(doc)?TokenTypesTest\.java"/>
+    <suppress checks="ExecutableStatementCount" files=".*IllegalInstantiationCheckTest\.java"/>
+    <suppress checks="ExecutableStatementCount" files=".*Main\.java"/>
+
+    <!-- till https://github.com/checkstyle/checkstyle/issues/4983 -->
+    <suppress checks="MissingDeprecated" files=".*JavadocTokenTypes\.java"/>
+
+    <!-- Till https://github.com/checkstyle/checkstyle/issues/1854 -->
+    <suppress checks="TrailingComment"
+              files="(InnerAssignmentCheck\.java|OperatorWrapCheck\.java|
+                     |AbbreviationAsWordInNameCheckTest\.java)"/>
+
+    <!-- Fixing these cases will decrease code readability -->
+    <suppress checks="MultipleStringLiterals" files="JavadocStyleCheck\.java|XMLLogger\.java"/>
+
+    <!-- There are a lot of setters/getters in the Check.
+         A small number of methods is left for Check's logic -->
+    <suppress checks="MethodCount" files="[\\/]JavadocMethodCheck.java$"/>
+    <!-- Apart from a complex logic there is a lot of small methods for a better readability.  -->
+    <suppress checks="MethodCount" files="[\\/]CommentsIndentationCheck.java$"/>
+    <!--VisibilityModifierCheck has 7 options which require 7 additional methods (setters)-->
+    <suppress checks="MethodCount" files="[\\/]VisibilityModifierCheck.java$"/>
+    <!--RequireThisCheck has a hierarchy of nested classes which contains a lot of methods. -->
+    <suppress checks="MethodCount" files="[\\/]RequireThisCheck.java$"/>
+
+    <!-- we need that set of converters -->
+    <suppress checks="ClassDataAbstractionCoupling" files="AutomaticBean\.java"/>
+    <!-- they are aggregators of logic, usage a several of classes are ok -->
+    <suppress checks="ClassDataAbstractionCoupling"
+              files="(Checker|Main|CheckstyleAntTask|JavadocDetailNodeParser)\.java"/>
+    <suppress checks="ClassDataAbstractionCoupling"
+              files="(CheckerTest|AbstractModuleTestSupport|CheckstyleAntTaskTest|
+                     |TranslationCheckTest|LocalizedMessageTest|AbstractFileSetCheckTest|
+                     |AbstractCheckTest|AutomaticBeanTest)\.java"/>
+    <suppress checks="ClassDataAbstractionCoupling" files="PropertyCacheFileTest\.java"/>
+    <suppress checks="ClassDataAbstractionCoupling"
+              files="XpathFileGeneratorAuditListenerTest\.java"/>
+    <suppress checks="ClassFanOutComplexity" files="[\\/]Main\.java"/>
+    <suppress checks="ClassFanOutComplexity" files="CheckstyleAntTask\.java"/>
+    <suppress checks="ClassFanOutComplexity" files="CheckerTest\.java"/>
+    <suppress checks="ClassFanOutComplexity" files="Checker\.java"/>
+    <!-- a lot of GUI elements is OK -->
+    <suppress checks="ClassDataAbstractionCoupling" files="(TreeTable|MainFrame)\.java"/>
+
+    <!-- Should be fixed after moving
+    https://github.com/sevntu-checkstyle/sevntu.checkstyle/blob/master/sevntu-checks/src/main/java/com/github/sevntu/checkstyle/checks/coding/ReturnCountExtendedCheck.java
+    into the main repo, to allow skip guard sentences(or by topLinesToIgnoreCount) -->
+    <suppress checks="ReturnCount" files="(ConfigurationLoader|LambdaHandler)\.java"/>
+
+    <!-- HandlerFactory crosses allowed limit for executable statements -->
+    <suppress checks="ExecutableStatementCount" files="HandlerFactory\.java"/>
+
+    <suppress id="ImportControlTest" files="[\\/]powermock[\\/]" message=".* - org\.(powermock|mockito).*" />
+
+    <!-- Tinker -->
+    <suppress checks="OneStatementPerLine" files="Hex.java" lines="275,276,277,278"/>
+
+    <suppress checks="NewlineAtEndOfFile" />
+
+    <suppress checks="FallThrough" files="BuilderMutableMethodImplementation" />
+
+    <suppress checks="FileLength" />
+
+    <suppress checks="MethodLength" files="InstructionReader.java" />
+</suppressions>
