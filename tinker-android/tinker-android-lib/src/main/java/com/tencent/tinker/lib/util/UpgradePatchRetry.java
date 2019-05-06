@@ -291,7 +291,6 @@ public class UpgradePatchRetry {
                 outputStream = new FileOutputStream(infoFile, false);
                 newProperties.store(outputStream, null);
             } catch (Exception e) {
-//                e.printStackTrace();
                 TinkerLog.printErrStackTrace(TAG, e, "retry write property fail");
             } finally {
                 StreamUtil.closeQuietly(outputStream);

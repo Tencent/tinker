@@ -502,6 +502,9 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                         ((BuilderSwitchPayload) targetInstruction).referrer = location;
                         break;
                     }
+                    default: {
+                        break;
+                    }
                 }
             }
         }
@@ -568,6 +571,9 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
                             }
                             break;
                         }
+                        default: {
+                            break;
+                        }
                     }
                 }
             }
@@ -608,8 +614,7 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
         } else {
             do {
                 index++;
-            }
-            while (index < instructionList.size() && instructionList.get(index).codeAddress <= codeAddress);
+            } while (index < instructionList.size() && instructionList.get(index).codeAddress <= codeAddress);
             return index - 1;
         }
     }

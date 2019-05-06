@@ -364,6 +364,9 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
                     indexToReplaceOperationMap.put(patchOperation.index, patchOperation);
                     break;
                 }
+                default: {
+                    break;
+                }
             }
         }
     }

@@ -500,6 +500,7 @@ public class ShareTinkerInternals {
                     in.close();
                 }
             } catch (Exception e) {
+                // Ignored.
             }
         }
 

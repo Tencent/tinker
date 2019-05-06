@@ -18,6 +18,7 @@ package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section;
 import com.tencent.tinker.android.dex.util.CompareUtils;
+import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 /**
  * *** This file is NOT a part of AOSP. ***
@@ -128,6 +129,20 @@ public class AnnotationsDirectory extends Section.Item<AnnotationsDirectory> {
         }
 
         return 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeHelper.hash(classAnnotationsOffset, fieldAnnotations, methodAnnotations,
+                parameterAnnotations);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof AnnotationsDirectory)) {
+            return false;
+        }
+        return this.compareTo((AnnotationsDirectory) obj) == 0;
     }
 
     @Override

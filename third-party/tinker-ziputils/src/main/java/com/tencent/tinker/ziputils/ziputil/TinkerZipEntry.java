@@ -459,4 +459,12 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
     public int hashCode() {
         return name.hashCode();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof TinkerZipEntry)) {
+            return false;
+        }
+        return name.equals(((TinkerZipEntry) obj).name);
+    }
 }

@@ -92,15 +92,15 @@ public class DefaultLoadReporter implements LoadReporter {
             return;
         }
 
-        // Unnecessary now. Since other processes are killed in TinkerLoader.
-//        TinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
-        // kill all other process to ensure that all process's code is the same.
-//        ShareTinkerInternals.killAllOtherProcess(context);
+        // // Unnecessary now. Since other processes are killed in TinkerLoader.
+        // TinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
+        // // kill all other process to ensure that all process's code is the same.
+        // ShareTinkerInternals.killAllOtherProcess(context);
 
         // reset retry count to 1, for interpret retry
         UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(newVersion);
 
-        //delete old patch files
+        // delete old patch files
         File[] files = patchDirectoryFile.listFiles();
         if (files != null) {
             for (File file : files) {
@@ -134,6 +134,8 @@ public class DefaultLoadReporter implements LoadReporter {
                 break;
             case ShareConstants.TYPE_INTERPRET_OK:
                 TinkerLog.i(TAG, "patch loadReporter onLoadInterpret ok");
+                break;
+            default:
                 break;
         }
 
@@ -270,6 +272,8 @@ public class DefaultLoadReporter implements LoadReporter {
                 TinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unknown exception: %s", e);
                 //exception can be caught, it is no need to disable Tinker with sharedPreference
                 break;
+            default:
+                break;
         }
         TinkerLog.e(TAG, "tinker load exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
         TinkerLog.printErrStackTrace(TAG, e, "tinker load exception");
@@ -337,10 +341,10 @@ public class DefaultLoadReporter implements LoadReporter {
                 TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
                 return true;
             }
-//          else {
-//                TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
-//                checkAndCleanPatch();
-//            }
+            // else {
+            //       TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+            //       checkAndCleanPatch();
+            // }
         }
 
         return false;

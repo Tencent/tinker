@@ -230,7 +230,6 @@ public class ResDiffPatchInternal extends BasePatchInternal {
 
             TinkerLog.i(TAG, "final new resource file:%s, entry count:%d, size:%d", resOutput.getAbsolutePath(), totalEntryCount, resOutput.length());
         } catch (Throwable e) {
-//            e.printStackTrace();
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) +  " extract failed (" + e.getMessage() + ").", e);
         }
         return true;
@@ -302,7 +301,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 largeModeInfo.file = new File(tempFileDirtory, name);
                 SharePatchFileUtil.ensureFileDirectory(largeModeInfo.file);
 
-                //we do not check the intermediate files' md5 to save time, use check whether it is 32 length
+                // we do not check the intermediate files' md5 to save time, use check whether it is 32 length
                 if (!SharePatchFileUtil.checkIfMd5Valid(largeModeInfo.md5)) {
                     TinkerLog.w(TAG, "resource meta file md5 mismatch, type:%s, name: %s, md5: %s", ShareTinkerInternals.getTypeString(type), name, largeModeInfo.md5);
                     manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
@@ -331,7 +330,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     StreamUtil.closeQuietly(oldStream);
                     StreamUtil.closeQuietly(newStream);
                 }
-                //go go go bsdiff get the
+                // go go go bsdiff get the
                 if (!SharePatchFileUtil.verifyFileMd5(largeModeInfo.file, largeModeInfo.md5)) {
                     TinkerLog.w(TAG, "Failed to recover large modify file:%s", largeModeInfo.file.getPath());
                     SharePatchFileUtil.safeDeleteFile(largeModeInfo.file);
@@ -342,7 +341,6 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             }
             TinkerLog.w(TAG, "success recover all large modify and store resources use time:%d", (System.currentTimeMillis() - start));
         } catch (Throwable e) {
-//            e.printStackTrace();
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) +  " extract failed (" + e.getMessage() + ").", e);
         } finally {
             SharePatchFileUtil.closeZip(apkFile);

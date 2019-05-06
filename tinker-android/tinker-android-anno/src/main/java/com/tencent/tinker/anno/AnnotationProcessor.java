@@ -82,8 +82,6 @@ public class AnnotationProcessor extends AbstractProcessor {
                 loaderClassName = lifeCyclePackageName + loaderClassName;
             }
 
-            System.out.println("*");
-
             final InputStream is = AnnotationProcessor.class.getResourceAsStream(APPLICATION_TEMPLATE_PATH);
             final Scanner scanner = new Scanner(is);
             final String template = scanner.useDelimiter("\\A").next();

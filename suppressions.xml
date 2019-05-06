@@ -101,7 +101,14 @@
 
     <suppress id="ImportControlTest" files="[\\/]powermock[\\/]" message=".* - org\.(powermock|mockito).*" />
 
-
     <!-- Tinker -->
     <suppress checks="OneStatementPerLine" files="Hex.java" lines="275,276,277,278"/>
+
+    <suppress checks="NewlineAtEndOfFile" />
+
+    <suppress checks="FallThrough" files="BuilderMutableMethodImplementation" />
+
+    <suppress checks="FileLength" />
+
+    <suppress checks="MethodLength" files="InstructionReader.java" />
 </suppressions>

@@ -289,6 +289,9 @@ public final class DexClassesComparator {
                     }
                     break;
                 }
+                default: {
+                    break;
+                }
             }
         }
     }
@@ -1474,6 +1477,11 @@ public final class DexClassesComparator {
                 return false;
             }
             return owner.computeSignature(false).equals(other.owner.computeSignature(false));
+        }
+
+        @Override
+        public int hashCode() {
+            return owner.computeSignature(false).hashCode();
         }
     }
 

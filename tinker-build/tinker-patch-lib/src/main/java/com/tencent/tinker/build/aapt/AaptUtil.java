@@ -243,6 +243,8 @@ public final class AaptUtil {
                 case ATTR://no sub item
                     resourceValue = nodeToString(node, true);
                     break;
+                default:
+                    break;
             }
             try {
                 addToResourceCollector(resourceCollector, new ResourceDirectory(directoryName, valuesFullFilename), node, rType, resourceValue);
@@ -287,9 +289,9 @@ public final class AaptUtil {
             }
             RType rType = RESOURCE_TYPES.get(rawRType);
 
-//if(!resourceCollector.isContainResource(rType, IdType.INT, sanitizeName(resourceCollector, name))){
-//throw new AaptUtilException("Not found reference '" + resourceName + "' in '" + xmlFullFilename + "'");
-//}
+            // if (!resourceCollector.isContainResource(rType, IdType.INT, sanitizeName(resourceCollector, name))) {
+            //     throw new AaptUtilException("Not found reference '" + resourceName + "' in '" + xmlFullFilename + "'");
+            // }
             references.add(new FakeRDotTxtEntry(IdType.INT, rType, sanitizeName(rType, resourceCollector, name)));
         }
     }

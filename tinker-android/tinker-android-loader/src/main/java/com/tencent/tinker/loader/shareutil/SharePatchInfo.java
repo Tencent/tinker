@@ -141,7 +141,6 @@ public class SharePatchInfo {
                 lastFingerPrint = properties.getProperty(FINGER_PRINT);
                 oatDir = properties.getProperty(OAT_DIR);
             } catch (IOException e) {
-//                e.printStackTrace();
                 Log.w(TAG, "read property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(inputStream);
@@ -218,7 +217,6 @@ public class SharePatchInfo {
                 String comment = "from old version:" + info.oldVersion + " to new version:" + info.newVersion;
                 newProperties.store(outputStream, comment);
             } catch (Exception e) {
-//                e.printStackTrace();
                 Log.w(TAG, "write property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(outputStream);

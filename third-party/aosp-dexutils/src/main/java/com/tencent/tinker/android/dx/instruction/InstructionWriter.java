@@ -238,6 +238,9 @@ public final class InstructionWriter extends InstructionVisitor {
                         codeOut.setBaseAddress(target, codeOut.cursor());
                         break;
                     }
+                    default: {
+                        break;
+                    }
                 }
 
                 int relativeTarget = InstructionCodec.getTarget(target, codeOut.cursor());

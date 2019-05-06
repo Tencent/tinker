@@ -31,8 +31,8 @@ import java.util.Set;
 public class AaptResourceCollector {
 
     private final Map<RType, Map<String, Set<ResourceDirectory>>> rTypeResourceDirectoryMap;
-    //private final Map<RType, List<ResourceDirectory>> rTypeIncreaseResourceDirectoryListMap;
-//  private final Map<RType, Map<ResourceDirectory,ResourceDirectory>> rTypeIncreaseResourceDirectoryMap;
+    // private final Map<RType, List<ResourceDirectory>> rTypeIncreaseResourceDirectoryListMap;
+    // private final Map<RType, Map<ResourceDirectory,ResourceDirectory>> rTypeIncreaseResourceDirectoryMap;
     private final Map<RType, ResourceIdEnumerator>                rTypeEnumeratorMap;
     private final Map<RDotTxtEntry, RDotTxtEntry>                 originalResourceMap;
     private final Map<RType, Set<RDotTxtEntry>>                   rTypeResourceMap;
@@ -44,8 +44,8 @@ public class AaptResourceCollector {
 
     public AaptResourceCollector() {
         this.rTypeResourceDirectoryMap = new HashMap<RType, Map<String, Set<ResourceDirectory>>>();
-//      this.rTypeIncreaseResourceDirectoryListMap = new HashMap<RType, List<ResourceDirectory>>();
-//      this.rTypeIncreaseResourceDirectoryMap = new HashMap<RType, Map<ResourceDirectory,ResourceDirectory>>();
+        // this.rTypeIncreaseResourceDirectoryListMap = new HashMap<RType, List<ResourceDirectory>>();
+        // this.rTypeIncreaseResourceDirectoryMap = new HashMap<RType, Map<ResourceDirectory,ResourceDirectory>>();
         this.rTypeEnumeratorMap = new HashMap<RType, ResourceIdEnumerator>();
         this.rTypeResourceMap = new HashMap<RType, Set<RDotTxtEntry>>();
         this.rTypeIncreaseResourceMap = new HashMap<RType, Set<RDotTxtEntry>>();
@@ -53,7 +53,7 @@ public class AaptResourceCollector {
         this.sanitizeTypeMap = new HashMap<RType, HashMap<String, String>>();
         this.originalResourceMap = new HashMap<RDotTxtEntry, RDotTxtEntry>();
         this.ignoreIdSet = new HashSet<String>();
-        //attr type must 1
+        // attr type must 1
         this.currentTypeId = 2;
     }
 
@@ -65,7 +65,7 @@ public class AaptResourceCollector {
                 Entry<RType, Set<RDotTxtEntry>> entry = iterator.next();
                 RType rType = entry.getKey();
                 Set<RDotTxtEntry> set = entry.getValue();
-//              this.rTypeResourceMap.put(rType, new HashSet<RDotTxtEntry>(set));
+                // this.rTypeResourceMap.put(rType, new HashSet<RDotTxtEntry>(set));
                 for (RDotTxtEntry rDotTxtEntry : set) {
                     originalResourceMap.put(rDotTxtEntry, rDotTxtEntry);
                     ResourceIdEnumerator resourceIdEnumerator = null;
@@ -159,34 +159,34 @@ public class AaptResourceCollector {
         }
         if (increaseResource) {
             increaseResourceSet.add(rDotTxtEntry);
-//addResourceDirectory(rType, name, resourceDirectory);
+            // addResourceDirectory(rType, name, resourceDirectory);
         }
     }
 
-//private void addResourceDirectory(RType rType,String name, ResourceDirectory resourceDirectory){
-//if(resourceDirectory!=null){
-//Map<ResourceDirectory, ResourceDirectory> resourceDirectoryMap=null;
-//List<ResourceDirectory> resourceDirectoryList=null;
-//if(this.rTypeIncreaseResourceDirectoryMap.containsKey(rType)){
-//resourceDirectoryMap=this.rTypeIncreaseResourceDirectoryMap.get(rType);
-//resourceDirectoryList=this.rTypeIncreaseResourceDirectoryListMap.get(rType);
-//}else{
-//resourceDirectoryMap=new HashMap<ResourceDirectory, ResourceDirectory>();
-//this.rTypeIncreaseResourceDirectoryMap.put(rType, resourceDirectoryMap);
-//resourceDirectoryList=new ArrayList<ResourceDirectory>();
-//this.rTypeIncreaseResourceDirectoryListMap.put(rType, resourceDirectoryList);
-//}
-//ResourceDirectory existResourceDirectory=null;
-//if(resourceDirectoryMap.containsKey(resourceDirectory)){
-//existResourceDirectory=resourceDirectoryMap.get(resourceDirectory);
-//}else{
-//existResourceDirectory=resourceDirectory;
-//resourceDirectoryMap.put(resourceDirectory, resourceDirectory);
-//resourceDirectoryList.add(existResourceDirectory);
-//}
-//existResourceDirectory.resourceEntrySet.add(new ResourceEntry(name,null));
-//}
-//}
+    // private void addResourceDirectory(RType rType, String name, ResourceDirectory resourceDirectory) {
+    //     if (resourceDirectory != null) {
+    //         Map<ResourceDirectory, ResourceDirectory> resourceDirectoryMap = null;
+    //         List<ResourceDirectory> resourceDirectoryList = null;
+    //         if (this.rTypeIncreaseResourceDirectoryMap.containsKey(rType)) {
+    //             resourceDirectoryMap = this.rTypeIncreaseResourceDirectoryMap.get(rType);
+    //             resourceDirectoryList = this.rTypeIncreaseResourceDirectoryListMap.get(rType);
+    //         } else {
+    //             resourceDirectoryMap = new HashMap<ResourceDirectory, ResourceDirectory>();
+    //             this.rTypeIncreaseResourceDirectoryMap.put(rType, resourceDirectoryMap);
+    //             resourceDirectoryList = new ArrayList<ResourceDirectory>();
+    //             this.rTypeIncreaseResourceDirectoryListMap.put(rType, resourceDirectoryList);
+    //         }
+    //         ResourceDirectory existResourceDirectory = null;
+    //         if (resourceDirectoryMap.containsKey(resourceDirectory)) {
+    //             existResourceDirectory = resourceDirectoryMap.get(resourceDirectory);
+    //         } else {
+    //             existResourceDirectory = resourceDirectory;
+    //             resourceDirectoryMap.put(resourceDirectory, resourceDirectory);
+    //             resourceDirectoryList.add(existResourceDirectory);
+    //         }
+    //         existResourceDirectory.resourceEntrySet.add(new ResourceEntry(name, null));
+    //     }
+    // }
 
     /**
      * is contain resource
@@ -316,12 +316,12 @@ public class AaptResourceCollector {
         return rTypeResourceDirectoryMap;
     }
 
-///**
-// * @return the rTypeIncreaseResourceDirectoryListMap
-// */
-//public Map<RType, List<ResourceDirectory>> getRTypeIncreaseResourceDirectoryListMap() {
-//return rTypeIncreaseResourceDirectoryListMap;
-//}
+    // /**
+    // * @return the rTypeIncreaseResourceDirectoryListMap
+    // */
+    // public Map<RType, List<ResourceDirectory>> getRTypeIncreaseResourceDirectoryListMap() {
+    //     return rTypeIncreaseResourceDirectoryListMap;
+    // }
 
     void addIgnoreId(String name) {
         ignoreIdSet.add(name);

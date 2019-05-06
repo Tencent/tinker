@@ -17,6 +17,7 @@
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.CompareUtils;
+import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 /**
  * A type definition.
@@ -79,6 +80,20 @@ public final class ClassDef extends TableOfContents.Section.Item<ClassDef> {
             return res;
         }
         return CompareUtils.sCompare(staticValuesOffset, other.staticValuesOffset);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeHelper.hash(typeIndex, accessFlags, supertypeIndex, interfacesOffset,
+                sourceFileIndex, annotationsOffset, classDataOffset, staticValuesOffset);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ClassDef)) {
+            return false;
+        }
+        return this.compareTo((ClassDef) obj) == 0;
     }
 
     @Override

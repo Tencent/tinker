@@ -69,7 +69,7 @@ public class TinkerPatchService extends TinkerJobIntentService {
         try {
             Class.forName(serviceClass.getName());
         } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
+            TinkerLog.printErrStackTrace(TAG, e, "patch processor class not found.");
         }
     }
 
@@ -137,8 +137,8 @@ public class TinkerPatchService extends TinkerJobIntentService {
         }
 
         cost = SystemClock.elapsedRealtime() - begin;
-        tinker.getPatchReporter().
-            onPatchResult(patchFile, result, cost);
+        tinker.getPatchReporter()
+                .onPatchResult(patchFile, result, cost);
 
         patchResult.isSuccess = result;
         patchResult.rawPatchFilePath = path;

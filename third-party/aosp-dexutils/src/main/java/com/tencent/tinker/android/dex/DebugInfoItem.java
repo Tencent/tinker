@@ -18,6 +18,7 @@ package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 import com.tencent.tinker.android.dex.util.CompareUtils;
+import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 /**
  * *** This file is NOT a part of AOSP. ***
@@ -61,6 +62,19 @@ public class DebugInfoItem extends Item<DebugInfoItem> {
 
         cmpRes = CompareUtils.uArrCompare(infoSTM, o.infoSTM);
         return cmpRes;
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeHelper.hash(lineStart, parameterNames, infoSTM);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof DebugInfoItem)) {
+            return false;
+        }
+        return this.compareTo((DebugInfoItem) obj) == 0;
     }
 
     @Override

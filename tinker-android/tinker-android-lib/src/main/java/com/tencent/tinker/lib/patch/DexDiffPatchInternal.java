@@ -622,15 +622,15 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return isExtractionSuccessful;
     }
 
-//    /**
-//     * reject dalvik vm, but sdk version is larger than 21
-//     */
-//    private static void checkVmArtProperty() {
-//        boolean art = ShareTinkerInternals.isVmArt();
-//        if (!art && Build.VERSION.SDK_INT >= 21) {
-//            throw new TinkerRuntimeException(ShareConstants.CHECK_VM_PROPERTY_FAIL + ", it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
-//        }
-//    }
+    // /**
+    //  * reject dalvik vm, but sdk version is larger than 21
+    //  */
+    // private static void checkVmArtProperty() {
+    //     boolean art = ShareTinkerInternals.isVmArt();
+    //     if (!art && Build.VERSION.SDK_INT >= 21) {
+    //         throw new TinkerRuntimeException(ShareConstants.CHECK_VM_PROPERTY_FAIL + ", it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
+    //     }
+    // }
 
     private static boolean extractDexFile(ZipFile zipFile, ZipEntry entryFile, File extractTo, ShareDexDiffPatchInfo dexInfo) throws IOException {
         final String fileMd5 = isVmArt ? dexInfo.destMd5InArt : dexInfo.destMd5InDvm;

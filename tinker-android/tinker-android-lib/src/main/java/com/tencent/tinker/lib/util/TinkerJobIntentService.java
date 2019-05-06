@@ -113,8 +113,8 @@ public abstract class TinkerJobIntentService extends Service {
 
     final ArrayList<CompatWorkItem> mCompatQueue;
 
-    static final Object sLock = new Object();
-    static final HashMap<ComponentName, WorkEnqueuer> sClassWorkEnqueuer = new HashMap<>();
+    static final Object LOCK = new Object();
+    static final HashMap<ComponentName, WorkEnqueuer> CLASS_WORK_ENQUEUER = new HashMap<>();
 
     /**
      * Base class for the target service we can deliver work to and the implementation of
@@ -549,7 +549,7 @@ public abstract class TinkerJobIntentService extends Service {
         if (work == null) {
             throw new IllegalArgumentException("work must not be null");
         }
-        synchronized (sLock) {
+        synchronized (LOCK) {
             WorkEnqueuer we = getWorkEnqueuer(context, component, true, jobId);
             we.ensureJobId(jobId);
             we.enqueueWork(work);
@@ -558,7 +558,7 @@ public abstract class TinkerJobIntentService extends Service {
 
     static WorkEnqueuer getWorkEnqueuer(Context context, ComponentName cn, boolean hasJobId,
                                         int jobId) {
-        WorkEnqueuer we = sClassWorkEnqueuer.get(cn);
+        WorkEnqueuer we = CLASS_WORK_ENQUEUER.get(cn);
         if (we == null) {
             if (Build.VERSION.SDK_INT >= 26) {
                 if (!hasJobId) {
@@ -568,7 +568,7 @@ public abstract class TinkerJobIntentService extends Service {
             } else {
                 we = new CompatWorkEnqueuer(context, cn);
             }
-            sClassWorkEnqueuer.put(cn, we);
+            CLASS_WORK_ENQUEUER.put(cn, we);
         }
         return we;
     }

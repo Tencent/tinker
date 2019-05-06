@@ -25,12 +25,10 @@ import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -239,32 +237,4 @@ public class Utils {
             e.printStackTrace();
         }
     }
-
-    public static void exec(ArrayList<String> args, File path) throws RuntimeException, IOException, InterruptedException {
-        ProcessBuilder ps = new ProcessBuilder(args);
-        ps.redirectErrorStream(true);
-        if (path != null) {
-            ps.directory(path);
-        }
-        Process pr = ps.start();
-        BufferedReader ins = null;
-        try {
-            ins = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-            String line;
-            while ((line = ins.readLine()) != null) {
-                System.out.println(line);
-            }
-            if (pr.waitFor() != 0) {
-                throw new RuntimeException("exec cmd failed! args: " + args);
-            }
-        } finally {
-            try {
-                pr.destroy();
-            } catch (Throwable ignored) {
-                // Ignored.
-            }
-            StreamUtil.closeQuietly(ins);
-        }
-    }
-
 }

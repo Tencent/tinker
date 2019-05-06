@@ -17,6 +17,7 @@
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.CompareUtils;
+import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class ProtoId extends TableOfContents.Section.Item<ProtoId> {
     public int shortyIndex;
@@ -42,6 +43,19 @@ public final class ProtoId extends TableOfContents.Section.Item<ProtoId> {
         return CompareUtils.sCompare(parametersOffset, other.parametersOffset);
     }
 
+
+    @Override
+    public int hashCode() {
+        return HashCodeHelper.hash(shortyIndex, returnTypeIndex, parametersOffset);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ProtoId)) {
+            return false;
+        }
+        return this.compareTo((ProtoId) obj) == 0;
+    }
 
     @Override
     public int byteCountInDex() {

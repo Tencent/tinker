@@ -39,6 +39,19 @@ public class StringData extends Item<StringData> {
     }
 
     @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof StringData)) {
+            return false;
+        }
+        return this.compareTo((StringData) obj) == 0;
+    }
+
+    @Override
     public int byteCountInDex() {
         try {
             return Leb128.unsignedLeb128Size(value.length()) + (int) Mutf8.countBytes(value, true) + SizeOf.UBYTE;

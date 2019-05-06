@@ -110,10 +110,10 @@ public class BSPatch {
             return RETURN_DIFF_FILE_ERR;
         }
 
-//        int commentLenPos = oldsize - extLen - 2;
-//        if (commentLenPos <= 2) {
-//            return RETURN_OLD_FILE_ERR;
-//        }
+        // int commentLenPos = oldsize - extLen - 2;
+        // if (commentLenPos <= 2) {
+        //     return RETURN_OLD_FILE_ERR;
+        // }
 
         DataInputStream diffIn = new DataInputStream(new ByteArrayInputStream(diffBuf, 0, diffSize));
 
@@ -167,18 +167,16 @@ public class BSPatch {
                     return RETURN_DIFF_FILE_ERR;
                 }
                 for (int i = 0; i < ctrl[0]; i++) {
-//                    if (oldpos + i == commentLenPos) {
-//                        oldBuffer[i] = 0;
-//                        oldBuffer[i + 1] = 0;
-//                    }
+                    // if (oldpos + i == commentLenPos) {
+                    //     oldBuffer[i] = 0;
+                    //     oldBuffer[i + 1] = 0;
+                    // }
 
                     if ((oldpos + i >= 0) && (oldpos + i < oldsize)) {
                         buffer[i] += oldBuffer[i];
                     }
                 }
                 outStream.write(buffer);
-
-//            System.out.println(""+ctrl[0]+ ", " + ctrl[1]+ ", " + ctrl[2]);
 
                 newpos += ctrl[0];
                 oldpos += ctrl[0];

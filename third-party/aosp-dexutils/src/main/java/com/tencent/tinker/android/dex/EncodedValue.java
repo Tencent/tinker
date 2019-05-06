@@ -19,6 +19,8 @@ package com.tencent.tinker.android.dex;
 import com.tencent.tinker.android.dex.util.ByteInput;
 import com.tencent.tinker.android.dex.util.CompareUtils;
 
+import java.util.Arrays;
+
 import static com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 
 /**
@@ -45,6 +47,19 @@ public final class EncodedValue extends Item<EncodedValue> {
 
     @Override public int compareTo(EncodedValue other) {
         return CompareUtils.uArrCompare(data, other.data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(data);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof EncodedValue)) {
+            return false;
+        }
+        return this.compareTo((EncodedValue) obj) == 0;
     }
 
     @Override

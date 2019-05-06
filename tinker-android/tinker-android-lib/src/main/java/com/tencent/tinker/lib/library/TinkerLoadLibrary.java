@@ -144,23 +144,26 @@ public class TinkerLoadLibrary {
         //TODO we should add cpu abi, and the real path later
         if (tinker.isEnabledForNativeLib() && tinker.isTinkerLoaded()) {
             TinkerLoadResult loadResult = tinker.getTinkerLoadResultIfPresent();
-            if (loadResult.libs != null) {
-                for (String name : loadResult.libs.keySet()) {
-                    if (name.equals(relativeLibPath)) {
-                        String patchLibraryPath = loadResult.libraryDirectory + "/" + name;
-                        File library = new File(patchLibraryPath);
-                        if (library.exists()) {
-                            //whether we check md5 when load
-                            boolean verifyMd5 = tinker.isTinkerLoadVerify();
-                            if (verifyMd5 && !SharePatchFileUtil.verifyFileMd5(library, loadResult.libs.get(name))) {
-                                tinker.getLoadReporter().onLoadFileMd5Mismatch(library, ShareConstants.TYPE_LIBRARY);
-                            } else {
-                                System.load(patchLibraryPath);
-                                TinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
-                                return true;
-                            }
-                        }
-                    }
+            if (loadResult.libs == null) {
+                return false;
+            }
+            for (String name : loadResult.libs.keySet()) {
+                if (!name.equals(relativeLibPath)) {
+                    continue;
+                }
+                String patchLibraryPath = loadResult.libraryDirectory + "/" + name;
+                File library = new File(patchLibraryPath);
+                if (!library.exists()) {
+                    continue;
+                }
+                //whether we check md5 when load
+                boolean verifyMd5 = tinker.isTinkerLoadVerify();
+                if (verifyMd5 && !SharePatchFileUtil.verifyFileMd5(library, loadResult.libs.get(name))) {
+                    tinker.getLoadReporter().onLoadFileMd5Mismatch(library, ShareConstants.TYPE_LIBRARY);
+                } else {
+                    System.load(patchLibraryPath);
+                    TinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
+                    return true;
                 }
             }
         }

@@ -587,6 +587,8 @@ public class DexPatchGenerator {
                     newItemList.add(patchOperation.newItem);
                     break;
                 }
+                default:
+                    break;
             }
         }
 

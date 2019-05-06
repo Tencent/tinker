@@ -50,10 +50,10 @@ public class TinkerDexLoader {
     private static final String DEFAULT_DEX_OPTIMIZE_PATH   = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
     private static final String INTERPRET_DEX_OPTIMIZE_PATH = ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH;
 
-    private static final ArrayList<ShareDexDiffPatchInfo> loadDexList = new ArrayList<>();
+    private static final ArrayList<ShareDexDiffPatchInfo> LOAD_DEX_LIST = new ArrayList<>();
 
 
-    //    private static File testOptDexFile;
+    // private static File testOptDexFile;
     private static HashSet<ShareDexDiffPatchInfo> classNDexInfo = new HashSet<>();
 
     private static boolean isVmArt = ShareTinkerInternals.isVmArt();
@@ -69,7 +69,7 @@ public class TinkerDexLoader {
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public static boolean loadTinkerJars(final TinkerApplication application, String directory, String oatDir, Intent intentResult, boolean isSystemOTA, boolean isProtectedApp) {
-        if (loadDexList.isEmpty() && classNDexInfo.isEmpty()) {
+        if (LOAD_DEX_LIST.isEmpty() && classNDexInfo.isEmpty()) {
             Log.w(TAG, "there is no dex to load");
             return true;
         }
@@ -86,7 +86,7 @@ public class TinkerDexLoader {
 
         ArrayList<File> legalFiles = new ArrayList<>();
 
-        for (ShareDexDiffPatchInfo info : loadDexList) {
+        for (ShareDexDiffPatchInfo info : LOAD_DEX_LIST) {
             //for dalvik, ignore art support dex
             if (isJustArtSupportDex(info)) {
                 continue;
@@ -138,16 +138,16 @@ public class TinkerDexLoader {
                 targetISA = ShareTinkerInternals.getCurrentInstructionSet();
             } catch (Throwable throwable) {
                 Log.i(TAG, "getCurrentInstructionSet fail:" + throwable);
-//                try {
-//                    targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
-//                } catch (Throwable throwable) {
+                // try {
+                //     targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
+                // } catch (Throwable throwable) {
                 // don't ota on the front
                 deleteOutOfDateOATFile(directory);
 
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, throwable);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_GET_OTA_INSTRUCTION_SET_EXCEPTION);
                 return false;
-//                }
+                // }
             }
 
             deleteOutOfDateOATFile(directory);
@@ -194,7 +194,6 @@ public class TinkerDexLoader {
             SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles, isProtectedApp);
         } catch (Throwable e) {
             Log.e(TAG, "install dexes failed");
-//            e.printStackTrace();
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
             return false;
@@ -215,7 +214,7 @@ public class TinkerDexLoader {
         if (meta == null) {
             return true;
         }
-        loadDexList.clear();
+        LOAD_DEX_LIST.clear();
         classNDexInfo.clear();
 
         ArrayList<ShareDexDiffPatchInfo> allDexInfo = new ArrayList<>();
@@ -245,7 +244,7 @@ public class TinkerDexLoader {
                 classNDexInfo.add(info);
             } else {
                 dexes.put(info.realName, getInfoMd5(info));
-                loadDexList.add(info);
+                LOAD_DEX_LIST.add(info);
             }
         }
 
@@ -287,10 +286,10 @@ public class TinkerDexLoader {
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
                 return false;
             }
-//            // find test dex
-//            if (dexOptFile.getName().startsWith(ShareConstants.TEST_DEX_NAME)) {
-//                testOptDexFile = dexOptFile;
-//            }
+            // // find test dex
+            // if (dexOptFile.getName().startsWith(ShareConstants.TEST_DEX_NAME)) {
+            //     testOptDexFile = dexOptFile;
+            // }
         }
 
         //if is ok, add to result intent

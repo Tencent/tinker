@@ -18,6 +18,7 @@ package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 import com.tencent.tinker.android.dex.util.CompareUtils;
+import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class Code extends Item<Code> {
     public int registersSize;
@@ -67,6 +68,20 @@ public final class Code extends Item<Code> {
             return res;
         }
         return CompareUtils.aArrCompare(catchHandlers, other.catchHandlers);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeHelper.hash(registersSize,
+                insSize, outsSize, debugInfoOffset, instructions, tries, catchHandlers);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Code)) {
+            return false;
+        }
+        return this.compareTo((Code) obj) == 0;
     }
 
     @Override

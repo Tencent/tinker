@@ -103,26 +103,23 @@ public final class FileUtil {
         queue.add(sourceDirectoryFile);
         while (!queue.isEmpty()) {
             File file = queue.poll();
-            boolean result = false;
-            if (!file.isHidden() || includeHidden) {
-                result = true;
+            if (file.isHidden() && !includeHidden) {
+                continue;
             }
-            if (result) {
-                if (file.isDirectory()) {
-                    File[] fileArray = file.listFiles();
-                    if (fileArray != null) {
-                        queue.addAll(Arrays.asList(fileArray));
-                    }
-                } else if (file.isFile()) {
-                    if (file.getName().toLowerCase().endsWith(fileSuffix.toLowerCase())) {
-                        if (isFindMatchFile) {
-                            list.add(file.getAbsolutePath() + somethingAppendToRear);
-                        } else {
-                            String parentPath = file.getParent();
-                            parentPath = parentPath + somethingAppendToRear;
-                            if (!list.contains(parentPath)) {
-                                list.add(parentPath);
-                            }
+            if (file.isDirectory()) {
+                File[] fileArray = file.listFiles();
+                if (fileArray != null) {
+                    queue.addAll(Arrays.asList(fileArray));
+                }
+            } else if (file.isFile()) {
+                if (file.getName().toLowerCase().endsWith(fileSuffix.toLowerCase())) {
+                    if (isFindMatchFile) {
+                        list.add(file.getAbsolutePath() + somethingAppendToRear);
+                    } else {
+                        String parentPath = file.getParent();
+                        parentPath = parentPath + somethingAppendToRear;
+                        if (!list.contains(parentPath)) {
+                            list.add(parentPath);
                         }
                     }
                 }
