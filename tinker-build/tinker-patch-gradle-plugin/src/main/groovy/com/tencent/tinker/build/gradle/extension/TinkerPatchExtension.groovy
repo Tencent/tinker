@@ -49,6 +49,42 @@ public class TinkerPatchExtension {
     boolean ignoreWarning
 
     /**
+     *
+     * Allow loader class existence in any class loader.
+     *
+     * This will suppress the exception like:
+     * <pre>
+     * loader classes are found in old secondary dex. Found classes: ...
+     * loader classes are found in new secondary dex. Found classes: ...
+     * </pre>
+     *
+     * <p>Since Android Gradle Plugin 3.3.0, there is no simply way to keep all loader classes in
+     * the primary dex file if your application's min sdk version is 21 or above. In this situation, you
+     * can turn the {@link #removeLoaderForAllDex} and {@link #allowLoaderInAnyDex} to true and
+     * tolerate the loader classes to exists in any dex file.
+     *
+     * <p>default: false
+     */
+    boolean allowLoaderInAnyDex
+
+    /**
+     * Whether to remove loader class for every dex file. When false, we will assume the loader
+     * class only exists in the main dex(classes.dex).
+     *
+     * <p>If the loader class may exists in any dex, you must set this to true. Otherwise, you patch will
+     * cause tinker runtime load failed. But this will cause a little increment on the size
+     * of the patch file.
+     *
+     * <p>Since Android Gradle Plugin 3.3.0, there is no simply way to keep all loader classes in
+     * the primary dex file if your application's min sdk version is 21 or above. In this situation, you
+     * can turn the {@link #removeLoaderForAllDex} and {@link #allowLoaderInAnyDex} to true and
+     * tolerate the loader classes to exists in any dex file.
+     *
+     * <p>default: false
+     */
+    boolean removeLoaderForAllDex
+
+    /**
      * If sign the patch file with the android signConfig
      * default: true
      */
@@ -65,6 +101,8 @@ public class TinkerPatchExtension {
         outputFolder = ""
         newApk = ""
         ignoreWarning = false
+        allowLoaderInAnyDex = false
+        removeLoaderForAllDex = false
         useSign = true
         tinkerEnable = true
     }
@@ -88,6 +126,7 @@ public class TinkerPatchExtension {
            | outputFolder = ${outputFolder}
            | newApk = ${newApk}
            | ignoreWarning = ${ignoreWarning}
+           | removeLoaderForAllDex = ${removeLoaderForAllDex}
            | tinkerEnable = ${tinkerEnable}
            | useSign = ${useSign}
         """.stripMargin()
