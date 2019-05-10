@@ -49,10 +49,7 @@ public class DefaultPatchListener implements PatchListener {
      */
     @Override
     public int onPatchReceived(String path) {
-        File patchFile = new File(path);
-
-        int returnCode = patchCheck(path, SharePatchFileUtil.getMD5(patchFile));
-
+        int returnCode = patchCheck(path);
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             TinkerPatchService.runPatchService(context, path);
         } else {
@@ -61,15 +58,20 @@ public class DefaultPatchListener implements PatchListener {
         return returnCode;
     }
 
-    protected int patchCheck(String path, String patchMd5) {
+    protected int patchCheck(String path) {
         Tinker manager = Tinker.with(context);
         //check SharePreferences also
         if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
             return ShareConstants.ERROR_PATCH_DISABLE;
         }
-        File file = new File(path);
 
-        if (!SharePatchFileUtil.isLegalFile(file)) {
+        final File patchFile = new File(path);
+        if (!SharePatchFileUtil.isLegalFile(patchFile)) {
+            return ShareConstants.ERROR_PATCH_NOTEXIST;
+        }
+
+        final String patchMd5 = SharePatchFileUtil.getMD5(patchFile);
+        if (patchMd5 == null || patchMd5.isEmpty()) {
             return ShareConstants.ERROR_PATCH_NOTEXIST;
         }
 
