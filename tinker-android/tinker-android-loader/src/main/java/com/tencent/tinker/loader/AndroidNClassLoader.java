@@ -29,6 +29,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.List;
 
+import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
@@ -42,10 +43,10 @@ class AndroidNClassLoader extends PathClassLoader {
     private static Object oldDexPathListHolder = null;
     private static String baseApkFullPath = null;
 
-    private final PathClassLoader originClassLoader;
+    private final BaseDexClassLoader originClassLoader;
     private String applicationClassName;
 
-    private AndroidNClassLoader(String dexPath, PathClassLoader parent, Application application) {
+    private AndroidNClassLoader(String dexPath, BaseDexClassLoader parent, Application application) {
         super(dexPath, parent.getParent());
         originClassLoader = parent;
         String name = application.getClass().getName();
@@ -106,7 +107,7 @@ class AndroidNClassLoader extends PathClassLoader {
         return dexPathListConstructor.newInstance(newDefiningContext, dexPath, libraryPath, null);
     }
 
-    private static AndroidNClassLoader createAndroidNClassLoader(PathClassLoader originalClassLoader, Application application) throws Exception {
+    private static AndroidNClassLoader createAndroidNClassLoader(BaseDexClassLoader originalClassLoader, Application application) throws Exception {
         //let all element ""
         final AndroidNClassLoader androidNClassLoader = new AndroidNClassLoader("",  originalClassLoader, application);
         final Field pathListField = ShareReflectUtil.findField(originalClassLoader, "pathList");
@@ -152,14 +153,14 @@ class AndroidNClassLoader extends PathClassLoader {
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
     }
 
-    public static AndroidNClassLoader inject(PathClassLoader originClassLoader, Application application) throws Exception {
+    public static AndroidNClassLoader inject(BaseDexClassLoader originClassLoader, Application application) throws Exception {
         AndroidNClassLoader classLoader = createAndroidNClassLoader(originClassLoader, application);
         reflectPackageInfoClassloader(application, classLoader);
         return classLoader;
     }
 
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        // app class use default pathClassloader to load
+        // app class use default PathClassloader to load
         if (applicationClassName != null && applicationClassName.equals(name)) {
             return originClassLoader.loadClass(name);
         } else if (name != null && name.startsWith("com.tencent.tinker.loader.")

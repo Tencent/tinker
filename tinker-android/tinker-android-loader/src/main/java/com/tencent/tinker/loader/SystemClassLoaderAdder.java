@@ -40,6 +40,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.zip.ZipFile;
 
+import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
@@ -53,7 +54,7 @@ public class SystemClassLoaderAdder {
     private static int sPatchDexCount = 0;
 
     @SuppressLint("NewApi")
-    public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
+    public static void installDexes(Application application, BaseDexClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
         throws Throwable {
         Log.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
 

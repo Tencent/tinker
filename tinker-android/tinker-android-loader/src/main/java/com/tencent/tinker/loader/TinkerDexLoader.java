@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import dalvik.system.PathClassLoader;
+import dalvik.system.BaseDexClassLoader;
 
 /**
  * Created by zhangshaowen on 16/3/8.
@@ -74,7 +74,7 @@ public class TinkerDexLoader {
             return true;
         }
 
-        PathClassLoader classLoader = (PathClassLoader) TinkerDexLoader.class.getClassLoader();
+        BaseDexClassLoader classLoader = (BaseDexClassLoader) TinkerDexLoader.class.getClassLoader();
         if (classLoader != null) {
             Log.i(TAG, "classloader: " + classLoader.toString());
         } else {
