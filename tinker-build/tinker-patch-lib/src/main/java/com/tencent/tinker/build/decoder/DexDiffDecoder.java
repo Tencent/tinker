@@ -399,8 +399,12 @@ public class DexDiffDecoder extends BaseDecoder {
                 if (realClassNDexFiles.contains(oldDexFile)) {
                     // Bugfix: However, if what we would copy directly is main dex, we should do an additional diff operation
                     // so that patch applier would help us remove all loader classes of it in runtime.
-                    if (dexName.equals(DexFormat.DEX_IN_JAR_NAME)) {
-                        Logger.d("\nDo additional diff on main dex to remove loader classes in it.");
+                    if (config.mRemoveLoaderForAllDex || dexName.equals(DexFormat.DEX_IN_JAR_NAME)) {
+                        if (config.mRemoveLoaderForAllDex) {
+                            Logger.d("\nDo additional diff on every dex to remove loader classes in it, because removeLoaderForAllDex = true");
+                        } else {
+                            Logger.d("\nDo additional diff on main dex to remove loader classes in it.");
+                        }
                         diffDexPairAndFillRelatedInfo(oldDexFile, newDexFile, relatedInfo);
                         logToDexMeta(newDexFile, oldDexFile, relatedInfo.dexDiffFile, relatedInfo.newOrFullPatchedMd5, relatedInfo.newOrFullPatchedMd5, relatedInfo.dexDiffMd5, relatedInfo.newOrFullPatchedCRC);
                     } else {

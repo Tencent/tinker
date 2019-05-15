@@ -190,10 +190,20 @@ public final class ExcludedClassModifiedChecker {
                     );
                 }
                 case STMCODE_ERROR_LOADER_CLASS_FOUND_IN_SECONDARY_OLD_DEX: {
-                    throw new TinkerPatchException("loader classes are found in old secondary dex. Found classes: " + Utils.collectionToString(oldClassesDescToCheck));
+                    final String msg = "loader classes are found in old secondary dex. Found classes: " + Utils.collectionToString(oldClassesDescToCheck);
+                    if (config.mAllowLoaderInAnyDex) {
+                        Logger.d(msg);
+                    } else {
+                        throw new TinkerPatchException(msg);
+                    }
                 }
                 case STMCODE_ERROR_LOADER_CLASS_FOUND_IN_SECONDARY_NEW_DEX: {
-                    throw new TinkerPatchException("loader classes are found in new secondary dex. Found classes: " + Utils.collectionToString(newClassesDescToCheck));
+                    final String msg = "loader classes are found in new secondary dex. Found classes: " + Utils.collectionToString(newClassesDescToCheck);
+                    if (config.mAllowLoaderInAnyDex) {
+                        Logger.d(msg);
+                    } else {
+                        throw new TinkerPatchException(msg);
+                    }
                 }
                 case STMCODE_ERROR_LOADER_CLASS_CHANGED: {
                     String msg =

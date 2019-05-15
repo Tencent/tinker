@@ -62,6 +62,8 @@ public class Configuration {
     protected static final String ATTR_NAME  = "name";
 
     protected static final String ATTR_IGNORE_WARNING            = "ignoreWarning";
+    protected static final String ATTR_ALLOW_LOADER_IN_ANY_DEX   = "allowLoaderInAnyDex";
+    protected static final String ATTR_REMOVE_LOADER_FOR_ALL_DEX = "removeLoaderForAllDex";
     protected static final String ATTR_IS_PROTECTED_APP          = "isProtectedApp";
     protected static final String ATTR_SUPPORT_HOTPLUG_COMPONENT = "supportHotplugComponent";
     protected static final String ATTR_USE_SIGN                  = "useSign";
@@ -88,7 +90,9 @@ public class Configuration {
     public File    mOldApkFile;
     public File    mNewApkFile;
     public boolean mIgnoreWarning;
+    public boolean mAllowLoaderInAnyDex;
     public boolean mIsProtectedApp;
+    public boolean mRemoveLoaderForAllDex;
     public boolean mSupportHotplugComponent;
     /**
      * lib config
@@ -232,6 +236,10 @@ public class Configuration {
 
         mIgnoreWarning = param.ignoreWarning;
 
+        mAllowLoaderInAnyDex = param.allowLoaderInAnyDex;
+
+        mRemoveLoaderForAllDex= param.removeLoaderForAllDex;
+
         mIsProtectedApp = param.isProtectedApp;
 
         mSupportHotplugComponent = param.supportHotplugComponent;
@@ -257,6 +265,8 @@ public class Configuration {
         sb.append("newApk:" + mNewApkPath + "\n");
         sb.append("outputFolder:" + mOutFolder + "\n");
         sb.append("isIgnoreWarning:" + mIgnoreWarning + "\n");
+        sb.append("isAllowLoaderClassInAnyDex:" + mAllowLoaderInAnyDex + "\n");
+        sb.append("isRemoveLoaderForAllDex:" + mRemoveLoaderForAllDex + "\n");
         sb.append("isProtectedApp:" + mIsProtectedApp + "\n");
         sb.append("7-ZipPath:" + mSevenZipPath + "\n");
         sb.append("useSignAPk:" + mUseSignAPk + "\n");
@@ -439,6 +449,10 @@ public class Configuration {
                     }
                     if (tagName.equals(ATTR_IGNORE_WARNING)) {
                         mIgnoreWarning = value.equals("true");
+                    } else if (tagName.equals(ATTR_ALLOW_LOADER_IN_ANY_DEX)) {
+                        mAllowLoaderInAnyDex = value.equals("true");
+                    } else if (tagName.equals(ATTR_REMOVE_LOADER_FOR_ALL_DEX)) {
+                        mRemoveLoaderForAllDex = value.equals("true");
                     } else if (tagName.equals(ATTR_IS_PROTECTED_APP)) {
                         mIsProtectedApp = value.equals("true");
                     } else if (tagName.equals(ATTR_SUPPORT_HOTPLUG_COMPONENT)) {
