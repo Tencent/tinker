@@ -193,7 +193,7 @@ public final class ExcludedClassModifiedChecker {
                     final String msg = "loader classes are found in old secondary dex. Found classes: " + Utils.collectionToString(oldClassesDescToCheck);
                     if (config.mAllowLoaderInAnyDex) {
                         Logger.d(msg);
-                        break;
+                        return;
                     } else {
                         throw new TinkerPatchException(msg);
                     }
@@ -202,7 +202,7 @@ public final class ExcludedClassModifiedChecker {
                     final String msg = "loader classes are found in new secondary dex. Found classes: " + Utils.collectionToString(newClassesDescToCheck);
                     if (config.mAllowLoaderInAnyDex) {
                         Logger.d(msg);
-                        break;
+                        return;
                     } else {
                         throw new TinkerPatchException(msg);
                     }
