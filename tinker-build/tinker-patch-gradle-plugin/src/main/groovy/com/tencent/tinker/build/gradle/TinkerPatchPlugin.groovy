@@ -25,6 +25,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.jetbrains.annotations.NotNull
 
 /**
  * Registers the plugin's tasks.
@@ -34,6 +35,7 @@ import org.gradle.api.Task
 
 class TinkerPatchPlugin implements Plugin<Project> {
     public static final String TINKER_INTERMEDIATES = "build/intermediates/tinker_intermediates/"
+    public static final String ISSUE_URL = "https://github.com/Tencent/tinker/issues"
 
     @Override
     public void apply(Project project) {
@@ -211,11 +213,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     proguardConfigTask.applicationVariant = variant
                     proguardConfigTask.mustRunAfter manifestTask
 
-                    def proguardTask = getProguardTask(project, variantName)
-                    if (proguardTask != null) {
-                        proguardTask.dependsOn proguardConfigTask
-                    }
-
+                    def obfuscateTask = getObfuscateTask(project, variantName)
+                    obfuscateTask.dependsOn proguardConfigTask
                 }
 
                 // Add this multidex proguard settings file to the list
@@ -350,9 +349,25 @@ class TinkerPatchPlugin implements Plugin<Project> {
         return project.tasks.findByName(multiDexTaskName)
     }
 
-    Task getProguardTask(Project project, String variantName) {
+    @NotNull
+    Task getObfuscateTask(Project project, String variantName) {
         String proguardTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
-        return project.tasks.findByName(proguardTaskName)
+        def proguard = project.tasks.findByName(proguardTaskName)
+        if (proguard != null) {
+            return proguard
+        }
+
+        String r8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        def r8 = project.tasks.findByName(r8TaskName)
+        if (r8 != null) {
+            return r8
+        }
+
+        // in case that Google changes the task name in later versions
+        throw new GradleException(String.format("The minifyEnabled is enabled for '%s', but " +
+                "tinker cannot find the task, we have try '%s' and '%s'.\n" +
+                "Please submit issue to us: %s", variant,
+                proguardTaskName, r8TaskName,ISSUE_URL))
     }
 
     Task getInstantRunTask(Project project, String variantName) {
