@@ -186,10 +186,17 @@ public class FileOperation {
 
                 File file = new File(filePath + File.separator + entry.getName());
 
+                //fix bug
                 File parentFile = file.getParentFile();
-                if (parentFile != null && (!parentFile.exists())) {
+                if (!parentFile.isDirectory()) {
+                    if (parentFile.exists()) {
+                        parentFile.delete();
+                    }
                     parentFile.mkdirs();
                 }
+//                if (parentFile != null && (!parentFile.exists())) {
+//                    parentFile.mkdirs();
+//                }
                 FileOutputStream fos = null;
                 BufferedOutputStream bos = null;
                 try {
