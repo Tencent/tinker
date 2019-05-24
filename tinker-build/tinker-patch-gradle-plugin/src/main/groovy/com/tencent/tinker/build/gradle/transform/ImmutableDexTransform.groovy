@@ -20,7 +20,6 @@ import com.android.annotations.NonNull
 import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.build.gradle.internal.pipeline.TransformTask
-import com.android.build.gradle.internal.transforms.DexTransform
 import com.google.common.base.Joiner
 import com.google.common.collect.Lists
 import com.tencent.tinker.android.dex.ClassDef
@@ -68,10 +67,10 @@ public class ImmutableDexTransform extends Transform {
 
     def variant
 
-    DexTransform dexTransform
+    def dexTransform
 
 
-    ImmutableDexTransform(Project project, def variant, DexTransform dexTransform) {
+    ImmutableDexTransform(Project project, def variant, def dexTransform) {
         this.dexTransform = dexTransform
         this.project = project
         this.variant = variant
@@ -127,7 +126,7 @@ public class ImmutableDexTransform extends Transform {
     @NonNull
     @Override
     public Map<String, Object> getParameterInputs() {
-       return dexTransform.getParameterInputs()
+        return dexTransform.getParameterInputs()
     }
 
     @Override
@@ -366,6 +365,11 @@ public class ImmutableDexTransform extends Transform {
             project.logger.warn("oldApk is illegal. we will not replace the dex transform.")
             return
         }
+        try {
+            Class.forName("com.android.build.gradle.internal.transforms.DexTransform")
+        } catch (ClassNotFoundException e) {
+            return
+        }
 
         project.getGradle().getTaskGraph().addTaskExecutionGraphListener(new TaskExecutionGraphListener() {
             @Override
@@ -375,11 +379,10 @@ public class ImmutableDexTransform extends Transform {
                         continue
                     }
                     if (task instanceof TransformTask && task.name.toLowerCase().contains(variant.name.toLowerCase())) {
-
-                        if (((TransformTask) task).getTransform() instanceof DexTransform && !(((TransformTask) task).getTransform() instanceof ImmutableDexTransform)) {
+                        if (((TransformTask) task).getTransform().getClass() == Class.forName("com.android.build.gradle.internal.transforms.DexTransform") && !(((TransformTask) task).getTransform() instanceof ImmutableDexTransform)) {
                             project.logger.warn("find dex transform. transform class: " + task.transform.getClass() + " . task name: " + task.name)
 
-                            DexTransform dexTransform = task.transform
+                            def dexTransform = task.transform
                             ImmutableDexTransform hookDexTransform = new ImmutableDexTransform(project,
                                     variant, dexTransform)
                             project.logger.info("variant name: " + variant.name)
