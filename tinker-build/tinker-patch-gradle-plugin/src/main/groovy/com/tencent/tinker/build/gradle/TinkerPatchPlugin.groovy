@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.build.gradle
 
+import com.android.build.api.transform.Transform
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
@@ -25,7 +26,11 @@ import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.FileCollection
 import org.jetbrains.annotations.NotNull
+
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 
 /**
  * Registers the plugin's tasks.
@@ -223,6 +228,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 if (multiDexEnabled) {
                     TinkerMultidexConfigTask multidexConfigTask = project.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
+                    multidexConfigTask.multiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
                     multidexConfigTask.mustRunAfter manifestTask
 
                     // for java.io.FileNotFoundException: app/build/intermediates/multi-dex/release/manifest_keep.txt
@@ -236,8 +242,29 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
 
                     def multidexTask = getMultiDexTask(project, variantName)
+                    def r8Task = getR8Task(project, variantName)
                     if (multidexTask != null) {
                         multidexTask.dependsOn multidexConfigTask
+                    } else if (multidexTask == null && r8Task != null) {
+                        r8Task.dependsOn multidexConfigTask
+                        Transform r8Transform = r8Task.getTransform()
+                        //R8 maybe forget to add multidex keep proguard file in agp 3.4.0, it's a agp bug!
+                        //If we don't do it, some classes will not keep in maindex such as loader's classes.
+                        //So tinker will not remove loader's classes, it will crashed in dalvik and will check TinkerTestDexLoad.isPatch failed in art.
+                        if (r8Transform.metaClass.hasProperty(r8Transform, "mainDexRulesFiles")) {
+                            File manifestMultiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
+                            if (manifestMultiDexKeepProguard != null) {
+                                //see difference between mainDexRulesFiles and mainDexListFiles in https://developer.android.com/studio/build/multidex?hl=zh-cn
+                                FileCollection originalFiles = r8Transform.metaClass.getProperty(r8Transform, 'mainDexRulesFiles')
+                                if (!originalFiles.contains(manifestMultiDexKeepProguard)) {
+                                    FileCollection replacedFiles = project.files(originalFiles, manifestMultiDexKeepProguard)
+                                    project.logger.error("R8Transform original mainDexRulesFiles: ${originalFiles.files}")
+                                    project.logger.error("R8Transform replaced mainDexRulesFiles: ${replacedFiles.files}")
+                                    //it's final, use reflect to replace it.
+                                    replaceKotlinFinalField("com.android.build.gradle.internal.transforms.R8Transform", "mainDexRulesFiles", r8Transform, replacedFiles)
+                                }
+                            }
+                        }
                     }
                     def collectMultiDexComponentsTask = getCollectMultiDexComponentsTask(project, variantName)
                     if (collectMultiDexComponentsTask != null) {
@@ -274,7 +301,6 @@ class TinkerPatchPlugin implements Plugin<Project> {
         } else {
             parentFile = output.outputFile
         }
-
 
 
         String outputFolder = "${configuration.outputFolder}";
@@ -349,6 +375,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
         return project.tasks.findByName(multiDexTaskName)
     }
 
+    Task getR8Task(Project project, String variantName) {
+        String d8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        return project.tasks.findByName(d8TaskName)
+    }
+
     @NotNull
     Task getObfuscateTask(Project project, String variantName) {
         String proguardTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
@@ -367,7 +398,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
         throw new GradleException(String.format("The minifyEnabled is enabled for '%s', but " +
                 "tinker cannot find the task, we have try '%s' and '%s'.\n" +
                 "Please submit issue to us: %s", variant,
-                proguardTaskName, r8TaskName,ISSUE_URL))
+                proguardTaskName, r8TaskName, ISSUE_URL))
     }
 
     Task getInstantRunTask(Project project, String variantName) {
@@ -378,6 +409,43 @@ class TinkerPatchPlugin implements Plugin<Project> {
     Task getCollectMultiDexComponentsTask(Project project, String variantName) {
         String collectMultiDexComponents = "collect${variantName}MultiDexComponents"
         return project.tasks.findByName(collectMultiDexComponents)
+    }
+
+    void replaceKotlinFinalField(String className, String filedName, Object instance, Object fieldValue) {
+        Field field = Class.forName(className).getDeclaredField(filedName)
+        Field modifiersField = Field.class.getDeclaredField("modifiers")
+        modifiersField.setAccessible(true)
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+        field.setAccessible(true)
+        field.set(instance, fieldValue)
+    }
+
+    File getManifestMultiDexKeepProguard(def applicationVariant) {
+        File multiDexKeepProguard = null
+        try {
+            multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
+        } catch (Throwable ignore) {
+            try {
+                def buildableArtifact = applicationVariant.getVariantData().getScope().getArtifacts().getFinalArtifactFiles(
+                        Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
+                                .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
+                                .get(null)
+                )
+
+                //noinspection GroovyUncheckedAssignmentOfMemberOfRawType,UnnecessaryQualifiedReference
+                multiDexKeepProguard = com.google.common.collect.Iterators.getOnlyElement(buildableArtifact.iterator())
+            } catch (Throwable e) {
+
+            }
+            if (multiDexKeepProguard == null) {
+                try {
+                    multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+                } catch (Throwable e) {
+                    project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+                }
+            }
+        }
+        return multiDexKeepProguard
     }
 
 }
