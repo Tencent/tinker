@@ -48,6 +48,7 @@ public class TinkerMultidexConfigTask extends DefaultTask {
 
 
     def applicationVariant
+    def multiDexKeepProguard
 
     public TinkerMultidexConfigTask() {
         group = 'tinker'
@@ -101,30 +102,6 @@ public class TinkerMultidexConfigTask extends DefaultTask {
             fr.close()
         }
 
-        File multiDexKeepProguard = null
-        try {
-            multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
-        } catch (Throwable ignore) {
-            try {
-                def buildableArtifact = applicationVariant.getVariantData().getScope().getArtifacts().getFinalArtifactFiles(
-                        Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
-                                .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
-                                .get(null)
-                )
-
-                //noinspection GroovyUncheckedAssignmentOfMemberOfRawType,UnnecessaryQualifiedReference
-                multiDexKeepProguard = com.google.common.collect.Iterators.getOnlyElement(buildableArtifact.iterator())
-            } catch (Throwable e) {
-
-            }
-            if (multiDexKeepProguard == null) {
-                try {
-                    multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
-                } catch (Throwable e) {
-                    project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
-                }
-            }
-        }
         if (multiDexKeepProguard == null) {
             project.logger.error("auto add multidex keep pattern fail, you can only copy ${file} to your own multiDex keep proguard file yourself.")
             return
