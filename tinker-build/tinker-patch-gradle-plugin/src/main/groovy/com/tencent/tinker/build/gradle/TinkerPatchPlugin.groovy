@@ -376,8 +376,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
     }
 
     Task getR8Task(Project project, String variantName) {
-        String d8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
-        return project.tasks.findByName(d8TaskName)
+        String r8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        return project.tasks.findByName(r8TaskName)
     }
 
     @NotNull

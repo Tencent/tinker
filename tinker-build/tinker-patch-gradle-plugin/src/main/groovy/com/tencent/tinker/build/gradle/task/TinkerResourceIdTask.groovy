@@ -29,6 +29,8 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GFileUtils
 
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -130,17 +132,35 @@ public class TinkerResourceIdTask extends DefaultTask {
      * add --stable-ids param to aaptOptions's additionalParameters
      */
     List<String> addStableIdsFileToAdditionalParameters(def processAndroidResourceTask) {
-        def aaptOptions = processAndroidResourceTask.getAaptOptions()
+        def aaptOptions
+        try {
+            aaptOptions = processAndroidResourceTask.getAaptOptions()
+        } catch (Exception e) {
+            //agp 3.5.0+
+            aaptOptions = Class.forName("com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask").metaClass.getProperty(processAndroidResourceTask, "aaptOptions")
+        }
         List<String> additionalParameters = new ArrayList<>()
         List<String> originalAdditionalParameters = aaptOptions.getAdditionalParameters()
         if (originalAdditionalParameters != null) {
             additionalParameters.addAll(originalAdditionalParameters)
         }
-        aaptOptions.setAdditionalParameters(additionalParameters)
+        replaceFinalField(aaptOptions.getClass().getName(), "additionalParameters", aaptOptions, additionalParameters)
         additionalParameters.add("--stable-ids")
         additionalParameters.add(project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath())
         project.logger.error("tinker add additionalParameters --stable-ids ${project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath()}")
         return additionalParameters
+    }
+
+    /**
+     * replace final field
+     */
+    private static void replaceFinalField(String className, String filedName, Object instance, Object fieldValue) {
+        Field field = Class.forName(className).getDeclaredField(filedName)
+        Field modifiersField = Field.class.getDeclaredField("modifiers")
+        modifiersField.setAccessible(true)
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+        field.setAccessible(true)
+        field.set(instance, fieldValue)
     }
 
     /**
