@@ -17,6 +17,7 @@
 package com.tencent.tinker.lib.listener;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
@@ -49,7 +50,9 @@ public class DefaultPatchListener implements PatchListener {
      */
     @Override
     public int onPatchReceived(String path) {
-        int returnCode = patchCheck(path);
+        final File patchFile = new File(path);
+        final String patchMD5 = SharePatchFileUtil.getMD5(patchFile);
+        final int returnCode = patchCheck(path, patchMD5);
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             TinkerPatchService.runPatchService(context, path);
         } else {
@@ -58,20 +61,17 @@ public class DefaultPatchListener implements PatchListener {
         return returnCode;
     }
 
-    protected int patchCheck(String path) {
-        Tinker manager = Tinker.with(context);
+    protected int patchCheck(String path, String patchMd5) {
+        final Tinker manager = Tinker.with(context);
         //check SharePreferences also
         if (!manager.isTinkerEnabled() || !ShareTinkerInternals.isTinkerEnableWithSharedPreferences(context)) {
             return ShareConstants.ERROR_PATCH_DISABLE;
         }
-
-        final File patchFile = new File(path);
-        if (!SharePatchFileUtil.isLegalFile(patchFile)) {
+        if (TextUtils.isEmpty(patchMd5)) {
             return ShareConstants.ERROR_PATCH_NOTEXIST;
         }
-
-        final String patchMd5 = SharePatchFileUtil.getMD5(patchFile);
-        if (patchMd5 == null || patchMd5.isEmpty()) {
+        final File file = new File(path);
+        if (!SharePatchFileUtil.isLegalFile(file)) {
             return ShareConstants.ERROR_PATCH_NOTEXIST;
         }
 
