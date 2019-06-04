@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.lib.service;
 
+import android.app.IntentService;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
@@ -23,10 +24,10 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.support.annotation.Nullable;
 
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.util.TinkerJobIntentService;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -38,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Created by zhangshaowen on 16/3/14.
  */
-public class TinkerPatchService extends TinkerJobIntentService {
+public class TinkerPatchService extends IntentService {
     private static final String TAG = "Tinker.TinkerPatchService";
 
     private static final String PATCH_PATH_EXTRA = "patch_path_extra";
@@ -48,15 +49,17 @@ public class TinkerPatchService extends TinkerJobIntentService {
     private static int notificationId = ShareConstants.TINKER_PATCH_SERVICE_NOTIFICATION;
     private static Class<? extends AbstractResultService> resultServiceClass = null;
 
+    public TinkerPatchService() {
+        super("TinkerPatchService");
+    }
+
     public static void runPatchService(final Context context, final String path) {
         TinkerLog.i(TAG, "run patch service...");
         Intent intent = new Intent(context, TinkerPatchService.class);
         intent.putExtra(PATCH_PATH_EXTRA, path);
         intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
         try {
-            final int jobId = 0xA9A8A2A3 ^ ("tinker_" + context.getPackageName()).hashCode();
-            TinkerLog.i(TAG, "jobId of tinker patch service is: %s", jobId);
-            enqueueWork(context, TinkerPatchService.class, jobId, intent);
+            context.startService(intent);
         } catch (Throwable thr) {
             TinkerLog.e(TAG, "run patch service fail, exception:" + thr);
         }
@@ -85,6 +88,12 @@ public class TinkerPatchService extends TinkerJobIntentService {
             throw new TinkerRuntimeException("getPatchResultExtra, but intent is null");
         }
         return ShareIntentUtil.getStringExtra(intent, RESULT_CLASS_EXTRA);
+    }
+
+    @Override
+    protected void onHandleIntent(@Nullable Intent intent) {
+        increasingPriority();
+        doApplyPatch(this, intent);
     }
 
     /**
@@ -148,17 +157,6 @@ public class TinkerPatchService extends TinkerJobIntentService {
         AbstractResultService.runResultService(context, patchResult, getPatchResultExtra(intent));
 
         sIsPatchApplying.set(false);
-    }
-
-    @Override
-    protected void onHandleWork(Intent intent) {
-        increasingPriority();
-        doApplyPatch(this, intent);
-    }
-
-    @Override
-    public boolean onStopCurrentWork() {
-        return false;
     }
 
     private void increasingPriority() {

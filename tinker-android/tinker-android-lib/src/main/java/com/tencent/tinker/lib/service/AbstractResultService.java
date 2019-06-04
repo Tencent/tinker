@@ -16,60 +16,41 @@
 
 package com.tencent.tinker.lib.service;
 
-import android.content.ComponentName;
+import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import com.tencent.tinker.lib.util.TinkerJobIntentService;
 
 import com.tencent.tinker.lib.util.TinkerLog;
-import com.tencent.tinker.loader.BuildConfig;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 
 /**
  * Created by zhangshaowen on 16/3/14.
  */
-public abstract class AbstractResultService extends TinkerJobIntentService {
+public abstract class AbstractResultService extends IntentService {
     private static final String TAG = "Tinker.AbstractResultService";
 
     private static final String RESULT_EXTRA = "result_extra";
+
+    public AbstractResultService() {
+        super("TinkerResultService");
+    }
 
     public static void runResultService(Context context, PatchResult result, String resultServiceClass) {
         if (resultServiceClass == null) {
             throw new TinkerRuntimeException("resultServiceClass is null.");
         }
         try {
-            if (!TinkerJobIntentService.class.isAssignableFrom(Class.forName(resultServiceClass))) {
-                throw new TinkerRuntimeException("on tinker version " + BuildConfig.TINKER_VERSION + " result service class must inherit from TinkerJobIntentService.");
-            }
-        } catch (ClassNotFoundException e) {
-            throw new TinkerRuntimeException("cannot find result service class: " + resultServiceClass, e);
-        }
-        try {
             Intent intent = new Intent();
             intent.setClassName(context, resultServiceClass);
             intent.putExtra(RESULT_EXTRA, result);
-
-            final int jobId = 0xA3A4A5A6 ^ ("tinker_" + context.getPackageName()).hashCode();
-            TinkerLog.i(TAG, "jobId of result service is: %s", jobId);
-
-            enqueueWork(context, new ComponentName(context, resultServiceClass), jobId, intent);
+            context.startService(intent);
         } catch (Throwable throwable) {
             TinkerLog.e(TAG, "run result service fail, exception:" + throwable);
         }
     }
 
     @Override
-    public boolean onStopCurrentWork() {
-        return false;
-    }
-
-    @Override
-    protected void onHandleWork(@NonNull Intent intent) {
-        onHandleIntent(intent);
-    }
-
     protected void onHandleIntent(Intent intent) {
         if (intent == null) {
             TinkerLog.e(TAG, "AbstractResultService received a null intent, ignoring.");
