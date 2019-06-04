@@ -105,9 +105,11 @@ public class DefaultPatchListener implements PatchListener {
         File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory);
         File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory);
         try {
-            SharePatchInfo currInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+            final SharePatchInfo currInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
             if (currInfo != null && !ShareTinkerInternals.isNullOrNil(currInfo.newVersion) && !currInfo.isRemoveNewVersion) {
-                return ShareConstants.ERROR_PATCH_ALREADY_APPLY;
+                if (patchMd5.equals(currInfo.newVersion)) {
+                    return ShareConstants.ERROR_PATCH_ALREADY_APPLY;
+                }
             }
         } catch (Throwable ignored) {
             // Ignored.
