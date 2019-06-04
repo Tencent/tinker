@@ -154,8 +154,22 @@ public class TinkerResourceIdTask extends DefaultTask {
     /**
      * replace final field
      */
-    private static void replaceFinalField(String className, String filedName, Object instance, Object fieldValue) {
-        Field field = Class.forName(className).getDeclaredField(filedName)
+    private static void replaceFinalField(String className, String fieldName, Object instance, Object fieldValue) {
+        final Class targetClazz = Class.forName(className)
+        Class currClazz = targetClazz
+        Field field = null
+        while (true) {
+            try {
+                field = currClazz.getDeclaredField(fieldName)
+                break
+            } catch (NoSuchFieldException e) {
+                if (currClazz.equals(Object.class)) {
+                    throw e
+                } else {
+                    currClazz = currClazz.getSuperclass()
+                }
+            }
+        }
         Field modifiersField = Field.class.getDeclaredField("modifiers")
         modifiersField.setAccessible(true)
         modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
