@@ -371,8 +371,15 @@ class TinkerPatchPlugin implements Plugin<Project> {
     }
 
     Task getMultiDexTask(Project project, String variantName) {
-        String multiDexTaskName = "transformClassesWithMultidexlistFor${variantName}"
-        return project.tasks.findByName(multiDexTaskName)
+        String multiDexTaskName = "multiDexList${variantName}"
+        String multiDexTaskTransformName = "transformClassesWithMultidexlistFor${variantName}"
+
+        def multiDexTask = project.tasks.findByName(multiDexTaskName)
+        if (multiDexTask == null) {
+            multiDexTask = project.tasks.findByName(multiDexTaskTransformName)
+        }
+
+        return multiDexTask
     }
 
     Task getR8Task(Project project, String variantName) {
