@@ -28,27 +28,31 @@ import java.io.IOException;
  * Created by zhangshaowen on 2/26/16.
  */
 public class Runner {
-
     public static final int ERRNO_ERRORS = 1;
     public static final int ERRNO_USAGE  = 2;
 
+    private final boolean mIsGradleEnv;
+
     protected static long          mBeginTime;
-    protected        Configuration config;
+    protected        Configuration mConfig;
+
+    public Runner(boolean isGradleEnv) {
+        mIsGradleEnv = isGradleEnv;
+    }
 
     public static void gradleRun(InputParam inputParam) {
         mBeginTime = System.currentTimeMillis();
-        Runner m = new Runner();
+        Runner m = new Runner(true);
         m.run(inputParam);
     }
 
     private void run(InputParam inputParam) {
         loadConfigFromGradle(inputParam);
         try {
-            Logger.initLogger(config);
+            Logger.initLogger(mConfig);
             tinkerPatch();
         } catch (IOException e) {
-            e.printStackTrace();
-            goToError();
+            goToError(e, ERRNO_ERRORS);
         } finally {
             Logger.closeLogger();
         }
@@ -57,35 +61,34 @@ public class Runner {
     protected void tinkerPatch() {
         Logger.d("-----------------------Tinker patch begin-----------------------");
 
-        Logger.d(config.toString());
+        Logger.d(mConfig.toString());
         try {
             //gen patch
-            ApkDecoder decoder = new ApkDecoder(config);
+            ApkDecoder decoder = new ApkDecoder(mConfig);
             decoder.onAllPatchesStart();
-            decoder.patch(config.mOldApkFile, config.mNewApkFile);
+            decoder.patch(mConfig.mOldApkFile, mConfig.mNewApkFile);
             decoder.onAllPatchesEnd();
 
             //gen meta file and version file
-            PatchInfo info = new PatchInfo(config);
+            PatchInfo info = new PatchInfo(mConfig);
             info.gen();
 
             //build patch
-            PatchBuilder builder = new PatchBuilder(config);
+            PatchBuilder builder = new PatchBuilder(mConfig);
             builder.buildPatch();
 
         } catch (Throwable e) {
-            e.printStackTrace();
-            goToError();
+            goToError(e, ERRNO_USAGE);
         }
 
         Logger.d("Tinker patch done, total time cost: %fs", diffTimeFromBegin());
-        Logger.d("Tinker patch done, you can go to file to find the output %s", config.mOutFolder);
+        Logger.d("Tinker patch done, you can go to file to find the output %s", mConfig.mOutFolder);
         Logger.d("-----------------------Tinker patch end-------------------------");
     }
 
     private void loadConfigFromGradle(InputParam inputParam) {
         try {
-            config = new Configuration(inputParam);
+            mConfig = new Configuration(inputParam);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (TinkerPatchException e) {
@@ -93,8 +96,13 @@ public class Runner {
         }
     }
 
-    public void goToError() {
-        System.exit(ERRNO_USAGE);
+    public void goToError(Throwable thr, int errCode) {
+        if (mIsGradleEnv) {
+            throw new RuntimeException(thr);
+        } else {
+            thr.printStackTrace(System.err);
+            System.exit(errCode);
+        }
     }
 
     public double diffTimeFromBegin() {
