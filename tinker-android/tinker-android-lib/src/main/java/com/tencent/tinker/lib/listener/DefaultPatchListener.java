@@ -16,9 +16,14 @@
 
 package com.tencent.tinker.lib.listener;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.text.TextUtils;
 
+import com.tencent.tinker.lib.service.TinkerPatchForeService;
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
@@ -31,11 +36,14 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 
+import static android.content.Context.BIND_AUTO_CREATE;
+
 /**
  * Created by zhangshaowen on 16/3/14.
  */
 public class DefaultPatchListener implements PatchListener {
     protected final Context context;
+    private ServiceConnection connection;
 
     public DefaultPatchListener(Context context) {
         this.context = context;
@@ -54,11 +62,39 @@ public class DefaultPatchListener implements PatchListener {
         final String patchMD5 = SharePatchFileUtil.getMD5(patchFile);
         final int returnCode = patchCheck(path, patchMD5);
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
+            runForgService();
             TinkerPatchService.runPatchService(context, path);
         } else {
             Tinker.with(context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode);
         }
         return returnCode;
+    }
+
+
+    private void runForgService() {
+        try {
+            connection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    if (context != null && connection != null) {
+                        //Tinker在完成补丁后会尝试kill掉patch进程，如果不unbind会导致patch进程重启
+                        context.unbindService(connection);
+                    }
+                }
+
+                @Override
+                public void onBindingDied(ComponentName name) {
+                }
+            };
+            Intent innerForgIntent = new Intent(context, TinkerPatchForeService.class);
+            context.bindService(innerForgIntent, connection, BIND_AUTO_CREATE);
+        } catch (Throwable ex) {
+            //ignore forground service start error
+        }
     }
 
     protected int patchCheck(String path, String patchMd5) {

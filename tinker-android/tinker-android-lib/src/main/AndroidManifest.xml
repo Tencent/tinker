@@ -1,8 +1,13 @@
-<manifest package="com.tencent.tinker.lib"
-          xmlns:android="http://schemas.android.com/apk/res/android">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.tencent.tinker.lib">
 
     <application>
-
+        <service
+            android:name=".service.TinkerPatchForeService"
+            android:enabled="true"
+            android:process=":patch"
+            android:exported="false"/>
         <!--
             Notice:
             Following service must run in the same process.
@@ -12,20 +17,17 @@
         <!-- ########################################################################### -->
         <service
             android:name=".service.TinkerPatchService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false"
-            android:process=":patch"/>
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:process=":patch" />
         <service
             android:name=".service.TinkerPatchService$InnerService"
             android:exported="false"
-            android:process=":patch"/>
-        <!-- ########################################################################### -->
-
+            android:process=":patch" /> <!-- ########################################################################### -->
         <service
             android:name=".service.DefaultTinkerResultService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false"/>
-
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 
 </manifest>
