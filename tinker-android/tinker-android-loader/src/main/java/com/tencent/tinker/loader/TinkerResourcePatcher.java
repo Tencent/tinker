@@ -32,9 +32,12 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.KITKAT;
@@ -52,6 +55,7 @@ class TinkerResourcePatcher {
 
     // original object
     private static Collection<WeakReference<Resources>> references = null;
+    private static Map<?, ?> cachedResourcesOrImpls = null;
     private static Object currentActivityThread = null;
     private static AssetManager newAssetManager = null;
 
@@ -121,19 +125,23 @@ class TinkerResourcePatcher {
                 final ArrayMap<?, WeakReference<Resources>> activeResources19 =
                         (ArrayMap<?, WeakReference<Resources>>) fMActiveResources.get(resourcesManager);
                 references = activeResources19.values();
+                cachedResourcesOrImpls = activeResources19;
             } catch (NoSuchFieldException ignore) {
                 // N moved the resources to mResourceReferences
                 final Field mResourceReferences = findField(resourcesManagerClass, "mResourceReferences");
+                final Field mResourceImpls = findField(resourcesManagerClass, "mResourceImpls");
                 references = (Collection<WeakReference<Resources>>) mResourceReferences.get(resourcesManager);
+                cachedResourcesOrImpls = (Map<?, ?>) mResourceImpls.get(resourcesManager);
             }
         } else {
             final Field fMActiveResources = findField(activityThread, "mActiveResources");
             final HashMap<?, WeakReference<Resources>> activeResources7 =
                     (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
             references = activeResources7.values();
+            cachedResourcesOrImpls = activeResources7;
         }
         // check resource
-        if (references == null) {
+        if (references == null || cachedResourcesOrImpls == null) {
             throw new IllegalStateException("resource references is null");
         }
 
@@ -158,6 +166,10 @@ class TinkerResourcePatcher {
         } catch (NoSuchFieldException ignore) {
             // Ignored.
         }
+
+        // check if there is a correct class ResourcesKey.
+        // throw exception to prevent patching action
+        TinkerResourcesKey.checkClassCorrect();
     }
 
     /**
@@ -228,6 +240,13 @@ class TinkerResourcePatcher {
             resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
         }
 
+        try {
+            addResourcesKeys(context, externalResourceFile, cachedResourcesOrImpls);
+        } catch (Throwable t) {
+            Log.w(TAG, "add ResourcesKeys failed.", t);
+            throw t;
+        }
+
         // Handle issues caused by WebView on Android N.
         // Issue: On Android N, if an activity contains a webview, when screen rotates
         // our resource patch may lost effects.
@@ -271,6 +290,28 @@ class TinkerResourcePatcher {
             }
         } catch (Throwable ignored) {
             Log.e(TAG, "clearPreloadTypedArrayIssue failed, ignore error: " + ignored);
+        }
+    }
+
+    private static void addResourcesKeys(Context context, String externalResourcePath, Map caches) throws Exception {
+        ApplicationInfo appInfo = context.getApplicationInfo();
+        List<Map.Entry> targets = new ArrayList<>();
+
+        Set<Map.Entry> entries = caches.entrySet();
+        for (Map.Entry e : entries) {
+            Object rk = e.getKey();
+            String resDir = TinkerResourcesKey.getResDir(rk);
+            Log.w(TAG, "resourcesKey.resDir = " + resDir);
+            if (appInfo.sourceDir.equalsIgnoreCase(resDir)) {
+                targets.add(e);
+            }
+        }
+
+        for (Map.Entry entry : targets) {
+            Object oldKey = entry.getKey();
+            Object newKey = TinkerResourcesKey.newKey(oldKey, externalResourcePath);
+            caches.put(newKey, entry.getValue());
+            Log.w(TAG, "resourcesKey.newKey = " + newKey);
         }
     }
 
