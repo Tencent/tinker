@@ -25,5 +25,19 @@ import com.tencent.tinker.loader.app.TinkerApplication;
  * Created by zhangshaowen on 16/4/30.
  */
 public abstract class AbstractTinkerLoader {
+
     abstract public Intent tryLoad(TinkerApplication app);
+
+    /**
+     * Should we install a new patch?
+     *
+     * Usually we load the fresh one as soon as the main process
+     * starts, and this will get others killed. However, there are
+     * some scenarios where a not-main process is too important to
+     * be killed, such as a music player process.
+     *
+     * If those process exists (or for other reasons), we return a
+     * FALSE to avoid main process loading the new patch.
+     */
+    abstract public boolean greetNewPatch();
 }

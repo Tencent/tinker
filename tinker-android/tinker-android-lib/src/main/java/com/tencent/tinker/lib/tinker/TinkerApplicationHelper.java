@@ -221,13 +221,9 @@ public class TinkerApplicationHelper {
         }
         final String oldVersion = ShareIntentUtil.getStringExtra(tinkerResultIntent, ShareIntentUtil.INTENT_PATCH_OLD_VERSION);
         final String newVersion = ShareIntentUtil.getStringExtra(tinkerResultIntent, ShareIntentUtil.INTENT_PATCH_NEW_VERSION);
-        final boolean isMainProcess = ShareTinkerInternals.isInMainProcess(applicationLike.getApplication());
+        final boolean runNewVersion = ShareIntentUtil.getBooleanExtra(tinkerResultIntent, ShareIntentUtil.INTENT_PATCH_RUN_NEW_VERSION, false);
         if (oldVersion != null && newVersion != null) {
-            if (isMainProcess) {
-                return newVersion;
-            } else {
-                return oldVersion;
-            }
+            return runNewVersion ? newVersion : oldVersion;
         }
         return null;
     }

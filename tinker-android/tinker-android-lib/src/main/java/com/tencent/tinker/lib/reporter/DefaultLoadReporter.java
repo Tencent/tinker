@@ -87,8 +87,10 @@ public class DefaultLoadReporter implements LoadReporter {
             return;
         }
 
-        //check main process
-        if (!Tinker.with(context).isMainProcess()) {
+        // check if current process installed a new version patch
+        Tinker tinker = Tinker.with(context);
+        TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
+        if (!tinkerLoadResult.runNewVersion) {
             return;
         }
 
@@ -310,18 +312,15 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     public void checkAndCleanPatch() {
         Tinker tinker = Tinker.with(context);
-        //only main process can load a new patch
-        if (tinker.isMainProcess()) {
-            TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
-            //if versionChange and the old patch version is not ""
-            if (tinkerLoadResult.versionChanged) {
-                SharePatchInfo sharePatchInfo = tinkerLoadResult.patchInfo;
-                if (sharePatchInfo != null && !ShareTinkerInternals.isNullOrNil(sharePatchInfo.oldVersion)) {
-                    TinkerLog.w(TAG, "checkAndCleanPatch, oldVersion %s is not null, try kill all other process",
+        TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
+        // only main process with correct environment can load a new patch
+        if (tinkerLoadResult.runNewVersion) {
+            SharePatchInfo sharePatchInfo = tinkerLoadResult.patchInfo;
+            if (sharePatchInfo != null && !ShareTinkerInternals.isNullOrNil(sharePatchInfo.oldVersion)) {
+                TinkerLog.w(TAG, "checkAndCleanPatch, oldVersion %s is not null, try kill all other process",
                         sharePatchInfo.oldVersion);
 
-                    ShareTinkerInternals.killAllOtherProcess(context);
-                }
+                ShareTinkerInternals.killAllOtherProcess(context);
             }
         }
         tinker.cleanPatch();

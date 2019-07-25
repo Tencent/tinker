@@ -45,6 +45,7 @@ public class ShareIntentUtil {
     public static final  String INTENT_PATCH_SYSTEM_OTA          = "intent_patch_system_ota";
     public static final  String INTENT_PATCH_OAT_DIR             = "intent_patch_oat_dir";
     public static final  String INTENT_PATCH_INTERPRET_EXCEPTION = "intent_patch_interpret_exception";
+    public static final  String INTENT_PATCH_RUN_NEW_VERSION     = "intent_patch_run_new_version";
 
 
     private static final String TAG                              = "ShareIntentUtil";

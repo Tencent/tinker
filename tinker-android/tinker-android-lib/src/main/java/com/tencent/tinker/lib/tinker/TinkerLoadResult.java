@@ -43,6 +43,8 @@ public class TinkerLoadResult {
     //@Nullable
     public String         oatDir;
 
+    public boolean runNewVersion;
+
     public boolean versionChanged;
 
     public boolean useInterpretMode;
@@ -81,10 +83,10 @@ public class TinkerLoadResult {
         oatDir = ShareIntentUtil.getStringExtra(intentResult, ShareIntentUtil.INTENT_PATCH_OAT_DIR);
         useInterpretMode = ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH.equals(oatDir);
 
-        final boolean isMainProcess = tinker.isMainProcess();
+        runNewVersion = ShareIntentUtil.getBooleanExtra(intentResult, ShareIntentUtil.INTENT_PATCH_RUN_NEW_VERSION, false);
 
-        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, process name:%s, main process:%b, systemOTA:%b, fingerPrint:%s, oatDir:%s, useInterpretMode:%b",
-            loadCode, ShareTinkerInternals.getProcessName(context), isMainProcess, systemOTA, Build.FINGERPRINT, oatDir, useInterpretMode);
+        TinkerLog.i(TAG, "parseTinkerResult loadCode:%d, process name:%s, main process:%b, runNewVersion:%b, systemOTA:%b, fingerPrint:%s, oatDir:%s, useInterpretMode:%b",
+            loadCode, ShareTinkerInternals.getProcessName(context), tinker.isMainProcess(), runNewVersion, systemOTA, Build.FINGERPRINT, oatDir, useInterpretMode);
 
         //@Nullable
         final String oldVersion = ShareIntentUtil.getStringExtra(intentResult, ShareIntentUtil.INTENT_PATCH_OLD_VERSION);
@@ -95,11 +97,7 @@ public class TinkerLoadResult {
         final File patchInfoFile = tinker.getPatchInfoFile();
 
         if (oldVersion != null && newVersion != null) {
-            if (isMainProcess) {
-                currentVersion = newVersion;
-            } else {
-                currentVersion = oldVersion;
-            }
+            currentVersion = runNewVersion ? newVersion : oldVersion;
 
             TinkerLog.i(TAG, "parseTinkerResult oldVersion:%s, newVersion:%s, current:%s", oldVersion, newVersion,
                 currentVersion);
@@ -331,7 +329,7 @@ public class TinkerLoadResult {
                 if (useInterpretMode) {
                     tinker.getLoadReporter().onLoadInterpret(ShareConstants.TYPE_INTERPRET_OK, null);
                 }
-                if (isMainProcess && versionChanged) {
+                if (runNewVersion) {
                     //change the old version to new
                     tinker.getLoadReporter().onLoadPatchVersionChanged(oldVersion, newVersion, patchDirectory, patchVersionDirectory.getName());
                 }

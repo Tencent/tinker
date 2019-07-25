@@ -59,6 +59,11 @@ public class TinkerLoader extends AbstractTinkerLoader {
         return resultIntent;
     }
 
+    @Override
+    public boolean greetNewPatch() {
+        return true;
+    }
+
     private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent) {
         final int tinkerFlag = app.getTinkerFlags();
 
@@ -158,8 +163,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
         oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
 
+        final boolean runNewVersion = mainProcess && versionChanged && greetNewPatch();
+        final boolean runNewOatMode = mainProcess && oatModeChanged;
+        resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_RUN_NEW_VERSION, runNewVersion);
+
         String version = oldVersion;
-        if (versionChanged && mainProcess) {
+        if (runNewVersion) {
             version = newVersion;
         }
         if (ShareTinkerInternals.isNullOrNil(version)) {
@@ -254,18 +263,15 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 
-        //we should first try rewrite patch info file, if there is a error, we can't load jar
-        if (mainProcess) {
-            if (versionChanged) {
-                patchInfo.oldVersion = version;
-            }
-            if (oatModeChanged) {
-                patchInfo.oatDir = oatDex;
-                // delete interpret odex
-                // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
-                Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to delete interpret optimize files");
-                SharePatchFileUtil.deleteDir(patchVersionDirectory + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
-            }
+        if (runNewVersion) {
+            patchInfo.oldVersion = version;
+        }
+        if (runNewOatMode) {
+            patchInfo.oatDir = oatDex;
+            // delete interpret odex
+            // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
+            Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to delete interpret optimize files");
+            SharePatchFileUtil.deleteDir(patchVersionDirectory + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
         }
 
         if (!checkSafeModeCount(app)) {
@@ -283,8 +289,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 // update fingerprint after load success
                 patchInfo.fingerPrint = Build.FINGERPRINT;
                 patchInfo.oatDir = loadTinkerJars ? ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH : ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
-                // reset to false
-                oatModeChanged = false;
 
                 if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
                     ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
@@ -316,7 +320,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         // Before successfully exit, we should update stored version info and kill other process
         // to make them load latest patch when we first applied newer one.
-        if (mainProcess && versionChanged) {
+        if (runNewVersion) {
             //update old version to new
             if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
                 ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
