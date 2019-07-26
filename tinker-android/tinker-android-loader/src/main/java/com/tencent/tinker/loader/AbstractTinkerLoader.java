@@ -39,5 +39,5 @@ public abstract class AbstractTinkerLoader {
      * If those process exists (or for other reasons), we return a
      * FALSE to avoid main process loading the new patch.
      */
-    abstract public boolean greetNewPatch();
+    abstract public boolean greetNewPatch(TinkerApplication app);
 }

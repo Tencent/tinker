@@ -60,7 +60,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
     }
 
     @Override
-    public boolean greetNewPatch() {
+    public boolean greetNewPatch(TinkerApplication app) {
         return true;
     }
 
@@ -163,7 +163,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
 
-        final boolean runNewVersion = mainProcess && versionChanged && greetNewPatch();
+        final boolean runNewVersion = mainProcess && versionChanged && greetNewPatch(app);
         final boolean runNewOatMode = mainProcess && oatModeChanged;
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_RUN_NEW_VERSION, runNewVersion);
 
