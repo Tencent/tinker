@@ -133,6 +133,10 @@ android {
             jniLibs.srcDirs = ['libs']
         }
     }
+
+    packagingOptions {
+        exclude "/META-INF/**"
+    }
 }
 
 def bakPath = file("${buildDir}/bakApk/")
@@ -418,7 +422,11 @@ if (buildWithTinker()) {
                         if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
                             def packageAndroidArtifact = variant.packageApplicationProvider.get()
                             if (packageAndroidArtifact != null) {
-                                from new File(packageAndroidArtifact.outputDirectory, variant.outputs.first().apkData.outputFileName)
+                                try {
+                                    from new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), variant.outputs.first().apkData.outputFileName)
+                                } catch (Exception e) {
+                                    from new File(packageAndroidArtifact.outputDirectory, variant.outputs.first().apkData.outputFileName)
+                                }
                             } else {
                                 from variant.outputs.first().mainOutputFile.outputFile
                             }
@@ -438,6 +446,7 @@ if (buildWithTinker()) {
                         }
 
                         from "${buildDir}/intermediates/symbols/${variant.dirName}/R.txt"
+                        from "${buildDir}/intermediates/symbol_list/${variant.dirName}/R.txt"
                         into destPath
                         rename { String fileName ->
                             fileName.replace("R.txt", "${newFileNamePrefix}-R.txt")
