@@ -87,6 +87,23 @@ public class SystemClassLoaderAdder {
         }
     }
 
+    @SuppressLint("NewApi")
+    public static void installApk(PathClassLoader loader, List<File> files) throws Throwable {
+        if (!files.isEmpty()) {
+            files = createSortedAdditionalPathEntries(files);
+            ClassLoader classLoader = loader;
+            ArkHot.install(classLoader, files);
+            sPatchDexCount = files.size();
+            Log.i(TAG, "after loaded classloader: " + classLoader + ", dex size:" + sPatchDexCount);
+
+            if (!checkDexInstall(classLoader)) {
+                // reset patch dex
+//                SystemClassLoaderAdder.uninstallPatchDex(classLoader);
+//                throw new TinkerRuntimeException(ShareConstants.CHECK_DEX_INSTALL_FAIL);
+            }
+        }
+    }
+
     public static void uninstallPatchDex(ClassLoader classLoader) throws Throwable {
         if (sPatchDexCount <= 0) {
             return;
@@ -170,6 +187,27 @@ public class SystemClassLoaderAdder {
         });
 
         return result;
+    }
+
+    /**
+     * Installer for platform huawei ark
+     */
+    private static final class ArkHot {
+        private static void install(ClassLoader loader, List<File> additionalClassPathEntries)
+                throws IllegalArgumentException, IllegalAccessException, NoSuchMethodException,
+                InvocationTargetException, IOException, ClassNotFoundException, SecurityException {
+            Class<?>  extendedClassLoaderHelper = ClassLoader.getSystemClassLoader()
+                    .getParent().loadClass("com.huawei.ark.classloader.ExtendedClassLoaderHelper");
+
+            for (File file : additionalClassPathEntries) {
+                String path = file.getCanonicalPath();
+                Method applyPatchMethod = extendedClassLoaderHelper.getDeclaredMethod(
+                        "applyPatch", ClassLoader.class, String.class);
+                applyPatchMethod.setAccessible(true);
+                applyPatchMethod.invoke(null, loader, path);
+                Log.i(TAG, "ArkHot install path = " + path);
+            }
+        }
     }
 
     /**

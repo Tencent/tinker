@@ -85,6 +85,8 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setConfigFields(new HashMap<String, String>(configuration.packageConfig.getFields()))
                .setSevenZipPath(configuration.sevenZip.path)
                .setUseSign(configuration.useSign)
+               .setArkHotPath(configuration.arkHot.path)
+               .setArkHotName(configuration.arkHot.name)
 
         InputParam inputParam = builder.create()
         Runner.gradleRun(inputParam);

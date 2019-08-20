@@ -6,7 +6,7 @@
 
 Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.
 
-![tinker.png](assets/tinker.png) 
+![tinker.png](assets/tinker.png)
 
 ## Getting started
 Add tinker-gradle-plugin as a dependency in your main `build.gradle` in the root of your project:
@@ -23,7 +23,7 @@ Then you need to "apply" the plugin and add dependencies by adding the following
 
 ```gradle
 dependencies {
-    //optional, help to generate the final application 
+    //optional, help to generate the final application
     provided('com.tencent.tinker:tinker-android-anno:1.9.1')
     //tinker's main Android lib
     compile('com.tencent.tinker:tinker-android-lib:1.9.1')
@@ -50,9 +50,9 @@ public class SampleApplication extends TinkerApplication {
         //dex only, library only, all support
         ShareConstants.TINKER_ENABLE_ALL,
         // This is passed as a string so the shell application does not
-        // have a binary dependency on your ApplicationLifeCycle class. 
+        // have a binary dependency on your ApplicationLifeCycle class.
         "tinker.sample.android.app.SampleApplicationLike");
-    }  
+    }
 }
 ```
 
@@ -62,7 +62,7 @@ Use `tinker-android-anno` to generate your `Application` is recommended, you jus
 @DefaultLifeCycle(
 application = "tinker.sample.android.app.SampleApplication",             //application name to generate
 flags = ShareConstants.TINKER_ENABLE_ALL)                                //tinkerFlags above
-public class SampleApplicationLike extends DefaultApplicationLike 
+public class SampleApplicationLike extends DefaultApplicationLike
 ```
 
 How to install tinker? learn more at the sample [SampleApplicationLike](https://github.com/Tencent/tinker/blob/master/tinker-sample-android/app/src/main/java/tinker/sample/android/app/SampleApplicationLike.java).
@@ -71,6 +71,29 @@ For proguard, we have already made the proguard config automatic, and tinker wil
 
 For more tinker configurations, learn more at the sample [app/build.gradle](https://github.com/Tencent/tinker/blob/master/tinker-sample-android/app/build.gradle).
 
+## Ark Support
+How to run tinker on the Ark?
+For gradle, add the following lines to your `app/build.gradle`. Otherwise, the default configure will be used.
+```gradle
+ark {
+   path = "xxx"                                        // path of patch
+   name = "xxx.apk"                                    // name of patch
+}
+```
+For tinker-cli, add the following lines to your `tinker_config.xml`. Otherwise, the default configure will be used.
+```xml
+<issue id="ark">
+   <path value="xxx"/>
+   <name value="xxx.apk"/>
+</issue>
+```
+The patch is built by Ark SDK and placed on the above path. Other operations are the same as before.
+
+How to make dex diff for Ark? Just use the following command:
+```buildconfig
+bash build_patch_dexdiff.sh old=xxx new=xxx
+```
+The path of old and new  must be absolute
 ## Known Issues
 There are some issues which Tinker can't dynamic update.
 

@@ -21,6 +21,7 @@ import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 import java.io.IOException;
@@ -123,10 +124,12 @@ public final class TinkerDexOptimizer {
                     callback.onStart(dexFile, optimizedDir);
                 }
                 String optimizedPath = SharePatchFileUtil.optimizedPathFor(this.dexFile, this.optimizedDir);
-                if (useInterpretMode) {
-                    interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
-                } else {
-                    DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
+                if (!ShareTinkerInternals.isArkHotRuning()) {
+                    if (useInterpretMode) {
+                        interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
+                    } else {
+                        DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
+                    }
                 }
                 if (callback != null) {
                     callback.onSuccess(dexFile, optimizedDir, new File(optimizedPath));

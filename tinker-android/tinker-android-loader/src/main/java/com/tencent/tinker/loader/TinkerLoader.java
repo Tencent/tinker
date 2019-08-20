@@ -50,6 +50,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
      */
     @Override
     public Intent tryLoad(TinkerApplication app) {
+        Log.d(TAG, "tryLoad test test");
         Intent resultIntent = new Intent();
 
         long begin = SystemClock.elapsedRealtime();
@@ -212,8 +213,9 @@ public class TinkerLoader extends AbstractTinkerLoader {
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_PACKAGE_CONFIG, securityCheck.getPackagePropertiesIfPresent());
 
         final boolean isEnabledForDex = ShareTinkerInternals.isTinkerEnabledForDex(tinkerFlag);
+        final boolean isArkHotRuning = ShareTinkerInternals.isArkHotRuning();
 
-        if (isEnabledForDex) {
+        if (!isArkHotRuning && isEnabledForDex) {
             //tinker/patch.info/patch-641e634c/dex
             boolean dexCheck = TinkerDexLoader.checkComplete(patchVersionDirectory, securityCheck, oatDex, resultIntent);
             if (!dexCheck) {
@@ -222,6 +224,17 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 return;
             }
         }
+
+        final boolean isEnabledForArkHot = ShareTinkerInternals.isTinkerEnabledForArkHot(tinkerFlag);
+        if (isArkHotRuning && isEnabledForArkHot) {
+            boolean arkHotCheck = TinkerArkHotLoader.checkComplete(patchVersionDirectory, securityCheck, resultIntent);
+            if (!arkHotCheck) {
+                // file not found, do not load patch
+                Log.w(TAG, "tryLoadPatchFiles:dex check fail");
+                return;
+            }
+        }
+
 
         final boolean isEnabledForNativeLib = ShareTinkerInternals.isTinkerEnabledForNativeLib(tinkerFlag);
 
@@ -276,7 +289,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
 
         //now we can load patch jar
-        if (isEnabledForDex) {
+        if (!isArkHotRuning && isEnabledForDex) {
             boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, patchVersionDirectory, oatDex, resultIntent, isSystemOTA, isProtectedApp);
 
             if (isSystemOTA) {
@@ -300,6 +313,14 @@ public class TinkerLoader extends AbstractTinkerLoader {
             }
         }
 
+        if (isArkHotRuning && isEnabledForArkHot) {
+            boolean loadArkHotFixJars = TinkerArkHotLoader.loadTinkerArkHot(app, patchVersionDirectory, resultIntent);
+            if (!loadArkHotFixJars) {
+                Log.w(TAG, "tryLoadPatchFiles:onPatchLoadArkApkFail");
+                return;
+            }
+        }
+
         //now we can load patch resource
         if (isEnabledForResource) {
             boolean loadTinkerResources = TinkerResourceLoader.loadTinkerResources(app, patchVersionDirectory, resultIntent);
@@ -310,7 +331,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
 
         // Init component hotplug support.
-        if (isEnabledForDex && isEnabledForResource) {
+        if ((isEnabledForDex || isEnabledForArkHot) && isEnabledForResource) {
             ComponentHotplug.install(app, securityCheck);
         }
 
