@@ -161,10 +161,10 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 if (variantOutput.metaClass.hasProperty(variantOutput, 'processResourcesProvider')) {
                     manifestTask.manifestPath = variantOutput.processResourcesProvider.get().manifestFile
-                } else if (variantOutput.processManifest.properties['manifestOutputFile'] != null) {
-                    manifestTask.manifestPath = variantOutput.processManifest.manifestOutputFile
-                } else if (variantOutput.processResources.properties['manifestFile'] != null) {
+                } else if (variantOutput.processResources.metaClass.hasProperty(variantOutput.processResources, 'manifestFile')) {
                     manifestTask.manifestPath = variantOutput.processResources.manifestFile
+                } else if (variantOutput.processManifest.metaClass.hasProperty(variantOutput.processManifest, 'manifestOutputFile')) {
+                    manifestTask.manifestPath = variantOutput.processManifest.manifestOutputFile
                 }
 
 
@@ -188,11 +188,15 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
 
                 if (variantOutput.metaClass.hasProperty(variantOutput, 'processResourcesProvider')) {
-                    applyResourceTask.resDir = variantOutput.processResourcesProvider.get().inputResourcesDir.getFiles().first()
-                } else if (variantOutput.processResources.properties['resDir'] != null) {
-                    applyResourceTask.resDir = variantOutput.processResources.resDir
-                } else if (variantOutput.processResources.properties['inputResourcesDir'] != null) {
+                    try {
+                        applyResourceTask.resDir = variantOutput.processResourcesProvider.get().inputResourcesDir.getAsFile().get()
+                    } catch (Exception e) {
+                        applyResourceTask.resDir = variantOutput.processResourcesProvider.get().inputResourcesDir.getFiles().first()
+                    }
+                } else if (variantOutput.processResources.metaClass.hasProperty(variantOutput.processResources, 'inputResourcesDir')) {
                     applyResourceTask.resDir = variantOutput.processResources.inputResourcesDir.getFiles().first()
+                } else if (variantOutput.processResources.metaClass.hasProperty(variantOutput.processResources, 'resDir')) {
+                    applyResourceTask.resDir = variantOutput.processResources.resDir
                 }
 
                 //let applyResourceTask run after manifestTask
@@ -298,7 +302,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
         if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
             def packageAndroidArtifact = variant.packageApplicationProvider.get()
             if (packageAndroidArtifact != null) {
-                parentFile = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+                try {
+                    parentFile = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), output.apkData.outputFileName)
+                } catch (Exception e) {
+                    parentFile = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+                }
             } else {
                 parentFile = output.mainOutputFile.outputFile
             }
@@ -357,7 +365,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
         if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
             def packageAndroidArtifact = variant.packageApplicationProvider.get()
             if (packageAndroidArtifact != null) {
-                tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+                try {
+                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), output.apkData.outputFileName)
+                } catch (Exception e) {
+                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+                }
             } else {
                 tinkerPatchBuildTask.buildApkPath = output.mainOutputFile.outputFile
             }
@@ -433,9 +445,20 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
     File getManifestMultiDexKeepProguard(def applicationVariant) {
         File multiDexKeepProguard = null
+
         try {
-            multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
+            File file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
+                    Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
+                            .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
+                            .get(null)
+            ).getOrNull()?.getAsFile()
+            if (file != null && file.getName() != '__EMPTY_DIR__') {
+                multiDexKeepProguard = file
+            }
         } catch (Throwable ignore) {
+        }
+
+        if (multiDexKeepProguard == null) {
             try {
                 def buildableArtifact = applicationVariant.getVariantData().getScope().getArtifacts().getFinalArtifactFiles(
                         Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
@@ -445,16 +468,29 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 //noinspection GroovyUncheckedAssignmentOfMemberOfRawType,UnnecessaryQualifiedReference
                 multiDexKeepProguard = com.google.common.collect.Iterators.getOnlyElement(buildableArtifact.iterator())
-            } catch (Throwable e) {
+            } catch (Throwable ignore) {
 
             }
-            if (multiDexKeepProguard == null) {
-                try {
-                    multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
-                } catch (Throwable e) {
-                    mProject.logger.error("can't find getManifestKeepListFile method, exception:${e}")
-                }
+        }
+
+        if (multiDexKeepProguard == null) {
+            try {
+                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
+            } catch (Throwable ignore) {
+
             }
+        }
+
+        if (multiDexKeepProguard == null) {
+            try {
+                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+            } catch (Throwable ignore) {
+
+            }
+        }
+
+        if (multiDexKeepProguard == null) {
+            mProject.logger.error("can't get multiDexKeepProguard file")
         }
         return multiDexKeepProguard
     }
