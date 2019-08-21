@@ -62,6 +62,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
         mProject.tinkerPatch.extensions.create('dex', TinkerDexExtension, mProject)
         mProject.tinkerPatch.extensions.create('lib', TinkerLibExtension)
         mProject.tinkerPatch.extensions.create('res', TinkerResourceExtension)
+        mProject.tinkerPatch.extensions.create("arkHot", TinkerArkHotExtension)
         mProject.tinkerPatch.extensions.create('packageConfig', TinkerPackageConfigExtension, mProject)
         mProject.tinkerPatch.extensions.create('sevenZip', TinkerSevenZipExtension, mProject)
 

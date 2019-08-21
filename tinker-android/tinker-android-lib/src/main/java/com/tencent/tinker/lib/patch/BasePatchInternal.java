@@ -44,11 +44,13 @@ public class BasePatchInternal {
     protected static final String DEX_META_FILE        = ShareConstants.DEX_META_FILE;
     protected static final String SO_META_FILE         = ShareConstants.SO_META_FILE;
     protected static final String RES_META_FILE        = ShareConstants.RES_META_FILE;
+    protected static final String ARKHOT_META_FILE = ShareConstants.ARKHOT_META_FILE;
 
     protected static final int TYPE_DEX         = ShareConstants.TYPE_DEX;
     protected static final int TYPE_LIBRARY     = ShareConstants.TYPE_LIBRARY;
     protected static final int TYPE_RESOURCE    = ShareConstants.TYPE_RESOURCE;
     protected static final int TYPE_CLASS_N_DEX = ShareConstants.TYPE_CLASS_N_DEX;
+    protected static final int TYPE_ARKHOT_SO = ShareConstants.TYPE_ARKHOT_SO;
 
 
     public static boolean extract(ZipFile zipFile, ZipEntry entryFile, File extractTo, String targetMd5, boolean isDex) throws IOException {
