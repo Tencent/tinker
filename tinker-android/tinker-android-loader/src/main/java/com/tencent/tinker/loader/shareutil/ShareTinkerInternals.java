@@ -30,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
@@ -43,13 +44,13 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
-    private static final String  TAG       = "Tinker.TinkerInternals";
-    private static final boolean VM_IS_ART = isVmArt(System.getProperty("java.vm.version"));
-    private static final boolean VM_IS_JIT = isVmJitInternal();
-    private static final boolean IS_ARKHOT_RUNNING = null;
-
+    private static final String  TAG                   = "Tinker.TinkerInternals";
+    private static final boolean VM_IS_ART             = isVmArt(System.getProperty("java.vm.version"));
+    private static final boolean VM_IS_JIT             = isVmJitInternal();
     private static final String  PATCH_PROCESS_NAME    = ":patch";
+
     private static       Boolean isPatchProcess        = null;
+    private static       Boolean isARKHotRunning       = false;
     /**
      * or you may just hardcode them in your app
      */
@@ -66,10 +67,10 @@ public class ShareTinkerInternals {
     }
 
     public static boolean isArkHotRuning() {
-        if (isArkHotRuning != null) {
-            return isArkHotRuning;
+        if (isARKHotRunning != null) {
+            return isARKHotRunning;
         }
-        isArkHotRuning = false;
+        isARKHotRunning = false;
         Class<?> arkApplicationInfo = null;
         try {
             arkApplicationInfo = ClassLoader.getSystemClassLoader()
@@ -77,7 +78,7 @@ public class ShareTinkerInternals {
             Method isRunningInArkHot = null;
             isRunningInArkHot = arkApplicationInfo.getDeclaredMethod("isRunningInArk");
             isRunningInArkHot.setAccessible(true);
-            isArkHotRuning = (boolean)isRunningInArkHot.invoke(null);
+            isARKHotRunning = (Boolean) isRunningInArkHot.invoke(null);
         } catch (ClassNotFoundException e) {
             Log.i(TAG, "class not found exception");
         } catch (NoSuchMethodException e) {
@@ -91,7 +92,7 @@ public class ShareTinkerInternals {
         } catch (IllegalArgumentException e) {
             Log.i(TAG, "illegal argument exception");
         }
-        return isArkHotRuning;
+        return isARKHotRunning;
     }
 
     public static boolean isAfterAndroidO() {
