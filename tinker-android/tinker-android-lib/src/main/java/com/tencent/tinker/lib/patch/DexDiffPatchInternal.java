@@ -342,7 +342,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
             // try parallel dex optimizer
             TinkerDexOptimizer.optimizeAll(
-                    dexFiles, optimizeDexDirectoryFile,
+                context, dexFiles, optimizeDexDirectoryFile,
                 new TinkerDexOptimizer.ResultCallback() {
                     long startTime;
 

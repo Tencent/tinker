@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.loader;
 
+import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
@@ -54,37 +55,35 @@ public final class TinkerDexOptimizer {
      * @param cb
      * @return If all dexes are optimized successfully, return true. Otherwise return false.
      */
-    public static boolean optimizeAll(Collection<File> dexFiles, File optimizedDir, ResultCallback cb) {
-        return optimizeAll(dexFiles, optimizedDir, false, null, cb);
+    public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir, ResultCallback cb) {
+        return optimizeAll(context, dexFiles, optimizedDir, false, null, cb);
     }
 
-    public static boolean optimizeAll(Collection<File> dexFiles, File optimizedDir,
+    public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir,
                                       boolean useInterpretMode, String targetISA, ResultCallback cb) {
         ArrayList<File> sortList = new ArrayList<>(dexFiles);
-        // sort input dexFiles with its file length
+        // sort input dexFiles with its file length in reverse order.
         Collections.sort(sortList, new Comparator<File>() {
             @Override
             public int compare(File lhs, File rhs) {
-                long diffSize = lhs.length() - rhs.length();
-                if (diffSize > 0) {
+                final long lhsSize = lhs.length();
+                final long rhsSize = rhs.length();
+                if (lhsSize < rhsSize) {
                     return 1;
-                } else if (diffSize == 0) {
+                } else if (lhsSize == rhsSize) {
                     return 0;
                 } else {
                     return -1;
                 }
             }
         });
-        Collections.reverse(sortList);
         for (File dexFile : sortList) {
-            OptimizeWorker worker = new OptimizeWorker(dexFile, optimizedDir, useInterpretMode, targetISA, cb);
+            OptimizeWorker worker = new OptimizeWorker(context, dexFile, optimizedDir, useInterpretMode, targetISA, cb);
             if (!worker.run()) {
                 return false;
             }
         }
         return true;
-
-
     }
 
     public interface ResultCallback {
@@ -97,13 +96,14 @@ public final class TinkerDexOptimizer {
 
     private static class OptimizeWorker {
         private static String targetISA = null;
-
+        private final Context        context;
         private final File           dexFile;
         private final File           optimizedDir;
         private final boolean        useInterpretMode;
         private final ResultCallback callback;
 
-        OptimizeWorker(File dexFile, File optimizedDir, boolean useInterpretMode, String targetISA, ResultCallback cb) {
+        OptimizeWorker(Context context, File dexFile, File optimizedDir, boolean useInterpretMode, String targetISA, ResultCallback cb) {
+            this.context = context;
             this.dexFile = dexFile;
             this.optimizedDir = optimizedDir;
             this.useInterpretMode = useInterpretMode;
@@ -111,12 +111,12 @@ public final class TinkerDexOptimizer {
             this.targetISA = targetISA;
         }
 
-        public boolean run() {
+        boolean run() {
             try {
                 if (!SharePatchFileUtil.isLegalFile(dexFile)) {
                     if (callback != null) {
                         callback.onFailed(dexFile, optimizedDir,
-                            new IOException("dex file " + dexFile.getAbsolutePath() + " is not exist!"));
+                                new IOException("dex file " + dexFile.getAbsolutePath() + " is not exist!"));
                         return false;
                     }
                 }
@@ -127,6 +127,9 @@ public final class TinkerDexOptimizer {
                 if (!ShareTinkerInternals.isArkHotRuning()) {
                     if (useInterpretMode) {
                         interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
+                    } else if (Build.VERSION.SDK_INT >= 28
+                            || (Build.VERSION.SDK_INT >= 27 && Build.VERSION.PREVIEW_SDK_INT != 0)) {
+                        AndroidNClassLoader.triggerDex2Oat(context, dexFile.getAbsolutePath());
                     } else {
                         DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
                     }

@@ -157,7 +157,7 @@ public class TinkerDexLoader {
             optimizeDir = new File(directory + "/" + INTERPRET_DEX_OPTIMIZE_PATH);
 
             TinkerDexOptimizer.optimizeAll(
-                legalFiles, optimizeDir, true, targetISA,
+                application, legalFiles, optimizeDir, true, targetISA,
                 new TinkerDexOptimizer.ResultCallback() {
                     long start;
 

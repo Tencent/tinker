@@ -43,10 +43,10 @@ class AndroidNClassLoader extends PathClassLoader {
     private static Object oldDexPathListHolder = null;
     private static String baseApkFullPath = null;
 
-    private final BaseDexClassLoader originClassLoader;
+    private final ClassLoader originClassLoader;
     private String applicationClassName;
 
-    private AndroidNClassLoader(String dexPath, BaseDexClassLoader parent, Application application) {
+    private AndroidNClassLoader(String dexPath, ClassLoader parent, Application application) {
         super(dexPath, parent.getParent());
         originClassLoader = parent;
         String name = application.getClass().getName();
@@ -54,6 +54,11 @@ class AndroidNClassLoader extends PathClassLoader {
             applicationClassName = name;
         }
         baseApkFullPath = application.getPackageCodePath();
+    }
+
+    private AndroidNClassLoader(String dexPath, ClassLoader parent) {
+        super(dexPath, parent);
+        originClassLoader = parent;
     }
 
     @SuppressWarnings("unchecked")
@@ -151,6 +156,11 @@ class AndroidNClassLoader extends PathClassLoader {
         }
 
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
+    }
+
+    public static void triggerDex2Oat(Context context, String dexPath) {
+        final ClassLoader bootClassLoader = Context.class.getClassLoader();
+        new AndroidNClassLoader(dexPath, bootClassLoader);
     }
 
     public static AndroidNClassLoader inject(BaseDexClassLoader originClassLoader, Application application) throws Exception {
