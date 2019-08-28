@@ -41,10 +41,10 @@ class AndroidNClassLoader extends PathClassLoader {
     private static final String TAG = "Tinker.NClassLoader";
 
     private static Object oldDexPathListHolder = null;
-    private static String baseApkFullPath = null;
+    private static String packageName = "";
 
     private final ClassLoader originClassLoader;
-    private String applicationClassName;
+    private String applicationClassName = "";
 
     private AndroidNClassLoader(String dexPath, ClassLoader parent, Application application) {
         super(dexPath, parent.getParent());
@@ -53,7 +53,7 @@ class AndroidNClassLoader extends PathClassLoader {
         if (name != null && !name.equals("android.app.Application")) {
             applicationClassName = name;
         }
-        baseApkFullPath = application.getPackageCodePath();
+        packageName = application.getPackageName();
     }
 
     private AndroidNClassLoader(String dexPath, ClassLoader parent) {
@@ -81,7 +81,10 @@ class AndroidNClassLoader extends PathClassLoader {
             if (dexFile == null || dexFile.getName() == null) {
                 continue;
             }
-            if (!dexFile.getName().equals(baseApkFullPath)) {
+            // Skip dexes which is not belong to our app.
+            // Then patched dexes would be injected in SystemClassLoaderAdder class.
+            final String dexFileName = dexFile.getName();
+            if (!dexFileName.contains("/" + packageName)) {
                 continue;
             }
             if (isFirstItem) {
