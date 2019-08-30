@@ -256,23 +256,27 @@ class TinkerPatchPlugin implements Plugin<Project> {
                         multidexTask.dependsOn multidexConfigTask
                     } else if (multidexTask == null && r8Task != null) {
                         r8Task.dependsOn multidexConfigTask
-                        Transform r8Transform = r8Task.getTransform()
-                        //R8 maybe forget to add multidex keep proguard file in agp 3.4.0, it's a agp bug!
-                        //If we don't do it, some classes will not keep in maindex such as loader's classes.
-                        //So tinker will not remove loader's classes, it will crashed in dalvik and will check TinkerTestDexLoad.isPatch failed in art.
-                        if (r8Transform.metaClass.hasProperty(r8Transform, "mainDexRulesFiles")) {
-                            File manifestMultiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
-                            if (manifestMultiDexKeepProguard != null) {
-                                //see difference between mainDexRulesFiles and mainDexListFiles in https://developer.android.com/studio/build/multidex?hl=zh-cn
-                                FileCollection originalFiles = r8Transform.metaClass.getProperty(r8Transform, 'mainDexRulesFiles')
-                                if (!originalFiles.contains(manifestMultiDexKeepProguard)) {
-                                    FileCollection replacedFiles = mProject.files(originalFiles, manifestMultiDexKeepProguard)
-                                    mProject.logger.error("R8Transform original mainDexRulesFiles: ${originalFiles.files}")
-                                    mProject.logger.error("R8Transform replaced mainDexRulesFiles: ${replacedFiles.files}")
-                                    //it's final, use reflect to replace it.
-                                    replaceKotlinFinalField("com.android.build.gradle.internal.transforms.R8Transform", "mainDexRulesFiles", r8Transform, replacedFiles)
+                        try {
+                            //R8 maybe forget to add multidex keep proguard file in agp 3.4.0, it's a agp bug!
+                            //If we don't do it, some classes will not keep in maindex such as loader's classes.
+                            //So tinker will not remove loader's classes, it will crashed in dalvik and will check TinkerTestDexLoad.isPatch failed in art.
+                            def r8Transform = r8Task.getTransform()
+                            if (r8Transform.metaClass.hasProperty(r8Transform, "mainDexRulesFiles")) {
+                                File manifestMultiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
+                                if (manifestMultiDexKeepProguard != null) {
+                                    //see difference between mainDexRulesFiles and mainDexListFiles in https://developer.android.com/studio/build/multidex?hl=zh-cn
+                                    FileCollection originalFiles = r8Transform.metaClass.getProperty(r8Transform, 'mainDexRulesFiles')
+                                    if (!originalFiles.contains(manifestMultiDexKeepProguard)) {
+                                        FileCollection replacedFiles = mProject.files(originalFiles, manifestMultiDexKeepProguard)
+                                        mProject.logger.error("R8Transform original mainDexRulesFiles: ${originalFiles.files}")
+                                        mProject.logger.error("R8Transform replaced mainDexRulesFiles: ${replacedFiles.files}")
+                                        //it's final, use reflect to replace it.
+                                        replaceKotlinFinalField("com.android.build.gradle.internal.transforms.R8Transform", "mainDexRulesFiles", r8Transform, replacedFiles)
+                                    }
                                 }
                             }
+                        } catch (Exception ignore) {
+                            //Maybe it's not a transform task after agp 3.6.0 so try catch it.
                         }
                     }
                     def collectMultiDexComponentsTask = getCollectMultiDexComponentsTask(variantName)
@@ -400,28 +404,44 @@ class TinkerPatchPlugin implements Plugin<Project> {
     }
 
     Task getR8Task(String variantName) {
-        String r8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
-        return mProject.tasks.findByName(r8TaskName)
+        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        def r8TransformTask = mProject.tasks.findByName(r8TransformTaskName)
+        if (r8TransformTask != null) {
+            return r8TransformTask
+        }
+
+        String r8TaskName = "minify${variantName.capitalize()}WithR8"
+        def r8Task = mProject.tasks.findByName(r8TaskName)
+        if (r8Task != null) {
+            return r8Task
+        }
     }
+
 
     @NotNull
     Task getObfuscateTask(String variantName) {
-        String proguardTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
-        def proguard = mProject.tasks.findByName(proguardTaskName)
-        if (proguard != null) {
-            return proguard
+        String proguardTransformTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
+        def proguardTransformTask = mProject.tasks.findByName(proguardTransformTaskName)
+        if (proguardTransformTask != null) {
+            return proguardTransformTask
         }
 
-        String r8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
-        def r8 = mProject.tasks.findByName(r8TaskName)
-        if (r8 != null) {
-            return r8
+        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        def r8TransformTask = mProject.tasks.findByName(r8TransformTaskName)
+        if (r8TransformTask != null) {
+            return r8TransformTask
+        }
+
+        String r8TaskName = "minify${variantName.capitalize()}WithR8"
+        def r8Task = mProject.tasks.findByName(r8TaskName)
+        if (r8Task != null) {
+            return r8Task
         }
 
         // in case that Google changes the task name in later versions
         throw new GradleException(String.format("The minifyEnabled is enabled for '%s', but " +
                 "tinker cannot find the task, we have try '%s' and '%s'.\n" +
-                "Please submit issue to us: %s", variant,
+                "Please submit issue to us: %s", variantName,
                 proguardTaskName, r8TaskName, ISSUE_URL))
     }
 
