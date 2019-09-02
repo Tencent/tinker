@@ -52,6 +52,7 @@ public class Configuration {
     protected static final String DEX_ISSUE = "dex";
     protected static final String SO_ISSUE  = "lib";
     protected static final String RES_ISSUE = "resource";
+    protected static final String ARKHOT_ISSUE = "arkHot";
 
     protected static final String SIGN_ISSUE           = "sign";
     protected static final String PACKAGE_CONFIG_ISSUE = "packageConfig";
@@ -73,6 +74,9 @@ public class Configuration {
     protected static final String ATTR_IGNORE_CHANGE             = "ignoreChange";
     protected static final String ATTR_IGNORE_CHANGE_WARNING     = "ignoreChangeWarning";
     protected static final String ATTR_RES_LARGE_MOD             = "largeModSize";
+
+    protected static final String ATTR_ARKHOT_PATH = "path";
+    protected static final String ATTR_ARKHOT_NAME = "name";
 
     protected static final String ATTR_LOADER       = "loader";
     protected static final String ATTR_CONFIG_FIELD = "configField";
@@ -145,6 +149,11 @@ public class Configuration {
 
     public boolean mUsingGradle;
 
+    /**
+     * ark patch
+     */
+    public String mArkHotPatchPath;
+    public String mArkHotPatchName;
 
     /**
      * use by command line with xml config
@@ -255,6 +264,8 @@ public class Configuration {
         createTempDirectory();
         checkInputPatternParameter();
 
+        mArkHotPatchName = param.arkHotPatchName;
+        mArkHotPatchPath = param.arkHotPatchPath;
     }
 
     @Override
@@ -310,6 +321,7 @@ public class Configuration {
         }
         sb.append("largeModSize:" + mLargeModSize + "kb\n");
         sb.append("useApplyResource:" + mUseApplyResource + "\n");
+        sb.append("ArkHot: "  + mArkHotPatchPath + " / " + mArkHotPatchName + "\n");
         return sb.toString();
     }
 
@@ -424,6 +436,8 @@ public class Configuration {
                     if (mUseSignAPk) {
                         readSignFromXml(node);
                     }
+                } else if (id.equals(ARKHOT_ISSUE)) {
+                    readArkHotPropertyFromXml(node);
                 } else {
                     System.err.println("unknown issue " + id);
                 }
@@ -474,6 +488,29 @@ public class Configuration {
         }
     }
 
+    private void readArkHotPropertyFromXml(Node node) throws IOException {
+        NodeList childNodes = node.getChildNodes();
+        if (childNodes.getLength() > 0) {
+            for (int j = 0, n = childNodes.getLength(); j < n; j++) {
+                Node child = childNodes.item(j);
+                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                    Element check = (Element) child;
+                    String tagName = check.getTagName();
+
+                    String value = check.getAttribute(ATTR_VALUE);
+                    if (tagName.equals(ATTR_ARKHOT_PATH)) {
+                        mArkHotPatchPath = value;
+                        mArkHotPatchPath.trim();
+                    } else if (tagName.equals(ATTR_ARKHOT_NAME)) {
+                        mArkHotPatchName = value;
+                        mArkHotPatchName.trim();
+                    } else {
+                        System.err.println("unknown dex tag " + tagName);
+                    }
+                }
+            }
+        }
+    }
 
     private void readSignFromXml(Node node) throws IOException {
         if (mSignatureFile != null) {

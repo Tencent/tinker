@@ -184,7 +184,17 @@ public class TinkerResourceIdTask extends DefaultTask {
         Map<String, String> styles = new HashMap<>()
         def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
         List<File> resDirCandidateList = new ArrayList<>()
-        resDirCandidateList.add(mergeResourcesTask.outputDir)
+        try {
+            def output = mergeResourcesTask.outputDir
+            if (output instanceof File) {
+                resDirCandidateList.add(output)
+            } else {
+                resDirCandidateList.add(output.getAsFile().get())
+            }
+        } catch (Exception ignore) {
+
+        }
+
         resDirCandidateList.add(new File(mergeResourcesTask.getIncrementalFolder(), "merged.dir"))
         resDirCandidateList.each {
             it.eachFileRecurse(FileType.FILES) {

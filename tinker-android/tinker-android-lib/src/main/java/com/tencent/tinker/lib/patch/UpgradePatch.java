@@ -158,6 +158,11 @@ public class UpgradePatch extends AbstractPatch {
             return false;
         }
 
+        if (!ArkHotDiffPatchInternal.tryRecoverArkHotLibrary(manager, signatureCheck,
+                context, patchVersionDirectory, destPatchFile)) {
+            return false;
+        }
+
         if (!BsDiffPatchInternal.tryRecoverLibraryFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile)) {
             TinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch library failed");
             return false;

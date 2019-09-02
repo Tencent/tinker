@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+ <?xml version="1.0" encoding="UTF-8"?>
 <!--command version is not recommended, you must add the tinker proguard file and multiDex keep file yourself-->
 <!--further, you must put TINKER_ID in your your AndroidManifest.xml such as <meta-data android:name="TINKER_ID" android:value="b168b32"/>-->
 <!--and you'd better use applymapping to build the patch apk-->
@@ -67,6 +67,11 @@
         <!--for library in assets, we would just recover them in the patch directory-->
         <!--you can get them in TinkerLoadResult with Tinker-->
         <pattern value="lib/*/*.so"/>
+    </issue>
+
+    <issue id="ark">
+        <path value="ark"/>
+        <name value="patch.apk"/>
     </issue>
 
     <issue id="resource">

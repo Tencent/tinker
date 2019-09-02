@@ -30,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
@@ -43,12 +44,13 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
-    private static final String  TAG       = "Tinker.TinkerInternals";
-    private static final boolean VM_IS_ART = isVmArt(System.getProperty("java.vm.version"));
-    private static final boolean VM_IS_JIT = isVmJitInternal();
-
+    private static final String  TAG                   = "Tinker.TinkerInternals";
+    private static final boolean VM_IS_ART             = isVmArt(System.getProperty("java.vm.version"));
+    private static final boolean VM_IS_JIT             = isVmJitInternal();
     private static final String  PATCH_PROCESS_NAME    = ":patch";
+
     private static       Boolean isPatchProcess        = null;
+    private static       Boolean isARKHotRunning       = false;
     /**
      * or you may just hardcode them in your app
      */
@@ -62,6 +64,35 @@ public class ShareTinkerInternals {
 
     public static boolean isVmJit() {
         return VM_IS_JIT && Build.VERSION.SDK_INT < 24;
+    }
+
+    public static boolean isArkHotRuning() {
+        if (isARKHotRunning != null) {
+            return isARKHotRunning;
+        }
+        isARKHotRunning = false;
+        Class<?> arkApplicationInfo = null;
+        try {
+            arkApplicationInfo = ClassLoader.getSystemClassLoader()
+                .getParent().loadClass("com.huawei.ark.app.ArkApplicationInfo");
+            Method isRunningInArkHot = null;
+            isRunningInArkHot = arkApplicationInfo.getDeclaredMethod("isRunningInArk");
+            isRunningInArkHot.setAccessible(true);
+            isARKHotRunning = (Boolean) isRunningInArkHot.invoke(null);
+        } catch (ClassNotFoundException e) {
+            Log.i(TAG, "class not found exception");
+        } catch (NoSuchMethodException e) {
+            Log.i(TAG, "no such method exception");
+        } catch (SecurityException e) {
+            Log.i(TAG, "security exception");
+        } catch (IllegalAccessException e) {
+            Log.i(TAG, "illegal access exception");
+        } catch (InvocationTargetException e) {
+            Log.i(TAG, "invocation target exception");
+        } catch (IllegalArgumentException e) {
+            Log.i(TAG, "illegal argument exception");
+        }
+        return isARKHotRunning;
     }
 
     public static boolean isAfterAndroidO() {
@@ -268,6 +299,10 @@ public class ShareTinkerInternals {
     public static boolean isTinkerEnabledForResource(int flag) {
         //FIXME:res flag depends dex flag
         return (flag & ShareConstants.TINKER_RESOURCE_MASK) != 0;
+    }
+
+    public static boolean isTinkerEnabledForArkHot(int flag) {
+        return (flag & ShareConstants.TINKER_ARKHOT_MASK) != 0;
     }
 
     public static String getTypeString(int type) {

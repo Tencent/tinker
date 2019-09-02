@@ -82,6 +82,12 @@ public class InputParam {
      */
     public final String                  sevenZipPath;
 
+    /**
+     * TinkerPatch ark
+     */
+    public final String arkHotPatchPath;
+    public final String arkHotPatchName;
+
     private InputParam(
             String oldApk,
             String newApk,
@@ -110,7 +116,9 @@ public class InputParam {
             boolean useApplyResource,
             HashMap<String, String> configFields,
 
-            String sevenZipPath
+        String sevenZipPath,
+        String arkHotPatchPath,
+        String arkHotPatchName
     ) {
         this.oldApk = oldApk;
         this.newApk = newApk;
@@ -141,6 +149,8 @@ public class InputParam {
         this.configFields = configFields;
 
         this.sevenZipPath = sevenZipPath;
+        this.arkHotPatchPath = arkHotPatchPath;
+        this.arkHotPatchName = arkHotPatchName;
     }
 
     public static class Builder {
@@ -201,6 +211,12 @@ public class InputParam {
          * tinkerPatch.sevenZip
          */
         private String                  sevenZipPath;
+
+        /**
+         * tinkerPatch ark
+         */
+        private String arkHotPatchPath;
+        private String arkHotPatchName;
 
 
         public Builder() {
@@ -331,6 +347,16 @@ public class InputParam {
             return this;
         }
 
+        public Builder setArkHotPath(String path) {
+            this.arkHotPatchPath = path;
+            return this;
+        }
+
+        public Builder setArkHotName(String name) {
+            this.arkHotPatchName = name;
+            return this;
+        }
+
         public InputParam create() {
             return new InputParam(
                     oldApk,
@@ -357,7 +383,9 @@ public class InputParam {
                     largeModSize,
                     useApplyResource,
                     configFields,
-                    sevenZipPath
+                    sevenZipPath,
+                    arkHotPatchPath,
+                    arkHotPatchName
             );
         }
     }

@@ -41,19 +41,24 @@ class AndroidNClassLoader extends PathClassLoader {
     private static final String TAG = "Tinker.NClassLoader";
 
     private static Object oldDexPathListHolder = null;
-    private static String baseApkFullPath = null;
+    private static String packageName = "";
 
-    private final BaseDexClassLoader originClassLoader;
-    private String applicationClassName;
+    private final ClassLoader originClassLoader;
+    private String applicationClassName = "";
 
-    private AndroidNClassLoader(String dexPath, BaseDexClassLoader parent, Application application) {
+    private AndroidNClassLoader(String dexPath, ClassLoader parent, Application application) {
         super(dexPath, parent.getParent());
         originClassLoader = parent;
         String name = application.getClass().getName();
         if (name != null && !name.equals("android.app.Application")) {
             applicationClassName = name;
         }
-        baseApkFullPath = application.getPackageCodePath();
+        packageName = application.getPackageName();
+    }
+
+    private AndroidNClassLoader(String dexPath, ClassLoader parent) {
+        super(dexPath, parent);
+        originClassLoader = parent;
     }
 
     @SuppressWarnings("unchecked")
@@ -76,7 +81,10 @@ class AndroidNClassLoader extends PathClassLoader {
             if (dexFile == null || dexFile.getName() == null) {
                 continue;
             }
-            if (!dexFile.getName().equals(baseApkFullPath)) {
+            // Skip dexes which is not belong to our app.
+            // Then patched dexes would be injected in SystemClassLoaderAdder class.
+            final String dexFileName = dexFile.getName();
+            if (!dexFileName.contains("/" + packageName)) {
                 continue;
             }
             if (isFirstItem) {
@@ -151,6 +159,11 @@ class AndroidNClassLoader extends PathClassLoader {
         }
 
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
+    }
+
+    public static void triggerDex2Oat(Context context, String dexPath) {
+        final ClassLoader bootClassLoader = Context.class.getClassLoader();
+        new AndroidNClassLoader(dexPath, bootClassLoader);
     }
 
     public static AndroidNClassLoader inject(BaseDexClassLoader originClassLoader, Application application) throws Exception {
