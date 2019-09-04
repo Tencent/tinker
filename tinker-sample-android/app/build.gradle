@@ -447,6 +447,7 @@ if (buildWithTinker()) {
 
                         from "${buildDir}/intermediates/symbols/${variant.dirName}/R.txt"
                         from "${buildDir}/intermediates/symbol_list/${variant.dirName}/R.txt"
+                        from "${buildDir}/intermediates/runtime_symbol_list/${variant.dirName}/R.txt"
                         into destPath
                         rename { String fileName ->
                             fileName.replace("R.txt", "${newFileNamePrefix}-R.txt")
