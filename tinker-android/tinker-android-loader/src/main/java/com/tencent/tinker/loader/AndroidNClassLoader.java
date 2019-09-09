@@ -142,6 +142,11 @@ class AndroidNClassLoader extends PathClassLoader {
 
     private static void reflectPackageInfoClassloader(Application application, ClassLoader reflectClassLoader) throws Exception {
         Context baseContext = (Context) ShareReflectUtil.findField(application, "mBase").get(application);
+        try {
+            ShareReflectUtil.findField(baseContext, "mClassLoader").set(baseContext, reflectClassLoader);
+        } catch (Throwable ignored) {
+            // Ignored.
+        }
         Object basePackageInfo = ShareReflectUtil.findField(baseContext, "mPackageInfo").get(baseContext);
         ShareReflectUtil.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
 
