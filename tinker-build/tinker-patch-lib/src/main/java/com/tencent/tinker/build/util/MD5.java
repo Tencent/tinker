@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.util;
 
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -219,7 +219,7 @@ public final class MD5 {
             return null;
 
         } finally {
-            StreamUtil.closeQuietly(fin);
+            IOHelper.closeQuietly(fin);
         }
     }
 
@@ -257,7 +257,7 @@ public final class MD5 {
             return null;
 
         } finally {
-            StreamUtil.closeQuietly(fin);
+            IOHelper.closeQuietly(fin);
         }
     }
 
@@ -277,7 +277,7 @@ public final class MD5 {
             return null;
 
         } finally {
-            StreamUtil.closeQuietly(fin);
+            IOHelper.closeQuietly(fin);
         }
     }
 }

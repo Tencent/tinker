@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.aapt;
 
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -44,7 +44,7 @@ public final class Generator {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
-                StreamUtil.closeQuietly(is);
+                IOHelper.closeQuietly(is);
             }
         }
         return result;
@@ -70,7 +70,7 @@ public final class Generator {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                StreamUtil.closeQuietly(inputStream);
+                IOHelper.closeQuietly(inputStream);
             }
         }
         return result;

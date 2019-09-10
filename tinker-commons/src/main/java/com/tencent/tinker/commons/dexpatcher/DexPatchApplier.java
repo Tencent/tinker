@@ -51,7 +51,7 @@ import com.tencent.tinker.commons.dexpatcher.algorithms.patch.TypeIdSectionPatch
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.TypeListSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -258,7 +258,7 @@ public class DexPatchApplier {
             os = new BufferedOutputStream(new FileOutputStream(file));
             executeAndSaveTo(os);
         } finally {
-            StreamUtil.closeQuietly(os);
+            IOHelper.closeQuietly(os);
         }
     }
 }

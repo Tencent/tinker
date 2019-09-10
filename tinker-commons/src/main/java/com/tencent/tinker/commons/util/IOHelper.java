@@ -7,7 +7,7 @@ import java.util.zip.ZipFile;
  * Created by tomystang on 2017/11/16.
  */
 
-public final class StreamUtil {
+public final class IOHelper {
 
     /**
      * Closes the given {@code obj}. Suppresses any exceptions.
