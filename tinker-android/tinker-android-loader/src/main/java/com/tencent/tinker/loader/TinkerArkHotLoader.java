@@ -39,7 +39,7 @@ import dalvik.system.PathClassLoader;
  * pre-load patch dex files
  */
 public class TinkerArkHotLoader {
-    private static final String TAG = "Tinker.TinkerArkHotLoader";
+    private static final String TAG = "Tinker.ArkHotLoader";
 
     private static final String ARK_MEAT_FILE = ShareConstants.ARKHOT_META_FILE;
     private static final String ARKHOT_PATH = ShareConstants.ARKHOTFIX_PATH;
