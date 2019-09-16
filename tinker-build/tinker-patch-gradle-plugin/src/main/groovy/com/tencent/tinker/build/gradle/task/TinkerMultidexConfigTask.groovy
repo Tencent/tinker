@@ -44,6 +44,11 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                     "-keep public class * extends android.app.Application {\n" +
                     "     <init>();\n" +
                     "     void attachBaseContext(android.content.Context);\n" +
+                    "}\n" +
+                    "\n" +
+                    "-keep public class * implements com.tencent.tinker.loader.app.ITinkerInlineFenceBridge {\n" +
+                    "    <init>(...);\n" +
+                    "    void attachBaseContext(com.tencent.tinker.loader.app.TinkerApplication,android.content.Context);\n" +
                     "}\n"
 
 

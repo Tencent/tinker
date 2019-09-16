@@ -25,3 +25,8 @@
 -keep class com.tencent.tinker.loader.** {
     <init>();
 }
+
+-keep public class * implements com.tencent.tinker.loader.app.ITinkerInlineFenceBridge {
+    <init>(...);
+    void attachBaseContext(com.tencent.tinker.loader.app.TinkerApplication,android.content.Context);
+}
