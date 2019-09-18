@@ -18,7 +18,7 @@ package com.tencent.tinker.build.gradle.task
 
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
-import com.tencent.tinker.commons.util.StreamUtil
+import com.tencent.tinker.commons.util.IOUtil
 import groovy.xml.Namespace
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -89,8 +89,8 @@ public class TinkerManifestTask extends DefaultTask {
                 printer.print(xml)
             }
         } finally {
-            StreamUtil.closeQuietly(pw)
-            StreamUtil.closeQuietly(isr)
+            IOUtil.closeQuietly(pw)
+            IOUtil.closeQuietly(isr)
         }
     }
 
@@ -124,7 +124,7 @@ public class TinkerManifestTask extends DefaultTask {
                 return null
             }
         } finally {
-            StreamUtil.closeQuietly(isr)
+            IOUtil.closeQuietly(isr)
         }
     }
 }

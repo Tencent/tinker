@@ -1,13 +1,24 @@
 package com.tencent.tinker.commons.util;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.zip.ZipFile;
 
 /**
  * Created by tomystang on 2017/11/16.
  */
 
-public final class StreamUtil {
+public final class IOUtil {
+    public static void copyStream(InputStream is, OutputStream os) throws IOException {
+        final byte[] buffer = new byte[4096];
+        int bytesRead = 0;
+        while ((bytesRead = is.read(buffer)) > 0) {
+            os.write(buffer, 0, bytesRead);
+        }
+        os.flush();
+    }
 
     /**
      * Closes the given {@code obj}. Suppresses any exceptions.

@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.lib.patch;
 
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOUtil;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -72,8 +72,8 @@ public class BasePatchInternal {
                     os.write(buffer, 0, length);
                 }
             } finally {
-                StreamUtil.closeQuietly(os);
-                StreamUtil.closeQuietly(is);
+                IOUtil.closeQuietly(os);
+                IOUtil.closeQuietly(is);
             }
             if (targetMd5 != null) {
                 if (isDex) {

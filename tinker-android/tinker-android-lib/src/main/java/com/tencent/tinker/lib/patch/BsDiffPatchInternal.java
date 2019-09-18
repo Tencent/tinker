@@ -21,7 +21,7 @@ import android.content.pm.ApplicationInfo;
 import android.os.SystemClock;
 
 import com.tencent.tinker.bsdiff.BSPatch;
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOUtil;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -183,8 +183,8 @@ public class BsDiffPatchInternal extends BasePatchInternal {
                         newStream = patch.getInputStream(patchFileEntry);
                         BSPatch.patchFast(oldStream, newStream, extractedFile);
                     } finally {
-                        StreamUtil.closeQuietly(oldStream);
-                        StreamUtil.closeQuietly(newStream);
+                        IOUtil.closeQuietly(oldStream);
+                        IOUtil.closeQuietly(newStream);
                     }
 
                     //go go go bsdiff get the
