@@ -4,6 +4,11 @@
     void onBaseContextAttached(android.content.Context);
 }
 
+-keep public class com.tencent.tinker.entry.TinkerApplicationInlineFence {
+    <init>(...);
+    void attachBaseContext(com.tencent.tinker.loader.app.TinkerApplication, android.content.Context);
+}
+
 -keep public class * extends com.tencent.tinker.loader.TinkerLoader {
     <init>();
 }
