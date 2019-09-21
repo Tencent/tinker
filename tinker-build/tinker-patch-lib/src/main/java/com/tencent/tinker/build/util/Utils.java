@@ -18,7 +18,7 @@ package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.decoder.ResDiffDecoder;
 import com.tencent.tinker.build.patch.Configuration;
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
 import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
@@ -192,9 +192,9 @@ public class Utils {
                 TinkerZipUtil.extractTinkerEntry(newApk, modZipEntry, out);
             }
         } finally {
-            StreamUtil.closeQuietly(out);
-            StreamUtil.closeQuietly(oldApk);
-            StreamUtil.closeQuietly(newApk);
+            IOHelper.closeQuietly(out);
+            IOHelper.closeQuietly(oldApk);
+            IOHelper.closeQuietly(newApk);
         }
         return MD5.getMD5(output);
     }

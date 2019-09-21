@@ -22,7 +22,7 @@ import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerDexOptimizer;
@@ -147,7 +147,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         failDexFiles.add(file);
                         lastThrowable = e;
                     } finally {
-                        StreamUtil.closeQuietly(elfFile);
+                        IOHelper.closeQuietly(elfFile);
                     }
                 }
             }
@@ -277,8 +277,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         inputStream = dexZipFile.getInputStream(rawDexZipEntry);
                         TinkerZipUtil.extractTinkerEntry(newDexZipEntry, inputStream, out);
                     } finally {
-                        StreamUtil.closeQuietly(inputStream);
-                        StreamUtil.closeQuietly(dexZipFile);
+                        IOHelper.closeQuietly(inputStream);
+                        IOHelper.closeQuietly(dexZipFile);
                     }
                 } else {
                     TinkerZipEntry dexZipEntry = new TinkerZipEntry(info.rawName);
@@ -290,7 +290,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             TinkerLog.printErrStackTrace(TAG, throwable, "merge classN file");
             result = false;
         } finally {
-            StreamUtil.closeQuietly(out);
+            IOHelper.closeQuietly(out);
         }
 
         if (result) {
@@ -605,8 +605,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 }
                 zos.closeEntry();
             } finally {
-                StreamUtil.closeQuietly(bis);
-                StreamUtil.closeQuietly(zos);
+                IOHelper.closeQuietly(bis);
+                IOHelper.closeQuietly(zos);
             }
 
             isExtractionSuccessful = SharePatchFileUtil.verifyDexFileMd5(extractTo, targetMd5);
@@ -685,21 +685,21 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             }
                             new DexPatchApplier(zis, patchFileStream).executeAndSaveTo(zos);
                         } finally {
-                            StreamUtil.closeQuietly(zis);
+                            IOHelper.closeQuietly(zis);
                         }
                     } else {
                         new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(zos);
                     }
                     zos.closeEntry();
                 } finally {
-                    StreamUtil.closeQuietly(zos);
+                    IOHelper.closeQuietly(zos);
                 }
             } else {
                 new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(patchedDexFile);
             }
         } finally {
-            StreamUtil.closeQuietly(oldDexStream);
-            StreamUtil.closeQuietly(patchFileStream);
+            IOHelper.closeQuietly(oldDexStream);
+            IOHelper.closeQuietly(patchFileStream);
         }
     }
 
