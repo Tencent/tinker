@@ -23,7 +23,7 @@ import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.util.DigestUtil;
-import com.tencent.tinker.commons.util.IOUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerDexOptimizer;
@@ -146,7 +146,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         failDexFiles.add(file);
                         lastThrowable = e;
                     } finally {
-                        IOUtil.closeQuietly(elfFile);
+                        IOHelper.closeQuietly(elfFile);
                     }
                 }
             }
@@ -284,13 +284,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         inputStream = dexZipFile.getInputStream(rawDexZipEntry);
                         try {
                             out.putNextEntry(newDexZipEntry);
-                            IOUtil.copyStream(inputStream, out);
+                            IOHelper.copyStream(inputStream, out);
                         } finally {
                             out.closeEntry();
                         }
                     } finally {
-                        IOUtil.closeQuietly(inputStream);
-                        IOUtil.closeQuietly(dexZipFile);
+                        IOHelper.closeQuietly(inputStream);
+                        IOHelper.closeQuietly(dexZipFile);
                     }
                 } else {
                     ZipEntry newDexZipEntry = new ZipEntry(info.rawName);
@@ -304,12 +304,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         is = new BufferedInputStream(new FileInputStream(dexFile));
                         try {
                             out.putNextEntry(newDexZipEntry);
-                            IOUtil.copyStream(is, out);
+                            IOHelper.copyStream(is, out);
                         } finally {
                             out.closeEntry();
                         }
                     } finally {
-                        IOUtil.closeQuietly(is);
+                        IOHelper.closeQuietly(is);
                     }
                 }
             }
@@ -317,7 +317,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             TinkerLog.printErrStackTrace(TAG, throwable, "merge classN file");
             result = false;
         } finally {
-            IOUtil.closeQuietly(out);
+            IOHelper.closeQuietly(out);
         }
 
         if (result) {
@@ -632,8 +632,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 }
                 zos.closeEntry();
             } finally {
-                IOUtil.closeQuietly(bis);
-                IOUtil.closeQuietly(zos);
+                IOHelper.closeQuietly(bis);
+                IOHelper.closeQuietly(zos);
             }
 
             isExtractionSuccessful = SharePatchFileUtil.verifyDexFileMd5(extractTo, targetMd5);
@@ -712,21 +712,21 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                             }
                             new DexPatchApplier(zis, patchFileStream).executeAndSaveTo(zos);
                         } finally {
-                            IOUtil.closeQuietly(zis);
+                            IOHelper.closeQuietly(zis);
                         }
                     } else {
                         new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(zos);
                     }
                     zos.closeEntry();
                 } finally {
-                    IOUtil.closeQuietly(zos);
+                    IOHelper.closeQuietly(zos);
                 }
             } else {
                 new DexPatchApplier(oldDexStream, patchFileStream).executeAndSaveTo(patchedDexFile);
             }
         } finally {
-            IOUtil.closeQuietly(oldDexStream);
-            IOUtil.closeQuietly(patchFileStream);
+            IOHelper.closeQuietly(oldDexStream);
+            IOHelper.closeQuietly(patchFileStream);
         }
     }
 

@@ -10,7 +10,7 @@ import java.util.zip.ZipFile;
  * Created by tomystang on 2017/11/16.
  */
 
-public final class IOUtil {
+public final class IOHelper {
     public static void copyStream(InputStream is, OutputStream os) throws IOException {
         final byte[] buffer = new byte[4096];
         int bytesRead = 0;

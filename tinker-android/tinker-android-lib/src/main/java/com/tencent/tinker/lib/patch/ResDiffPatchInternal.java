@@ -21,7 +21,7 @@ import android.content.pm.ApplicationInfo;
 import android.os.SystemClock;
 
 import com.tencent.tinker.bsdiff.BSPatch;
-import com.tencent.tinker.commons.util.IOUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -212,9 +212,9 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 // set comment back
                 out.setComment(oldApk.getComment());
             } finally {
-                IOUtil.closeQuietly(out);
-                IOUtil.closeQuietly(oldApk);
-                IOUtil.closeQuietly(newApk);
+                IOHelper.closeQuietly(out);
+                IOHelper.closeQuietly(oldApk);
+                IOHelper.closeQuietly(newApk);
 
                 //delete temp files
                 SharePatchFileUtil.deleteDir(tempResFileDirectory);
@@ -327,8 +327,8 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     newStream = patchZipFile.getInputStream(patchEntry);
                     BSPatch.patchFast(oldStream, newStream, largeModeInfo.file);
                 } finally {
-                    IOUtil.closeQuietly(oldStream);
-                    IOUtil.closeQuietly(newStream);
+                    IOHelper.closeQuietly(oldStream);
+                    IOHelper.closeQuietly(newStream);
                 }
                 // go go go bsdiff get the
                 if (!SharePatchFileUtil.verifyFileMd5(largeModeInfo.file, largeModeInfo.md5)) {

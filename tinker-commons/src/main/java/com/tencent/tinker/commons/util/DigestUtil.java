@@ -17,7 +17,7 @@ public final class DigestUtil {
             is = new BufferedInputStream(new FileInputStream(file));
             return getCRC32(is);
         } finally {
-            IOUtil.closeQuietly(is);
+            IOHelper.closeQuietly(is);
         }
     }
 

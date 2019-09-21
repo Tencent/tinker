@@ -18,7 +18,7 @@ package com.tencent.tinker.build.aapt;
 
 import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
-import com.tencent.tinker.commons.util.IOUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -73,7 +73,7 @@ public final class PatchUtil {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                IOUtil.closeQuietly(bufferedReader);
+                IOHelper.closeQuietly(bufferedReader);
             }
         }
         return rTypeResourceMap;

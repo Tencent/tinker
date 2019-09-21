@@ -20,7 +20,7 @@ import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
-import com.tencent.tinker.commons.util.IOUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -443,7 +443,7 @@ public class Configuration {
                 }
             }
         } finally {
-            IOUtil.closeQuietly(input);
+            IOHelper.closeQuietly(input);
         }
     }
 

@@ -17,7 +17,7 @@
 package com.tencent.tinker.build.apkparser;
 
 import com.tencent.tinker.build.patch.Configuration;
-import com.tencent.tinker.commons.util.IOUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -146,7 +146,7 @@ public class AndroidParser {
             fileOutputStream = new FileOutputStream(destFile);
             fileOutputStream.write(array);
         } finally {
-            IOUtil.closeQuietly(fileOutputStream);
+            IOHelper.closeQuietly(fileOutputStream);
         }
     }
 

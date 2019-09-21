@@ -54,7 +54,7 @@ import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 import com.tencent.tinker.commons.dexpatcher.struct.PatchOperation;
 import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
-import com.tencent.tinker.commons.util.IOUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -279,7 +279,7 @@ public class DexPatchGenerator {
             os = new BufferedOutputStream(new FileOutputStream(file));
             executeAndSaveTo(os);
         } finally {
-            IOUtil.closeQuietly(os);
+            IOHelper.closeQuietly(os);
         }
     }
 
