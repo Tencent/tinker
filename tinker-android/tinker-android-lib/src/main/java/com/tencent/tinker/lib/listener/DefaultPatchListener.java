@@ -81,8 +81,12 @@ public class DefaultPatchListener implements PatchListener {
                 @Override
                 public void onServiceDisconnected(ComponentName name) {
                     if (context != null && connection != null) {
-                        //Tinker在完成补丁后会尝试kill掉patch进程，如果不unbind会导致patch进程重启
-                        context.unbindService(connection);
+                        try {
+                            //Tinker在完成补丁后会尝试kill掉patch进程，如果不unbind会导致patch进程重启
+                            context.unbindService(connection);
+                        } catch (Throwable ignored) {
+                            // Ignored.
+                        }
                     }
                 }
 
