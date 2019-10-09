@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
+import com.tencent.tinker.commons.util.DigestUtil;
 import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
@@ -33,14 +34,12 @@ import com.tencent.tinker.loader.shareutil.ShareElfFile;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
+import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -246,6 +245,15 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return result;
     }
 
+    private static ZipEntry makeStoredZipEntry(ZipEntry originalEntry, String realDexName) {
+        final ZipEntry result = new ZipEntry(realDexName);
+        result.setMethod(ZipEntry.STORED);
+        result.setCompressedSize(originalEntry.getSize());
+        result.setSize(originalEntry.getSize());
+        result.setCrc(originalEntry.getCrc());
+        return result;
+    }
+
     private static boolean mergeClassNDexFiles(final Context context, final File patchFile, final String dexFilePath) {
         // only merge for art vm
         if (patchList.isEmpty() || !isVmArt) {
@@ -261,30 +269,49 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         }
         long start = System.currentTimeMillis();
         boolean result = true;
-        TinkerZipOutputStream out = null;
+        AlignedZipOutputStream out = null;
         try {
-            out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(classNFile)));
+            out = new AlignedZipOutputStream(new BufferedOutputStream(new FileOutputStream(classNFile)));
             for (ShareDexDiffPatchInfo info : classNDexInfo.keySet()) {
                 File dexFile = classNDexInfo.get(info);
-
                 if (info.isJarMode) {
-                    TinkerZipFile dexZipFile = null;
+                    ZipFile dexZipFile = null;
                     InputStream inputStream = null;
                     try {
-                        dexZipFile = new TinkerZipFile(dexFile);
-                        TinkerZipEntry rawDexZipEntry = dexZipFile.getEntry(ShareConstants.DEX_IN_JAR);
-                        TinkerZipEntry newDexZipEntry = new TinkerZipEntry(rawDexZipEntry, info.rawName);
+                        dexZipFile = new ZipFile(dexFile);
+                        ZipEntry rawDexZipEntry = dexZipFile.getEntry(ShareConstants.DEX_IN_JAR);
+                        ZipEntry newDexZipEntry = makeStoredZipEntry(rawDexZipEntry, info.rawName);
                         inputStream = dexZipFile.getInputStream(rawDexZipEntry);
-                        TinkerZipUtil.extractTinkerEntry(newDexZipEntry, inputStream, out);
+                        try {
+                            out.putNextEntry(newDexZipEntry);
+                            IOHelper.copyStream(inputStream, out);
+                        } finally {
+                            out.closeEntry();
+                        }
                     } finally {
                         IOHelper.closeQuietly(inputStream);
                         IOHelper.closeQuietly(dexZipFile);
                     }
                 } else {
-                    TinkerZipEntry dexZipEntry = new TinkerZipEntry(info.rawName);
-                    TinkerZipUtil.extractLargeModifyFile(dexZipEntry, dexFile, Long.parseLong(info.newOrPatchedDexCrC), out);
-                }
+                    ZipEntry newDexZipEntry = new ZipEntry(info.rawName);
+                    newDexZipEntry.setMethod(ZipEntry.STORED);
+                    newDexZipEntry.setCompressedSize(dexFile.length());
+                    newDexZipEntry.setSize(dexFile.length());
+                    newDexZipEntry.setCrc(DigestUtil.getCRC32(dexFile));
 
+                    InputStream is = null;
+                    try {
+                        is = new BufferedInputStream(new FileInputStream(dexFile));
+                        try {
+                            out.putNextEntry(newDexZipEntry);
+                            IOHelper.copyStream(is, out);
+                        } finally {
+                            out.closeEntry();
+                        }
+                    } finally {
+                        IOHelper.closeQuietly(is);
+                    }
+                }
             }
         } catch (Throwable throwable) {
             TinkerLog.printErrStackTrace(TAG, throwable, "merge classN file");

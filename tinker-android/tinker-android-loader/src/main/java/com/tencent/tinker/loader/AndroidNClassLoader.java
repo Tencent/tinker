@@ -168,7 +168,10 @@ class AndroidNClassLoader extends PathClassLoader {
 
     public static void triggerDex2Oat(Context context, String dexPath) {
         final ClassLoader bootClassLoader = Context.class.getClassLoader();
-        new AndroidNClassLoader(dexPath, bootClassLoader);
+        // Suggestion from Huawei: Only PathClassLoader (Perhaps other ClassLoaders known by system
+        // like DexClassLoader also work ?) can be used here to trigger dex2oat so that JIT
+        // mechanism can participate in runtime Dex optimization.
+        new PathClassLoader(dexPath, bootClassLoader);
     }
 
     public static AndroidNClassLoader inject(BaseDexClassLoader originClassLoader, Application application) throws Exception {
