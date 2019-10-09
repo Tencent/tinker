@@ -245,10 +245,10 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return result;
     }
 
-    private static ZipEntry makeStoredZipEntry(ZipEntry originalEntry) {
-        final ZipEntry result = new ZipEntry(originalEntry.getName());
+    private static ZipEntry makeStoredZipEntry(ZipEntry originalEntry, String realDexName) {
+        final ZipEntry result = new ZipEntry(realDexName);
         result.setMethod(ZipEntry.STORED);
-        result.setCompressedSize(originalEntry.getCompressedSize());
+        result.setCompressedSize(originalEntry.getSize());
         result.setSize(originalEntry.getSize());
         result.setCrc(originalEntry.getCrc());
         return result;
@@ -280,7 +280,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     try {
                         dexZipFile = new ZipFile(dexFile);
                         ZipEntry rawDexZipEntry = dexZipFile.getEntry(ShareConstants.DEX_IN_JAR);
-                        ZipEntry newDexZipEntry = makeStoredZipEntry(rawDexZipEntry);
+                        ZipEntry newDexZipEntry = makeStoredZipEntry(rawDexZipEntry, info.rawName);
                         inputStream = dexZipFile.getInputStream(rawDexZipEntry);
                         try {
                             out.putNextEntry(newDexZipEntry);
