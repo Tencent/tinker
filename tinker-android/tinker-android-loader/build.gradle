@@ -16,6 +16,10 @@ android {
 
         manifestPlaceholders = [TINKER_VERSION: "${rootProject.ext.VERSION_NAME}"]
     }
+
+    lintOptions {
+        disable 'LongLogTag'
+    }
 }
 
 dependencies {

@@ -18,7 +18,7 @@ package com.tencent.tinker.build.gradle.task
 
 import com.tencent.tinker.build.gradle.TinkerPatchPlugin
 import com.tencent.tinker.build.util.FileOperation
-import com.tencent.tinker.commons.util.StreamUtil
+import com.tencent.tinker.commons.util.IOHelper
 import groovy.xml.Namespace
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -30,11 +30,11 @@ import org.gradle.api.tasks.TaskAction
  * @author zhangshaowen
  */
 public class TinkerManifestTask extends DefaultTask {
-    static final String MANIFEST_XML = TinkerPatchPlugin.TINKER_INTERMEDIATES + "AndroidManifest.xml"
     static final String TINKER_ID = "TINKER_ID"
     static final String TINKER_ID_PREFIX = "tinker_id_"
 
-    String manifestPath
+    List<String> manifestPaths = []
+
     TinkerManifestTask() {
         group = 'tinker'
     }
@@ -49,24 +49,28 @@ public class TinkerManifestTask extends DefaultTask {
 
         tinkerValue = TINKER_ID_PREFIX + tinkerValue
 
-        project.logger.error("tinker add ${tinkerValue} to your AndroidManifest.xml ${manifestPath}")
+        def agpIntermediatesDir = new File(project.buildDir, 'intermediates')
+        for (String manifestPath : manifestPaths) {
+            project.logger.error("tinker add ${tinkerValue} to your AndroidManifest.xml ${manifestPath}")
 
-        writeManifestMeta(manifestPath, TINKER_ID, tinkerValue)
-        addApplicationToLoaderPattern()
-        File manifestFile = new File(manifestPath)
-        if (manifestFile.exists()) {
-            FileOperation.copyFileUsingStream(manifestFile, project.file(MANIFEST_XML))
-            project.logger.error("tinker gen AndroidManifest.xml in ${MANIFEST_XML}")
+            writeManifestMeta(manifestPath, TINKER_ID, tinkerValue)
+            addApplicationToLoaderPattern(manifestPath)
+            File manifestFile = new File(manifestPath)
+            if (manifestFile.exists()) {
+                def manifestRelPath = agpIntermediatesDir.toPath().relativize(manifestFile.toPath()).toString()
+                def manifestDestPath = new File(project.file(TinkerPatchPlugin.TINKER_INTERMEDIATES), manifestRelPath)
+                FileOperation.copyFileUsingStream(manifestFile, manifestDestPath)
+                project.logger.error("tinker gen AndroidManifest.xml in ${manifestDestPath}")
+            }
         }
-
     }
 
-    void writeManifestMeta(String path, String name, String value) {
+    static void writeManifestMeta(String manifestPath, String name, String value) {
         def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
         def isr = null
         def pw = null
         try {
-            isr = new InputStreamReader(new FileInputStream(path), "utf-8")
+            isr = new InputStreamReader(new FileInputStream(manifestPath), "utf-8")
             def xml = new XmlParser().parse(isr)
             def application = xml.application[0]
             if (application) {
@@ -83,18 +87,18 @@ public class TinkerManifestTask extends DefaultTask {
                 application.appendNode('meta-data', [(ns.name): name, (ns.value): value])
 
                 // Write the manifest file
-                pw = new PrintWriter(path, "utf-8")
+                pw = new PrintWriter(manifestPath, "utf-8")
                 def printer = new XmlNodePrinter(pw)
                 printer.preserveWhitespace = true
                 printer.print(xml)
             }
         } finally {
-            StreamUtil.closeQuietly(pw)
-            StreamUtil.closeQuietly(isr)
+            IOHelper.closeQuietly(pw)
+            IOHelper.closeQuietly(isr)
         }
     }
 
-    void addApplicationToLoaderPattern() {
+    void addApplicationToLoaderPattern(String manifestPath) {
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
         String applicationName = readManifestApplicationName(manifestPath)
 
@@ -107,13 +111,12 @@ public class TinkerManifestTask extends DefaultTask {
             loader.add(loaderClass)
             project.logger.error("tinker add ${loaderClass} to dex loader pattern")
         }
-
     }
 
-    String readManifestApplicationName(String path) {
+    static String readManifestApplicationName(String manifestPath) {
         def isr = null
         try {
-            isr = new InputStreamReader(new FileInputStream(path), "utf-8")
+            isr = new InputStreamReader(new FileInputStream(manifestPath), "utf-8")
             def xml = new XmlParser().parse(isr)
             def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
 
@@ -124,7 +127,7 @@ public class TinkerManifestTask extends DefaultTask {
                 return null
             }
         } finally {
-            StreamUtil.closeQuietly(isr)
+            IOHelper.closeQuietly(isr)
         }
     }
 }

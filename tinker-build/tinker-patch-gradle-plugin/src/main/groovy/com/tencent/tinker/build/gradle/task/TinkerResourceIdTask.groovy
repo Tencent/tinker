@@ -178,13 +178,23 @@ public class TinkerResourceIdTask extends DefaultTask {
     }
 
     /**
-     * get real name for style type resources in R.txt by values files
+     * get real name for all resources in R.txt by values files
      */
-    Map<String, String> getStyles() {
-        Map<String, String> styles = new HashMap<>()
+    Map<String, String> getRealNameMap() {
+        Map<String, String> realNameMap = new HashMap<>()
         def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
         List<File> resDirCandidateList = new ArrayList<>()
-        resDirCandidateList.add(mergeResourcesTask.outputDir)
+        try {
+            def output = mergeResourcesTask.outputDir
+            if (output instanceof File) {
+                resDirCandidateList.add(output)
+            } else {
+                resDirCandidateList.add(output.getAsFile().get())
+            }
+        } catch (Exception ignore) {
+
+        }
+
         resDirCandidateList.add(new File(mergeResourcesTask.getIncrementalFolder(), "merged.dir"))
         resDirCandidateList.each {
             it.eachFileRecurse(FileType.FILES) {
@@ -198,15 +208,16 @@ public class TinkerResourceIdTask extends DefaultTask {
         }
         project.file(RESOURCE_VALUES_BACKUP).eachFileRecurse(FileType.FILES) {
             new XmlParser().parse(it).each {
-                if ("style".equalsIgnoreCase("${it.name()}")) {
-                    String originalStyle = "${it.@name}".toString()
-                    //replace . to _
-                    String sanitizeName = originalStyle.replaceAll("[.:]", "_");
-                    styles.put(sanitizeName, originalStyle)
+                String originalName = "${it.@name}".toString()
+                //replace . to _ for all types with the same converting rule
+                if (originalName.contains('.') || originalName.contains(':')) {
+                    // only record names with '.' or ':', for sake of memory
+                    String sanitizeName = originalName.replaceAll("[.:]", "_");
+                    realNameMap.put(sanitizeName, originalName)
                 }
             }
         }
-        return styles
+        return realNameMap
     }
 
     /**
@@ -214,25 +225,22 @@ public class TinkerResourceIdTask extends DefaultTask {
      */
     ArrayList<String> getSortedStableIds(Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap) {
         List<String> sortedLines = new ArrayList<>()
-        Map<String, String> styles = getStyles()
+        Map<String, String> realNameMap = getRealNameMap()
         rTypeResourceMap?.each { key, entries ->
             entries.each {
+                //the name in R.txt which has replaced . to _
+                //so we should get the original name for it
+                def name = realNameMap.get(it.name) ?: it.name
                 if (it.type == RDotTxtEntry.RType.STYLEABLE) {
                     //ignore styleable type, also public.xml ignore it.
                     return
-                } else if (it.type == RDotTxtEntry.RType.STYLE) {
-                    //the name in R.txt for style type which has replaced . to _
-                    //so we should get the original name for it
-                    sortedLines.add("${applicationId}:${it.type}/${styles.get(it.name)} = ${it.idValue}")
-                } else if (it.type == RDotTxtEntry.RType.DRAWABLE) {
+                } else {
+                    sortedLines.add("${applicationId}:${it.type}/${name} = ${it.idValue}")
+
                     //there is a special resource type for drawable which called nested resource.
                     //such as avd_hide_password and avd_show_password resource in support design sdk.
                     //the nested resource is start with $, such as $avd_hide_password__0 and $avd_hide_password__1
                     //but there is none nested resource in R.txt, so ignore it just now.
-                    sortedLines.add("${applicationId}:${it.type}/${it.name} = ${it.idValue}")
-                } else {
-                    //other resource type which format is packageName:resType/resName = resId
-                    sortedLines.add("${applicationId}:${it.type}/${it.name} = ${it.idValue}")
                 }
             }
         }

@@ -41,19 +41,24 @@ class AndroidNClassLoader extends PathClassLoader {
     private static final String TAG = "Tinker.NClassLoader";
 
     private static Object oldDexPathListHolder = null;
-    private static String baseApkFullPath = null;
+    private static String packageName = "";
 
-    private final BaseDexClassLoader originClassLoader;
-    private String applicationClassName;
+    private final ClassLoader originClassLoader;
+    private String applicationClassName = "";
 
-    private AndroidNClassLoader(String dexPath, BaseDexClassLoader parent, Application application) {
+    private AndroidNClassLoader(String dexPath, ClassLoader parent, Application application) {
         super(dexPath, parent.getParent());
         originClassLoader = parent;
         String name = application.getClass().getName();
         if (name != null && !name.equals("android.app.Application")) {
             applicationClassName = name;
         }
-        baseApkFullPath = application.getPackageCodePath();
+        packageName = application.getPackageName();
+    }
+
+    private AndroidNClassLoader(String dexPath, ClassLoader parent) {
+        super(dexPath, parent);
+        originClassLoader = parent;
     }
 
     @SuppressWarnings("unchecked")
@@ -76,7 +81,10 @@ class AndroidNClassLoader extends PathClassLoader {
             if (dexFile == null || dexFile.getName() == null) {
                 continue;
             }
-            if (!dexFile.getName().equals(baseApkFullPath)) {
+            // Skip dexes which is not belong to our app.
+            // Then patched dexes would be injected in SystemClassLoaderAdder class.
+            final String dexFileName = dexFile.getName();
+            if (!dexFileName.contains("/" + packageName)) {
                 continue;
             }
             if (isFirstItem) {
@@ -134,6 +142,11 @@ class AndroidNClassLoader extends PathClassLoader {
 
     private static void reflectPackageInfoClassloader(Application application, ClassLoader reflectClassLoader) throws Exception {
         Context baseContext = (Context) ShareReflectUtil.findField(application, "mBase").get(application);
+        try {
+            ShareReflectUtil.findField(baseContext, "mClassLoader").set(baseContext, reflectClassLoader);
+        } catch (Throwable ignored) {
+            // Ignored.
+        }
         Object basePackageInfo = ShareReflectUtil.findField(baseContext, "mPackageInfo").get(baseContext);
         ShareReflectUtil.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
 
@@ -151,6 +164,14 @@ class AndroidNClassLoader extends PathClassLoader {
         }
 
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
+    }
+
+    public static void triggerDex2Oat(Context context, String dexPath) {
+        final ClassLoader bootClassLoader = Context.class.getClassLoader();
+        // Suggestion from Huawei: Only PathClassLoader (Perhaps other ClassLoaders known by system
+        // like DexClassLoader also work ?) can be used here to trigger dex2oat so that JIT
+        // mechanism can participate in runtime Dex optimization.
+        new PathClassLoader(dexPath, bootClassLoader);
     }
 
     public static AndroidNClassLoader inject(BaseDexClassLoader originClassLoader, Application application) throws Exception {

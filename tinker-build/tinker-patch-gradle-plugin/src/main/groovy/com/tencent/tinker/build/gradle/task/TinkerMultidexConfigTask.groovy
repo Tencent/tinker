@@ -29,22 +29,27 @@ public class TinkerMultidexConfigTask extends DefaultTask {
     static final String MULTIDEX_CONFIG_PATH = TinkerPatchPlugin.TINKER_INTERMEDIATES + "tinker_multidexkeep.pro"
     static final String MULTIDEX_CONFIG_SETTINGS =
             "-keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
-                    "    <init>(...);\n" +
-                    "    void onBaseContextAttached(android.content.Context);\n" +
-                    "}\n" +
-                    "\n" +
-                    "-keep public class com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
-                    "    *;\n" +
-                    "}\n" +
-                    "\n" +
-                    "-keep public class * extends com.tencent.tinker.loader.TinkerLoader {\n" +
-                    "    <init>(...);\n" +
-                    "}\n" +
-                    "\n" +
-                    "-keep public class * extends android.app.Application {\n" +
-                    "     <init>();\n" +
-                    "     void attachBaseContext(android.content.Context);\n" +
-                    "}\n"
+            "    <init>(...);\n" +
+            "    void onBaseContextAttached(android.content.Context);\n" +
+            "}\n" +
+            "\n" +
+            "-keep public class * implements com.tencent.tinker.loader.app.ITinkerInlineFenceBridge {\n" +
+            "    <init>(...);\n" +
+            "    void attachBaseContext(com.tencent.tinker.loader.app.TinkerApplication, android.content.Context);\n" +
+            "}\n" +
+            "\n" +
+            "-keep public class * extends com.tencent.tinker.loader.TinkerLoader {\n" +
+            "    <init>(...);\n" +
+            "}\n" +
+            "\n" +
+            "-keep class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {\n" +
+            "    <init>();\n" +
+            "}\n" +
+            "\n" +
+            "-keep public class * extends android.app.Application {\n" +
+            "     <init>();\n" +
+            "     void attachBaseContext(android.content.Context);\n" +
+            "}\n"
 
 
     def applicationVariant
