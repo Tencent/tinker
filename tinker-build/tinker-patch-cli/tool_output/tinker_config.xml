@@ -1,4 +1,4 @@
- <?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--command version is not recommended, you must add the tinker proguard file and multiDex keep file yourself-->
 <!--further, you must put TINKER_ID in your your AndroidManifest.xml such as <meta-data android:name="TINKER_ID" android:value="b168b32"/>-->
 <!--and you'd better use applymapping to build the patch apk-->
@@ -24,7 +24,8 @@
 
         <!--if you don't set sevenZip path, we just use 7za to try-->
         <sevenZipPath value="/usr/local/bin/7za"/>
-
+        <!-- demo for windows-->
+        <!-- <sevenZipPath value="C:\Program Files (x86)\7-Zip\7z.exe"/> -->
         <!--Whether tinker should treat the base apk as the one being protected by app-->
         <!--protection tools.-->
         <!--If this attribute is true, the generated patch package will contain a-->
@@ -69,8 +70,8 @@
         <pattern value="lib/*/*.so"/>
     </issue>
 
-    <issue id="ark">
-        <path value="ark"/>
+    <issue id="arkHot">
+        <path value="arkHot"/>
         <name value="patch.apk"/>
     </issue>
 
@@ -115,7 +116,7 @@
     <!--sign, if you want to sign the apk, and if you want to use 7zip, you must fill in the following data-->
     <issue id="sign">
         <!--the signature file path, in window use \, in linux use /, and the default path is the running location-->
-        <path value="tool_output/release.keystore"/>
+        <path value="release.keystore"/>
         <!--storepass-->
         <storepass value="testres"/>
         <!--keypass-->
