@@ -420,11 +420,15 @@ class TinkerPatchPlugin implements Plugin<Project> {
             return r8Task
         }
 
+        String proguardTaskName = "minify${variantName.capitalize()}WithProguard"
+        def proguardTask = mProject.tasks.findByName(proguardTaskName)
+        if (proguardTask != null) {
+            return proguardTask
+        }
+
         // in case that Google changes the task name in later versions
         throw new GradleException(String.format("The minifyEnabled is enabled for '%s', but " +
-                "tinker cannot find the task, we have try '%s' and '%s'.\n" +
-                "Please submit issue to us: %s", variantName,
-                proguardTaskName, r8TaskName, ISSUE_URL))
+                "tinker cannot find the task. Please submit issue to us: %s", variantName, ISSUE_URL))
     }
 
     Task getInstantRunTask(String variantName) {
@@ -450,9 +454,10 @@ class TinkerPatchPlugin implements Plugin<Project> {
         File multiDexKeepProguard = null
 
         try {
-            File file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
-                    Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
-                            .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
+            //for kotlin
+            def file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
+                    Class.forName('com.android.build.gradle.internal.scope.InternalArtifactType$LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES')
+                            .getDeclaredField("INSTANCE")
                             .get(null)
             ).getOrNull()?.getAsFile()
             if (file != null && file.getName() != '__EMPTY_DIR__') {
@@ -460,6 +465,21 @@ class TinkerPatchPlugin implements Plugin<Project> {
             }
         } catch (Throwable ignore) {
         }
+
+        if (multiDexKeepProguard == null) {
+            try {
+                File file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
+                        Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
+                                .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
+                                .get(null)
+                ).getOrNull()?.getAsFile()
+                if (file != null && file.getName() != '__EMPTY_DIR__') {
+                    multiDexKeepProguard = file
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+
 
         if (multiDexKeepProguard == null) {
             try {
