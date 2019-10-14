@@ -451,6 +451,7 @@ public class SharePatchFileUtil {
             String md5 = getMD5(fin);
             return md5;
         } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
             return null;
         } finally {
             closeQuietly(fin);
