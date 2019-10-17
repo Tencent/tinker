@@ -49,6 +49,8 @@ public class TinkerLoadResult {
 
     public boolean systemOTA;
 
+    public boolean optimizeOverdue;
+
     //@Nullable
     public File                    patchVersionDirectory;
     //@Nullable
@@ -80,6 +82,7 @@ public class TinkerLoadResult {
         systemOTA = ShareIntentUtil.getBooleanExtra(intentResult, ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, false);
         oatDir = ShareIntentUtil.getStringExtra(intentResult, ShareIntentUtil.INTENT_PATCH_OAT_DIR);
         useInterpretMode = ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH.equals(oatDir);
+        optimizeOverdue = systemOTA || useInterpretMode;
 
         final boolean isMainProcess = tinker.isMainProcess();
 
@@ -222,6 +225,7 @@ public class TinkerLoadResult {
                 if (dexOptPath != null) {
                     //we only pass one missing file
                     TinkerLog.e(TAG, "patch dex opt file not found:%s", dexOptPath);
+                    optimizeOverdue = true;
                     tinker.getLoadReporter().onLoadFileNotFound(new File(dexOptPath),
                         ShareConstants.TYPE_DEX_OPT, false);
 
