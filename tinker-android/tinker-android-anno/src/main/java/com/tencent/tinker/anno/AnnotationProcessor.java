@@ -91,7 +91,9 @@ public class AnnotationProcessor extends AbstractProcessor {
                 .replaceAll("%APPLICATION_LIFE_CYCLE%", lifeCyclePackageName + "." + lifeCycleClassName)
                 .replaceAll("%TINKER_FLAGS%", "" + ca.flags())
                 .replaceAll("%TINKER_LOADER_CLASS%", "" + loaderClassName)
-                .replaceAll("%TINKER_LOAD_VERIFY_FLAG%", "" + ca.loadVerifyFlag());
+                .replaceAll("%TINKER_LOAD_VERIFY_FLAG%", "" + ca.loadVerifyFlag())
+                .replaceAll("%GPEXPANSION_MODE%", "" + ca.gpExpansionMode())
+                .replaceAll("%CLASSLOADER_INITIALIZER_CLASSNAME%", "" + ca.classLoaderInitializerClassName());
 
             try {
                 JavaFileObject fileObject = processingEnv.getFiler().createSourceFile(applicationPackageName + "." + applicationClassName);

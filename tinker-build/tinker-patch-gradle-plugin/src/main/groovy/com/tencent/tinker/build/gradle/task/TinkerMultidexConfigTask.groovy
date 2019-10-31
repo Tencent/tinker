@@ -49,6 +49,10 @@ public class TinkerMultidexConfigTask extends DefaultTask {
             "-keep public class * extends android.app.Application {\n" +
             "     <init>();\n" +
             "     void attachBaseContext(android.content.Context);\n" +
+            "}\n" +
+            "\n" +
+            "-keep public class * implements com.tencent.tinker.loader.app.IClassLoaderInitializer {\n" +
+            "     *;\n" +
             "}\n"
 
 

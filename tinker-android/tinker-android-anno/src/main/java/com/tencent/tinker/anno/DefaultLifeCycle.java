@@ -39,4 +39,8 @@ public @interface DefaultLifeCycle {
     int flags();
 
     boolean loadVerifyFlag() default false;
+
+    boolean gpExpansionMode() default false;
+
+    String classLoaderInitializerClassName() default "";
 }

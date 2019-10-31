@@ -25,6 +25,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.SystemClock;
 
+import com.tencent.tinker.loader.SystemClassLoaderAdder;
 import com.tencent.tinker.loader.TinkerLoader;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.TinkerUncaughtHandler;
@@ -34,6 +35,8 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+
+import dalvik.system.BaseDexClassLoader;
 
 /**
  * Created by zhangshaowen on 16/3/8.
@@ -59,6 +62,9 @@ public abstract class TinkerApplication extends Application {
     private final String delegateClassName;
     private final String loaderClassName;
 
+    private final boolean gpExpansionMode;
+    private final String classLoaderInitializerClassName;
+
     /**
      * if we have load patch, we should use safe mode
      */
@@ -68,19 +74,23 @@ public abstract class TinkerApplication extends Application {
     private ITinkerInlineFenceBridge mBridge = null;
 
     protected TinkerApplication(int tinkerFlags) {
-        this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike", TinkerLoader.class.getName(), false);
+        this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike",
+                TinkerLoader.class.getName(), false, false, "");
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
-                                String loaderClassName, boolean tinkerLoadVerifyFlag) {
+                                String loaderClassName, boolean tinkerLoadVerifyFlag,
+                                boolean gpExpansionMode, String classLoaderInitializerClassName) {
         this.tinkerFlags = tinkerFlags;
         this.delegateClassName = delegateClassName;
         this.loaderClassName = loaderClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
+        this.gpExpansionMode = gpExpansionMode;
+        this.classLoaderInitializerClassName = classLoaderInitializerClassName;
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
+        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, false, "");
     }
 
     private void loadTinker() {
@@ -95,6 +105,30 @@ public abstract class TinkerApplication extends Application {
             tinkerResultIntent = new Intent();
             ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_PATCH_UNKNOWN_EXCEPTION);
             tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, e);
+        }
+    }
+
+    private void replaceAppClassLoader() {
+        ClassLoader newClassLoader = null;
+        try {
+            newClassLoader = SystemClassLoaderAdder.injectNewClassLoaderOnDemand(this,
+                    (BaseDexClassLoader) TinkerApplication.class.getClassLoader());
+        } catch (Throwable thr) {
+            tinkerResultIntent = new Intent();
+            ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INJECT_CLASSLOADER_FAIL);
+            tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
+            return;
+        }
+        if (classLoaderInitializerClassName != null && !classLoaderInitializerClassName.isEmpty()) {
+            try {
+                final Class<?> classLoaderInitializerClazz = Class.forName(classLoaderInitializerClassName, false, newClassLoader);
+                IClassLoaderInitializer classLoaderInitializer = (IClassLoaderInitializer) classLoaderInitializerClazz.newInstance();
+                classLoaderInitializer.initializeClassLoader(this, newClassLoader);
+            } catch (Throwable thr) {
+                tinkerResultIntent = new Intent();
+                ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INIT_CLASSLOADER_FAIL);
+                tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
+            }
         }
     }
 
@@ -123,7 +157,11 @@ public abstract class TinkerApplication extends Application {
         try {
             final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
             final long applicationStartMillisTime = System.currentTimeMillis();
-            loadTinker();
+            if (gpExpansionMode) {
+                replaceAppClassLoader();
+            } else {
+                loadTinker();
+            }
             mBridge = createInlineFence(tinkerFlags, delegateClassName,
                     tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime,
                     tinkerResultIntent);

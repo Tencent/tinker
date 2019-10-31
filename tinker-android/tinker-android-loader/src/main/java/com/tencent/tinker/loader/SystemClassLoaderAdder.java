@@ -53,6 +53,14 @@ public class SystemClassLoaderAdder {
     private static final String TAG = "Tinker.ClassLoaderAdder";
     private static int sPatchDexCount = 0;
 
+    public static ClassLoader injectNewClassLoaderOnDemand(Application application, BaseDexClassLoader loader) throws Throwable {
+        if (Build.VERSION.SDK_INT >= 24) {
+            return NewClassLoaderInjector.inject(application, loader);
+        } else {
+            return loader;
+        }
+    }
+
     @SuppressLint("NewApi")
     public static void installDexes(Application application, BaseDexClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
         throws Throwable {
@@ -62,7 +70,8 @@ public class SystemClassLoaderAdder {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
-                classLoader = AndroidNClassLoader.inject(loader, application);
+                // classLoader = AndroidNClassLoader.inject(loader, application);
+                classLoader = NewClassLoaderInjector.inject(application, loader);
             }
             //because in dalvik, if inner class is not the same classloader with it wrapper class.
             //it won't fail at dex2opt

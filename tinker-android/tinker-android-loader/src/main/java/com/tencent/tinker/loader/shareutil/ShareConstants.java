@@ -176,6 +176,8 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -23;
     public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -24;
     public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -25;
+    public static final int ERROR_LOAD_INJECT_CLASSLOADER_FAIL                    = -26;
+    public static final int ERROR_LOAD_INIT_CLASSLOADER_FAIL                      = -27;
 
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 
