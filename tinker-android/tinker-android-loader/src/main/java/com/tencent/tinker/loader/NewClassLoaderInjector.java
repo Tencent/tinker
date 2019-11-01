@@ -43,9 +43,8 @@ public final class NewClassLoaderInjector {
                     || name.startsWith("org.apache.http.")) {
                 return mOldClassLoader.loadClass(name);
             } else {
-                // This invocation will throw ClassNotFoundException for any class names.
-                // Then we will fallback to NewClassLoader's findClass next.
-                return super.findClass(name);
+                // We will fallback to NewClassLoader's findClass here.
+                return null;
             }
         }
     }
