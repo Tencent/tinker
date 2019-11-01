@@ -62,7 +62,7 @@ public abstract class TinkerApplication extends Application {
     private final String delegateClassName;
     private final String loaderClassName;
 
-    private final boolean gpExpansionMode;
+    private final int gpExpansionMode;
     private final String classLoaderInitializerClassName;
 
     /**
@@ -75,12 +75,12 @@ public abstract class TinkerApplication extends Application {
 
     protected TinkerApplication(int tinkerFlags) {
         this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike",
-                TinkerLoader.class.getName(), false, false, "");
+                TinkerLoader.class.getName(), false, ShareConstants.TINKER_GPMODE_DISABLE, "");
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
                                 String loaderClassName, boolean tinkerLoadVerifyFlag,
-                                boolean gpExpansionMode, String classLoaderInitializerClassName) {
+                                int gpExpansionMode, String classLoaderInitializerClassName) {
         this.tinkerFlags = tinkerFlags;
         this.delegateClassName = delegateClassName;
         this.loaderClassName = loaderClassName;
@@ -90,7 +90,7 @@ public abstract class TinkerApplication extends Application {
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, false, "");
+        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, ShareConstants.TINKER_GPMODE_DISABLE, "");
     }
 
     private void loadTinker() {
@@ -109,15 +109,20 @@ public abstract class TinkerApplication extends Application {
     }
 
     private void replaceAppClassLoader() {
-        ClassLoader newClassLoader = null;
-        try {
-            newClassLoader = SystemClassLoaderAdder.injectNewClassLoaderOnDemand(this,
-                    (BaseDexClassLoader) TinkerApplication.class.getClassLoader());
-        } catch (Throwable thr) {
-            tinkerResultIntent = new Intent();
-            ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INJECT_CLASSLOADER_FAIL);
-            tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
+        if (gpExpansionMode == ShareConstants.TINKER_GPMODE_DISABLE) {
             return;
+        }
+        ClassLoader newClassLoader = TinkerApplication.class.getClassLoader();
+        if (gpExpansionMode == ShareConstants.TINKER_GPMODE_REPLACE_CLASSLOADER_AND_CALL_INITIALIZER) {
+            try {
+                newClassLoader = SystemClassLoaderAdder.injectNewClassLoaderOnDemand(this,
+                        (BaseDexClassLoader) TinkerApplication.class.getClassLoader());
+            } catch (Throwable thr) {
+                tinkerResultIntent = new Intent();
+                ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INJECT_CLASSLOADER_FAIL);
+                tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
+                return;
+            }
         }
         if (classLoaderInitializerClassName != null && !classLoaderInitializerClassName.isEmpty()) {
             try {
@@ -157,7 +162,7 @@ public abstract class TinkerApplication extends Application {
         try {
             final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
             final long applicationStartMillisTime = System.currentTimeMillis();
-            if (gpExpansionMode) {
+            if (gpExpansionMode != ShareConstants.TINKER_GPMODE_DISABLE) {
                 replaceAppClassLoader();
             } else {
                 loadTinker();
