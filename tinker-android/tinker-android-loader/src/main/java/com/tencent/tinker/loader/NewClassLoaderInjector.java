@@ -111,7 +111,9 @@ public final class NewClassLoaderInjector {
 
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
-        return new PathClassLoader(combinedDexPath, combinedLibraryPath, dispatchClassLoader);
+        final ClassLoader result = new PathClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader.getParent());
+        findField(result.getClass(), "parent").set(result, dispatchClassLoader);
+        return result;
     }
 
     private static void doInject(Application app, ClassLoader classLoader) throws Throwable {
