@@ -5,13 +5,14 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
 
+import com.tencent.tinker.loader.shareutil.ShareConstants;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
-import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
@@ -24,11 +25,13 @@ public final class NewClassLoaderInjector {
     private static final class DispatchClassLoader extends ClassLoader {
         private final String mApplicationClassName;
         private final ClassLoader mOldClassLoader;
+        private final int mGPExpansionMode;
 
-        DispatchClassLoader(String applicationClassName, ClassLoader oldClassLoader) {
+        DispatchClassLoader(Application app, ClassLoader oldClassLoader, int gpExpansionMode) {
             super(oldClassLoader.getParent());
-            mApplicationClassName = applicationClassName;
+            mApplicationClassName = app.getClass().getName();
             mOldClassLoader = oldClassLoader;
+            mGPExpansionMode = gpExpansionMode;
         }
 
         @Override
@@ -37,7 +40,13 @@ public final class NewClassLoaderInjector {
                 return mOldClassLoader.loadClass(name);
             } else if (name.startsWith("com.tencent.tinker.loader.")
                     && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)) {
-                return mOldClassLoader.loadClass(name);
+                if (mGPExpansionMode != ShareConstants.TINKER_GPMODE_DISABLE
+                        && name.startsWith("com.tencent.tinker.loader.shareutil.")) {
+                    // We will fallback to NewClassLoader's findClass here.
+                    return null;
+                } else {
+                    return mOldClassLoader.loadClass(name);
+                }
             } else if (name.startsWith("org.apache.commons.codec.")
                     || name.startsWith("org.apache.commons.logging.")
                     || name.startsWith("org.apache.http.")) {
@@ -49,19 +58,22 @@ public final class NewClassLoaderInjector {
         }
     }
 
-    public static ClassLoader inject(Application app, ClassLoader oldClassLoader) throws Throwable {
+    public static ClassLoader inject(Application app, ClassLoader oldClassLoader, int gpExpansionMode) throws Throwable {
         final ClassLoader dispatchClassLoader
-                = new DispatchClassLoader(app.getClass().getName(), oldClassLoader);
+                = new DispatchClassLoader(app, oldClassLoader, gpExpansionMode);
         final ClassLoader newClassLoader
-                = createNewClassLoader(oldClassLoader, dispatchClassLoader);
+                = createNewClassLoader(app, oldClassLoader, dispatchClassLoader);
+
         doInject(app, newClassLoader);
         return newClassLoader;
     }
 
     @SuppressWarnings("unchecked")
-    private static ClassLoader createNewClassLoader(ClassLoader oldClassLoader,
+    private static ClassLoader createNewClassLoader(Application app, ClassLoader oldClassLoader,
                                                     ClassLoader dispatchClassLoader) throws Throwable {
-        final Field pathListField = findField(BaseDexClassLoader.class, "pathList");
+        final Class<?> baseDexClassLoaderClazz
+                = Class.forName("dalvik.system.BaseDexClassLoader", false, oldClassLoader);
+        final Field pathListField = findField(baseDexClassLoaderClazz, "pathList");
         final Object oldPathList = pathListField.get(oldClassLoader);
 
         final Field dexElementsField = findField(oldPathList.getClass(), "dexElements");
@@ -74,6 +86,7 @@ public final class NewClassLoaderInjector {
 
         final StringBuilder dexPathBuilder = new StringBuilder();
 
+        final String packageName = app.getPackageName();
         boolean isFirstItem = true;
         for (Object oldDexElement : oldDexElements) {
             String dexPath = null;
@@ -81,7 +94,10 @@ public final class NewClassLoaderInjector {
             if (dexFile != null) {
                 dexPath = dexFile.getName();
             }
-            if (dexPath == null || dexPath.isEmpty()) {
+            if (dexPath == null || dexPath.length() == 0) {
+                continue;
+            }
+            if (!dexPath.contains("/" + packageName)) {
                 continue;
             }
             if (isFirstItem) {
@@ -111,6 +127,7 @@ public final class NewClassLoaderInjector {
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
         final ClassLoader result = new PathClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader.getParent());
+        findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
         findField(result.getClass(), "parent").set(result, dispatchClassLoader);
         return result;
     }

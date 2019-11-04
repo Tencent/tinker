@@ -109,16 +109,17 @@ public abstract class TinkerApplication extends Application {
     }
 
     private void replaceAppClassLoader() {
+        tinkerResultIntent = new Intent();
         if (gpExpansionMode == ShareConstants.TINKER_GPMODE_DISABLE) {
+            ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
             return;
         }
         ClassLoader newClassLoader = TinkerApplication.class.getClassLoader();
         if (gpExpansionMode == ShareConstants.TINKER_GPMODE_REPLACE_CLASSLOADER_AND_CALL_INITIALIZER) {
             try {
                 newClassLoader = SystemClassLoaderAdder.injectNewClassLoaderOnDemand(this,
-                        (BaseDexClassLoader) TinkerApplication.class.getClassLoader());
+                        (BaseDexClassLoader) TinkerApplication.class.getClassLoader(), gpExpansionMode);
             } catch (Throwable thr) {
-                tinkerResultIntent = new Intent();
                 ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INJECT_CLASSLOADER_FAIL);
                 tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
                 return;
@@ -133,8 +134,10 @@ public abstract class TinkerApplication extends Application {
                 tinkerResultIntent = new Intent();
                 ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INIT_CLASSLOADER_FAIL);
                 tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
+                return;
             }
         }
+        ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
     }
 
     private ITinkerInlineFenceBridge createInlineFence(int tinkerFlags,
