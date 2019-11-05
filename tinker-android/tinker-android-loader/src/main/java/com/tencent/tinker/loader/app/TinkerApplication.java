@@ -35,6 +35,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import dalvik.system.BaseDexClassLoader;
 
@@ -71,7 +72,8 @@ public abstract class TinkerApplication extends Application {
     private boolean useSafeMode;
     private Intent tinkerResultIntent;
 
-    private ITinkerInlineFenceBridge mBridge = null;
+    private Object mAppLike = null;
+    private ClassLoader mCurrentClassLoader = null;
 
     protected TinkerApplication(int tinkerFlags) {
         this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike",
@@ -140,24 +142,23 @@ public abstract class TinkerApplication extends Application {
         ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
     }
 
-    private ITinkerInlineFenceBridge createInlineFence(int tinkerFlags,
-                                                       String delegateClassName,
-                                                       boolean tinkerLoadVerifyFlag,
-                                                       long applicationStartElapsedTime,
-                                                       long applicationStartMillisTime,
-                                                       Intent resultIntent) {
+    private Object createDelegate(Application app,
+                                  int tinkerFlags,
+                                  String delegateClassName,
+                                  boolean tinkerLoadVerifyFlag,
+                                  long applicationStartElapsedTime,
+                                  long applicationStartMillisTime,
+                                  Intent resultIntent) {
         try {
-            final Class<?> inlineFenceClazz = Class.forName(
-                    "com.tencent.tinker.entry.TinkerApplicationInlineFence",
-                    true, super.getClassLoader());
-            final Constructor<?> ctor = inlineFenceClazz.getConstructor(int.class, String.class,
-                    boolean.class, long.class, long.class, Intent.class);
-            ctor.setAccessible(true);
-            return (ITinkerInlineFenceBridge) ctor.newInstance(tinkerFlags, delegateClassName,
-                    tinkerLoadVerifyFlag, applicationStartElapsedTime,
-                    applicationStartMillisTime, resultIntent);
-        } catch (Throwable thr) {
-            throw new TinkerRuntimeException("fail to create inline fence instance.", thr);
+            // Use reflection to create the delegate so it doesn't need to go into the primary dex.
+            // And we can also patch it
+            Class<?> delegateClass = Class.forName(delegateClassName, false, mCurrentClassLoader);
+            Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class,
+                    long.class, long.class, Intent.class);
+            return constructor.newInstance(app, tinkerFlags, tinkerLoadVerifyFlag,
+                    applicationStartElapsedTime, applicationStartMillisTime, resultIntent);
+        } catch (Throwable e) {
+            throw new TinkerRuntimeException("createDelegate failed", e);
         }
     }
 
@@ -170,10 +171,11 @@ public abstract class TinkerApplication extends Application {
             } else {
                 loadTinker();
             }
-            mBridge = createInlineFence(tinkerFlags, delegateClassName,
+            mCurrentClassLoader = base.getClassLoader();
+            mAppLike = createDelegate(this, tinkerFlags, delegateClassName,
                     tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime,
                     tinkerResultIntent);
-            mBridge.attachBaseContext(this, base);
+            callAppLikeOnBaseContextAttached(base);
             //reset save mode
             if (useSafeMode) {
                 ShareTinkerInternals.setSafeModeCount(this, 0);
@@ -182,6 +184,20 @@ public abstract class TinkerApplication extends Application {
             throw e;
         } catch (Throwable thr) {
             throw new TinkerRuntimeException(thr.getMessage(), thr);
+        }
+    }
+
+    private Method mAppLikeOnBaseContextAttachedMethod = null;
+    private synchronized void callAppLikeOnBaseContextAttached(Context base) {
+        try {
+            if (mAppLikeOnBaseContextAttachedMethod == null) {
+                mAppLikeOnBaseContextAttachedMethod = findMethod(
+                        mAppLike.getClass(), "onBaseContextAttached", Context.class);
+                mAppLikeOnBaseContextAttachedMethod.setAccessible(true);
+            }
+            mAppLikeOnBaseContextAttachedMethod.invoke(mAppLike, base);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
         }
     }
 
@@ -195,24 +211,60 @@ public abstract class TinkerApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (mBridge != null) {
-            mBridge.onCreate(this);
+        callAppLikeOnCreate();
+    }
+
+    private Method mAppLikeOnCreateMethod = null;
+    private synchronized void callAppLikeOnCreate() {
+        try {
+            if (mAppLikeOnCreateMethod == null) {
+                mAppLikeOnCreateMethod = findMethod(
+                        mAppLike.getClass(), "onCreate");
+                mAppLikeOnCreateMethod.setAccessible(true);
+            }
+            mAppLikeOnCreateMethod.invoke(mAppLike);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
         }
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
-        if (mBridge != null) {
-            mBridge.onTerminate();
+        callAppLikeOnTerminate();
+    }
+
+    private Method mAppLikeOnTerminateMethod = null;
+    private synchronized void callAppLikeOnTerminate() {
+        try {
+            if (mAppLikeOnTerminateMethod == null) {
+                mAppLikeOnTerminateMethod = findMethod(
+                        mAppLike.getClass(),"onTerminate");
+                mAppLikeOnTerminateMethod.setAccessible(true);
+            }
+            mAppLikeOnTerminateMethod.invoke(mAppLike);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
         }
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        if (mBridge != null) {
-            mBridge.onLowMemory();
+        callAppLikeOnLowMemoryMethod();
+    }
+
+    private Method mAppLikeOnLowMemoryMethod = null;
+    private synchronized void callAppLikeOnLowMemoryMethod() {
+        try {
+            if (mAppLikeOnLowMemoryMethod == null) {
+                mAppLikeOnLowMemoryMethod = findMethod(
+                        mAppLike.getClass(), "onLowMemory");
+                mAppLikeOnLowMemoryMethod.setAccessible(true);
+            }
+            mAppLikeOnLowMemoryMethod.invoke(mAppLike);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
         }
     }
 
@@ -220,47 +272,170 @@ public abstract class TinkerApplication extends Application {
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        if (mBridge != null) {
-            mBridge.onTrimMemory(level);
+        callAppLikeOnTrimMemoryMethod(level);
+    }
+
+    private Method mAppLikeOnTrimMemoryMethod = null;
+    private synchronized void callAppLikeOnTrimMemoryMethod(int level) {
+        try {
+            if (mAppLikeOnTrimMemoryMethod == null) {
+                mAppLikeOnTrimMemoryMethod = findMethod(
+                        mAppLike.getClass(), "onTrimMemory", int.class);
+                mAppLikeOnTrimMemoryMethod.setAccessible(true);
+            }
+            mAppLikeOnTrimMemoryMethod.invoke(mAppLike, level);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
         }
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        if (mBridge != null) {
-            mBridge.onConfigurationChanged(newConfig);
+        callAppLikeOnConfigurationChangedMethod(newConfig);
+    }
+
+    private Method mAppLikeOnConfigurationChangedMethod = null;
+    private synchronized void callAppLikeOnConfigurationChangedMethod(Configuration newConfig) {
+        try {
+            if (mAppLikeOnConfigurationChangedMethod == null) {
+                mAppLikeOnConfigurationChangedMethod = findMethod(
+                        mAppLike.getClass(), "onConfigurationChanged", Configuration.class);
+                mAppLikeOnConfigurationChangedMethod.setAccessible(true);
+            }
+            mAppLikeOnConfigurationChangedMethod.invoke(mAppLike, newConfig);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
         }
     }
 
     @Override
     public Resources getResources() {
         final Resources resources = super.getResources();
-        return (mBridge != null ? mBridge.getResources(resources) : resources);
+        return callAppLikeGetResourcesMethod(resources);
+    }
+
+    private Method mAppLikeGetResourcesMethod = null;
+    private synchronized Resources callAppLikeGetResourcesMethod(Resources resource) {
+        try {
+            if (mAppLikeGetResourcesMethod == null) {
+                mAppLikeGetResourcesMethod = findMethod(
+                        mAppLike.getClass(), "getResources", Resources.class);
+                mAppLikeGetResourcesMethod.setAccessible(true);
+            }
+            return (Resources) mAppLikeGetResourcesMethod.invoke(mAppLike, resource);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
+        }
     }
 
     @Override
     public ClassLoader getClassLoader() {
         final ClassLoader classLoader = super.getClassLoader();
-        return (mBridge != null ? mBridge.getClassLoader(classLoader) : classLoader);
+        return callAppLikeGetClassLoaderMethod(classLoader);
+    }
+
+    private Method mAppLikeGetClassLoaderMethod = null;
+    private synchronized ClassLoader callAppLikeGetClassLoaderMethod(ClassLoader classLoader) {
+        try {
+            if (mAppLikeGetClassLoaderMethod == null) {
+                mAppLikeGetClassLoaderMethod = findMethod(
+                        mAppLike.getClass(), "getClassLoader", ClassLoader.class);
+                mAppLikeGetClassLoaderMethod.setAccessible(true);
+            }
+            return (ClassLoader) mAppLikeGetClassLoaderMethod.invoke(mAppLike, classLoader);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
+        }
     }
 
     @Override
     public AssetManager getAssets() {
-        final AssetManager assetManager = super.getAssets();
-        return (mBridge != null ? mBridge.getAssets(assetManager) : assetManager);
+        final AssetManager assets = super.getAssets();
+        return callAppLikeGetAssetsMethod(assets);
+    }
+
+    private Method mAppLikeGetAssetsMethod = null;
+    private synchronized AssetManager callAppLikeGetAssetsMethod(AssetManager assets) {
+        try {
+            if (mAppLikeGetAssetsMethod == null) {
+                mAppLikeGetAssetsMethod = findMethod(
+                        mAppLike.getClass(), "getAssets", AssetManager.class);
+                mAppLikeGetAssetsMethod.setAccessible(true);
+            }
+            return (AssetManager) mAppLikeGetAssetsMethod.invoke(mAppLike, assets);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
+        }
     }
 
     @Override
     public Object getSystemService(String name) {
         final Object service = super.getSystemService(name);
-        return (mBridge != null ? mBridge.getSystemService(name, service) : service);
+        return callAppLikeGetSystemServiceMethod(name, service);
+    }
+
+    private Method mAppLikeGetSystemServiceMethod = null;
+    private synchronized Object callAppLikeGetSystemServiceMethod(String name, Object service) {
+        try {
+            if (mAppLikeGetSystemServiceMethod == null) {
+                mAppLikeGetSystemServiceMethod = findMethod(
+                        mAppLike.getClass(), "getSystemService", String.class, Object.class);
+                mAppLikeGetSystemServiceMethod.setAccessible(true);
+            }
+            return mAppLikeGetSystemServiceMethod.invoke(mAppLike, name, service);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
+        }
     }
 
     @Override
     public Context getBaseContext() {
         final Context base = super.getBaseContext();
-        return (mBridge != null ? mBridge.getBaseContext(base) : base);
+        return callAppLikeGetBaseContextMethod(base);
+    }
+
+    private Method mAppLikeGetBaseContextMethod = null;
+    private synchronized Context callAppLikeGetBaseContextMethod(Context base) {
+        try {
+            if (mAppLikeGetBaseContextMethod == null) {
+                mAppLikeGetBaseContextMethod = findMethod(
+                        mAppLike.getClass(), "getBaseContext", Context.class);
+                mAppLikeGetBaseContextMethod.setAccessible(true);
+            }
+            return (Context) mAppLikeGetBaseContextMethod.invoke(mAppLike, base);
+        } catch (Throwable thr) {
+            throw new IllegalStateException(thr);
+        }
+    }
+
+    private static Method findMethod(Class<?> clazz, String name, Class<?>... argTypes)
+            throws NoSuchMethodException {
+        Class<?> currClazz = clazz;
+        while (true) {
+            try {
+                final Method result = currClazz.getDeclaredMethod(name, argTypes);
+                result.setAccessible(true);
+                return result;
+            } catch (Throwable ignored) {
+                if (currClazz == Object.class) {
+                    throw new NoSuchMethodException("Cannot find method "
+                            + name + Arrays.toString(argTypes)
+                            + " in " + name
+                            + " and its super classes.");
+                }
+                for (Class<?> itf : currClazz.getInterfaces()) {
+                    try {
+                        final Method result = itf.getDeclaredMethod(name, argTypes);
+                        result.setAccessible(true);
+                        return result;
+                    } catch (Throwable ignored2) {
+                        // Ignored.
+                    }
+                }
+                currClazz = currClazz.getSuperclass();
+            }
+        }
     }
 
     public void setUseSafeMode(boolean useSafeMode) {
