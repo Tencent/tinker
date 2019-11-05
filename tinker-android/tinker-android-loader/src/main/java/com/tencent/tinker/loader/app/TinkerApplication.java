@@ -188,12 +188,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeOnBaseContextAttachedMethod = null;
-    private synchronized void callAppLikeOnBaseContextAttached(Context base) {
+    private void callAppLikeOnBaseContextAttached(Context base) {
         try {
-            if (mAppLikeOnBaseContextAttachedMethod == null) {
-                mAppLikeOnBaseContextAttachedMethod = findMethod(
-                        mAppLike.getClass(), "onBaseContextAttached", Context.class);
-                mAppLikeOnBaseContextAttachedMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeOnBaseContextAttachedMethod == null) {
+                    mAppLikeOnBaseContextAttachedMethod = findMethod(
+                            mAppLike.getClass(), "onBaseContextAttached", Context.class);
+                    mAppLikeOnBaseContextAttachedMethod.setAccessible(true);
+                }
             }
             mAppLikeOnBaseContextAttachedMethod.invoke(mAppLike, base);
         } catch (Throwable thr) {
@@ -215,12 +217,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeOnCreateMethod = null;
-    private synchronized void callAppLikeOnCreate() {
+    private void callAppLikeOnCreate() {
         try {
-            if (mAppLikeOnCreateMethod == null) {
-                mAppLikeOnCreateMethod = findMethod(
-                        mAppLike.getClass(), "onCreate");
-                mAppLikeOnCreateMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeOnCreateMethod == null) {
+                    mAppLikeOnCreateMethod = findMethod(
+                            mAppLike.getClass(), "onCreate");
+                    mAppLikeOnCreateMethod.setAccessible(true);
+                }
             }
             mAppLikeOnCreateMethod.invoke(mAppLike);
         } catch (Throwable thr) {
@@ -235,12 +239,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeOnTerminateMethod = null;
-    private synchronized void callAppLikeOnTerminate() {
+    private void callAppLikeOnTerminate() {
         try {
-            if (mAppLikeOnTerminateMethod == null) {
-                mAppLikeOnTerminateMethod = findMethod(
-                        mAppLike.getClass(),"onTerminate");
-                mAppLikeOnTerminateMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeOnTerminateMethod == null) {
+                    mAppLikeOnTerminateMethod = findMethod(
+                            mAppLike.getClass(), "onTerminate");
+                    mAppLikeOnTerminateMethod.setAccessible(true);
+                }
             }
             mAppLikeOnTerminateMethod.invoke(mAppLike);
         } catch (Throwable thr) {
@@ -255,12 +261,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeOnLowMemoryMethod = null;
-    private synchronized void callAppLikeOnLowMemoryMethod() {
+    private void callAppLikeOnLowMemoryMethod() {
         try {
-            if (mAppLikeOnLowMemoryMethod == null) {
-                mAppLikeOnLowMemoryMethod = findMethod(
-                        mAppLike.getClass(), "onLowMemory");
-                mAppLikeOnLowMemoryMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeOnLowMemoryMethod == null) {
+                    mAppLikeOnLowMemoryMethod = findMethod(
+                            mAppLike.getClass(), "onLowMemory");
+                    mAppLikeOnLowMemoryMethod.setAccessible(true);
+                }
             }
             mAppLikeOnLowMemoryMethod.invoke(mAppLike);
         } catch (Throwable thr) {
@@ -276,12 +284,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeOnTrimMemoryMethod = null;
-    private synchronized void callAppLikeOnTrimMemoryMethod(int level) {
+    private void callAppLikeOnTrimMemoryMethod(int level) {
         try {
-            if (mAppLikeOnTrimMemoryMethod == null) {
-                mAppLikeOnTrimMemoryMethod = findMethod(
-                        mAppLike.getClass(), "onTrimMemory", int.class);
-                mAppLikeOnTrimMemoryMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeOnTrimMemoryMethod == null) {
+                    mAppLikeOnTrimMemoryMethod = findMethod(
+                            mAppLike.getClass(), "onTrimMemory", int.class);
+                    mAppLikeOnTrimMemoryMethod.setAccessible(true);
+                }
             }
             mAppLikeOnTrimMemoryMethod.invoke(mAppLike, level);
         } catch (Throwable thr) {
@@ -296,12 +306,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeOnConfigurationChangedMethod = null;
-    private synchronized void callAppLikeOnConfigurationChangedMethod(Configuration newConfig) {
+    private void callAppLikeOnConfigurationChangedMethod(Configuration newConfig) {
         try {
-            if (mAppLikeOnConfigurationChangedMethod == null) {
-                mAppLikeOnConfigurationChangedMethod = findMethod(
-                        mAppLike.getClass(), "onConfigurationChanged", Configuration.class);
-                mAppLikeOnConfigurationChangedMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeOnConfigurationChangedMethod == null) {
+                    mAppLikeOnConfigurationChangedMethod = findMethod(
+                            mAppLike.getClass(), "onConfigurationChanged", Configuration.class);
+                    mAppLikeOnConfigurationChangedMethod.setAccessible(true);
+                }
             }
             mAppLikeOnConfigurationChangedMethod.invoke(mAppLike, newConfig);
         } catch (Throwable thr) {
@@ -316,12 +328,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeGetResourcesMethod = null;
-    private synchronized Resources callAppLikeGetResourcesMethod(Resources resource) {
+    private Resources callAppLikeGetResourcesMethod(Resources resource) {
         try {
-            if (mAppLikeGetResourcesMethod == null) {
-                mAppLikeGetResourcesMethod = findMethod(
-                        mAppLike.getClass(), "getResources", Resources.class);
-                mAppLikeGetResourcesMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeGetResourcesMethod == null) {
+                    mAppLikeGetResourcesMethod = findMethod(
+                            mAppLike.getClass(), "getResources", Resources.class);
+                    mAppLikeGetResourcesMethod.setAccessible(true);
+                }
             }
             return (Resources) mAppLikeGetResourcesMethod.invoke(mAppLike, resource);
         } catch (Throwable thr) {
@@ -336,12 +350,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeGetClassLoaderMethod = null;
-    private synchronized ClassLoader callAppLikeGetClassLoaderMethod(ClassLoader classLoader) {
+    private ClassLoader callAppLikeGetClassLoaderMethod(ClassLoader classLoader) {
         try {
-            if (mAppLikeGetClassLoaderMethod == null) {
-                mAppLikeGetClassLoaderMethod = findMethod(
-                        mAppLike.getClass(), "getClassLoader", ClassLoader.class);
-                mAppLikeGetClassLoaderMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeGetClassLoaderMethod == null) {
+                    mAppLikeGetClassLoaderMethod = findMethod(
+                            mAppLike.getClass(), "getClassLoader", ClassLoader.class);
+                    mAppLikeGetClassLoaderMethod.setAccessible(true);
+                }
             }
             return (ClassLoader) mAppLikeGetClassLoaderMethod.invoke(mAppLike, classLoader);
         } catch (Throwable thr) {
@@ -356,12 +372,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeGetAssetsMethod = null;
-    private synchronized AssetManager callAppLikeGetAssetsMethod(AssetManager assets) {
+    private AssetManager callAppLikeGetAssetsMethod(AssetManager assets) {
         try {
-            if (mAppLikeGetAssetsMethod == null) {
-                mAppLikeGetAssetsMethod = findMethod(
-                        mAppLike.getClass(), "getAssets", AssetManager.class);
-                mAppLikeGetAssetsMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeGetAssetsMethod == null) {
+                    mAppLikeGetAssetsMethod = findMethod(
+                            mAppLike.getClass(), "getAssets", AssetManager.class);
+                    mAppLikeGetAssetsMethod.setAccessible(true);
+                }
             }
             return (AssetManager) mAppLikeGetAssetsMethod.invoke(mAppLike, assets);
         } catch (Throwable thr) {
@@ -376,12 +394,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeGetSystemServiceMethod = null;
-    private synchronized Object callAppLikeGetSystemServiceMethod(String name, Object service) {
+    private Object callAppLikeGetSystemServiceMethod(String name, Object service) {
         try {
-            if (mAppLikeGetSystemServiceMethod == null) {
-                mAppLikeGetSystemServiceMethod = findMethod(
-                        mAppLike.getClass(), "getSystemService", String.class, Object.class);
-                mAppLikeGetSystemServiceMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeGetSystemServiceMethod == null) {
+                    mAppLikeGetSystemServiceMethod = findMethod(
+                            mAppLike.getClass(), "getSystemService", String.class, Object.class);
+                    mAppLikeGetSystemServiceMethod.setAccessible(true);
+                }
             }
             return mAppLikeGetSystemServiceMethod.invoke(mAppLike, name, service);
         } catch (Throwable thr) {
@@ -396,12 +416,14 @@ public abstract class TinkerApplication extends Application {
     }
 
     private Method mAppLikeGetBaseContextMethod = null;
-    private synchronized Context callAppLikeGetBaseContextMethod(Context base) {
+    private Context callAppLikeGetBaseContextMethod(Context base) {
         try {
-            if (mAppLikeGetBaseContextMethod == null) {
-                mAppLikeGetBaseContextMethod = findMethod(
-                        mAppLike.getClass(), "getBaseContext", Context.class);
-                mAppLikeGetBaseContextMethod.setAccessible(true);
+            synchronized (this) {
+                if (mAppLikeGetBaseContextMethod == null) {
+                    mAppLikeGetBaseContextMethod = findMethod(
+                            mAppLike.getClass(), "getBaseContext", Context.class);
+                    mAppLikeGetBaseContextMethod.setAccessible(true);
+                }
             }
             return (Context) mAppLikeGetBaseContextMethod.invoke(mAppLike, base);
         } catch (Throwable thr) {
