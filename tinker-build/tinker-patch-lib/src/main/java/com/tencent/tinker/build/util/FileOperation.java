@@ -69,6 +69,17 @@ public class FileOperation {
         return file.exists() && file.isFile() && file.length() > 0;
     }
 
+    public static boolean isLegalFileOrDirectory(String path) {
+        if (isLegalFile(path)) {
+            return true;
+        }
+        if (path == null) {
+            return false;
+        }
+        final File file = new File(path);
+        return file.exists() && file.isDirectory() && file.canRead();
+    }
+
     public static long getFileSizes(File f) {
         if (f == null) {
             return 0;

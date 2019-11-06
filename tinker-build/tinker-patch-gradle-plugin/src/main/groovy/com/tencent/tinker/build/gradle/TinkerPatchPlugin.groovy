@@ -351,7 +351,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
     void setPatchNewApkPath(configuration, output, variant, tinkerPatchBuildTask) {
         def newApkPath = configuration.newApk
         if (!Utils.isNullOrNil(newApkPath)) {
-            if (FileOperation.isLegalFile(newApkPath)) {
+            if (FileOperation.isLegalFileOrDirectory(newApkPath)) {
                 tinkerPatchBuildTask.buildApkPath = newApkPath
                 return
             }
