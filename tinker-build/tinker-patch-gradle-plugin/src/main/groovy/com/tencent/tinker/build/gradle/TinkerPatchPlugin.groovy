@@ -238,23 +238,21 @@ class TinkerPatchPlugin implements Plugin<Project> {
                         agpMultidexTask.dependsOn multidexConfigTask
                     } else if (agpMultidexTask == null && agpR8Task != null) {
                         agpR8Task.dependsOn multidexConfigTask
-                        try {
-                            Object r8Transform = agpR8Task.getTransform()
-                            //R8 maybe forget to add multidex keep proguard file in agp 3.4.0, it's a agp bug!
-                            //If we don't do it, some classes will not keep in maindex such as loader's classes.
-                            //So tinker will not remove loader's classes, it will crashed in dalvik and will check TinkerTestDexLoad.isPatch failed in art.
-                            if (r8Transform.metaClass.hasProperty(r8Transform, "mainDexRulesFiles")) {
-                                File manifestMultiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
-                                if (manifestMultiDexKeepProguard != null) {
-                                    //see difference between mainDexRulesFiles and mainDexListFiles in https://developer.android.com/studio/build/multidex?hl=zh-cn
-                                    FileCollection originalFiles = r8Transform.metaClass.getProperty(r8Transform, 'mainDexRulesFiles')
-                                    if (!originalFiles.contains(manifestMultiDexKeepProguard)) {
-                                        FileCollection replacedFiles = mProject.files(originalFiles, manifestMultiDexKeepProguard)
-                                        mProject.logger.error("R8Transform original mainDexRulesFiles: ${originalFiles.files}")
-                                        mProject.logger.error("R8Transform replaced mainDexRulesFiles: ${replacedFiles.files}")
-                                        //it's final, use reflect to replace it.
-                                        replaceKotlinFinalField("com.android.build.gradle.internal.transforms.R8Transform", "mainDexRulesFiles", r8Transform, replacedFiles)
-                                    }
+                        Object r8Transform = agpR8Task.getTransform()
+                        //R8 maybe forget to add multidex keep proguard file in agp 3.4.0, it's a agp bug!
+                        //If we don't do it, some classes will not keep in maindex such as loader's classes.
+                        //So tinker will not remove loader's classes, it will crashed in dalvik and will check TinkerTestDexLoad.isPatch failed in art.
+                        if (r8Transform.metaClass.hasProperty(r8Transform, "mainDexRulesFiles")) {
+                            File manifestMultiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
+                            if (manifestMultiDexKeepProguard != null) {
+                                //see difference between mainDexRulesFiles and mainDexListFiles in https://developer.android.com/studio/build/multidex?hl=zh-cn
+                                FileCollection originalFiles = r8Transform.metaClass.getProperty(r8Transform, 'mainDexRulesFiles')
+                                if (!originalFiles.contains(manifestMultiDexKeepProguard)) {
+                                    FileCollection replacedFiles = mProject.files(originalFiles, manifestMultiDexKeepProguard)
+                                    mProject.logger.error("R8Transform original mainDexRulesFiles: ${originalFiles.files}")
+                                    mProject.logger.error("R8Transform replaced mainDexRulesFiles: ${replacedFiles.files}")
+                                    //it's final, use reflect to replace it.
+                                    replaceKotlinFinalField("com.android.build.gradle.internal.transforms.R8Transform", "mainDexRulesFiles", r8Transform, replacedFiles)
                                 }
                             }
                         }
