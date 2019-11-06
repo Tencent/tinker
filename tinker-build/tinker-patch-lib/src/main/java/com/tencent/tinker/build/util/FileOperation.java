@@ -17,7 +17,7 @@
 package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.patch.Configuration;
-import com.tencent.tinker.commons.util.StreamUtil;
+import com.tencent.tinker.commons.util.IOHelper;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -82,7 +82,7 @@ public class FileOperation {
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
-                StreamUtil.closeQuietly(fis);
+                IOHelper.closeQuietly(fis);
             }
         }
         return size;
@@ -129,8 +129,8 @@ public class FileOperation {
                 os.write(buffer, 0, length);
             }
         } finally {
-            StreamUtil.closeQuietly(os);
-            StreamUtil.closeQuietly(is);
+            IOHelper.closeQuietly(os);
+            IOHelper.closeQuietly(is);
         }
     }
 
@@ -151,8 +151,8 @@ public class FileOperation {
                 os.write(buffer, 0, length);
             }
         } finally {
-            StreamUtil.closeQuietly(os);
-            StreamUtil.closeQuietly(is);
+            IOHelper.closeQuietly(os);
+            IOHelper.closeQuietly(is);
         }
     }
 
@@ -283,8 +283,8 @@ public class FileOperation {
                 output.write(bufferCopy);
             }
         } finally {
-            StreamUtil.closeQuietly(output);
-            StreamUtil.closeQuietly(in);
+            IOHelper.closeQuietly(output);
+            IOHelper.closeQuietly(in);
         }
         return output.toByteArray();
     }
@@ -300,7 +300,7 @@ public class FileOperation {
             }
             return crc.getValue();
         } finally {
-            StreamUtil.closeQuietly(inputStream);
+            IOHelper.closeQuietly(inputStream);
         }
     }
 
@@ -390,7 +390,7 @@ public class FileOperation {
             } catch (Throwable ignored) {
                 // Ignored.
             }
-            StreamUtil.closeQuietly(reader);
+            IOHelper.closeQuietly(reader);
         }
         return true;
     }
