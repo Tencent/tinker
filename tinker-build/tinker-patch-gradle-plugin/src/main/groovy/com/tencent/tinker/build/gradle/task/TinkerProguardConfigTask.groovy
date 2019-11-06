@@ -35,14 +35,12 @@ public class TinkerProguardConfigTask extends DefaultTask {
                     "-keep public class * extends android.app.Application {\n" +
                     "    *;\n" +
                     "}\n" +
-                    "\n" +
                     "-keep public class com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
                     "    *;\n" +
                     "}\n" +
                     "-keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
                     "    *;\n" +
                     "}\n" +
-                    "\n" +
                     "-keep public class com.tencent.tinker.loader.TinkerLoader {\n" +
                     "    *;\n" +
                     "}\n" +
@@ -52,10 +50,9 @@ public class TinkerProguardConfigTask extends DefaultTask {
                     "-keep public class com.tencent.tinker.loader.TinkerTestDexLoad {\n" +
                     "    *;\n" +
                     "}\n" +
-                    "-keep public class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {\n" +
+                    "-keep public class com.tencent.tinker.entry.TinkerApplicationInlineFence {\n" +
                     "    *;\n" +
-                    "}\n" +
-                    "\n"
+                    "}\n"
 
 
     def applicationVariant

@@ -18,8 +18,20 @@
      void attachBaseContext(android.content.Context);
 }
 
--keep class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {
-    <init>();
+-keep public class com.tencent.tinker.loader.NewClassLoaderInjector {
+    *;
+}
+
+-keep class com.tencent.tinker.loader.NewClassLoaderInjector$DispatchClassLoader {
+    *;
+}
+
+-keep class com.tencent.tinker.entry.TinkerApplicationInlineFence {
+    *;
+}
+
+-keep class com.tencent.tinker.loader.app.TinkerInlineFenceAction {
+    *;
 }
 
 #your dex.loader patterns here

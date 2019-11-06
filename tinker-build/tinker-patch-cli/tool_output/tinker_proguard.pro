@@ -25,7 +25,11 @@
     *;
 }
 
--keep public class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {
+-keep public class com.tencent.tinker.loader.TinkerTestDexLoad {
+    *;
+}
+
+-keep public class com.tencent.tinker.entry.TinkerApplicationInlineFence {
     *;
 }
 
