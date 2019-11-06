@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.gradle
 
-import com.android.build.api.transform.Transform
+
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
@@ -147,27 +147,36 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 tinkerPatchBuildTask.signConfig = variant.signingConfig
 
                 def agpProcessManifestTask = project.tasks.findByName("process${variantName}Manifest")
-                String manifestOutputBaseDir
+                File manifestOutputBaseDir
                 try {
                     manifestOutputBaseDir = agpProcessManifestTask.manifestOutputDirectory.asFile.get()
                 } catch (Throwable ignored) {
                     manifestOutputBaseDir = agpProcessManifestTask.manifestOutputDirectory
                 }
 
-                Set<String> manifestPaths = []
+                Map<String, File> outputNameToManifestMap = new HashMap<>()
                 variant.outputs.each { variantOutput ->
                     setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
                     setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)
 
-                    def manifestDir = new File(manifestOutputBaseDir, variantOutput.apkData.dirName)
-                    manifestPaths.add(new File(manifestDir, 'AndroidManifest.xml'))
+                    def outputName = variantOutput.apkData.dirName
+                    if (outputName.endsWith(File.separator)) {
+                        outputName = outputName.substring(0, outputName.length() - 1)
+                    }
+
+                    if (outputNameToManifestMap.containsKey(outputName)) {
+                        throw new GradleException("Duplicate output: '${outputName}'")
+                    }
+
+                    def manifestDir = new File(manifestOutputBaseDir, outputName)
+                    outputNameToManifestMap.put(outputName, new File(manifestDir, 'AndroidManifest.xml'))
                 }
 
                 // Create a task to add a build TINKER_ID to AndroidManifest.xml
                 // This task must be called after "process${variantName}Manifest", since it
                 // requires that an AndroidManifest.xml exists in `build/intermediates`.
                 TinkerManifestTask tinkerManifestTask = mProject.tasks.create("tinkerProcess${variantName}Manifest", TinkerManifestTask)
-                tinkerManifestTask.manifestPaths.addAll(manifestPaths)
+                tinkerManifestTask.outputNameToManifestMap.putAll(outputNameToManifestMap)
                 tinkerManifestTask.mustRunAfter agpProcessManifestTask
 
                 def agpProcessResourcesTask = project.tasks.findByName("process${variantName}Resources")
@@ -200,8 +209,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 def agpMergeResourcesTask = mProject.tasks.findByName("merge${variantName.capitalize()}Resources")
                 applyResourceTask.dependsOn agpMergeResourcesTask
 
-                if (tinkerManifestTask.manifestPaths == null
-                        || tinkerManifestTask.manifestPaths.isEmpty()
+                if (tinkerManifestTask.outputNameToManifestMap == null
+                        || tinkerManifestTask.outputNameToManifestMap.isEmpty()
                         || applyResourceTask.resDir == null) {
                     throw new RuntimeException("manifestTask.manifestPath or applyResourceTask.resDir is null.")
                 }

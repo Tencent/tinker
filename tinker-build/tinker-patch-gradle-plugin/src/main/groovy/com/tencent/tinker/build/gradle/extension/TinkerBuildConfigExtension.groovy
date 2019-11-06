@@ -46,6 +46,11 @@ public class TinkerBuildConfigExtension {
     String tinkerId
 
     /**
+     * If true, Tinker will append name of each variant output to their tinker ids.
+     */
+    boolean appendOutputNameToTinkerId
+
+    /**
      * Whether tinker should treat the base apk as the one being protected by app
      * protection tools.
      * If this attribute is true, the generated patch package will contain a
@@ -79,6 +84,7 @@ public class TinkerBuildConfigExtension {
         applyMapping = ""
         applyResourceMapping = ""
         tinkerId = null
+        appendOutputNameToTinkerId = false
         usingResourceMapping = false
         keepDexApply = false
         isProtectedApp = false
@@ -99,6 +105,7 @@ public class TinkerBuildConfigExtension {
            | supportHotplugComponent = ${supportHotplugComponent}
            | keepDexApply = ${keepDexApply}
            | tinkerId = ${tinkerId}
+           | appendOutputNameToTinkerId = ${appendOutputNameToTinkerId}
         """.stripMargin()
     }
 }
