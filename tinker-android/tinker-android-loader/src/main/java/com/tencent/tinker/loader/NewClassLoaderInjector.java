@@ -38,6 +38,14 @@ final class NewClassLoaderInjector {
     private static final class DispatchClassLoader extends ClassLoader {
         private final String mApplicationClassName;
         private final ClassLoader mOldClassLoader;
+        private ClassLoader mNewClassLoader;
+
+        private final ThreadLocal<Boolean> mFallThroughToNewCL = new ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+                return false;
+            }
+        };
 
         DispatchClassLoader(String applicationClassName, ClassLoader oldClassLoader) {
             super(oldClassLoader.getParent());
@@ -45,8 +53,17 @@ final class NewClassLoaderInjector {
             mOldClassLoader = oldClassLoader;
         }
 
+        void setNewClassLoader(ClassLoader classLoader) {
+            mNewClassLoader = classLoader;
+        }
+
         @Override
         protected Class<?> findClass(String name) throws ClassNotFoundException {
+            if (mFallThroughToNewCL.get()) {
+                // Goto NewClassLoader directly since we are here the second time
+                // now.
+                return null;
+            }
             if (name.equals(mApplicationClassName)) {
                 return mOldClassLoader.loadClass(name);
             } else if (name.startsWith("com.tencent.tinker.loader.")
@@ -77,17 +94,25 @@ final class NewClassLoaderInjector {
                 //   the App's ClassLoader we will receive an assert since the Apache classes is loaded by another ClassLoader now.
                 return mOldClassLoader.loadClass(name);
             } else {
-                // We will fallback to NewClassLoader's findClass here.
-                return null;
+                mFallThroughToNewCL.set(true);
+                try {
+                    return mNewClassLoader.loadClass(name);
+                } catch (ClassNotFoundException ignored) {
+                    // Some class cannot find in NewClassLoader should try OldClassLoader again.
+                    return mOldClassLoader.loadClass(name);
+                } finally {
+                    mFallThroughToNewCL.set(false);
+                }
             }
         }
     }
 
     public static ClassLoader inject(Application app, ClassLoader oldClassLoader) throws Throwable {
-        final ClassLoader dispatchClassLoader
+        final DispatchClassLoader dispatchClassLoader
                 = new DispatchClassLoader(app.getClass().getName(), oldClassLoader);
         final ClassLoader newClassLoader
                 = createNewClassLoader(app, oldClassLoader, dispatchClassLoader);
+        dispatchClassLoader.setNewClassLoader(newClassLoader);
         doInject(app, newClassLoader);
         return newClassLoader;
     }
