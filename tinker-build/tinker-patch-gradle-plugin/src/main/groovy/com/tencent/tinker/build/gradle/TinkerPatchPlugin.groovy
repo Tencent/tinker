@@ -369,13 +369,15 @@ class TinkerPatchPlugin implements Plugin<Project> {
             tinkerPatchBuildTask.buildApkPath = output.outputFile
         }
 
+        if (new File(configuration.oldApk).isDirectory()) {
+            tinkerPatchBuildTask.buildApkPath = tinkerPatchBuildTask.buildApkPath.getParentFile()
+        }
+
         if (variant.metaClass.hasProperty(variant, 'assembleProvider')) {
             tinkerPatchBuildTask.dependsOn variant.assembleProvider.get()
         } else {
             tinkerPatchBuildTask.dependsOn variant.assemble
         }
-
-
     }
 
     Task getMultiDexTask(String variantName) {
