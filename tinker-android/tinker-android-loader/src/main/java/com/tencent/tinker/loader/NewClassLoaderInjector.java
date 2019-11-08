@@ -141,8 +141,19 @@ final class NewClassLoaderInjector {
 
         final StringBuilder dexPathBuilder = new StringBuilder();
 
+        final boolean hasPatchDexPaths = patchDexPaths != null && patchDexPaths.length > 0;
+
+        if (hasPatchDexPaths) {
+            for (int i = 0; i < patchDexPaths.length; ++i) {
+                if (i > 0) {
+                    dexPathBuilder.append(File.pathSeparator);
+                }
+                dexPathBuilder.append(patchDexPaths[i]);
+            }
+        }
+
         final String packageName = context.getPackageName();
-        boolean isFirstItem = true;
+        boolean isFirstItem = dexPathBuilder.length() == 0;
         for (Object oldDexElement : oldDexElements) {
             String dexPath = null;
             final DexFile dexFile = (DexFile) dexFileField.get(oldDexElement);
@@ -161,20 +172,6 @@ final class NewClassLoaderInjector {
                 dexPathBuilder.append(File.pathSeparator);
             }
             dexPathBuilder.append(dexPath);
-        }
-
-        final boolean hasPatchDexPaths = patchDexPaths != null && patchDexPaths.length > 0;
-
-        if (hasPatchDexPaths) {
-            if (dexPathBuilder.length() != 0) {
-                dexPathBuilder.append(File.pathSeparator);
-            }
-            for (int i = 0; i < patchDexPaths.length; ++i) {
-                if (i > 0) {
-                    dexPathBuilder.append(File.pathSeparator);
-                }
-                dexPathBuilder.append(patchDexPaths[i]);
-            }
         }
 
         final String combinedDexPath = dexPathBuilder.toString();
