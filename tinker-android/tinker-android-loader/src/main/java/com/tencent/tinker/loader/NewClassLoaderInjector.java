@@ -195,6 +195,7 @@ final class NewClassLoaderInjector {
         final ClassLoader result = new PathClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader.getParent());
 
         if (!hasPatchDexPaths) {
+            findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
             findField(result.getClass(), "parent").set(result, dispatchClassLoader);
         }
 
