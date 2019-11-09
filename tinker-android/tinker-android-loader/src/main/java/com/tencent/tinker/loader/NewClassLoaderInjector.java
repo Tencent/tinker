@@ -38,9 +38,12 @@ final class NewClassLoaderInjector {
     private static final class DispatchClassLoader extends ClassLoader {
         private final String mApplicationClassName;
         private final ClassLoader mOldClassLoader;
+        private final ClassLoader mOldParentClassLoader;
+        private final boolean mIsOldParentABootClassLoader;
+
         private ClassLoader mNewClassLoader;
 
-        private final ThreadLocal<Boolean> mFallThroughToNewCL = new ThreadLocal<Boolean>() {
+        private final ThreadLocal<Boolean> mCallFindClassOfLeafDirectly = new ThreadLocal<Boolean>() {
             @Override
             protected Boolean initialValue() {
                 return false;
@@ -48,9 +51,11 @@ final class NewClassLoaderInjector {
         };
 
         DispatchClassLoader(String applicationClassName, ClassLoader oldClassLoader) {
-            super(oldClassLoader.getParent());
+            super(ClassLoader.getSystemClassLoader());
             mApplicationClassName = applicationClassName;
             mOldClassLoader = oldClassLoader;
+            mOldParentClassLoader = oldClassLoader.getParent();
+            mIsOldParentABootClassLoader = (mOldParentClassLoader == ClassLoader.getSystemClassLoader());
         }
 
         void setNewClassLoader(ClassLoader classLoader) {
@@ -59,17 +64,18 @@ final class NewClassLoaderInjector {
 
         @Override
         protected Class<?> findClass(String name) throws ClassNotFoundException {
-            if (mFallThroughToNewCL.get()) {
-                // Goto NewClassLoader directly since we are here the second time
-                // now.
+            if (mCallFindClassOfLeafDirectly.get()) {
                 return null;
             }
+
             if (name.equals(mApplicationClassName)) {
-                return mOldClassLoader.loadClass(name);
-            } else if (name.startsWith("com.tencent.tinker.loader.")
+                return findClass(mOldClassLoader, name);
+            }
+            if (name.startsWith("com.tencent.tinker.loader.")
                     && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)) {
-                return mOldClassLoader.loadClass(name);
-            } else if (name.startsWith("org.apache.commons.codec.")
+                return findClass(mOldClassLoader, name);
+            }
+            if (name.startsWith("org.apache.commons.codec.")
                     || name.startsWith("org.apache.commons.logging.")
                     || name.startsWith("org.apache.http.")) {
                 // Here's the whole story:
@@ -92,17 +98,32 @@ final class NewClassLoaderInjector {
                 //   However, the ART VM of Android P adds a new feature that checks whether the inlined class is loaded by the same
                 //   ClassLoader that loads the callsite's class. If any Apache classes is inlined in old dex(oat), after we replacing
                 //   the App's ClassLoader we will receive an assert since the Apache classes is loaded by another ClassLoader now.
-                return mOldClassLoader.loadClass(name);
-            } else {
-                mFallThroughToNewCL.set(true);
+                return findClass(mOldClassLoader, name);
+            }
+
+            try {
+                return findClass(mNewClassLoader, name);
+            } catch (ClassNotFoundException ignored) {
+                // Ignored.
+            }
+
+            if (!mIsOldParentABootClassLoader) {
                 try {
-                    return mNewClassLoader.loadClass(name);
+                    return mOldParentClassLoader.loadClass(name);
                 } catch (ClassNotFoundException ignored) {
-                    // Some class cannot find in NewClassLoader should try OldClassLoader again.
-                    return mOldClassLoader.loadClass(name);
-                } finally {
-                    mFallThroughToNewCL.set(false);
+                    // Ignored.
                 }
+            }
+
+            return findClass(mOldClassLoader, name);
+        }
+
+        private Class<?> findClass(ClassLoader classLoader, String name) throws ClassNotFoundException {
+            try {
+                mCallFindClassOfLeafDirectly.set(true);
+                return classLoader.loadClass(name);
+            } finally {
+                mCallFindClassOfLeafDirectly.set(false);
             }
         }
     }
@@ -195,8 +216,10 @@ final class NewClassLoaderInjector {
         final ClassLoader result = new PathClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader.getParent());
 
         if (!hasPatchDexPaths) {
-            findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
-            findField(result.getClass(), "parent").set(result, dispatchClassLoader);
+            // findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
+            final Field parentField = findField(ClassLoader.class, "parent");
+            parentField.set(result, dispatchClassLoader);
+            parentField.set(oldClassLoader, dispatchClassLoader);
         }
 
         return result;
