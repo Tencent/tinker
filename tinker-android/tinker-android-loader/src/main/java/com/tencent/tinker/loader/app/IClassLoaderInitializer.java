@@ -8,5 +8,6 @@ import android.support.annotation.Keep;
  */
 @Keep
 public interface IClassLoaderInitializer {
+    @Keep
     void initializeClassLoader(Application application, ClassLoader currentCl) throws Throwable;
 }

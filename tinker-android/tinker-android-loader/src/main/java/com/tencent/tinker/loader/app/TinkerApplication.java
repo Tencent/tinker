@@ -129,9 +129,13 @@ public abstract class TinkerApplication extends Application {
         }
         if (classLoaderInitializerClassName != null && !classLoaderInitializerClassName.isEmpty()) {
             try {
-                final Class<?> classLoaderInitializerClazz = Class.forName(classLoaderInitializerClassName, false, newClassLoader);
-                IClassLoaderInitializer classLoaderInitializer = (IClassLoaderInitializer) classLoaderInitializerClazz.newInstance();
-                classLoaderInitializer.initializeClassLoader(this, newClassLoader);
+                final Class<?> classLoaderInitializerClazz
+                        = Class.forName(classLoaderInitializerClassName, false, newClassLoader);
+                final Method initializeClassLoaderMethod
+                        = classLoaderInitializerClazz.getDeclaredMethod(
+                                "initializeClassLoader", Application.class, ClassLoader.class);
+                final Object classLoaderInitializer = classLoaderInitializerClazz.newInstance();
+                initializeClassLoaderMethod.invoke(classLoaderInitializer, this, newClassLoader);
             } catch (Throwable thr) {
                 ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INIT_CLASSLOADER_FAIL);
                 tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
