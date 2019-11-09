@@ -133,7 +133,6 @@ public abstract class TinkerApplication extends Application {
                 IClassLoaderInitializer classLoaderInitializer = (IClassLoaderInitializer) classLoaderInitializerClazz.newInstance();
                 classLoaderInitializer.initializeClassLoader(this, newClassLoader);
             } catch (Throwable thr) {
-                tinkerResultIntent = new Intent();
                 ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INIT_CLASSLOADER_FAIL);
                 tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
                 return;
@@ -189,6 +188,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeOnBaseContextAttachedMethod = null;
     private void callAppLikeOnBaseContextAttached(Context base) {
+        if (mAppLike == null) {
+            throw new IllegalStateException("mAppLike must not be null when calling this method.");
+        }
         try {
             synchronized (this) {
                 if (mAppLikeOnBaseContextAttachedMethod == null) {
@@ -218,6 +220,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeOnCreateMethod = null;
     private void callAppLikeOnCreate() {
+        if (mAppLike == null) {
+            return;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeOnCreateMethod == null) {
@@ -240,6 +245,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeOnTerminateMethod = null;
     private void callAppLikeOnTerminate() {
+        if (mAppLike == null) {
+            return;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeOnTerminateMethod == null) {
@@ -262,6 +270,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeOnLowMemoryMethod = null;
     private void callAppLikeOnLowMemoryMethod() {
+        if (mAppLike == null) {
+            return;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeOnLowMemoryMethod == null) {
@@ -285,6 +296,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeOnTrimMemoryMethod = null;
     private void callAppLikeOnTrimMemoryMethod(int level) {
+        if (mAppLike == null) {
+            return;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeOnTrimMemoryMethod == null) {
@@ -307,6 +321,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeOnConfigurationChangedMethod = null;
     private void callAppLikeOnConfigurationChangedMethod(Configuration newConfig) {
+        if (mAppLike == null) {
+            return;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeOnConfigurationChangedMethod == null) {
@@ -329,6 +346,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeGetResourcesMethod = null;
     private Resources callAppLikeGetResourcesMethod(Resources resource) {
+        if (mAppLike == null) {
+            return resource;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeGetResourcesMethod == null) {
@@ -351,6 +371,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeGetClassLoaderMethod = null;
     private ClassLoader callAppLikeGetClassLoaderMethod(ClassLoader classLoader) {
+        if (mAppLike == null) {
+            return classLoader;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeGetClassLoaderMethod == null) {
@@ -373,6 +396,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeGetAssetsMethod = null;
     private AssetManager callAppLikeGetAssetsMethod(AssetManager assets) {
+        if (mAppLike == null) {
+            return assets;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeGetAssetsMethod == null) {
@@ -395,6 +421,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeGetSystemServiceMethod = null;
     private Object callAppLikeGetSystemServiceMethod(String name, Object service) {
+        if (mAppLike == null) {
+            return service;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeGetSystemServiceMethod == null) {
@@ -417,6 +446,9 @@ public abstract class TinkerApplication extends Application {
 
     private Method mAppLikeGetBaseContextMethod = null;
     private Context callAppLikeGetBaseContextMethod(Context base) {
+        if (mAppLike == null) {
+            return base;
+        }
         try {
             synchronized (this) {
                 if (mAppLikeGetBaseContextMethod == null) {
