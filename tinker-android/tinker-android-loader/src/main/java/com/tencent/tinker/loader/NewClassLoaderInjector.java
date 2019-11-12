@@ -38,8 +38,6 @@ final class NewClassLoaderInjector {
     private static final class DispatchClassLoader extends ClassLoader {
         private final String mApplicationClassName;
         private final ClassLoader mOldClassLoader;
-        private final ClassLoader mOldParentClassLoader;
-        private final boolean mIsOldParentABootClassLoader;
 
         private ClassLoader mNewClassLoader;
 
@@ -54,8 +52,6 @@ final class NewClassLoaderInjector {
             super(ClassLoader.getSystemClassLoader());
             mApplicationClassName = applicationClassName;
             mOldClassLoader = oldClassLoader;
-            mOldParentClassLoader = oldClassLoader.getParent();
-            mIsOldParentABootClassLoader = (mOldParentClassLoader == ClassLoader.getSystemClassLoader());
         }
 
         void setNewClassLoader(ClassLoader classLoader) {
@@ -104,18 +100,8 @@ final class NewClassLoaderInjector {
             try {
                 return findClass(mNewClassLoader, name);
             } catch (ClassNotFoundException ignored) {
-                // Ignored.
+                return findClass(mOldClassLoader, name);
             }
-
-            if (!mIsOldParentABootClassLoader) {
-                try {
-                    return mOldParentClassLoader.loadClass(name);
-                } catch (ClassNotFoundException ignored) {
-                    // Ignored.
-                }
-            }
-
-            return findClass(mOldClassLoader, name);
         }
 
         private Class<?> findClass(ClassLoader classLoader, String name) throws ClassNotFoundException {
@@ -216,10 +202,8 @@ final class NewClassLoaderInjector {
         final ClassLoader result = new PathClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader.getParent());
 
         if (!hasPatchDexPaths) {
-            // findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
-            final Field parentField = findField(ClassLoader.class, "parent");
-            parentField.set(result, dispatchClassLoader);
-            parentField.set(oldClassLoader, dispatchClassLoader);
+            findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
+            findField(ClassLoader.class, "parent").set(result, dispatchClassLoader);
         }
 
         return result;
@@ -234,11 +218,15 @@ final class NewClassLoaderInjector {
 
         if (Build.VERSION.SDK_INT < 27) {
             final Resources res = app.getResources();
-            findField(res.getClass(), "mClassLoader").set(res, classLoader);
+            try {
+                findField(res.getClass(), "mClassLoader").set(res, classLoader);
 
-            final Object drawableInflater = findField(res.getClass(), "mDrawableInflater").get(res);
-            if (drawableInflater != null) {
-                findField(drawableInflater.getClass(), "mClassLoader").set(drawableInflater, classLoader);
+                final Object drawableInflater = findField(res.getClass(), "mDrawableInflater").get(res);
+                if (drawableInflater != null) {
+                    findField(drawableInflater.getClass(), "mClassLoader").set(drawableInflater, classLoader);
+                }
+            } catch (Throwable ignored) {
+                // Ignored.
             }
         }
     }
