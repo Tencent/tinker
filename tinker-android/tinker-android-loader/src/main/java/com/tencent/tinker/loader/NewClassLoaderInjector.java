@@ -192,24 +192,5 @@ public final class NewClassLoaderInjector {
         }
     }
 
-    private static Method findMethod(Class<?> clazz, String name, Class<?>... argTypes) throws Throwable {
-        Class<?> currClazz = clazz;
-        while (true) {
-            try {
-                final Method result = currClazz.getDeclaredMethod(name, argTypes);
-                result.setAccessible(true);
-                return result;
-            } catch (Throwable ignored) {
-                if (currClazz == Object.class) {
-                    throw new NoSuchMethodException("Cannot find method "
-                            + name + " " + Arrays.toString(argTypes)
-                            + " in class " + clazz.getName() + " and its super classes.");
-                } else {
-                    currClazz = currClazz.getSuperclass();
-                }
-            }
-        }
-    }
-
     private NewClassLoaderInjector() {}
 }
