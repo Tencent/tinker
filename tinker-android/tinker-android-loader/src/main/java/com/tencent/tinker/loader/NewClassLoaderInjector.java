@@ -103,13 +103,9 @@ public final class NewClassLoaderInjector {
         final Field dexElementsField = findField(oldPathList.getClass(), "dexElements");
         final Object[] oldDexElements = (Object[]) dexElementsField.get(oldPathList);
 
-        final Field nativeLibraryDirectoriesField = findField(oldPathList.getClass(), "nativeLibraryDirectories");
-        final List<File> oldNativeLibraryDirectories = (List<File>) nativeLibraryDirectoriesField.get(oldPathList);
 
         final Field dexFileField = findField(oldDexElements.getClass().getComponentType(), "dexFile");
-
         final StringBuilder dexPathBuilder = new StringBuilder();
-
         final String packageName = app.getPackageName();
         boolean isFirstItem = true;
         for (Object oldDexElement : oldDexElements) {
@@ -131,9 +127,15 @@ public final class NewClassLoaderInjector {
             }
             dexPathBuilder.append(dexPath);
         }
-
         final String combinedDexPath = dexPathBuilder.toString();
 
+        final Field nativeLibraryDirectoriesField = findField(oldPathList.getClass(), "nativeLibraryDirectories");
+        List<File> oldNativeLibraryDirectories = null;
+        if (nativeLibraryDirectoriesField.getType().isArray()) {
+            oldNativeLibraryDirectories = Arrays.asList((File[]) nativeLibraryDirectoriesField.get(oldPathList));
+        } else {
+            oldNativeLibraryDirectories = (List<File>) nativeLibraryDirectoriesField.get(oldPathList);
+        }
         final StringBuilder libraryPathBuilder = new StringBuilder();
         isFirstItem = true;
         for (File libDir : oldNativeLibraryDirectories) {
@@ -147,7 +149,6 @@ public final class NewClassLoaderInjector {
             }
             libraryPathBuilder.append(libDir.getAbsolutePath());
         }
-
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
         final ClassLoader result = new PathClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader.getParent());
@@ -165,11 +166,15 @@ public final class NewClassLoaderInjector {
 
         if (Build.VERSION.SDK_INT < 27) {
             final Resources res = app.getResources();
-            findField(res.getClass(), "mClassLoader").set(res, classLoader);
+            try {
+                findField(res.getClass(), "mClassLoader").set(res, classLoader);
 
-            final Object drawableInflater = findField(res.getClass(), "mDrawableInflater").get(res);
-            if (drawableInflater != null) {
-                findField(drawableInflater.getClass(), "mClassLoader").set(drawableInflater, classLoader);
+                final Object drawableInflater = findField(res.getClass(), "mDrawableInflater").get(res);
+                if (drawableInflater != null) {
+                    findField(drawableInflater.getClass(), "mClassLoader").set(drawableInflater, classLoader);
+                }
+            } catch (Throwable ignored) {
+                // Ignored.
             }
         }
     }
