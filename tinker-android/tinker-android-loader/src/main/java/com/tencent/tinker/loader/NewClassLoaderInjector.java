@@ -25,6 +25,7 @@ import com.tencent.tinker.loader.app.TinkerApplication;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
 
 import dalvik.system.BaseDexClassLoader;
@@ -141,15 +142,9 @@ final class NewClassLoaderInjector {
         final Field dexElementsField = findField(oldPathList.getClass(), "dexElements");
         final Object[] oldDexElements = (Object[]) dexElementsField.get(oldPathList);
 
-        final Field nativeLibraryDirectoriesField = findField(oldPathList.getClass(), "nativeLibraryDirectories");
-        final List<File> oldNativeLibraryDirectories = (List<File>) nativeLibraryDirectoriesField.get(oldPathList);
-
         final Field dexFileField = findField(oldDexElements.getClass().getComponentType(), "dexFile");
-
         final StringBuilder dexPathBuilder = new StringBuilder();
-
         final boolean hasPatchDexPaths = patchDexPaths != null && patchDexPaths.length > 0;
-
         if (hasPatchDexPaths) {
             for (int i = 0; i < patchDexPaths.length; ++i) {
                 if (i > 0) {
@@ -183,6 +178,14 @@ final class NewClassLoaderInjector {
 
         final String combinedDexPath = dexPathBuilder.toString();
 
+
+        final Field nativeLibraryDirectoriesField = findField(oldPathList.getClass(), "nativeLibraryDirectories");
+        List<File> oldNativeLibraryDirectories = null;
+        if (nativeLibraryDirectoriesField.getType().isArray()) {
+            oldNativeLibraryDirectories = Arrays.asList((File[]) nativeLibraryDirectoriesField.get(oldPathList));
+        } else {
+            oldNativeLibraryDirectories = (List<File>) nativeLibraryDirectoriesField.get(oldPathList);
+        }
         final StringBuilder libraryPathBuilder = new StringBuilder();
         isFirstItem = true;
         for (File libDir : oldNativeLibraryDirectories) {
