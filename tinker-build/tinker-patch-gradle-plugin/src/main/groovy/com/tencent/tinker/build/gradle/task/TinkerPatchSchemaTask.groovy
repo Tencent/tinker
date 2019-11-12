@@ -87,7 +87,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
             newApkList << buildApkFile
             oldApkList << oldApkFile
         } else {
-            throw new GradleException('oldApk and newApk must be both files or directories')
+            throw new GradleException("oldApk [${oldApkFile.getAbsolutePath()}] and newApk [${buildApkFile.getAbsolutePath()}] must be both files or directories.")
         }
 
         if (oldApkList.size() != newApkList.size()) {
