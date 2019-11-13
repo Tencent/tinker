@@ -19,6 +19,7 @@ package com.tencent.tinker.loader;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
@@ -132,11 +133,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
             Log.w(TAG, "found clean patch mark and we are in main process, delete patch file now.");
             String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
             if (patchName != null) {
-                String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
-                SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
-                if (oldVersion.equals(newVersion)) {
-                    // !oldVersion.equals(newVersion) means new patch is applied, just fall back to old one in that case.
-                    // Or we will set oldVersion and newVersion to empty string to clean patch.
+                // oldVersion.equals(newVersion) means the new version has been loaded at least once
+                // after it was applied.
+                final boolean isNewVersionLoadedBefore = oldVersion.equals(newVersion);
+                if (isNewVersionLoadedBefore) {
+                    // Set oldVersion and newVersion to empty string to clean patch
+                    // if current patch has been loaded before.
                     oldVersion = "";
                 }
                 newVersion = oldVersion;
@@ -144,10 +146,15 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 patchInfo.newVersion = newVersion;
                 patchInfo.isRemoveNewVersion = false;
                 SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-                ShareTinkerInternals.killProcessExceptMain(app);
 
-                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
-                return;
+                String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
+                SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+
+                if (isNewVersionLoadedBefore) {
+                    ShareTinkerInternals.killProcessExceptMain(app);
+                    ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
+                    return;
+                }
             }
         }
 
