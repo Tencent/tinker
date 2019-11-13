@@ -37,6 +37,7 @@ import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
 
+import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
 import org.jf.dexlib2.iface.DexFile;
@@ -255,7 +256,7 @@ public class DexDiffDecoder extends BaseDecoder {
             if (!isCurrentDexHasChangedClass) {
                 continue;
             }
-            DexBuilder dexBuilder = DexBuilder.makeDexBuilder();
+            DexBuilder dexBuilder = new DexBuilder(Opcodes.forApi(29));
             for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
                 if (!descOfChangedClassesInCurrDex.contains(classDef.getType())) {
                     continue;

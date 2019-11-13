@@ -50,7 +50,7 @@ public class ShareTinkerInternals {
     private static final String  PATCH_PROCESS_NAME    = ":patch";
 
     private static       Boolean isPatchProcess        = null;
-    private static       Boolean isARKHotRunning       = false;
+    private static       Boolean isARKHotRunning       = null;
     /**
      * or you may just hardcode them in your app
      */

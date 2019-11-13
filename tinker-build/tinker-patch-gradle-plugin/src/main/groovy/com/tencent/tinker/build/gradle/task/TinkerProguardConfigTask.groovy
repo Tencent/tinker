@@ -55,7 +55,10 @@ public class TinkerProguardConfigTask extends DefaultTask {
                     "-keep public class com.tencent.tinker.loader.TinkerTestAndroidNClassLoader {\n" +
                     "    *;\n" +
                     "}\n" +
-                    "\n"
+                    "\n" +
+                    "-keep public class * implements com.tencent.tinker.loader.app.IClassLoaderInitializer {\n" +
+                    "     *;\n" +
+                    "}\n"
 
 
     def applicationVariant
