@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.os.Handler;
 import android.os.SystemClock;
 
 import com.tencent.tinker.loader.TinkerLoader;
@@ -65,10 +66,12 @@ public abstract class TinkerApplication extends Application {
     private boolean useSafeMode;
     private Intent tinkerResultIntent;
 
-    private ITinkerInlineFenceBridge mBridge = null;
+    private ClassLoader mCurrentClassLoader = null;
+    private Handler mInlineFence = null;
 
     protected TinkerApplication(int tinkerFlags) {
-        this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike", TinkerLoader.class.getName(), false);
+        this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike",
+                TinkerLoader.class.getName(), false);
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
@@ -98,24 +101,30 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
-    private ITinkerInlineFenceBridge createInlineFence(int tinkerFlags,
-                                                       String delegateClassName,
-                                                       boolean tinkerLoadVerifyFlag,
-                                                       long applicationStartElapsedTime,
-                                                       long applicationStartMillisTime,
-                                                       Intent resultIntent) {
+    private Handler createInlineFence(Application app,
+                                      int tinkerFlags,
+                                      String delegateClassName,
+                                      boolean tinkerLoadVerifyFlag,
+                                      long applicationStartElapsedTime,
+                                      long applicationStartMillisTime,
+                                      Intent resultIntent) {
         try {
-            final Class<?> inlineFenceClazz = Class.forName(
-                    "com.tencent.tinker.entry.TinkerApplicationInlineFence",
-                    true, super.getClassLoader());
-            final Constructor<?> ctor = inlineFenceClazz.getConstructor(int.class, String.class,
-                    boolean.class, long.class, long.class, Intent.class);
-            ctor.setAccessible(true);
-            return (ITinkerInlineFenceBridge) ctor.newInstance(tinkerFlags, delegateClassName,
-                    tinkerLoadVerifyFlag, applicationStartElapsedTime,
-                    applicationStartMillisTime, resultIntent);
+            // Use reflection to create the delegate so it doesn't need to go into the primary dex.
+            // And we can also patch it
+            final Class<?> delegateClass = Class.forName(delegateClassName, false, mCurrentClassLoader);
+            final Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class,
+                    long.class, long.class, Intent.class);
+            final Object appLike = constructor.newInstance(app, tinkerFlags, tinkerLoadVerifyFlag,
+                    applicationStartElapsedTime, applicationStartMillisTime, resultIntent);
+            final Class<?> inlineFenceClass = Class.forName(
+                    "com.tencent.tinker.entry.TinkerApplicationInlineFence", false, mCurrentClassLoader);
+            final Class<?> appLikeClass = Class.forName(
+                    "com.tencent.tinker.entry.ApplicationLike", false, mCurrentClassLoader);
+            final Constructor<?> inlineFenceCtor = inlineFenceClass.getConstructor(appLikeClass);
+            inlineFenceCtor.setAccessible(true);
+            return (Handler) inlineFenceCtor.newInstance(appLike);
         } catch (Throwable thr) {
-            throw new TinkerRuntimeException("fail to create inline fence instance.", thr);
+            throw new TinkerRuntimeException("createInlineFence failed", thr);
         }
     }
 
@@ -124,10 +133,11 @@ public abstract class TinkerApplication extends Application {
             final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
             final long applicationStartMillisTime = System.currentTimeMillis();
             loadTinker();
-            mBridge = createInlineFence(tinkerFlags, delegateClassName,
+            mCurrentClassLoader = base.getClassLoader();
+            mInlineFence = createInlineFence(this, tinkerFlags, delegateClassName,
                     tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime,
                     tinkerResultIntent);
-            mBridge.attachBaseContext(this, base);
+            TinkerInlineFenceAction.callOnBaseContextAttached(mInlineFence, base);
             //reset save mode
             if (useSafeMode) {
                 ShareTinkerInternals.setSafeModeCount(this, 0);
@@ -149,72 +159,92 @@ public abstract class TinkerApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (mBridge != null) {
-            mBridge.onCreate(this);
+        if (mInlineFence == null) {
+            return;
         }
+        TinkerInlineFenceAction.callOnCreate(mInlineFence);
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
-        if (mBridge != null) {
-            mBridge.onTerminate();
+        if (mInlineFence == null) {
+            return;
         }
+        TinkerInlineFenceAction.callOnTerminate(mInlineFence);
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        if (mBridge != null) {
-            mBridge.onLowMemory();
+        if (mInlineFence == null) {
+            return;
         }
+        TinkerInlineFenceAction.callOnLowMemory(mInlineFence);
     }
 
     @TargetApi(14)
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        if (mBridge != null) {
-            mBridge.onTrimMemory(level);
+        if (mInlineFence == null) {
+            return;
         }
+        TinkerInlineFenceAction.callOnTrimMemory(mInlineFence, level);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        if (mBridge != null) {
-            mBridge.onConfigurationChanged(newConfig);
+        if (mInlineFence == null) {
+            return;
         }
+        TinkerInlineFenceAction.callOnConfigurationChanged(mInlineFence, newConfig);
     }
 
     @Override
     public Resources getResources() {
         final Resources resources = super.getResources();
-        return (mBridge != null ? mBridge.getResources(resources) : resources);
+        if (mInlineFence == null) {
+            return resources;
+        }
+        return TinkerInlineFenceAction.callGetResources(mInlineFence, resources);
     }
 
     @Override
     public ClassLoader getClassLoader() {
         final ClassLoader classLoader = super.getClassLoader();
-        return (mBridge != null ? mBridge.getClassLoader(classLoader) : classLoader);
+        if (mInlineFence == null) {
+            return classLoader;
+        }
+        return TinkerInlineFenceAction.callGetClassLoader(mInlineFence, classLoader);
     }
 
     @Override
     public AssetManager getAssets() {
-        final AssetManager assetManager = super.getAssets();
-        return (mBridge != null ? mBridge.getAssets(assetManager) : assetManager);
+        final AssetManager assets = super.getAssets();
+        if (mInlineFence == null) {
+            return assets;
+        }
+        return TinkerInlineFenceAction.callGetAssets(mInlineFence, assets);
     }
 
     @Override
     public Object getSystemService(String name) {
         final Object service = super.getSystemService(name);
-        return (mBridge != null ? mBridge.getSystemService(name, service) : service);
+        if (mInlineFence == null) {
+            return service;
+        }
+        return TinkerInlineFenceAction.callGetSystemService(mInlineFence, name, service);
     }
 
     @Override
     public Context getBaseContext() {
         final Context base = super.getBaseContext();
-        return (mBridge != null ? mBridge.getBaseContext(base) : base);
+        if (mInlineFence == null) {
+            return base;
+        }
+        return TinkerInlineFenceAction.callGetBaseContext(mInlineFence, base);
     }
 
     public void setUseSafeMode(boolean useSafeMode) {

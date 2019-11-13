@@ -62,7 +62,7 @@ public class SystemClassLoaderAdder {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
-                classLoader = AndroidNClassLoader.inject(loader, application);
+                classLoader = NewClassLoaderInjector.inject(application, loader);
             }
             //because in dalvik, if inner class is not the same classloader with it wrapper class.
             //it won't fail at dex2opt
