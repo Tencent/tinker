@@ -104,6 +104,9 @@ public class TinkerPatchSchemaTask extends DefaultTask {
             def oldApk = oldApkList[i] as File
             def newApk = newApkList[i] as File
 
+            def packageConfigFields = new HashMap<String, String>(configuration.packageConfig.getFields())
+            packageConfigFields.putAll(configuration.packageConfig.getApkSpecFields(newApk.getName()))
+
             builder.setOldApk(oldApk.getAbsolutePath())
                     .setNewApk(newApk.getAbsolutePath())
                     .setOutBuilder(tmpDir.getAbsolutePath())
@@ -122,7 +125,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                     .setResourceIgnoreChangeWarningPattern(new ArrayList<String>(configuration.res.ignoreChangeWarning))
                     .setResourceLargeModSize(configuration.res.largeModSize)
                     .setUseApplyResource(configuration.buildConfig.usingResourceMapping)
-                    .setConfigFields(new HashMap<String, String>(configuration.packageConfig.getFields()))
+                    .setConfigFields(packageConfigFields)
                     .setSevenZipPath(configuration.sevenZip.path)
                     .setUseSign(configuration.useSign)
                     .setArkHotPath(configuration.arkHot.path)
