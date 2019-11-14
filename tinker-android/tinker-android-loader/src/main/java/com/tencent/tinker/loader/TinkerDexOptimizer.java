@@ -129,7 +129,7 @@ public final class TinkerDexOptimizer {
                         interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
                     } else if (Build.VERSION.SDK_INT >= 28
                             || (Build.VERSION.SDK_INT >= 27 && Build.VERSION.PREVIEW_SDK_INT != 0)) {
-                        AndroidNClassLoader.triggerDex2Oat(context, dexFile.getAbsolutePath());
+                        NewClassLoaderInjector.triggerDex2Oat(context, dexFile.getAbsolutePath());
                     } else {
                         DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
                     }

@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.util.zip.CRC32;
 
 /**
- * Created by tomystang on 2019-09-18.
+ * Created by tangyinsheng on 2019-09-18.
  */
 public final class DigestUtil {
     public static long getCRC32(File file) throws IOException {
