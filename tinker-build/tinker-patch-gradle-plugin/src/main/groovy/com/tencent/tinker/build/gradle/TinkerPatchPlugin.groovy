@@ -374,7 +374,16 @@ class TinkerPatchPlugin implements Plugin<Project> {
         }
 
         if (new File(configuration.oldApk).isDirectory()) {
-            tinkerPatchBuildTask.buildApkPath = tinkerPatchBuildTask.buildApkPath.getParentFile()
+            if (tinkerPatchBuildTask.buildApkPath != null) {
+                def buildApkFile = new File(tinkerPatchBuildTask.buildApkPath)
+                if (!buildApkFile.isDirectory()) {
+                    mProject.logger.error("tinkerPatchBuildTask.buildApkPath"
+                            + " [${buildApkFile.getAbsolutePath()}] is not a directory but oldApk"
+                            + " is, use [${buildApkFile.getParent()}] as buildApkPath."
+                    )
+                    tinkerPatchBuildTask.buildApkPath = buildApkFile.getParent()
+                }
+            }
         }
 
         if (variant.metaClass.hasProperty(variant, 'assembleProvider')) {
