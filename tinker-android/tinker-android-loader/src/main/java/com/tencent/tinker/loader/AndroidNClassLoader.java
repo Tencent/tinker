@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
 
+import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
 import java.io.File;
@@ -44,11 +45,13 @@ class AndroidNClassLoader extends PathClassLoader {
     private static String packageName = "";
 
     private final ClassLoader originClassLoader;
+    private final int gpExpansionMode;
     private String applicationClassName = "";
 
-    private AndroidNClassLoader(String dexPath, ClassLoader parent, Application application) {
+    private AndroidNClassLoader(String dexPath, ClassLoader parent, Application application, int gpExpansionMode) {
         super(dexPath, parent.getParent());
         originClassLoader = parent;
+        this.gpExpansionMode = gpExpansionMode;
         String name = application.getClass().getName();
         if (name != null && !name.equals("android.app.Application")) {
             applicationClassName = name;
@@ -56,10 +59,10 @@ class AndroidNClassLoader extends PathClassLoader {
         packageName = application.getPackageName();
     }
 
-    private AndroidNClassLoader(String dexPath, ClassLoader parent) {
-        super(dexPath, parent);
-        originClassLoader = parent;
-    }
+    // private AndroidNClassLoader(String dexPath, ClassLoader parent) {
+    //     super(dexPath, parent);
+    //     originClassLoader = parent;
+    // }
 
     @SuppressWarnings("unchecked")
     private static Object recreateDexPathList(Object originalDexPathList, ClassLoader newDefiningContext, boolean createEmptyOne) throws Exception {
@@ -115,9 +118,9 @@ class AndroidNClassLoader extends PathClassLoader {
         return dexPathListConstructor.newInstance(newDefiningContext, dexPath, libraryPath, null);
     }
 
-    private static AndroidNClassLoader createAndroidNClassLoader(BaseDexClassLoader originalClassLoader, Application application) throws Exception {
+    private static AndroidNClassLoader createAndroidNClassLoader(BaseDexClassLoader originalClassLoader, Application application, int gpExpansionMode) throws Exception {
         //let all element ""
-        final AndroidNClassLoader androidNClassLoader = new AndroidNClassLoader("",  originalClassLoader, application);
+        final AndroidNClassLoader androidNClassLoader = new AndroidNClassLoader("",  originalClassLoader, application, gpExpansionMode);
         final Field pathListField = ShareReflectUtil.findField(originalClassLoader, "pathList");
         final Object originPathList = pathListField.get(originalClassLoader);
 
@@ -174,8 +177,8 @@ class AndroidNClassLoader extends PathClassLoader {
         new PathClassLoader(dexPath, bootClassLoader);
     }
 
-    public static AndroidNClassLoader inject(BaseDexClassLoader originClassLoader, Application application) throws Exception {
-        AndroidNClassLoader classLoader = createAndroidNClassLoader(originClassLoader, application);
+    public static AndroidNClassLoader inject(BaseDexClassLoader originClassLoader, Application application, int gpExpansionMode) throws Exception {
+        AndroidNClassLoader classLoader = createAndroidNClassLoader(originClassLoader, application, gpExpansionMode);
         reflectPackageInfoClassloader(application, classLoader);
         return classLoader;
     }
@@ -186,7 +189,10 @@ class AndroidNClassLoader extends PathClassLoader {
             return originClassLoader.loadClass(name);
         } else if (name != null && name.startsWith("com.tencent.tinker.loader.")
                 && !name.equals(SystemClassLoaderAdder.CHECK_DEX_CLASS)) {
-            return originClassLoader.loadClass(name);
+            if (gpExpansionMode == ShareConstants.TINKER_GPMODE_DISABLE
+                    || !name.startsWith("com.tencent.tinker.loader.shareutil.")) {
+                return originClassLoader.loadClass(name);
+            }
         } else if (name != null &&  (name.startsWith("org.apache.commons.codec.")
                                      || name.startsWith("org.apache.commons.logging.")
                                      || name.startsWith("org.apache.http."))) {

@@ -55,7 +55,8 @@ public class SystemClassLoaderAdder {
 
     public static ClassLoader injectNewClassLoaderOnDemand(Application application, BaseDexClassLoader loader, int gpExpansionMode) throws Throwable {
         if (Build.VERSION.SDK_INT >= 24) {
-            return NewClassLoaderInjector.inject(application, loader, gpExpansionMode);
+            // return NewClassLoaderInjector.inject(application, loader, gpExpansionMode);
+            return AndroidNClassLoader.inject(loader, application, gpExpansionMode);
         } else {
             return loader;
         }
@@ -70,8 +71,8 @@ public class SystemClassLoaderAdder {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
-                // classLoader = AndroidNClassLoader.inject(loader, application);
-                classLoader = NewClassLoaderInjector.inject(application, loader, ShareConstants.TINKER_GPMODE_DISABLE);
+                classLoader = AndroidNClassLoader.inject(loader, application, ShareConstants.TINKER_GPMODE_DISABLE);
+                // classLoader = NewClassLoaderInjector.inject(application, loader, ShareConstants.TINKER_GPMODE_DISABLE);
             }
             //because in dalvik, if inner class is not the same classloader with it wrapper class.
             //it won't fail at dex2opt
