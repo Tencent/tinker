@@ -99,11 +99,12 @@ final class NewClassLoaderInjector {
 
         ClassLoader result = null;
         if (Build.VERSION.SDK_INT >= 28) {
-            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader);
+            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
         } else {
-            result = new TinkerDelegateLastClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader);
+            result = new TinkerDelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
         }
 
+        findField(ClassLoader.class, "parent").set(result, oldClassLoader);
         findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
 
         return result;
