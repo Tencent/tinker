@@ -33,6 +33,7 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -216,10 +217,22 @@ public abstract class TinkerApplication extends Application {
         onBaseContextAttached(base);
     }
 
+    private static void dummyThrownExceptionMethod() throws Throwable {
+        if (File.pathSeparator == null) {
+            throw new Throwable();
+        }
+    }
+
     @Override
     public void onCreate() {
-        super.onCreate();
-        callAppLikeOnCreate();
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onCreate();
+            callAppLikeOnCreate();
+        }
     }
 
     private Method mAppLikeOnCreateMethod = null;
@@ -243,8 +256,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public void onTerminate() {
-        super.onTerminate();
-        callAppLikeOnTerminate();
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onTerminate();
+            callAppLikeOnTerminate();
+        }
     }
 
     private Method mAppLikeOnTerminateMethod = null;
@@ -268,8 +287,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public void onLowMemory() {
-        super.onLowMemory();
-        callAppLikeOnLowMemoryMethod();
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onLowMemory();
+            callAppLikeOnLowMemoryMethod();
+        }
     }
 
     private Method mAppLikeOnLowMemoryMethod = null;
@@ -294,8 +319,14 @@ public abstract class TinkerApplication extends Application {
     @TargetApi(14)
     @Override
     public void onTrimMemory(int level) {
-        super.onTrimMemory(level);
-        callAppLikeOnTrimMemoryMethod(level);
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onTrimMemory(level);
+            callAppLikeOnTrimMemoryMethod(level);
+        }
     }
 
     private Method mAppLikeOnTrimMemoryMethod = null;
@@ -319,8 +350,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        callAppLikeOnConfigurationChangedMethod(newConfig);
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onConfigurationChanged(newConfig);
+            callAppLikeOnConfigurationChangedMethod(newConfig);
+        }
     }
 
     private Method mAppLikeOnConfigurationChangedMethod = null;
@@ -344,8 +381,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public Resources getResources() {
-        final Resources resources = super.getResources();
-        return callAppLikeGetResourcesMethod(resources);
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final Resources resources = super.getResources();
+            return callAppLikeGetResourcesMethod(resources);
+        }
     }
 
     private Method mAppLikeGetResourcesMethod = null;
@@ -369,8 +412,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public ClassLoader getClassLoader() {
-        final ClassLoader classLoader = super.getClassLoader();
-        return callAppLikeGetClassLoaderMethod(classLoader);
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final ClassLoader classLoader = super.getClassLoader();
+            return callAppLikeGetClassLoaderMethod(classLoader);
+        }
     }
 
     private Method mAppLikeGetClassLoaderMethod = null;
@@ -394,8 +443,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public AssetManager getAssets() {
-        final AssetManager assets = super.getAssets();
-        return callAppLikeGetAssetsMethod(assets);
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final AssetManager assets = super.getAssets();
+            return callAppLikeGetAssetsMethod(assets);
+        }
     }
 
     private Method mAppLikeGetAssetsMethod = null;
@@ -419,8 +474,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public Object getSystemService(String name) {
-        final Object service = super.getSystemService(name);
-        return callAppLikeGetSystemServiceMethod(name, service);
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final Object service = super.getSystemService(name);
+            return callAppLikeGetSystemServiceMethod(name, service);
+        }
     }
 
     private Method mAppLikeGetSystemServiceMethod = null;
@@ -444,8 +505,14 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public Context getBaseContext() {
-        final Context base = super.getBaseContext();
-        return callAppLikeGetBaseContextMethod(base);
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final Context base = super.getBaseContext();
+            return callAppLikeGetBaseContextMethod(base);
+        }
     }
 
     private Method mAppLikeGetBaseContextMethod = null;
@@ -497,14 +564,32 @@ public abstract class TinkerApplication extends Application {
     }
 
     public void setUseSafeMode(boolean useSafeMode) {
-        this.useSafeMode = useSafeMode;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            this.useSafeMode = useSafeMode;
+        }
     }
 
     public boolean isTinkerLoadVerifyFlag() {
-        return tinkerLoadVerifyFlag;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            return tinkerLoadVerifyFlag;
+        }
     }
 
     public int getTinkerFlags() {
-        return tinkerFlags;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            return tinkerFlags;
+        }
     }
 }
