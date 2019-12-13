@@ -53,15 +53,6 @@ public class SystemClassLoaderAdder {
     private static final String TAG = "Tinker.ClassLoaderAdder";
     private static int sPatchDexCount = 0;
 
-    public static ClassLoader injectNewClassLoaderOnDemand(Application application, BaseDexClassLoader loader, int gpExpansionMode) throws Throwable {
-        if (Build.VERSION.SDK_INT >= 24) {
-            // return NewClassLoaderInjector.inject(application, loader, gpExpansionMode);
-            return AndroidNClassLoader.inject(loader, application, gpExpansionMode);
-        } else {
-            return loader;
-        }
-    }
-
     @SuppressLint("NewApi")
     public static void installDexes(Application application, BaseDexClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
         throws Throwable {
@@ -71,19 +62,19 @@ public class SystemClassLoaderAdder {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
-                classLoader = AndroidNClassLoader.inject(loader, application, ShareConstants.TINKER_GPMODE_DISABLE);
-                // classLoader = NewClassLoaderInjector.inject(application, loader, ShareConstants.TINKER_GPMODE_DISABLE);
-            }
-            //because in dalvik, if inner class is not the same classloader with it wrapper class.
-            //it won't fail at dex2opt
-            if (Build.VERSION.SDK_INT >= 23) {
-                V23.install(classLoader, files, dexOptDir);
-            } else if (Build.VERSION.SDK_INT >= 19) {
-                V19.install(classLoader, files, dexOptDir);
-            } else if (Build.VERSION.SDK_INT >= 14) {
-                V14.install(classLoader, files, dexOptDir);
+                classLoader = NewClassLoaderInjector.inject(application, loader, files);
             } else {
-                V4.install(classLoader, files, dexOptDir);
+                //because in dalvik, if inner class is not the same classloader with it wrapper class.
+                //it won't fail at dex2opt
+                if (Build.VERSION.SDK_INT >= 23) {
+                    V23.install(classLoader, files, dexOptDir);
+                } else if (Build.VERSION.SDK_INT >= 19) {
+                    V19.install(classLoader, files, dexOptDir);
+                } else if (Build.VERSION.SDK_INT >= 14) {
+                    V14.install(classLoader, files, dexOptDir);
+                } else {
+                    V4.install(classLoader, files, dexOptDir);
+                }
             }
             //install done
             sPatchDexCount = files.size();

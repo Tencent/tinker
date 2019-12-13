@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.os.Handler;
 import android.os.SystemClock;
 
 import com.tencent.tinker.loader.SystemClassLoaderAdder;
@@ -111,58 +112,30 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
-    private void replaceAppClassLoader() {
-        tinkerResultIntent = new Intent();
-        if (gpExpansionMode == ShareConstants.TINKER_GPMODE_DISABLE) {
-            ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
-            return;
-        }
-        ClassLoader newClassLoader = TinkerApplication.class.getClassLoader();
-        if (gpExpansionMode == ShareConstants.TINKER_GPMODE_REPLACE_CLASSLOADER_AND_CALL_INITIALIZER) {
-            try {
-                newClassLoader = SystemClassLoaderAdder.injectNewClassLoaderOnDemand(this,
-                        (BaseDexClassLoader) TinkerApplication.class.getClassLoader(), gpExpansionMode);
-            } catch (Throwable thr) {
-                ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INJECT_CLASSLOADER_FAIL);
-                tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
-                return;
-            }
-        }
-        if (classLoaderInitializerClassName != null && !classLoaderInitializerClassName.isEmpty()) {
-            try {
-                final Class<?> classLoaderInitializerClazz
-                        = Class.forName(classLoaderInitializerClassName, false, newClassLoader);
-                final Method initializeClassLoaderMethod
-                        = classLoaderInitializerClazz.getDeclaredMethod(
-                                "initializeClassLoader", Application.class, ClassLoader.class);
-                final Object classLoaderInitializer = classLoaderInitializerClazz.newInstance();
-                initializeClassLoaderMethod.invoke(classLoaderInitializer, this, newClassLoader);
-            } catch (Throwable thr) {
-                ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INIT_CLASSLOADER_FAIL);
-                tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
-                return;
-            }
-        }
-        ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
-    }
-
-    private Object createDelegate(Application app,
-                                  int tinkerFlags,
-                                  String delegateClassName,
-                                  boolean tinkerLoadVerifyFlag,
-                                  long applicationStartElapsedTime,
-                                  long applicationStartMillisTime,
-                                  Intent resultIntent) {
+    private Handler createInlineFence(Application app,
+                                      int tinkerFlags,
+                                      String delegateClassName,
+                                      boolean tinkerLoadVerifyFlag,
+                                      long applicationStartElapsedTime,
+                                      long applicationStartMillisTime,
+                                      Intent resultIntent) {
         try {
             // Use reflection to create the delegate so it doesn't need to go into the primary dex.
             // And we can also patch it
-            Class<?> delegateClass = Class.forName(delegateClassName, false, mCurrentClassLoader);
-            Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class,
+            final Class<?> delegateClass = Class.forName(delegateClassName, false, mCurrentClassLoader);
+            final Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class,
                     long.class, long.class, Intent.class);
-            return constructor.newInstance(app, tinkerFlags, tinkerLoadVerifyFlag,
+            final Object appLike = constructor.newInstance(app, tinkerFlags, tinkerLoadVerifyFlag,
                     applicationStartElapsedTime, applicationStartMillisTime, resultIntent);
-        } catch (Throwable e) {
-            throw new TinkerRuntimeException("createDelegate failed", e);
+            final Class<?> inlineFenceClass = Class.forName(
+                    "com.tencent.tinker.entry.TinkerApplicationInlineFence", false, mCurrentClassLoader);
+            final Class<?> appLikeClass = Class.forName(
+                    "com.tencent.tinker.entry.ApplicationLike", false, mCurrentClassLoader);
+            final Constructor<?> inlineFenceCtor = inlineFenceClass.getConstructor(appLikeClass);
+            inlineFenceCtor.setAccessible(true);
+            return (Handler) inlineFenceCtor.newInstance(appLike);
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("createInlineFence failed", thr);
         }
     }
 
@@ -170,16 +143,12 @@ public abstract class TinkerApplication extends Application {
         try {
             final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
             final long applicationStartMillisTime = System.currentTimeMillis();
-            if (gpExpansionMode != ShareConstants.TINKER_GPMODE_DISABLE) {
-                replaceAppClassLoader();
-            } else {
-                loadTinker();
-            }
+            loadTinker();
             mCurrentClassLoader = base.getClassLoader();
-            mAppLike = createDelegate(this, tinkerFlags, delegateClassName,
+            mInlineFence = createInlineFence(this, tinkerFlags, delegateClassName,
                     tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime,
                     tinkerResultIntent);
-            callAppLikeOnBaseContextAttached(base);
+            TinkerInlineFenceAction.callOnBaseContextAttached(mInlineFence, base);
             //reset save mode
             if (useSafeMode) {
                 ShareTinkerInternals.setSafeModeCount(this, 0);
@@ -188,25 +157,6 @@ public abstract class TinkerApplication extends Application {
             throw e;
         } catch (Throwable thr) {
             throw new TinkerRuntimeException(thr.getMessage(), thr);
-        }
-    }
-
-    private Method mAppLikeOnBaseContextAttachedMethod = null;
-    private void callAppLikeOnBaseContextAttached(Context base) {
-        if (mAppLike == null) {
-            throw new IllegalStateException("mAppLike must not be null when calling this method.");
-        }
-        try {
-            synchronized (this) {
-                if (mAppLikeOnBaseContextAttachedMethod == null) {
-                    mAppLikeOnBaseContextAttachedMethod = findMethod(
-                            mAppLike.getClass(), "onBaseContextAttached", Context.class);
-                    mAppLikeOnBaseContextAttachedMethod.setAccessible(true);
-                }
-            }
-            mAppLikeOnBaseContextAttachedMethod.invoke(mAppLike, base);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
         }
     }
 
@@ -225,342 +175,93 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public void onCreate() {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            super.onCreate();
-            callAppLikeOnCreate();
-        }
-    }
-
-    private Method mAppLikeOnCreateMethod = null;
-    private void callAppLikeOnCreate() {
-        if (mAppLike == null) {
+        super.onCreate();
+        if (mInlineFence == null) {
             return;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeOnCreateMethod == null) {
-                    mAppLikeOnCreateMethod = findMethod(
-                            mAppLike.getClass(), "onCreate");
-                    mAppLikeOnCreateMethod.setAccessible(true);
-                }
-            }
-            mAppLikeOnCreateMethod.invoke(mAppLike);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        TinkerInlineFenceAction.callOnCreate(mInlineFence);
     }
 
     @Override
     public void onTerminate() {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            super.onTerminate();
-            callAppLikeOnTerminate();
-        }
-    }
-
-    private Method mAppLikeOnTerminateMethod = null;
-    private void callAppLikeOnTerminate() {
-        if (mAppLike == null) {
+        super.onTerminate();
+        if (mInlineFence == null) {
             return;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeOnTerminateMethod == null) {
-                    mAppLikeOnTerminateMethod = findMethod(
-                            mAppLike.getClass(), "onTerminate");
-                    mAppLikeOnTerminateMethod.setAccessible(true);
-                }
-            }
-            mAppLikeOnTerminateMethod.invoke(mAppLike);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        TinkerInlineFenceAction.callOnTerminate(mInlineFence);
     }
 
     @Override
     public void onLowMemory() {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            super.onLowMemory();
-            callAppLikeOnLowMemoryMethod();
-        }
-    }
-
-    private Method mAppLikeOnLowMemoryMethod = null;
-    private void callAppLikeOnLowMemoryMethod() {
-        if (mAppLike == null) {
+        super.onLowMemory();
+        if (mInlineFence == null) {
             return;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeOnLowMemoryMethod == null) {
-                    mAppLikeOnLowMemoryMethod = findMethod(
-                            mAppLike.getClass(), "onLowMemory");
-                    mAppLikeOnLowMemoryMethod.setAccessible(true);
-                }
-            }
-            mAppLikeOnLowMemoryMethod.invoke(mAppLike);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        TinkerInlineFenceAction.callOnLowMemory(mInlineFence);
     }
 
     @TargetApi(14)
     @Override
     public void onTrimMemory(int level) {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            super.onTrimMemory(level);
-            callAppLikeOnTrimMemoryMethod(level);
-        }
-    }
-
-    private Method mAppLikeOnTrimMemoryMethod = null;
-    private void callAppLikeOnTrimMemoryMethod(int level) {
-        if (mAppLike == null) {
+        super.onTrimMemory(level);
+        if (mInlineFence == null) {
             return;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeOnTrimMemoryMethod == null) {
-                    mAppLikeOnTrimMemoryMethod = findMethod(
-                            mAppLike.getClass(), "onTrimMemory", int.class);
-                    mAppLikeOnTrimMemoryMethod.setAccessible(true);
-                }
-            }
-            mAppLikeOnTrimMemoryMethod.invoke(mAppLike, level);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        TinkerInlineFenceAction.callOnTrimMemory(mInlineFence, level);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            super.onConfigurationChanged(newConfig);
-            callAppLikeOnConfigurationChangedMethod(newConfig);
-        }
-    }
-
-    private Method mAppLikeOnConfigurationChangedMethod = null;
-    private void callAppLikeOnConfigurationChangedMethod(Configuration newConfig) {
-        if (mAppLike == null) {
+        super.onConfigurationChanged(newConfig);
+        if (mInlineFence == null) {
             return;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeOnConfigurationChangedMethod == null) {
-                    mAppLikeOnConfigurationChangedMethod = findMethod(
-                            mAppLike.getClass(), "onConfigurationChanged", Configuration.class);
-                    mAppLikeOnConfigurationChangedMethod.setAccessible(true);
-                }
-            }
-            mAppLikeOnConfigurationChangedMethod.invoke(mAppLike, newConfig);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        TinkerInlineFenceAction.callOnConfigurationChanged(mInlineFence, newConfig);
     }
 
     @Override
     public Resources getResources() {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            final Resources resources = super.getResources();
-            return callAppLikeGetResourcesMethod(resources);
+        final Resources resources = super.getResources();
+        if (mInlineFence == null) {
+            return resources;
         }
-    }
-
-    private Method mAppLikeGetResourcesMethod = null;
-    private Resources callAppLikeGetResourcesMethod(Resources resource) {
-        if (mAppLike == null) {
-            return resource;
-        }
-        try {
-            synchronized (this) {
-                if (mAppLikeGetResourcesMethod == null) {
-                    mAppLikeGetResourcesMethod = findMethod(
-                            mAppLike.getClass(), "getResources", Resources.class);
-                    mAppLikeGetResourcesMethod.setAccessible(true);
-                }
-            }
-            return (Resources) mAppLikeGetResourcesMethod.invoke(mAppLike, resource);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        return TinkerInlineFenceAction.callGetResources(mInlineFence, resources);
     }
 
     @Override
     public ClassLoader getClassLoader() {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            final ClassLoader classLoader = super.getClassLoader();
-            return callAppLikeGetClassLoaderMethod(classLoader);
-        }
-    }
-
-    private Method mAppLikeGetClassLoaderMethod = null;
-    private ClassLoader callAppLikeGetClassLoaderMethod(ClassLoader classLoader) {
-        if (mAppLike == null) {
+        final ClassLoader classLoader = super.getClassLoader();
+        if (mInlineFence == null) {
             return classLoader;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeGetClassLoaderMethod == null) {
-                    mAppLikeGetClassLoaderMethod = findMethod(
-                            mAppLike.getClass(), "getClassLoader", ClassLoader.class);
-                    mAppLikeGetClassLoaderMethod.setAccessible(true);
-                }
-            }
-            return (ClassLoader) mAppLikeGetClassLoaderMethod.invoke(mAppLike, classLoader);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        return TinkerInlineFenceAction.callGetClassLoader(mInlineFence, classLoader);
     }
 
     @Override
     public AssetManager getAssets() {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            final AssetManager assets = super.getAssets();
-            return callAppLikeGetAssetsMethod(assets);
-        }
-    }
-
-    private Method mAppLikeGetAssetsMethod = null;
-    private AssetManager callAppLikeGetAssetsMethod(AssetManager assets) {
-        if (mAppLike == null) {
+        final AssetManager assets = super.getAssets();
+        if (mInlineFence == null) {
             return assets;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeGetAssetsMethod == null) {
-                    mAppLikeGetAssetsMethod = findMethod(
-                            mAppLike.getClass(), "getAssets", AssetManager.class);
-                    mAppLikeGetAssetsMethod.setAccessible(true);
-                }
-            }
-            return (AssetManager) mAppLikeGetAssetsMethod.invoke(mAppLike, assets);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        return TinkerInlineFenceAction.callGetAssets(mInlineFence, assets);
     }
 
     @Override
     public Object getSystemService(String name) {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            final Object service = super.getSystemService(name);
-            return callAppLikeGetSystemServiceMethod(name, service);
-        }
-    }
-
-    private Method mAppLikeGetSystemServiceMethod = null;
-    private Object callAppLikeGetSystemServiceMethod(String name, Object service) {
-        if (mAppLike == null) {
+        final Object service = super.getSystemService(name);
+        if (mInlineFence == null) {
             return service;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeGetSystemServiceMethod == null) {
-                    mAppLikeGetSystemServiceMethod = findMethod(
-                            mAppLike.getClass(), "getSystemService", String.class, Object.class);
-                    mAppLikeGetSystemServiceMethod.setAccessible(true);
-                }
-            }
-            return mAppLikeGetSystemServiceMethod.invoke(mAppLike, name, service);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
+        return TinkerInlineFenceAction.callGetSystemService(mInlineFence, name, service);
     }
 
     @Override
     public Context getBaseContext() {
-        try {
-            dummyThrownExceptionMethod();
-        } catch (Throwable ignored) {
-            // ignored.
-        } finally {
-            final Context base = super.getBaseContext();
-            return callAppLikeGetBaseContextMethod(base);
-        }
-    }
-
-    private Method mAppLikeGetBaseContextMethod = null;
-    private Context callAppLikeGetBaseContextMethod(Context base) {
-        if (mAppLike == null) {
+        final Context base = super.getBaseContext();
+        if (mInlineFence == null) {
             return base;
         }
-        try {
-            synchronized (this) {
-                if (mAppLikeGetBaseContextMethod == null) {
-                    mAppLikeGetBaseContextMethod = findMethod(
-                            mAppLike.getClass(), "getBaseContext", Context.class);
-                    mAppLikeGetBaseContextMethod.setAccessible(true);
-                }
-            }
-            return (Context) mAppLikeGetBaseContextMethod.invoke(mAppLike, base);
-        } catch (Throwable thr) {
-            throw new IllegalStateException(thr);
-        }
-    }
-
-    private static Method findMethod(Class<?> clazz, String name, Class<?>... argTypes)
-            throws NoSuchMethodException {
-        Class<?> currClazz = clazz;
-        while (true) {
-            try {
-                final Method result = currClazz.getDeclaredMethod(name, argTypes);
-                result.setAccessible(true);
-                return result;
-            } catch (Throwable ignored) {
-                if (currClazz == Object.class) {
-                    throw new NoSuchMethodException("Cannot find method "
-                            + name + Arrays.toString(argTypes)
-                            + " in " + name
-                            + " and its super classes.");
-                }
-                for (Class<?> itf : currClazz.getInterfaces()) {
-                    try {
-                        final Method result = itf.getDeclaredMethod(name, argTypes);
-                        result.setAccessible(true);
-                        return result;
-                    } catch (Throwable ignored2) {
-                        // Ignored.
-                    }
-                }
-                currClazz = currClazz.getSuperclass();
-            }
-        }
+        return TinkerInlineFenceAction.callGetBaseContext(mInlineFence, base);
     }
 
     public void setUseSafeMode(boolean useSafeMode) {

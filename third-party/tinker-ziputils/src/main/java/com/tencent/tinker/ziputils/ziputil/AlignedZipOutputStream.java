@@ -12,7 +12,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 
 /**
- * Created by tomystang on 2018/11/20.
+ * Created by tangyinsheng on 2018/11/20.
  */
 public class AlignedZipOutputStream extends DeflaterOutputStream {
     /**
