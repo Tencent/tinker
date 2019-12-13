@@ -120,14 +120,21 @@ publishing {
                     }
                 }
 
+                def visitedDeps = [] as Set<Dependency>
+
                 [
                         'compile':          'compile',
                         'api':              'compile',
-                        'implementation':   'runtime',
-                        'compileOnly':      'compile',
+                        'implementation':   'compile',
                         'runtimeOnly':      'runtime'
                 ].each { conf, scope ->
-                    project.configurations[conf].allDependencies.each { addDep(it, scope) }
+                    project.configurations[conf].allDependencies.each {
+                        if (visitedDeps.contains(it)) {
+                            return
+                        }
+                        addDep(it, scope)
+                        visitedDeps.add(it)
+                    }
                 }
             }
         }
