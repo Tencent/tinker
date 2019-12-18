@@ -53,6 +53,15 @@ public class SystemClassLoaderAdder {
     private static final String TAG = "Tinker.ClassLoaderAdder";
     private static int sPatchDexCount = 0;
 
+    public static ClassLoader injectNewClassLoaderOnDemand(Application application, BaseDexClassLoader loader, int gpExpansionMode) throws Throwable {
+        if (Build.VERSION.SDK_INT >= 24
+                && gpExpansionMode == ShareConstants.TINKER_GPMODE_REPLACE_CLASSLOADER_AND_CALL_INITIALIZER) {
+            return AndroidNClassLoader.inject(loader, application, gpExpansionMode);
+        } else {
+            return loader;
+        }
+    }
+
     @SuppressLint("NewApi")
     public static void installDexes(Application application, BaseDexClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
         throws Throwable {

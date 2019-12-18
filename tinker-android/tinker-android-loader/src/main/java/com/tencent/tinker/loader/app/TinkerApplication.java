@@ -37,7 +37,6 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 import dalvik.system.BaseDexClassLoader;
 
@@ -74,8 +73,8 @@ public abstract class TinkerApplication extends Application {
     private boolean useSafeMode;
     private Intent tinkerResultIntent;
 
-    private Object mAppLike = null;
     private ClassLoader mCurrentClassLoader = null;
+    private Handler mInlineFence = null;
 
     protected TinkerApplication(int tinkerFlags) {
         this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike",
@@ -112,6 +111,41 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
+    private void replaceAppClassLoader() {
+        tinkerResultIntent = new Intent();
+        if (gpExpansionMode == ShareConstants.TINKER_GPMODE_DISABLE) {
+            ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
+            return;
+        }
+        ClassLoader newClassLoader = TinkerApplication.class.getClassLoader();
+        if (gpExpansionMode == ShareConstants.TINKER_GPMODE_REPLACE_CLASSLOADER_AND_CALL_INITIALIZER) {
+            try {
+                newClassLoader = SystemClassLoaderAdder.injectNewClassLoaderOnDemand(this,
+                        (BaseDexClassLoader) TinkerApplication.class.getClassLoader(), gpExpansionMode);
+            } catch (Throwable thr) {
+                ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INJECT_CLASSLOADER_FAIL);
+                tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
+                return;
+            }
+        }
+        if (classLoaderInitializerClassName != null && !classLoaderInitializerClassName.isEmpty()) {
+            try {
+                final Class<?> classLoaderInitializerClazz
+                        = Class.forName(classLoaderInitializerClassName, false, newClassLoader);
+                final Method initializeClassLoaderMethod
+                        = classLoaderInitializerClazz.getDeclaredMethod(
+                                "initializeClassLoader", Application.class, ClassLoader.class);
+                final Object classLoaderInitializer = classLoaderInitializerClazz.newInstance();
+                initializeClassLoaderMethod.invoke(classLoaderInitializer, this, newClassLoader);
+            } catch (Throwable thr) {
+                ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_INIT_CLASSLOADER_FAIL);
+                tinkerResultIntent.putExtra(INTENT_PATCH_EXCEPTION, thr);
+                return;
+            }
+        }
+        ShareIntentUtil.setIntentReturnCode(tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
+    }
+
     private Handler createInlineFence(Application app,
                                       int tinkerFlags,
                                       String delegateClassName,
@@ -143,7 +177,11 @@ public abstract class TinkerApplication extends Application {
         try {
             final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
             final long applicationStartMillisTime = System.currentTimeMillis();
-            loadTinker();
+            if (gpExpansionMode != ShareConstants.TINKER_GPMODE_DISABLE) {
+                replaceAppClassLoader();
+            } else {
+                loadTinker();
+            }
             mCurrentClassLoader = base.getClassLoader();
             mInlineFence = createInlineFence(this, tinkerFlags, delegateClassName,
                     tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime,
@@ -175,93 +213,153 @@ public abstract class TinkerApplication extends Application {
 
     @Override
     public void onCreate() {
-        super.onCreate();
-        if (mInlineFence == null) {
-            return;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onCreate();
+            if (mInlineFence == null) {
+                return;
+            }
+            TinkerInlineFenceAction.callOnCreate(mInlineFence);
         }
-        TinkerInlineFenceAction.callOnCreate(mInlineFence);
     }
 
     @Override
     public void onTerminate() {
-        super.onTerminate();
-        if (mInlineFence == null) {
-            return;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onTerminate();
+            if (mInlineFence == null) {
+                return;
+            }
+            TinkerInlineFenceAction.callOnTerminate(mInlineFence);
         }
-        TinkerInlineFenceAction.callOnTerminate(mInlineFence);
     }
 
     @Override
     public void onLowMemory() {
-        super.onLowMemory();
-        if (mInlineFence == null) {
-            return;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onLowMemory();
+            if (mInlineFence == null) {
+                return;
+            }
+            TinkerInlineFenceAction.callOnLowMemory(mInlineFence);
         }
-        TinkerInlineFenceAction.callOnLowMemory(mInlineFence);
     }
 
     @TargetApi(14)
     @Override
     public void onTrimMemory(int level) {
-        super.onTrimMemory(level);
-        if (mInlineFence == null) {
-            return;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onTrimMemory(level);
+            if (mInlineFence == null) {
+                return;
+            }
+            TinkerInlineFenceAction.callOnTrimMemory(mInlineFence, level);
         }
-        TinkerInlineFenceAction.callOnTrimMemory(mInlineFence, level);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (mInlineFence == null) {
-            return;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            super.onConfigurationChanged(newConfig);
+            if (mInlineFence == null) {
+                return;
+            }
+            TinkerInlineFenceAction.callOnConfigurationChanged(mInlineFence, newConfig);
         }
-        TinkerInlineFenceAction.callOnConfigurationChanged(mInlineFence, newConfig);
     }
 
     @Override
     public Resources getResources() {
-        final Resources resources = super.getResources();
-        if (mInlineFence == null) {
-            return resources;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final Resources resources = super.getResources();
+            if (mInlineFence == null) {
+                return resources;
+            }
+            return TinkerInlineFenceAction.callGetResources(mInlineFence, resources);
         }
-        return TinkerInlineFenceAction.callGetResources(mInlineFence, resources);
     }
 
     @Override
     public ClassLoader getClassLoader() {
-        final ClassLoader classLoader = super.getClassLoader();
-        if (mInlineFence == null) {
-            return classLoader;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final ClassLoader classLoader = super.getClassLoader();
+            if (mInlineFence == null) {
+                return classLoader;
+            }
+            return TinkerInlineFenceAction.callGetClassLoader(mInlineFence, classLoader);
         }
-        return TinkerInlineFenceAction.callGetClassLoader(mInlineFence, classLoader);
     }
 
     @Override
     public AssetManager getAssets() {
-        final AssetManager assets = super.getAssets();
-        if (mInlineFence == null) {
-            return assets;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final AssetManager assets = super.getAssets();
+            if (mInlineFence == null) {
+                return assets;
+            }
+            return TinkerInlineFenceAction.callGetAssets(mInlineFence, assets);
         }
-        return TinkerInlineFenceAction.callGetAssets(mInlineFence, assets);
     }
 
     @Override
     public Object getSystemService(String name) {
-        final Object service = super.getSystemService(name);
-        if (mInlineFence == null) {
-            return service;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final Object service = super.getSystemService(name);
+            if (mInlineFence == null) {
+                return service;
+            }
+            return TinkerInlineFenceAction.callGetSystemService(mInlineFence, name, service);
         }
-        return TinkerInlineFenceAction.callGetSystemService(mInlineFence, name, service);
     }
 
     @Override
     public Context getBaseContext() {
-        final Context base = super.getBaseContext();
-        if (mInlineFence == null) {
-            return base;
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // ignored.
+        } finally {
+            final Context base = super.getBaseContext();
+            if (mInlineFence == null) {
+                return base;
+            }
+            return TinkerInlineFenceAction.callGetBaseContext(mInlineFence, base);
         }
-        return TinkerInlineFenceAction.callGetBaseContext(mInlineFence, base);
     }
 
     public void setUseSafeMode(boolean useSafeMode) {
