@@ -1,0 +1,44 @@
+apply plugin: 'com.android.library'
+
+
+version rootProject.ext.VERSION_NAME
+group rootProject.ext.GROUP
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+
+        buildConfigField "String", "TINKER_VERSION", "\"${rootProject.ext.VERSION_NAME}\""
+
+        manifestPlaceholders = [TINKER_VERSION: "${rootProject.ext.VERSION_NAME}"]
+    }
+
+    lintOptions {
+        disable 'LongLogTag'
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation 'junit:junit:4.12'
+    compileOnly "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
+}
+
+task buildTinkerSdk(type: Copy, dependsOn: [build]) {
+    group = "tinker"
+    from("$buildDir/outputs/aar/") {
+        include "${project.getName()}-release.aar"
+    }
+
+    into(rootProject.file("buildSdk/android/"))
+    rename { String fileName ->
+        fileName.replace("release", "${version}")
+    }
+}
+
+apply from: rootProject.file('gradle/android-artifacts.gradle')
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
