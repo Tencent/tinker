@@ -38,8 +38,8 @@ import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
 
-import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.DexFileFactory;
+import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.ReferenceType;
 import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
@@ -159,7 +159,7 @@ public class DexDiffDecoder extends BaseDecoder {
 
     private void collectClassesInDex(File dexFile) throws IOException {
         Logger.d("Collect class descriptors in " + dexFile.getName());
-        final DexFile dex = DexFileFactory.loadDexFile(dexFile, 29);
+        final DexFile dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(29));
         for (org.jf.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
             descOfClassesInApk.add(classDef.getType());
         }
@@ -267,7 +267,7 @@ public class DexDiffDecoder extends BaseDecoder {
         for (File dexFile : oldDexFiles) {
             Logger.d("Check if loader classes in " + dexFile.getName()
                     + " refer to any classes that is not in loader class patterns.");
-            final DexFile dex = DexFileFactory.loadDexFile(dexFile, 29);
+            final DexFile dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(29));
             for (org.jf.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
                 final String currClassDesc = classDef.getType();
                 if (!Utils.isStringMatchesPatterns(currClassDesc, loaderClassPatterns)) {
