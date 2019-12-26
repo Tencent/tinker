@@ -82,6 +82,12 @@ public abstract class TinkerApplication extends Application {
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
     }
 
+    protected TinkerApplication(int tinkerFlags, String delegateClassName,
+                                String loaderClassName, boolean tinkerLoadVerifyFlag,
+                                int unused1, String unused2) {
+        this(tinkerFlags, delegateClassName, loaderClassName, tinkerLoadVerifyFlag);
+    }
+
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
         this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
     }
