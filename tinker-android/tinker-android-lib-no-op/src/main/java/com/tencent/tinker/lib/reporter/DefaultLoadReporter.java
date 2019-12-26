@@ -28,7 +28,10 @@ import java.io.File;
  * all is running in the process which loading the patch
  */
 public class DefaultLoadReporter implements LoadReporter {
+    protected final Context context;
+
     public DefaultLoadReporter(Context context) {
+        this.context = context;
         // Ignored.
     }
 
