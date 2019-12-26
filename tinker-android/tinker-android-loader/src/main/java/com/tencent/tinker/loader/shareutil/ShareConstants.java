@@ -149,7 +149,7 @@ public class ShareConstants {
 
     public static final int TINKER_GPMODE_DISABLE = 0;
     public static final int TINKER_GPMODE_REPLACE_CLASSLOADER_AND_CALL_INITIALIZER = 1;
-    public static final int TINKER_GPMODE_CALL_INITIALIZER_ONLY = 1;
+    public static final int TINKER_GPMODE_CALL_INITIALIZER_ONLY = 2;
 
     //load error code
     public static final int ERROR_LOAD_OK                                      = 0;
