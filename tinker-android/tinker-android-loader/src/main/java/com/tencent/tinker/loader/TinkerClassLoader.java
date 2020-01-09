@@ -10,48 +10,28 @@ import java.util.NoSuchElementException;
 import dalvik.system.PathClassLoader;
 
 /**
- * Created by tangyinsheng on 2019-11-28.
+ * Created by tomystang on 2020-01-09.
  */
-@Keep
-public class TinkerDelegateLastClassLoader extends PathClassLoader {
-    public TinkerDelegateLastClassLoader(String dexPath, String librarySearchPath, ClassLoader parent) {
-        super(dexPath, librarySearchPath, parent);
+public final class TinkerClassLoader extends PathClassLoader {
+    private final ClassLoader mOriginAppClassLoader;
+
+    TinkerClassLoader(String dexPath, String libraryPath, ClassLoader originAppClassLoader) {
+        super(dexPath, libraryPath, ClassLoader.getSystemClassLoader());
+        mOriginAppClassLoader = originAppClassLoader;
     }
 
     @Override
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        // First, check whether the class has already been loaded. Return it if that's the
-        // case.
-        Class<?> cl = findLoadedClass(name);
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        Class<?> cl = null;
+        try {
+            cl = super.findClass(name);
+        } catch (ClassNotFoundException ignored) {
+            cl = null;
+        }
         if (cl != null) {
             return cl;
-        }
-
-        // Next, check whether the class in question is present in the boot classpath.
-        try {
-            return Object.class.getClassLoader().loadClass(name);
-        } catch (ClassNotFoundException ignored) {
-            // Ignored.
-        }
-
-        // Next, check whether the class in question is present in the dexPath that this classloader
-        // operates on.
-        ClassNotFoundException fromSuper = null;
-        try {
-            return findClass(name);
-        } catch (ClassNotFoundException ex) {
-            fromSuper = ex;
-        }
-
-        // Finally, check whether the class in question is present in the parent classloader.
-        try {
-            return getParent().loadClass(name);
-        } catch (ClassNotFoundException cnfe) {
-            // The exception we're catching here is the CNFE thrown by the parent of this
-            // classloader. However, we would like to throw a CNFE that provides details about
-            // the class path / list of dex files associated with *this* classloader, so we choose
-            // to throw the exception thrown from that lookup.
-            throw fromSuper;
+        } else {
+            return mOriginAppClassLoader.loadClass(name);
         }
     }
 
@@ -68,8 +48,7 @@ public class TinkerDelegateLastClassLoader extends PathClassLoader {
             return resource;
         }
 
-        final ClassLoader cl = getParent();
-        return (cl == null) ? null : cl.getResource(name);
+        return mOriginAppClassLoader.getResource(name);
     }
 
     @Override
@@ -78,7 +57,8 @@ public class TinkerDelegateLastClassLoader extends PathClassLoader {
         final Enumeration<URL>[] resources = (Enumeration<URL>[]) new Enumeration<?>[] {
                 Object.class.getClassLoader().getResources(name),
                 findResources(name),
-                (getParent() == null) ? null : getParent().getResources(name) };
+                mOriginAppClassLoader.getResources(name)
+        };
         return new CompoundEnumeration<>(resources);
     }
 

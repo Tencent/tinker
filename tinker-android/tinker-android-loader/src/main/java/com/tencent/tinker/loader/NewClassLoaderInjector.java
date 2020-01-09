@@ -28,8 +28,6 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
-import dalvik.system.DelegateLastClassLoader;
-
 /**
  * Created by tangyinsheng on 2019-10-31.
  */
@@ -97,14 +95,8 @@ final class NewClassLoaderInjector {
 
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
-        ClassLoader result = null;
-        if (Build.VERSION.SDK_INT >= 28) {
-            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
-        } else {
-            result = new TinkerDelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
-        }
+        ClassLoader result = new TinkerClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader);
 
-        findField(ClassLoader.class, "parent").set(result, oldClassLoader);
         findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
 
         return result;
