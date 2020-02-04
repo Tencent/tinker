@@ -33,7 +33,7 @@ ext {
     compileSdkVersion = 29
     targetSdkVersion = 23
     buildToolsVersion = '28.0.3'
-    supportLibVersion = '28.0.0'
+    androidXAnnotationVersion = '1.1.0'
     javaVersion = JavaVersion.VERSION_1_7
 
     GROUP = 'com.tencent.tinker'
