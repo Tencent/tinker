@@ -86,6 +86,7 @@ android {
          * you can use multiDex and install it in your ApplicationLifeCycle implement
          */
         multiDexEnabled true
+        multiDexKeepProguard file("tinker_multidexkeep.pro")
         /**
          * buildConfig can change during patch!
          * we can use the newly value when patch

@@ -54,7 +54,7 @@ public class StringData extends Item<StringData> {
     @Override
     public int byteCountInDex() {
         try {
-            return Leb128.unsignedLeb128Size(value.length()) + (int) Mutf8.countBytes(value, true) + SizeOf.UBYTE;
+            return Leb128.unsignedLeb128Size(value.length()) + (int) Mutf8.countBytes(value, false) + SizeOf.UBYTE;
         } catch (UTFDataFormatException e) {
             throw new DexException(e);
         }
