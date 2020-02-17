@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.loader.app;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.Context;
@@ -76,6 +77,7 @@ public abstract class TinkerApplication extends Application {
         this.classLoaderInitializerClassName = classLoaderInitializerClassName;
     }
 
+    @SuppressLint("NewApi")
     private void replaceAppClassLoader() {
         tinkerResultIntent = new Intent();
         if (gpExpansionMode == ShareConstants.TINKER_GPMODE_DISABLE) {

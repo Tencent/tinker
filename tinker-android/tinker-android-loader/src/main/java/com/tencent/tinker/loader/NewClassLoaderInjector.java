@@ -101,7 +101,7 @@ final class NewClassLoaderInjector {
 
         if (Build.VERSION.SDK_INT >= 29 && !"OnePlus".equals(Build.MANUFACTURER)) {
             result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
-            findField(result.getClass(), "parent").set(result, oldClassLoader);
+            findField(ClassLoader.class, "parent").set(result, oldClassLoader);
         } else {
             result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
         }
