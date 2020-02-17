@@ -28,6 +28,8 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
+import dalvik.system.DelegateLastClassLoader;
+
 /**
  * Created by tangyinsheng on 2019-10-31.
  */
@@ -71,7 +73,6 @@ final class NewClassLoaderInjector {
 
         final String combinedDexPath = dexPathBuilder.toString();
 
-
         final Field nativeLibraryDirectoriesField = findField(oldPathList.getClass(), "nativeLibraryDirectories");
         List<File> oldNativeLibraryDirectories = null;
         if (nativeLibraryDirectoriesField.getType().isArray()) {
@@ -95,7 +96,14 @@ final class NewClassLoaderInjector {
 
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
-        ClassLoader result = new TinkerClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader);
+        ClassLoader result = null;
+
+        if (Build.VERSION.SDK_INT >= 29 && !"OnePlus".equals(Build.MANUFACTURER)) {
+            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
+            findField(result.getClass(), "parent").set(result, oldClassLoader);
+        } else {
+            result = new TinkerClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader);
+        }
 
         findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
 
