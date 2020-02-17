@@ -127,9 +127,9 @@ public final class TinkerDexOptimizer {
                 if (!ShareTinkerInternals.isArkHotRuning()) {
                     if (useInterpretMode) {
                         interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
-                    } else if (Build.VERSION.SDK_INT >= 28
-                            || (Build.VERSION.SDK_INT >= 27 && Build.VERSION.PREVIEW_SDK_INT != 0)) {
-                        NewClassLoaderInjector.triggerDex2Oat(context, dexFile.getAbsolutePath());
+                    } else if (Build.VERSION.SDK_INT >= 26
+                            || (Build.VERSION.SDK_INT >= 25 && Build.VERSION.PREVIEW_SDK_INT != 0)) {
+                        NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir, dexFile.getAbsolutePath());
                     } else {
                         DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
                     }

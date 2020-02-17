@@ -1,22 +1,27 @@
 package com.tencent.tinker.loader;
 
+import android.annotation.SuppressLint;
+import android.os.Build;
 import android.support.annotation.Keep;
+import android.support.annotation.RequiresApi;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
 
-import dalvik.system.PathClassLoader;
+import dalvik.system.BaseDexClassLoader;
 
 /**
  * Created by tomystang on 2020-01-09.
  */
-public final class TinkerClassLoader extends PathClassLoader {
+@SuppressLint("NewApi")
+public final class TinkerClassLoader extends BaseDexClassLoader {
     private final ClassLoader mOriginAppClassLoader;
 
-    TinkerClassLoader(String dexPath, String libraryPath, ClassLoader originAppClassLoader) {
-        super(dexPath, libraryPath, ClassLoader.getSystemClassLoader());
+    TinkerClassLoader(String dexPath, File optimizedDir, String libraryPath, ClassLoader originAppClassLoader) {
+        super(dexPath, optimizedDir, libraryPath, ClassLoader.getSystemClassLoader());
         mOriginAppClassLoader = originAppClassLoader;
     }
 
