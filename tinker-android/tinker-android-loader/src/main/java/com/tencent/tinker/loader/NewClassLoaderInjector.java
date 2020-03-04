@@ -96,8 +96,7 @@ final class NewClassLoaderInjector {
 
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
-        ClassLoader result = new TinkerClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader);
-
+        final ClassLoader result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
         findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
 
         return result;
