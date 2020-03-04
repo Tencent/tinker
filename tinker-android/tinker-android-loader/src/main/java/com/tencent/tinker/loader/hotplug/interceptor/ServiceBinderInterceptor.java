@@ -164,8 +164,14 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
                     @Override
                     protected Class<?> loadClass(String className, boolean resolve)
                             throws ClassNotFoundException {
+                        Class<?> res = null;
                         for (ClassLoader cl : uniqueCls) {
-                            final Class<?> res = cl.loadClass(className);
+                            try {
+                                // fix some device PathClassLoader behind BootClassLoader which lead to ClassNotFoundException
+                                res = cl.loadClass(className);
+                            } catch (Throwable ignore) {
+
+                            }
                             if (res != null) {
                                 return res;
                             }
