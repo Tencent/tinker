@@ -21,7 +21,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
     api project(':tinker-android:tinker-android-loader-no-op')
-    compileOnly "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
+    compileOnly "androidx.annotation:annotation:${rootProject.ext.androidXAnnotationVersion}"
     api project(':tinker-commons')
 }
 
