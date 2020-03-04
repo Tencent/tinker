@@ -107,7 +107,7 @@ public final class Mutf8 {
      * Returns an array containing the <i>modified UTF-8</i> form of {@code s}.
      */
     public static byte[] encode(String s) throws UTFDataFormatException {
-        int utfCount = (int) countBytes(s, true);
+        int utfCount = (int) countBytes(s, false);
         byte[] result = new byte[utfCount];
         encode(result, 0, s);
         return result;

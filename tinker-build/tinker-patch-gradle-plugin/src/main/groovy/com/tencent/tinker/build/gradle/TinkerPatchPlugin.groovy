@@ -132,7 +132,6 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
             android.applicationVariants.all { variant ->
                 def variantName = variant.name.capitalize()
-                def variantData = variant.variantData
 
                 def instantRunTask = getInstantRunTask(variantName)
                 if (instantRunTask != null) {
@@ -145,7 +144,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 TinkerPatchSchemaTask tinkerPatchBuildTask = mProject.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
 
-                tinkerPatchBuildTask.signConfig = variantData.variantConfiguration.signingConfig
+                tinkerPatchBuildTask.signConfig = variant.signingConfig
 
                 def agpProcessManifestTask = project.tasks.findByName("process${variantName}Manifest")
                 String manifestOutputBaseDir
@@ -187,7 +186,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.applicationId = variantData.getApplicationId()
+                applyResourceTask.applicationId = variant.mergedFlavor.applicationId
                 applyResourceTask.variantName = variant.name
                 applyResourceTask.resDir = resDir
 
@@ -220,7 +219,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 }
 
                 // Add this multidex proguard settings file to the list
-                boolean multiDexEnabled = variantData.variantConfiguration.isMultiDexEnabled()
+                boolean multiDexEnabled = variant.mergedFlavor.multiDexEnabled
 
                 if (multiDexEnabled) {
                     TinkerMultidexConfigTask multidexConfigTask = mProject.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
