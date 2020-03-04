@@ -1,7 +1,8 @@
 package com.tencent.tinker.loader.app;
 
 import android.app.Application;
-import android.support.annotation.Keep;
+
+import androidx.annotation.Keep;
 
 /**
  * Created by tomystang on 2019-10-29.
