@@ -357,8 +357,8 @@ public class ImmutableDexTransform extends Transform {
 
     public static void inject(Project project, def variant) {
         project.logger.info("prepare inject dex transform ")
-        if (!variant.variantData.variantConfiguration.isMultiDexEnabled()) {
-            project.logger.warn("multidex is diable. we will not replace the dex transform.")
+        if (!variant.mergedFlavor.multiDexEnabled) {
+            project.logger.warn("multidex is disabled. we will not replace the dex transform.")
             return
         }
         if (!FileOperation.isLegalFile(project.tinkerPatch.oldApk)) {
