@@ -5,8 +5,8 @@ import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.IInterface;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.tencent.tinker.loader.hotplug.EnvConsts;
@@ -164,8 +164,14 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
                     @Override
                     protected Class<?> loadClass(String className, boolean resolve)
                             throws ClassNotFoundException {
+                        Class<?> res = null;
                         for (ClassLoader cl : uniqueCls) {
-                            final Class<?> res = cl.loadClass(className);
+                            try {
+                                // fix some device PathClassLoader behind BootClassLoader which lead to ClassNotFoundException
+                                res = cl.loadClass(className);
+                            } catch (Throwable ignore) {
+
+                            }
                             if (res != null) {
                                 return res;
                             }

@@ -16,9 +16,7 @@
 
 package com.tencent.tinker.loader;
 
-import android.annotation.TargetApi;
 import android.content.Intent;
-import android.os.Build;
 import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
@@ -33,8 +31,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-
-import dalvik.system.BaseDexClassLoader;
 
 /**
  * Created by zhangshaowen on 16/3/8.
@@ -67,14 +63,13 @@ public class TinkerDexLoader {
      *
      * @param application The application.
      */
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public static boolean loadTinkerJars(final TinkerApplication application, String directory, String oatDir, Intent intentResult, boolean isSystemOTA, boolean isProtectedApp) {
         if (LOAD_DEX_LIST.isEmpty() && classNDexInfo.isEmpty()) {
             Log.w(TAG, "there is no dex to load");
             return true;
         }
 
-        BaseDexClassLoader classLoader = (BaseDexClassLoader) TinkerDexLoader.class.getClassLoader();
+        ClassLoader classLoader = TinkerDexLoader.class.getClassLoader();
         if (classLoader != null) {
             Log.i(TAG, "classloader: " + classLoader.toString());
         } else {

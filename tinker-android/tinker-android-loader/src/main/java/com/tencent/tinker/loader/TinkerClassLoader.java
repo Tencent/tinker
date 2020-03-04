@@ -1,9 +1,8 @@
 package com.tencent.tinker.loader;
 
 import android.annotation.SuppressLint;
-import android.os.Build;
-import android.support.annotation.Keep;
-import android.support.annotation.RequiresApi;
+
+import androidx.annotation.Keep;
 
 import java.io.File;
 import java.io.IOException;
