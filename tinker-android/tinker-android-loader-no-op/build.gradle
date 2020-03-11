@@ -25,7 +25,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
-    compileOnly "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
+    implementation "androidx.annotation:annotation:${rootProject.ext.androidXAnnotationVersion}"
 }
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {

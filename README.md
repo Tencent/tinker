@@ -73,35 +73,49 @@ For more tinker configurations, learn more at the sample [app/build.gradle](http
 
 ## Ark Support
 How to run tinker on the Ark?
-For gradle, add the following lines to your `app/build.gradle`. Otherwise, the default configure will be used.
-```gradle
-ark {
-   path = "xxx"                                        // path of patch
-   name = "xxx.apk"                                    // name of patch
-}
-```
-For tinker-cli, add the following lines to your `tinker_config.xml`. Otherwise, the default configure will be used.
-```xml
-<issue id="ark">
-   <path value="xxx"/>
-   <name value="xxx.apk"/>
-</issue>
-```
-The patch is built by Ark SDK and placed on the above path. Other operations are the same as before.
-
-How to make dex diff for Ark? Just use the following command:
+### building patch
+Just use the following command:
 ```buildconfig
 bash build_patch_dexdiff.sh old=xxx new=xxx
 ```
-The path of old and new  must be absolute
-## Known Issues
+* `old` indicates the absolute path of android apk(not compiled by Ark) with bugs
+* `new` indicates the absolute path of android apk(not compiled by Ark) with fixing
+
+The patch file is packaged in APK.
+### compiling in Ark
+TODO
+
+At present it's compiled by Ark compiler team. The output patch is still packaged in APK format without signature.
+### packaging the patch
+For tinker-cli, add the following lines to your `tinker_config.xml`. Otherwise, the default configure will be used.
+```xml
+<issue id="arkHot">
+   <path value="arkHot"/>         // path of patch
+   <name value="patch.apk"/>      // name of patch
+</issue>
+```
+For gradle, add the following lines to your `app/build.gradle`. Otherwise, the default configure will be used.
+```gradle
+ark {
+   path = "arkHot"         // path of patch
+   name = "patch.apk"      // name of patch
+}
+```
+The patch is compiled by Ark and placed on the above path. all subsequent operations are same as tinker-cli or gradle.
+
+The ultimated patch APK consists of two patch files:
+
+* `classes.dex` for android
+* `patch.apk` with so for Ark.
+
+## Tinker Known Issues
 There are some issues which Tinker can't dynamic update.
 
 1. Can't update AndroidManifest.xml, such as add Android Component.
 2. Do not support some Samsung models with os version android-21.
 3. Due to Google Play Developer Distribution Agreement, we can't dynamic update our apk.
 
-## Support
+## Tinker Support
 Any problem?
 
 1. Learn more from [tinker-sample-android](https://github.com/Tencent/tinker/tree/master/tinker-sample-android).

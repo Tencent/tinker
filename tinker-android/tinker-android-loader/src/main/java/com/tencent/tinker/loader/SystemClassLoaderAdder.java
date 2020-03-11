@@ -17,7 +17,6 @@
 
 package com.tencent.tinker.loader;
 
-import android.annotation.SuppressLint;
 import android.app.Application;
 import android.os.Build;
 import android.util.Log;
@@ -40,7 +39,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.zip.ZipFile;
 
-import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
 
@@ -53,8 +51,7 @@ public class SystemClassLoaderAdder {
     private static final String TAG = "Tinker.ClassLoaderAdder";
     private static int sPatchDexCount = 0;
 
-    @SuppressLint("NewApi")
-    public static void installDexes(Application application, BaseDexClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
+    public static void installDexes(Application application, ClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
         throws Throwable {
         Log.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
 
@@ -62,7 +59,7 @@ public class SystemClassLoaderAdder {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
-                classLoader = NewClassLoaderInjector.inject(application, loader, files);
+                classLoader = NewClassLoaderInjector.inject(application, loader, dexOptDir, files);
             } else {
                 //because in dalvik, if inner class is not the same classloader with it wrapper class.
                 //it won't fail at dex2opt
@@ -88,7 +85,6 @@ public class SystemClassLoaderAdder {
         }
     }
 
-    @SuppressLint("NewApi")
     public static void installApk(PathClassLoader loader, List<File> files) throws Throwable {
         if (!files.isEmpty()) {
             files = createSortedAdditionalPathEntries(files);

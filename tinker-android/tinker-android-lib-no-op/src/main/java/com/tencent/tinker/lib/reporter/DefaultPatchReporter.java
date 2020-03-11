@@ -29,7 +29,10 @@ import java.util.List;
  * Created by zhangshaowen on 16/3/14.
  */
 public class DefaultPatchReporter implements PatchReporter {
+    protected final Context context;
+
     public DefaultPatchReporter(Context context) {
+        this.context = context;
         // Ignored.
     }
 

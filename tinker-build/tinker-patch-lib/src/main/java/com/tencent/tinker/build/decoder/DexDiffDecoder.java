@@ -22,6 +22,7 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
 import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
 import com.tencent.tinker.build.dexpatcher.util.ChangedClassesDexClassInfoCollector;
+import com.tencent.tinker.build.dexpatcher.util.PatternUtils;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.DexClassesComparator;
@@ -37,12 +38,22 @@ import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
 
+import org.jf.dexlib2.DexFileFactory;
+import org.jf.dexlib2.Opcodes;
+import org.jf.dexlib2.ReferenceType;
 import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
 import org.jf.dexlib2.iface.DexFile;
 import org.jf.dexlib2.iface.Field;
 import org.jf.dexlib2.iface.Method;
 import org.jf.dexlib2.iface.MethodImplementation;
+import org.jf.dexlib2.iface.instruction.Instruction;
+import org.jf.dexlib2.iface.instruction.ReferenceInstruction;
+import org.jf.dexlib2.iface.reference.FieldReference;
+import org.jf.dexlib2.iface.reference.MethodReference;
+import org.jf.dexlib2.iface.reference.TypeReference;
+import org.jf.dexlib2.util.MethodUtil;
+import org.jf.dexlib2.util.TypeUtils;
 import org.jf.dexlib2.writer.builder.BuilderField;
 import org.jf.dexlib2.writer.builder.BuilderMethod;
 import org.jf.dexlib2.writer.builder.DexBuilder;
@@ -53,12 +64,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarFile;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 
 /**
@@ -81,6 +94,12 @@ public class DexDiffDecoder extends BaseDecoder {
     private final Map<String, RelatedInfo> dexNameToRelatedInfoMap;
     private boolean hasDexChanged = false;
     private DexPatcherLoggerBridge dexPatcherLoggerBridge = null;
+
+    private final Set<Pattern> loaderClassPatterns;
+
+    private final Set<String> descOfClassesInApk;
+
+    private final List<File> oldDexFiles;
 
     public DexDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
         super(config);
@@ -109,11 +128,25 @@ public class DexDiffDecoder extends BaseDecoder {
         oldAndNewDexFilePairList = new ArrayList<>();
 
         dexNameToRelatedInfoMap = new HashMap<>();
+
+        loaderClassPatterns = new HashSet<>();
+        for (String patternStr : config.mDexLoaderPattern) {
+            loaderClassPatterns.add(
+                    Pattern.compile(
+                            PatternUtils.dotClassNamePatternToDescriptorRegEx(patternStr)
+                    )
+            );
+        }
+
+        descOfClassesInApk = new HashSet<>();
+
+        oldDexFiles = new ArrayList<>();
     }
 
     @Override
     public void onAllPatchesStart() throws IOException, TinkerPatchException {
-
+        descOfClassesInApk.clear();
+        oldDexFiles.clear();
     }
 
     /**
@@ -122,6 +155,14 @@ public class DexDiffDecoder extends BaseDecoder {
      */
     protected String getRelativeDexName(File oldDexFile, File newDexFile) {
         return oldDexFile != null ? getRelativePathStringToOldFile(oldDexFile) : getRelativePathStringToNewFile(newDexFile);
+    }
+
+    private void collectClassesInDex(File dexFile) throws IOException {
+        Logger.d("Collect class descriptors in " + dexFile.getName());
+        final DexFile dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(29));
+        for (org.jf.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
+            descOfClassesInApk.add(classDef.getType());
+        }
     }
 
     @SuppressWarnings("NewApi")
@@ -146,6 +187,10 @@ public class DexDiffDecoder extends BaseDecoder {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // Collect class descriptors here for further checking.
+        collectClassesInDex(oldFile);
+        oldDexFiles.add(oldFile);
 
         // If corresponding new dex was completely deleted, just return false.
         // don't process 0 length dex
@@ -192,6 +237,8 @@ public class DexDiffDecoder extends BaseDecoder {
             return;
         }
 
+        checkIfLoaderClassesReferToNonLoaderClasses();
+
         if (config.mIsProtectedApp) {
             generateChangedClassesDexFile();
         } else {
@@ -199,6 +246,137 @@ public class DexDiffDecoder extends BaseDecoder {
         }
 
         addTestDex();
+    }
+
+    private boolean isReferenceFromLoaderClassValid(String refereeTypeDesc) {
+        if (TypeUtils.isPrimitiveType(refereeTypeDesc)) {
+            return true;
+        }
+        if (!descOfClassesInApk.contains(refereeTypeDesc)) {
+            return true;
+        }
+        if (Utils.isStringMatchesPatterns(refereeTypeDesc, loaderClassPatterns)) {
+            return true;
+        }
+        return false;
+    }
+
+    private void checkIfLoaderClassesReferToNonLoaderClasses()
+            throws IOException, TinkerPatchException {
+        boolean hasInvalidCases = false;
+        for (File dexFile : oldDexFiles) {
+            Logger.d("Check if loader classes in " + dexFile.getName()
+                    + " refer to any classes that is not in loader class patterns.");
+            final DexFile dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(29));
+            for (org.jf.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
+                final String currClassDesc = classDef.getType();
+                if (!Utils.isStringMatchesPatterns(currClassDesc, loaderClassPatterns)) {
+                    continue;
+                }
+                for (Field field : classDef.getFields()) {
+                    final String currFieldTypeDesc = field.getType();
+                    if (!isReferenceFromLoaderClassValid(currFieldTypeDesc)) {
+                        Logger.e("FATAL: field '%s' in loader class '%s' refers to class '%s' which "
+                                        + "is not loader class, this may cause crash when patch is loaded.",
+                                field.getName(), currClassDesc, currFieldTypeDesc);
+                        hasInvalidCases = true;
+                    }
+                }
+                for (Method method : classDef.getMethods()) {
+                    boolean isCurrentMethodInvalid = false;
+                    final String currMethodRetTypeDesc = method.getReturnType();
+                    if (!isReferenceFromLoaderClassValid(currMethodRetTypeDesc)) {
+                        Logger.e("FATAL: method '%s:%s' in loader class '%s' refers to class '%s' which "
+                                        + "is not loader class, this may cause crash when patch is loaded.",
+                                method.getName(), MethodUtil.getShorty(method.getParameterTypes(), currMethodRetTypeDesc),
+                                currClassDesc, currMethodRetTypeDesc);
+                        isCurrentMethodInvalid = true;
+                    } else {
+                        for (CharSequence paramTypeDesc : method.getParameterTypes()) {
+                            if (!isReferenceFromLoaderClassValid(paramTypeDesc.toString())) {
+                                Logger.e("FATAL: method '%s:%s' in loader class '%s' refers to class '%s' which "
+                                                + "is not loader class, this may cause crash when patch is loaded.",
+                                        method.getName(), MethodUtil.getShorty(method.getParameterTypes(), currMethodRetTypeDesc),
+                                        currClassDesc, paramTypeDesc);
+                                isCurrentMethodInvalid = true;
+                                break;
+                            }
+                        }
+                    }
+                    check_method_impl:
+                    {
+                        final MethodImplementation methodImpl = method.getImplementation();
+                        if (methodImpl == null) {
+                            break check_method_impl;
+                        }
+                        final Iterable<? extends Instruction> insns = methodImpl.getInstructions();
+                        if (!insns.iterator().hasNext()) {
+                            break check_method_impl;
+                        }
+                        for (Instruction insn : insns) {
+                            if (insn instanceof ReferenceInstruction) {
+                                final ReferenceInstruction refInsn = (ReferenceInstruction) insn;
+                                switch (refInsn.getReferenceType()) {
+                                    case ReferenceType.TYPE: {
+                                        final TypeReference typeRefInsn = (TypeReference) refInsn.getReference();
+                                        final String refereeTypeDesc = typeRefInsn.getType();
+                                        if (isReferenceFromLoaderClassValid(refereeTypeDesc)) {
+                                            break;
+                                        }
+                                        Logger.e("FATAL: method '%s:%s' in loader class '%s' refers to class '%s' which "
+                                                        + "is not loader class, this may cause crash when patch is loaded.",
+                                                method.getName(), MethodUtil.getShorty(method.getParameterTypes(), currMethodRetTypeDesc),
+                                                currClassDesc, refereeTypeDesc);
+                                        isCurrentMethodInvalid = true;
+                                        break;
+                                    }
+                                    case ReferenceType.FIELD: {
+                                        final FieldReference fieldRefInsn = (FieldReference) refInsn.getReference();
+                                        final String refereeFieldName = fieldRefInsn.getName();
+                                        final String refereeFieldDefTypeDesc = fieldRefInsn.getDefiningClass();
+                                        if (isReferenceFromLoaderClassValid(refereeFieldDefTypeDesc)) {
+                                            break;
+                                        }
+                                        Logger.e("FATAL: method '%s:%s' in loader class '%s' refers to field '%s' in class '%s' which "
+                                                        + "is not in loader class, this may cause crash when patch is loaded.",
+                                                method.getName(), MethodUtil.getShorty(method.getParameterTypes(), currMethodRetTypeDesc),
+                                                currClassDesc, refereeFieldName, refereeFieldDefTypeDesc);
+                                        isCurrentMethodInvalid = true;
+                                        break;
+                                    }
+                                    case ReferenceType.METHOD: {
+                                        final MethodReference methodRefInsn = (MethodReference) refInsn.getReference();
+                                        final String refereeMethodName = methodRefInsn.getName();
+                                        final Collection<? extends CharSequence> refereeMethodParamTypes = methodRefInsn.getParameterTypes();
+                                        final String refereeMethodRetType = methodRefInsn.getReturnType();
+                                        final String refereeMethodDefClassDesc = methodRefInsn.getDefiningClass();
+                                        if (isReferenceFromLoaderClassValid(refereeMethodDefClassDesc)) {
+                                            break;
+                                        }
+                                        Logger.e("FATAL: method '%s:%s' in loader class '%s' refers to method '%s:%s' in class '%s' which "
+                                                        + "is not in loader class, this may cause crash when patch is loaded.",
+                                                method.getName(), MethodUtil.getShorty(method.getParameterTypes(), currMethodRetTypeDesc),
+                                                currClassDesc, refereeMethodName, MethodUtil.getShorty(refereeMethodParamTypes, refereeMethodRetType), refereeMethodDefClassDesc);
+                                        isCurrentMethodInvalid = true;
+                                        break;
+                                    }
+                                    default: {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (isCurrentMethodInvalid) {
+                        hasInvalidCases = true;
+                    }
+                }
+            }
+        }
+        if (hasInvalidCases) {
+            throw new TinkerPatchException("There are fatal reasons that cause Tinker interrupt"
+                    + " patch generating procedure, see logs above.");
+        }
     }
 
     @SuppressWarnings("NewApi")
@@ -255,7 +433,7 @@ public class DexDiffDecoder extends BaseDecoder {
             if (!isCurrentDexHasChangedClass) {
                 continue;
             }
-            DexBuilder dexBuilder = DexBuilder.makeDexBuilder();
+            DexBuilder dexBuilder = new DexBuilder(Opcodes.forApi(29));
             for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
                 if (!descOfChangedClassesInCurrDex.contains(classDef.getType())) {
                     continue;

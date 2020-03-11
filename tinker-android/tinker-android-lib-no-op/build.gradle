@@ -20,8 +20,9 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
+    implementation "androidx.annotation:annotation:${rootProject.ext.androidXAnnotationVersion}"
     api project(':tinker-android:tinker-android-loader-no-op')
-    compileOnly "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
+    api project(':tinker-commons')
 }
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {

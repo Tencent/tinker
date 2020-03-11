@@ -11,13 +11,17 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
     }
+
+    lintOptions {
+        disable 'LongLogTag'
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
+    implementation "androidx.annotation:annotation:${rootProject.ext.androidXAnnotationVersion}"
     api project(':tinker-android:tinker-android-loader')
-    compileOnly "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
     api project(':tinker-commons')
 }
 

@@ -28,32 +28,31 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
-import dalvik.system.DelegateLastClassLoader;
-
 /**
  * Created by tangyinsheng on 2019-10-31.
  */
 final class NewClassLoaderInjector {
-    public static ClassLoader inject(Application app, ClassLoader oldClassLoader, List<File> patchedDexes) throws Throwable {
+    public static ClassLoader inject(Application app, ClassLoader oldClassLoader, File dexOptDir, List<File> patchedDexes) throws Throwable {
         final String[] patchedDexPaths = new String[patchedDexes.size()];
         for (int i = 0; i < patchedDexPaths.length; ++i) {
             patchedDexPaths[i] = patchedDexes.get(i).getAbsolutePath();
         }
-        final ClassLoader newClassLoader = createNewClassLoader(app, oldClassLoader, patchedDexPaths);
+        final ClassLoader newClassLoader = createNewClassLoader(app, oldClassLoader, dexOptDir, patchedDexPaths);
         doInject(app, newClassLoader);
         return newClassLoader;
     }
 
-    public static void triggerDex2Oat(Context context, String... dexPaths) throws Throwable {
+    public static void triggerDex2Oat(Context context, File dexOptDir, String... dexPaths) throws Throwable {
         // Suggestion from Huawei: Only PathClassLoader (Perhaps other ClassLoaders known by system
         // like DexClassLoader also works ?) can be used here to trigger dex2oat so that JIT
         // mechanism can participate in runtime Dex optimization.
         final ClassLoader appClassLoader = TinkerApplication.class.getClassLoader();
-        final ClassLoader triggerClassLoader = createNewClassLoader(context, appClassLoader, dexPaths);
+        final ClassLoader triggerClassLoader = createNewClassLoader(context, appClassLoader, dexOptDir, dexPaths);
     }
 
     @SuppressWarnings("unchecked")
     private static ClassLoader createNewClassLoader(Context context, ClassLoader oldClassLoader,
+                                                    File dexOptDir,
                                                     String... patchDexPaths) throws Throwable {
         final Field pathListField = findField(
                 Class.forName("dalvik.system.BaseDexClassLoader", false, oldClassLoader),
@@ -97,14 +96,7 @@ final class NewClassLoaderInjector {
 
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
-        ClassLoader result = null;
-        if (Build.VERSION.SDK_INT >= 28) {
-            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
-        } else {
-            result = new TinkerDelegateLastClassLoader(combinedDexPath, combinedLibraryPath, null);
-        }
-
-        findField(ClassLoader.class, "parent").set(result, oldClassLoader);
+        final ClassLoader result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
         findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
 
         return result;

@@ -104,7 +104,15 @@ public class UpgradePatch extends AbstractPatch {
                 return false;
             }
 
-            if (!ShareTinkerInternals.isNullOrNil(oldInfo.newVersion) && oldInfo.newVersion.equals(patchMd5) && !oldInfo.isRemoveNewVersion) {
+            if (!SharePatchFileUtil.checkIfMd5Valid(patchMd5)) {
+                TinkerLog.e(TAG, "UpgradePatch tryPatch:onPatchVersionCheckFail md5 %s is valid", patchMd5);
+                manager.getPatchReporter().onPatchVersionCheckFail(patchFile, oldInfo, patchMd5);
+                return false;
+            }
+
+            final boolean usingInterpret = oldInfo.oatDir.equals(ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
+
+            if (!usingInterpret && !ShareTinkerInternals.isNullOrNil(oldInfo.newVersion) && oldInfo.newVersion.equals(patchMd5) && !oldInfo.isRemoveNewVersion) {
                 TinkerLog.e(TAG, "patch already applied, md5: %s", patchMd5);
 
                 // Reset patch apply retry count to let us be able to reapply without triggering
@@ -113,15 +121,8 @@ public class UpgradePatch extends AbstractPatch {
 
                 return true;
             }
-
-            if (!SharePatchFileUtil.checkIfMd5Valid(patchMd5)) {
-                TinkerLog.e(TAG, "UpgradePatch tryPatch:onPatchVersionCheckFail md5 %s is valid", patchMd5);
-                manager.getPatchReporter().onPatchVersionCheckFail(patchFile, oldInfo, patchMd5);
-                return false;
-            }
             // if it is interpret now, use changing flag to wait main process
-            final String finalOatDir = oldInfo.oatDir.equals(ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH)
-                ? ShareConstants.CHANING_DEX_OPTIMIZE_PATH : oldInfo.oatDir;
+            final String finalOatDir = usingInterpret ? ShareConstants.CHANING_DEX_OPTIMIZE_PATH : oldInfo.oatDir;
             newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, isProtectedApp, false, Build.FINGERPRINT, finalOatDir);
         } else {
             newInfo = new SharePatchInfo("", patchMd5, isProtectedApp, false, Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH);
