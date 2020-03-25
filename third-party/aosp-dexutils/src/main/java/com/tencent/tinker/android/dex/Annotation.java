@@ -17,6 +17,7 @@
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 import static com.tencent.tinker.android.dex.EncodedValueReader.ENCODED_ANNOTATION;
@@ -45,7 +46,9 @@ public final class Annotation extends Item<Annotation> {
     }
 
     @Override public int compareTo(Annotation other) {
-        return encodedAnnotation.compareTo(other.encodedAnnotation);
+        int cmpRes = encodedAnnotation.compareTo(other.encodedAnnotation);
+        if (cmpRes != 0) return cmpRes;
+        return CompareUtils.uCompare(visibility, other.visibility);
     }
 
     @Override
