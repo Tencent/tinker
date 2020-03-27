@@ -22,6 +22,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
@@ -113,10 +114,7 @@ public class ShareTinkerInternals {
 
     public static boolean isSystemOTA(String lastFingerPrint) {
         String currentFingerprint = Build.FINGERPRINT;
-        if (lastFingerPrint == null
-            || lastFingerPrint.equals("")
-            || currentFingerprint == null
-            || currentFingerprint.equals("")) {
+        if (TextUtils.isEmpty(lastFingerPrint) || TextUtils.isEmpty(currentFingerprint)) {
             Log.d(TAG, "fingerprint empty:" + lastFingerPrint + ",current:" + currentFingerprint);
             return false;
         } else {
