@@ -7,6 +7,7 @@ group rootProject.ext.GROUP
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(':tinker-android:tinker-android-anno-support')
 }
 
 sourceSets {

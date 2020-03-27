@@ -2,7 +2,7 @@ package com.tencent.tinker.loader;
 
 import android.annotation.SuppressLint;
 
-import androidx.annotation.Keep;
+import com.tencent.tinker.anno.Keep;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +15,7 @@ import dalvik.system.BaseDexClassLoader;
 /**
  * Created by tomystang on 2020-01-09.
  */
+@Keep
 @SuppressLint("NewApi")
 public final class TinkerClassLoader extends BaseDexClassLoader {
     private final ClassLoader mOriginAppClassLoader;
