@@ -27,6 +27,8 @@ import android.content.res.Resources;
 import android.os.Handler;
 import android.os.SystemClock;
 
+import androidx.annotation.Keep;
+
 import com.tencent.tinker.loader.SystemClassLoaderAdder;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -319,6 +321,21 @@ public abstract class TinkerApplication extends Application {
                 return base;
             }
             return TinkerInlineFenceAction.callGetBaseContext(mInlineFence, base);
+        }
+    }
+
+    @Keep
+    public int mzNightModeUseOf() {
+        try {
+            dummyThrownExceptionMethod();
+        } catch (Throwable ignored) {
+            // Ignored.
+        } finally {
+            if (mInlineFence == null) {
+                // Return 1 for default according to MeiZu's announcement.
+                return 1;
+            }
+            return TinkerInlineFenceAction.callMZNightModeUseOf(mInlineFence);
         }
     }
 
