@@ -186,7 +186,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.applicationId = variant.mergedFlavor.applicationId
+                applyResourceTask.applicationId = variantData.getApplicationId()
                 applyResourceTask.variantName = variant.name
                 applyResourceTask.resDir = resDir
 
