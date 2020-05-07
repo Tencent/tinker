@@ -21,12 +21,12 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
 
-import com.tencent.tinker.loader.app.TinkerApplication;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+
+import dalvik.system.PathClassLoader;
 
 /**
  * Created by tangyinsheng on 2019-10-31.
@@ -46,8 +46,17 @@ final class NewClassLoaderInjector {
         // Suggestion from Huawei: Only PathClassLoader (Perhaps other ClassLoaders known by system
         // like DexClassLoader also works ?) can be used here to trigger dex2oat so that JIT
         // mechanism can participate in runtime Dex optimization.
-        final ClassLoader appClassLoader = TinkerApplication.class.getClassLoader();
-        final ClassLoader triggerClassLoader = createNewClassLoader(context, appClassLoader, dexOptDir, dexPaths);
+        final StringBuilder sb = new StringBuilder();
+        boolean isFirst = true;
+        for (String dexPath : dexPaths) {
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                sb.append(File.pathSeparator);
+            }
+            sb.append(dexPath);
+        }
+        final ClassLoader triggerClassLoader = new PathClassLoader(sb.toString(), ClassLoader.getSystemClassLoader());
     }
 
     @SuppressWarnings("unchecked")

@@ -5,8 +5,6 @@ import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.IInterface;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.tencent.tinker.loader.hotplug.EnvConsts;
@@ -59,15 +57,13 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
         mBinderInvocationHandler = binderInvocationHandler;
     }
 
-    @Nullable
     @Override
     protected IBinder fetchTarget() throws Throwable {
         return (IBinder) sGetServiceMethod.invoke(null, mServiceName);
     }
 
-    @NonNull
     @Override
-    protected IBinder decorate(@Nullable IBinder target) throws Throwable {
+    protected IBinder decorate(IBinder target) throws Throwable {
         if (target == null) {
             throw new IllegalStateException("target is null.");
         }
@@ -82,7 +78,7 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected void inject(@Nullable IBinder decorated) throws Throwable {
+    protected void inject(IBinder decorated) throws Throwable {
         final Map<String, IBinder> sCache = (Map<String, IBinder>) sSCacheField.get(null);
         sCache.put(mServiceName, decorated);
         if (Context.ACTIVITY_SERVICE.equals(mServiceName)) {

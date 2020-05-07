@@ -1,7 +1,5 @@
 package com.tencent.tinker.loader.hotplug.interceptor;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
 
 /**
@@ -14,13 +12,13 @@ public abstract class Interceptor<T_TARGET> {
     private T_TARGET mTarget = null;
     private volatile boolean mInstalled = false;
 
-    protected @Nullable abstract T_TARGET fetchTarget() throws Throwable;
+    protected abstract T_TARGET fetchTarget() throws Throwable;
 
-    protected @NonNull T_TARGET decorate(@Nullable T_TARGET target) throws Throwable {
+    protected T_TARGET decorate(T_TARGET target) throws Throwable {
         return target;
     }
 
-    protected abstract void inject(@Nullable T_TARGET decorated) throws Throwable;
+    protected abstract void inject(T_TARGET decorated) throws Throwable;
 
     public synchronized void install() throws InterceptFailedException {
         try {
