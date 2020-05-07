@@ -26,8 +26,7 @@ import android.content.res.Resources;
 import android.os.Handler;
 import android.os.SystemClock;
 
-import androidx.annotation.Keep;
-
+import com.tencent.tinker.anno.Keep;
 import com.tencent.tinker.loader.TinkerLoader;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.TinkerUncaughtHandler;

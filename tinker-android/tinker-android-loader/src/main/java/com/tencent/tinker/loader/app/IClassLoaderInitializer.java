@@ -2,7 +2,7 @@ package com.tencent.tinker.loader.app;
 
 import android.app.Application;
 
-import androidx.annotation.Keep;
+import com.tencent.tinker.anno.Keep;
 
 /**
  * Created by tomystang on 2019-10-29.
