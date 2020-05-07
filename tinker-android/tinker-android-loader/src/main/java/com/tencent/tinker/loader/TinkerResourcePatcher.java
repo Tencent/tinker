@@ -24,8 +24,6 @@ import android.os.Build;
 import android.util.ArrayMap;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -309,7 +307,7 @@ class TinkerResourcePatcher {
         return true;
     }
 
-    private static boolean shouldAddSharedLibraryAssets(@NonNull ApplicationInfo applicationInfo) {
+    private static boolean shouldAddSharedLibraryAssets(ApplicationInfo applicationInfo) {
         return SDK_INT >= Build.VERSION_CODES.N && applicationInfo != null &&
                 applicationInfo.sharedLibraryFiles != null;
     }
