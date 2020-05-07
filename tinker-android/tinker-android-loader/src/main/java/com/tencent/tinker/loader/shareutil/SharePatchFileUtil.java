@@ -179,7 +179,8 @@ public class SharePatchFileUtil {
     public static final boolean shouldAcceptEvenIfIllegal(File file) {
         final boolean isSpecialManufacturer =
                 "vivo".equalsIgnoreCase(Build.MANUFACTURER)
-             || "oppo".equalsIgnoreCase(Build.MANUFACTURER);
+             || "oppo".equalsIgnoreCase(Build.MANUFACTURER)
+             || "meizu".equalsIgnoreCase(Build.MANUFACTURER);
 
         final boolean isSpecialOSVer =
                 (Build.VERSION.SDK_INT >= 29)
