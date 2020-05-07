@@ -433,7 +433,7 @@ public class DexDiffDecoder extends BaseDecoder {
             if (!isCurrentDexHasChangedClass) {
                 continue;
             }
-            DexBuilder dexBuilder = new DexBuilder(Opcodes.forApi(29));
+            DexBuilder dexBuilder = new DexBuilder(Opcodes.forApi(23));
             for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
                 if (!descOfChangedClassesInCurrDex.contains(classDef.getType())) {
                     continue;
