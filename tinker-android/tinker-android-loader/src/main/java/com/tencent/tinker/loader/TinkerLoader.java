@@ -19,7 +19,6 @@ package com.tencent.tinker.loader;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
@@ -352,6 +351,12 @@ public class TinkerLoader extends AbstractTinkerLoader {
             ComponentHotplug.install(app, securityCheck);
         }
 
+        if (!AppInfoChangedBlocker.tryStart(app)) {
+            Log.w(TAG, "tryLoadPatchFiles:AppInfoChangedBlocker install fail.");
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_BAIL_HACK_FAILURE);
+            return;
+        }
+
         // Before successfully exit, we should update stored version info and kill other process
         // to make them load latest patch when we first applied newer one.
         if (mainProcess && (versionChanged || oatModeChanged)) {
@@ -368,7 +373,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
         //all is ok!
         ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_OK);
         Log.i(TAG, "tryLoadPatchFiles: load end, ok!");
-        return;
     }
 
     private boolean checkSafeModeCount(TinkerApplication application) {
