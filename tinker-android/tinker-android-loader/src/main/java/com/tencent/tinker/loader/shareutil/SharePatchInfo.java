@@ -144,7 +144,7 @@ public class SharePatchInfo {
                 lastFingerPrint = properties.getProperty(FINGER_PRINT);
                 oatDir = properties.getProperty(OAT_DIR);
                 final String isRemoveInterpretOATDirStr = properties.getProperty(IS_REMOVE_INTERPRET_OAT_DIR);
-                isRemoveInterpretOATDir = (isRemoveNewVersionStr != null && !isRemoveInterpretOATDirStr.isEmpty() && !"0".equals(isRemoveInterpretOATDirStr));
+                isRemoveInterpretOATDir = (isRemoveInterpretOATDirStr != null && !isRemoveInterpretOATDirStr.isEmpty() && !"0".equals(isRemoveInterpretOATDirStr));
             } catch (IOException e) {
                 Log.w(TAG, "read property failed, e:" + e);
             } finally {
