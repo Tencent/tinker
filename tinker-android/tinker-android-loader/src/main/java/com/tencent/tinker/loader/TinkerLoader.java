@@ -19,7 +19,6 @@ package com.tencent.tinker.loader;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
@@ -127,34 +126,47 @@ public class TinkerLoader extends AbstractTinkerLoader {
         boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
         boolean isRemoveNewVersion = patchInfo.isRemoveNewVersion;
 
-        // So far new version is not loaded in main process and other processes.
-        // We can remove new version directory safely.
-        if (mainProcess && isRemoveNewVersion) {
-            Log.w(TAG, "found clean patch mark and we are in main process, delete patch file now.");
-            String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
-            if (patchName != null) {
-                // oldVersion.equals(newVersion) means the new version has been loaded at least once
-                // after it was applied.
-                final boolean isNewVersionLoadedBefore = oldVersion.equals(newVersion);
-                if (isNewVersionLoadedBefore) {
-                    // Set oldVersion and newVersion to empty string to clean patch
-                    // if current patch has been loaded before.
-                    oldVersion = "";
+        if (mainProcess) {
+            final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
+            // So far new version is not loaded in main process and other processes.
+            // We can remove new version directory safely.
+            if (isRemoveNewVersion) {
+                Log.w(TAG, "found clean patch mark and we are in main process, delete patch file now.");
+                if (patchName != null) {
+                    // oldVersion.equals(newVersion) means the new version has been loaded at least once
+                    // after it was applied.
+                    final boolean isNewVersionLoadedBefore = oldVersion.equals(newVersion);
+                    if (isNewVersionLoadedBefore) {
+                        // Set oldVersion and newVersion to empty string to clean patch
+                        // if current patch has been loaded before.
+                        oldVersion = "";
+                    }
+                    newVersion = oldVersion;
+                    patchInfo.oldVersion = oldVersion;
+                    patchInfo.newVersion = newVersion;
+                    patchInfo.isRemoveNewVersion = false;
+                    SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+
+                    String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
+                    SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+
+                    if (isNewVersionLoadedBefore) {
+                        ShareTinkerInternals.killProcessExceptMain(app);
+                        ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
+                        return;
+                    }
                 }
-                newVersion = oldVersion;
-                patchInfo.oldVersion = oldVersion;
-                patchInfo.newVersion = newVersion;
-                patchInfo.isRemoveNewVersion = false;
+            }
+            if (patchInfo.isRemoveInterpretOATDir) {
+                // delete interpret odex
+                // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
+                Log.i(TAG, "tryLoadPatchFiles: isRemoveInterpretOATDir is true, try to delete interpret optimize files");
+
+                patchInfo.isRemoveInterpretOATDir = false;
                 SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-
+                ShareTinkerInternals.killProcessExceptMain(app);
                 String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
-                SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
-
-                if (isNewVersionLoadedBefore) {
-                    ShareTinkerInternals.killProcessExceptMain(app);
-                    ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
-                    return;
-                }
+                SharePatchFileUtil.deleteDir(patchVersionDirFullPath + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
             }
         }
 
@@ -281,10 +293,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
             }
             if (oatModeChanged) {
                 patchInfo.oatDir = oatDex;
-                // delete interpret odex
-                // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
-                Log.i(TAG, "tryLoadPatchFiles:oatModeChanged, try to delete interpret optimize files");
-                SharePatchFileUtil.deleteDir(patchVersionDirectory + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
+                patchInfo.isRemoveInterpretOATDir = true;
             }
         }
 
@@ -342,9 +351,15 @@ public class TinkerLoader extends AbstractTinkerLoader {
             ComponentHotplug.install(app, securityCheck);
         }
 
+        if (!AppInfoChangedBlocker.tryStart(app)) {
+            Log.w(TAG, "tryLoadPatchFiles:AppInfoChangedBlocker install fail.");
+            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_BAIL_HACK_FAILURE);
+            return;
+        }
+
         // Before successfully exit, we should update stored version info and kill other process
         // to make them load latest patch when we first applied newer one.
-        if (mainProcess && versionChanged) {
+        if (mainProcess && (versionChanged || oatModeChanged)) {
             //update old version to new
             if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile)) {
                 ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_REWRITE_PATCH_INFO_FAIL);
@@ -358,7 +373,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
         //all is ok!
         ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_OK);
         Log.i(TAG, "tryLoadPatchFiles: load end, ok!");
-        return;
     }
 
     private boolean checkSafeModeCount(TinkerApplication application) {

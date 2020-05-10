@@ -26,6 +26,7 @@ import android.content.res.Resources;
 import android.os.Handler;
 import android.os.SystemClock;
 
+import com.tencent.tinker.loader.AppInfoChangedBlocker;
 import com.tencent.tinker.loader.TinkerLoader;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.TinkerUncaughtHandler;
@@ -156,9 +157,23 @@ public abstract class TinkerApplication extends Application {
         onBaseContextAttached(base);
     }
 
+    private void bailLoaded() {
+        try {
+            if (tinkerResultIntent != null
+                    && ShareIntentUtil.getIntentReturnCode(tinkerResultIntent) == ShareConstants.ERROR_LOAD_OK) {
+                if (!AppInfoChangedBlocker.tryStart(this)) {
+                    throw new IllegalStateException("AppInfoChangedBlocker.tryStart return false.");
+                }
+            }
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("Fail to do bail logic for load ensuring.", thr);
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
+        bailLoaded();
         if (mInlineFence == null) {
             return;
         }

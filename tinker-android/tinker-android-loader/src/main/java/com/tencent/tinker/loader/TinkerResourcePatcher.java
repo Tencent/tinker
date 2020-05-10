@@ -57,6 +57,7 @@ class TinkerResourcePatcher {
 
     // method
     private static Method addAssetPathMethod = null;
+    private static Method addAssetPathAsSharedLibraryMethod = null;
     private static Method ensureStringBlocksMethod = null;
 
     // field
@@ -95,6 +96,10 @@ class TinkerResourcePatcher {
         // Create a new AssetManager instance and point it to the resources
         final AssetManager assets = context.getAssets();
         addAssetPathMethod = findMethod(assets, "addAssetPath", String.class);
+        if (shouldAddSharedLibraryAssets(context.getApplicationInfo())) {
+            addAssetPathAsSharedLibraryMethod =
+                    findMethod(assets, "addAssetPathAsSharedLibrary", String.class);
+        }
 
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
@@ -199,6 +204,20 @@ class TinkerResourcePatcher {
             throw new IllegalStateException("Could not create new AssetManager");
         }
 
+        // Add SharedLibraries to AssetManager for resolve system resources not found issue
+        // This influence SharedLibrary Package ID
+        if (shouldAddSharedLibraryAssets(appInfo)) {
+            for (String sharedLibrary : appInfo.sharedLibraryFiles) {
+                if (!sharedLibrary.endsWith(".apk")) {
+                    continue;
+                }
+                if (((Integer) addAssetPathAsSharedLibraryMethod.invoke(newAssetManager, sharedLibrary)) == 0) {
+                    throw new IllegalStateException("AssetManager add SharedLibrary Fail");
+                }
+                Log.i(TAG, "addAssetPathAsSharedLibrary " + sharedLibrary);
+            }
+        }
+
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
         if (stringBlocksField != null && ensureStringBlocksMethod != null) {
@@ -286,5 +305,10 @@ class TinkerResourcePatcher {
         }
         Log.i(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
         return true;
+    }
+
+    private static boolean shouldAddSharedLibraryAssets(ApplicationInfo applicationInfo) {
+        return SDK_INT >= Build.VERSION_CODES.N && applicationInfo != null &&
+                applicationInfo.sharedLibraryFiles != null;
     }
 }

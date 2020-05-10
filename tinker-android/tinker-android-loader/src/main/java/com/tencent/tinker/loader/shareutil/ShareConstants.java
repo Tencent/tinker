@@ -176,6 +176,8 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION      = -23;
     public static final int ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH        = -24;
     public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -25;
+    // -26 & -27 is used by WeChat internal logic.
+    public static final int ERROR_LOAD_PATCH_BAIL_HACK_FAILURE                    = -28;
 
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 

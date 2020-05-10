@@ -2,8 +2,6 @@ package com.tencent.tinker.loader.hotplug.interceptor;
 
 import android.os.Handler;
 import android.os.Message;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 
@@ -36,15 +34,13 @@ public class HandlerMessageInterceptor extends Interceptor<Handler.Callback> {
         mMessageHandler = messageHandler;
     }
 
-    @Nullable
     @Override
     protected Handler.Callback fetchTarget() throws Throwable {
         return (Handler.Callback) sMCallbackField.get(mTarget);
     }
 
-    @NonNull
     @Override
-    protected Handler.Callback decorate(@Nullable final Handler.Callback callback) throws Throwable {
+    protected Handler.Callback decorate(final Handler.Callback callback) throws Throwable {
         if (callback != null && ITinkerHotplugProxy.class.isAssignableFrom(callback.getClass())) {
             // Already intercepted, just return the target.
             return callback;
@@ -54,7 +50,7 @@ public class HandlerMessageInterceptor extends Interceptor<Handler.Callback> {
     }
 
     @Override
-    protected void inject(@Nullable Handler.Callback decorated) throws Throwable {
+    protected void inject(Handler.Callback decorated) throws Throwable {
         sMCallbackField.set(mTarget, decorated);
     }
 

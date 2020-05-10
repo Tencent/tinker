@@ -1,0 +1,16 @@
+# Understand the Tinker @Keep annotation.
+-keep class com.tencent.tinker.anno.Keep
+
+-keep @com.tencent.tinker.anno.Keep class * {*;}
+
+-keepclasseswithmembers class * {
+    @com.tencent.tinker.anno.Keep <methods>;
+}
+
+-keepclasseswithmembers class * {
+    @com.tencent.tinker.anno.Keep <fields>;
+}
+
+-keepclasseswithmembers class * {
+    @com.tencent.tinker.anno.Keep <init>(...);
+}

@@ -22,7 +22,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Message;
-import androidx.annotation.Keep;
+import com.tencent.tinker.anno.Keep;
 
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_ASSETS;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_BASE_CONTEXT;

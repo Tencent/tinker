@@ -24,7 +24,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
-import androidx.annotation.Nullable;
 
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.tinker.Tinker;
@@ -91,7 +90,7 @@ public class TinkerPatchService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
+    protected void onHandleIntent(Intent intent) {
         increasingPriority();
         doApplyPatch(this, intent);
     }
