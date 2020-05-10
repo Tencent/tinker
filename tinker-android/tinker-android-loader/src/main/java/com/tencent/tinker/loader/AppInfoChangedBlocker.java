@@ -29,6 +29,7 @@ public final class AppInfoChangedBlocker {
 
     public static boolean tryStart(Application app) {
         if (Build.VERSION.SDK_INT < 26) {
+            Log.i(TAG, "tryStart: SDK_INT is less than 26, skip rest logic.");
             return true;
         }
         try {
@@ -88,8 +89,6 @@ public final class AppInfoChangedBlocker {
         }
 
         private boolean hackMessage(Message msg) {
-            Log.i(TAG, "hackmsg: " + msg.what);
-
             if (msg.what == APPLICATION_INFO_CHANGED) {
                 // We are generally in the background this moment(signal trigger is
                 // in front of user), and the signal was going to relaunch all our
