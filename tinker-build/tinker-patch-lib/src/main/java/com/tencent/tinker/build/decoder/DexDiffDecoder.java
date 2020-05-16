@@ -188,10 +188,6 @@ public class DexDiffDecoder extends BaseDecoder {
             e.printStackTrace();
         }
 
-        // Collect class descriptors here for further checking.
-        collectClassesInDex(oldFile);
-        oldDexFiles.add(oldFile);
-
         // If corresponding new dex was completely deleted, just return false.
         // don't process 0 length dex
         if (newFile == null || !newFile.exists() || newFile.length() == 0) {
@@ -199,7 +195,6 @@ public class DexDiffDecoder extends BaseDecoder {
         }
 
         File dexDiffOut = getOutputPath(newFile).toFile();
-
         final String newMd5 = getRawOrWrappedDexMD5(newFile);
 
         //new add file
@@ -209,8 +204,11 @@ public class DexDiffDecoder extends BaseDecoder {
             return true;
         }
 
-        final String oldMd5 = getRawOrWrappedDexMD5(oldFile);
+        // Collect class descriptors here for further checking.
+        collectClassesInDex(oldFile);
+        oldDexFiles.add(oldFile);
 
+        final String oldMd5 = getRawOrWrappedDexMD5(oldFile);
         if ((oldMd5 != null && !oldMd5.equals(newMd5)) || (oldMd5 == null && newMd5 != null)) {
             hasDexChanged = true;
             if (oldMd5 != null) {
