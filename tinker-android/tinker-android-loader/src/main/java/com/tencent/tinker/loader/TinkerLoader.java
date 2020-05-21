@@ -61,6 +61,8 @@ public class TinkerLoader extends AbstractTinkerLoader {
     }
 
     private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent) {
+        final long startTick = System.currentTimeMillis();
+
         final int tinkerFlag = app.getTinkerFlags();
 
         if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
@@ -304,6 +306,11 @@ public class TinkerLoader extends AbstractTinkerLoader {
             return;
         }
 
+        final long loadDexStartTick = System.currentTimeMillis();
+        final long costUntilStartDexLoading = loadDexStartTick - startTick;
+
+        Log.i(TAG, "tryLoadPatchFiles: costUntilStartDexLoading: " + costUntilStartDexLoading);
+
         //now we can load patch jar
         if (!isArkHotRuning && isEnabledForDex) {
             boolean loadTinkerJars = TinkerDexLoader.loadTinkerJars(app, patchVersionDirectory, oatDex, resultIntent, isSystemOTA, isProtectedApp);
@@ -329,6 +336,11 @@ public class TinkerLoader extends AbstractTinkerLoader {
             }
         }
 
+        final long loadArkStartTick = System.currentTimeMillis();
+        final long loadDexCost = loadArkStartTick - loadDexStartTick;
+
+        Log.i(TAG, "tryLoadPatchFiles: loadDexCost: " + loadDexCost);
+
         if (isArkHotRuning && isEnabledForArkHot) {
             boolean loadArkHotFixJars = TinkerArkHotLoader.loadTinkerArkHot(app, patchVersionDirectory, resultIntent);
             if (!loadArkHotFixJars) {
@@ -336,6 +348,11 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 return;
             }
         }
+
+        final long loadResStartTick = System.currentTimeMillis();
+        final long loadArkCost = loadResStartTick - loadArkStartTick;
+
+        Log.i(TAG, "tryLoadPatchFiles: loadArkCost: " + loadArkCost);
 
         //now we can load patch resource
         if (isEnabledForResource) {
@@ -345,6 +362,11 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 return;
             }
         }
+
+        final long finalHackStuffStartTick = System.currentTimeMillis();
+        final long loadResCost = finalHackStuffStartTick - loadResStartTick;
+
+        Log.i(TAG, "tryLoadPatchFiles: loadResCost: " + loadResCost);
 
         // Init component hotplug support.
         if ((isEnabledForDex || isEnabledForArkHot) && isEnabledForResource) {
@@ -356,6 +378,10 @@ public class TinkerLoader extends AbstractTinkerLoader {
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_BAIL_HACK_FAILURE);
             return;
         }
+
+        final long finalHackStuffCost = System.currentTimeMillis() - finalHackStuffStartTick;
+
+        Log.i(TAG, "tryLoadPatchFiles: finalHackStuffCost: " + finalHackStuffCost);
 
         // Before successfully exit, we should update stored version info and kill other process
         // to make them load latest patch when we first applied newer one.
