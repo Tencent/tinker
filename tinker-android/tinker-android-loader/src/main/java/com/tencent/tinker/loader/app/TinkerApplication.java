@@ -181,7 +181,6 @@ public abstract class TinkerApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        bailLoaded();
         if (mInlineFence == null) {
             return;
         }
