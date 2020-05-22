@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
+import dalvik.system.DelegateLastClassLoader;
 import dalvik.system.PathClassLoader;
 
 /**
@@ -56,7 +57,11 @@ final class NewClassLoaderInjector {
             }
             sb.append(dexPath);
         }
-        final ClassLoader triggerClassLoader = new PathClassLoader(sb.toString(), ClassLoader.getSystemClassLoader());
+        if (Build.VERSION.SDK_INT >= 29) {
+            final ClassLoader triggerClassLoader = new DelegateLastClassLoader(sb.toString(), ClassLoader.getSystemClassLoader());
+        } else {
+            final ClassLoader triggerClassLoader = new PathClassLoader(sb.toString(), ClassLoader.getSystemClassLoader());
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -103,10 +108,14 @@ final class NewClassLoaderInjector {
         }
 
         final String combinedLibraryPath = libraryPathBuilder.toString();
-
-        final ClassLoader result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
+        ClassLoader result = null;
+        if (Build.VERSION.SDK_INT >= 29) {
+            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, ClassLoader.getSystemClassLoader());
+            findField(ClassLoader.class, "parent").set(result, oldClassLoader);
+        } else {
+            result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
+        }
         findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
-
         return result;
     }
 
