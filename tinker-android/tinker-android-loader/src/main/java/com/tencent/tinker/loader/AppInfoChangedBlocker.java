@@ -9,6 +9,7 @@ import android.os.Process;
 import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.lang.reflect.Field;
 
@@ -32,12 +33,12 @@ public final class AppInfoChangedBlocker {
             return true;
         }
         try {
-            Log.i(TAG, "tryStart called.");
+            ShareTinkerLog.i(TAG, "tryStart called.");
             interceptHandler(fetchMHObject(app));
-            Log.i(TAG, "tryStart done.");
+            ShareTinkerLog.i(TAG, "tryStart done.");
             return true;
         } catch (Throwable e) {
-            Log.e(TAG, "AppInfoChangedBlocker start failed, simply ignore.", e);
+            ShareTinkerLog.e(TAG, "AppInfoChangedBlocker start failed, simply ignore.", e);
             return false;
         }
     }
@@ -55,7 +56,7 @@ public final class AppInfoChangedBlocker {
             HackerCallback hackerCallback = new HackerCallback(originCallback, mH.getClass());
             mCallbackField.set(mH, hackerCallback);
         } else {
-            Log.w(TAG, "Already intercepted, skip rest logic.");
+            ShareTinkerLog.w(TAG, "Already intercepted, skip rest logic.");
         }
     }
 
@@ -88,7 +89,7 @@ public final class AppInfoChangedBlocker {
         }
 
         private boolean hackMessage(Message msg) {
-            Log.i(TAG, "hackmsg: " + msg.what);
+            ShareTinkerLog.i(TAG, "hackmsg: " + msg.what);
 
             if (msg.what == APPLICATION_INFO_CHANGED) {
                 // We are generally in the background this moment(signal trigger is

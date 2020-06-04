@@ -23,7 +23,7 @@ import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -60,7 +60,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPatchListenerReceiveFail(File patchFile, int errorCode) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail: %s, code: %d",
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail: %s, code: %d",
             patchFile.getAbsolutePath(), errorCode);
     }
 
@@ -78,7 +78,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPatchVersionChanged(String oldVersion, String newVersion, File patchDirectoryFile, String currentPatchName) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadPatchVersionChanged: patch version change from " + oldVersion + " to " + newVersion);
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchVersionChanged: patch version change from " + oldVersion + " to " + newVersion);
 
         if (oldVersion == null || newVersion == null) {
             return;
@@ -93,7 +93,7 @@ public class DefaultLoadReporter implements LoadReporter {
         }
 
         // // Unnecessary now. Since other processes are killed in TinkerLoader.
-        // TinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
+        // ShareTinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
         // // kill all other process to ensure that all process's code is the same.
         // ShareTinkerInternals.killAllOtherProcess(context);
 
@@ -123,17 +123,17 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadInterpret(int type, Throwable e) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadInterpret: type: %d, throwable: %s",
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadInterpret: type: %d, throwable: %s",
             type, e);
         switch (type) {
             case ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR:
-                TinkerLog.e(TAG, "patch loadReporter onLoadInterpret fail, can get instruction set from existed oat file");
+                ShareTinkerLog.e(TAG, "patch loadReporter onLoadInterpret fail, can get instruction set from existed oat file");
                 break;
             case ShareConstants.TYPE_INTERPRET_COMMAND_ERROR:
-                TinkerLog.e(TAG, "patch loadReporter onLoadInterpret fail, command line to interpret return error");
+                ShareTinkerLog.e(TAG, "patch loadReporter onLoadInterpret fail, command line to interpret return error");
                 break;
             case ShareConstants.TYPE_INTERPRET_OK:
-                TinkerLog.i(TAG, "patch loadReporter onLoadInterpret ok");
+                ShareTinkerLog.i(TAG, "patch loadReporter onLoadInterpret ok");
                 break;
             default:
                 break;
@@ -158,7 +158,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadFileNotFound(File file, int fileType, boolean isDirectory) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType: %d, isDirectory: %b",
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType: %d, isDirectory: %b",
             file.getAbsolutePath(), fileType, isDirectory);
 
         // only try to recover opt file
@@ -184,7 +184,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadFileMd5Mismatch(File file, int fileType) {
-        TinkerLog.i(TAG, "patch load Reporter onLoadFileMd5Mismatch: patch file md5 mismatch file: %s, fileType: %d", file.getAbsolutePath(), fileType);
+        ShareTinkerLog.i(TAG, "patch load Reporter onLoadFileMd5Mismatch: patch file md5 mismatch file: %s, fileType: %d", file.getAbsolutePath(), fileType);
         //clean patch for safety
         checkAndCleanPatch();
     }
@@ -200,7 +200,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPatchInfoCorrupted(String oldVersion, String newVersion, File patchInfoFile) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadPatchInfoCorrupted: patch info file damage: %s, from version: %s to version: %s",
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchInfoCorrupted: patch info file damage: %s, from version: %s to version: %s",
             patchInfoFile.getAbsolutePath(), oldVersion, newVersion);
 
         checkAndCleanPatch();
@@ -216,7 +216,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadResult(File patchDirectory, int loadCode, long cost) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadResult: patch load result, path:%s, code: %d, cost: %dms", patchDirectory.getAbsolutePath(), loadCode, cost);
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadResult: patch load result, path:%s, code: %d, cost: %dms", patchDirectory.getAbsolutePath(), loadCode, cost);
         //you can just report the result here
     }
 
@@ -239,44 +239,44 @@ public class DefaultLoadReporter implements LoadReporter {
         switch (errorCode) {
             case ShareConstants.ERROR_LOAD_EXCEPTION_DEX:
                 if (e.getMessage().contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
-                    TinkerLog.e(TAG, "patch loadReporter onLoadException: tinker dex check fail:" + e.getMessage());
+                    ShareTinkerLog.e(TAG, "patch loadReporter onLoadException: tinker dex check fail:" + e.getMessage());
                 } else {
-                    TinkerLog.i(TAG, "patch loadReporter onLoadException: patch load dex exception: %s", e);
+                    ShareTinkerLog.i(TAG, "patch loadReporter onLoadException: patch load dex exception: %s", e);
                 }
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
-                TinkerLog.i(TAG, "dex exception disable tinker forever with sp");
+                ShareTinkerLog.i(TAG, "dex exception disable tinker forever with sp");
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE:
                 if (e.getMessage().contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
-                    TinkerLog.e(TAG, "patch loadReporter onLoadException: tinker res check fail:" + e.getMessage());
+                    ShareTinkerLog.e(TAG, "patch loadReporter onLoadException: tinker res check fail:" + e.getMessage());
                 } else {
-                    TinkerLog.i(TAG, "patch loadReporter onLoadException: patch load resource exception: %s", e);
+                    ShareTinkerLog.i(TAG, "patch loadReporter onLoadException: patch load resource exception: %s", e);
                 }
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
-                TinkerLog.i(TAG, "res exception disable tinker forever with sp");
+                ShareTinkerLog.i(TAG, "res exception disable tinker forever with sp");
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_UNCAUGHT:
-                TinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unCatch exception: %s", e);
+                ShareTinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unCatch exception: %s", e);
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
-                TinkerLog.i(TAG, "unCaught exception disable tinker forever with sp");
+                ShareTinkerLog.i(TAG, "unCaught exception disable tinker forever with sp");
 
                 String uncaughtString = SharePatchFileUtil.checkTinkerLastUncaughtCrash(context);
                 if (!ShareTinkerInternals.isNullOrNil(uncaughtString)) {
                     File laseCrashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
                     SharePatchFileUtil.safeDeleteFile(laseCrashFile);
                     // found really crash reason
-                    TinkerLog.e(TAG, "tinker uncaught real exception:" + uncaughtString);
+                    ShareTinkerLog.e(TAG, "tinker uncaught real exception:" + uncaughtString);
                 }
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_UNKNOWN:
-                TinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unknown exception: %s", e);
+                ShareTinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unknown exception: %s", e);
                 //exception can be caught, it is no need to disable Tinker with sharedPreference
                 break;
             default:
                 break;
         }
-        TinkerLog.e(TAG, "tinker load exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
-        TinkerLog.printErrStackTrace(TAG, e, "tinker load exception");
+        ShareTinkerLog.e(TAG, "tinker load exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
+        ShareTinkerLog.printErrStackTrace(TAG, e, "tinker load exception");
 
         Tinker.with(context).setTinkerDisable();
         checkAndCleanPatch();
@@ -299,7 +299,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPackageCheckFail(File patchFile, int errorCode) {
-        TinkerLog.i(TAG, "patch loadReporter onLoadPackageCheckFail: "
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPackageCheckFail: "
             + "load patch package check fail file path: %s, errorCode: %d", patchFile.getAbsolutePath(), errorCode);
         checkAndCleanPatch();
     }
@@ -317,7 +317,7 @@ public class DefaultLoadReporter implements LoadReporter {
             if (tinkerLoadResult.versionChanged) {
                 SharePatchInfo sharePatchInfo = tinkerLoadResult.patchInfo;
                 if (sharePatchInfo != null && !ShareTinkerInternals.isNullOrNil(sharePatchInfo.oldVersion)) {
-                    TinkerLog.w(TAG, "checkAndCleanPatch, oldVersion %s is not null, try kill all other process",
+                    ShareTinkerLog.w(TAG, "checkAndCleanPatch, oldVersion %s is not null, try kill all other process",
                         sharePatchInfo.oldVersion);
 
                     ShareTinkerInternals.killAllOtherProcess(context);
@@ -337,12 +337,12 @@ public class DefaultLoadReporter implements LoadReporter {
         File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
         if (patchVersionFile != null) {
             if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
-                TinkerLog.i(TAG, "try to repair oat file on patch process");
+                ShareTinkerLog.i(TAG, "try to repair oat file on patch process");
                 TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
                 return true;
             }
             // else {
-            //       TinkerLog.i(TAG, "repair retry exceed must max time, just clean");
+            //       ShareTinkerLog.i(TAG, "repair retry exceed must max time, just clean");
             //       checkAndCleanPatch();
             // }
         }

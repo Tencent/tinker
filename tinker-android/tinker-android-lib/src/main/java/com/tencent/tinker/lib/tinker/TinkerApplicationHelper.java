@@ -19,7 +19,7 @@ package com.tencent.tinker.lib.tinker;
 import android.content.Intent;
 
 import com.tencent.tinker.entry.ApplicationLike;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
@@ -244,12 +244,12 @@ public class TinkerApplicationHelper {
         }
         final File tinkerDir = SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
         if (!tinkerDir.exists()) {
-            TinkerLog.w(TAG, "try to clean patch while there're not any applied patches.");
+            ShareTinkerLog.w(TAG, "try to clean patch while there're not any applied patches.");
             return;
         }
         final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(tinkerDir.getAbsolutePath());
         if (!patchInfoFile.exists()) {
-            TinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
+            ShareTinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
             return;
         }
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());
@@ -353,10 +353,10 @@ public class TinkerApplicationHelper {
             final boolean verifyMd5 = applicationLike.getTinkerLoadVerifyFlag();
             if (verifyMd5 && !SharePatchFileUtil.verifyFileMd5(library, loadLibraries.get(name))) {
                 //do not report, because tinker is not install
-                TinkerLog.i(TAG, "loadLibraryFromTinker md5mismatch fail:" + patchLibraryPath);
+                ShareTinkerLog.i(TAG, "loadLibraryFromTinker md5mismatch fail:" + patchLibraryPath);
             } else {
                 System.load(patchLibraryPath);
-                TinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
+                ShareTinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
                 return true;
             }
         }

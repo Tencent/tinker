@@ -19,6 +19,8 @@ package com.tencent.tinker.lib.util;
 import android.content.Context;
 import android.content.Intent;
 
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
+
 /**
  * Created by zhangshaowen on 16/7/3.
  */
@@ -28,7 +30,7 @@ public class UpgradePatchRetry {
     private static UpgradePatchRetry sInstance;
 
     public UpgradePatchRetry(Context context) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public static UpgradePatchRetry getInstance(Context context) {
@@ -39,20 +41,20 @@ public class UpgradePatchRetry {
     }
 
     public void setRetryEnable(boolean enable) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public void setMaxRetryCount(int count) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public boolean onPatchRetryLoad() {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
         return false;
     }
 
     public void onPatchServiceStart(Intent intent) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public boolean onPatchListenerCheck(String md5) {
@@ -64,6 +66,6 @@ public class UpgradePatchRetry {
     }
 
     public void onPatchServiceResult() {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 }

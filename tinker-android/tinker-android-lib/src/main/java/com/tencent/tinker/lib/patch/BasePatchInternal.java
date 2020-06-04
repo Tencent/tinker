@@ -17,7 +17,7 @@
 package com.tencent.tinker.lib.patch;
 
 import com.tencent.tinker.commons.util.IOHelper;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 
@@ -61,7 +61,7 @@ public class BasePatchInternal {
             InputStream is = null;
             OutputStream os = null;
 
-            TinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
+            ShareTinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
 
             try {
                 is = new BufferedInputStream(zipFile.getInputStream(entryFile));
@@ -85,12 +85,12 @@ public class BasePatchInternal {
                 // treat it as true
                 isExtractionSuccessful = true;
             }
-            TinkerLog.i(TAG, "isExtractionSuccessful: %b", isExtractionSuccessful);
+            ShareTinkerLog.i(TAG, "isExtractionSuccessful: %b", isExtractionSuccessful);
 
             if (!isExtractionSuccessful) {
                 final boolean succ = extractTo.delete();
                 if (!succ || extractTo.exists()) {
-                    TinkerLog.e(TAG, "Failed to delete corrupted dex " + extractTo.getPath());
+                    ShareTinkerLog.e(TAG, "Failed to delete corrupted dex " + extractTo.getPath());
                 }
             }
         }

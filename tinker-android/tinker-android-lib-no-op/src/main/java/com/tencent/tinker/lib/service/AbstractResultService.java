@@ -20,7 +20,7 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by zhangshaowen on 16/3/14.
@@ -33,12 +33,12 @@ public abstract class AbstractResultService extends IntentService {
     }
 
     public static void runResultService(Context context, PatchResult result, String resultServiceClass) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public abstract void onPatchResult(PatchResult result);

@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import android.util.Log;
 
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
+
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
@@ -30,7 +32,7 @@ public abstract class Interceptor<T_TARGET> {
             if (decorated != target) {
                 inject(decorated);
             } else {
-                Log.w(TAG, "target: " + target + " was already hooked.");
+                ShareTinkerLog.w(TAG, "target: " + target + " was already hooked.");
             }
             mInstalled = true;
         } catch (Throwable thr) {

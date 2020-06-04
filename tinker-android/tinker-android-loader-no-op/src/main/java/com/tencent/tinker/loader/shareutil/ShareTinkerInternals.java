@@ -22,7 +22,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -80,17 +79,17 @@ public class ShareTinkerInternals {
             isRunningInArkHot.setAccessible(true);
             isARKHotRunning = (Boolean) isRunningInArkHot.invoke(null);
         } catch (ClassNotFoundException e) {
-            Log.i(TAG, "class not found exception");
+            ShareTinkerLog.i(TAG, "class not found exception");
         } catch (NoSuchMethodException e) {
-            Log.i(TAG, "no such method exception");
+            ShareTinkerLog.i(TAG, "no such method exception");
         } catch (SecurityException e) {
-            Log.i(TAG, "security exception");
+            ShareTinkerLog.i(TAG, "security exception");
         } catch (IllegalAccessException e) {
-            Log.i(TAG, "illegal access exception");
+            ShareTinkerLog.i(TAG, "illegal access exception");
         } catch (InvocationTargetException e) {
-            Log.i(TAG, "invocation target exception");
+            ShareTinkerLog.i(TAG, "invocation target exception");
         } catch (IllegalArgumentException e) {
-            Log.i(TAG, "illegal argument exception");
+            ShareTinkerLog.i(TAG, "illegal argument exception");
         }
         return isARKHotRunning;
     }
@@ -107,7 +106,7 @@ public class ShareTinkerInternals {
         Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
 
         currentInstructionSet = (String) currentGet.invoke(null);
-        Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
+        ShareTinkerLog.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
         return currentInstructionSet;
     }
 
@@ -117,14 +116,14 @@ public class ShareTinkerInternals {
             || lastFingerPrint.equals("")
             || currentFingerprint == null
             || currentFingerprint.equals("")) {
-            Log.d(TAG, "fingerprint empty:" + lastFingerPrint + ",current:" + currentFingerprint);
+            ShareTinkerLog.d(TAG, "fingerprint empty:" + lastFingerPrint + ",current:" + currentFingerprint);
             return false;
         } else {
             if (lastFingerPrint.equals(currentFingerprint)) {
-                Log.d(TAG, "same fingerprint:" + currentFingerprint);
+                ShareTinkerLog.d(TAG, "same fingerprint:" + currentFingerprint);
                 return false;
             } else {
-                Log.d(TAG, "system OTA,fingerprint not equal:" + lastFingerPrint + "," + currentFingerprint);
+                ShareTinkerLog.d(TAG, "system OTA,fingerprint not equal:" + lastFingerPrint + "," + currentFingerprint);
                 return true;
             }
         }
@@ -198,7 +197,7 @@ public class ShareTinkerInternals {
             return ShareConstants.ERROR_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND;
         }
         if (!oldTinkerId.equals(patchTinkerId)) {
-            Log.e(TAG, "tinkerId is not equal, base is " + oldTinkerId + ", but patch is " + patchTinkerId);
+            ShareTinkerLog.e(TAG, "tinkerId is not equal, base is " + oldTinkerId + ", but patch is " + patchTinkerId);
             return ShareConstants.ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL;
         }
         return ShareConstants.ERROR_PACKAGE_CHECK_OK;
@@ -238,7 +237,7 @@ public class ShareTinkerInternals {
      */
     public static Properties fastGetPatchPackageMeta(File patchFile) {
         if (patchFile == null || !patchFile.isFile() || patchFile.length() == 0) {
-            Log.e(TAG, "patchFile is illegal");
+            ShareTinkerLog.e(TAG, "patchFile is illegal");
             return null;
         }
         ZipFile zipFile = null;
@@ -246,7 +245,7 @@ public class ShareTinkerInternals {
             zipFile = new ZipFile(patchFile);
             ZipEntry packageEntry = zipFile.getEntry(ShareConstants.PACKAGE_META_FILE);
             if (packageEntry == null) {
-                Log.e(TAG, "patch meta entry not found");
+                ShareTinkerLog.e(TAG, "patch meta entry not found");
                 return null;
             }
             InputStream inputStream = null;
@@ -259,7 +258,7 @@ public class ShareTinkerInternals {
                 SharePatchFileUtil.closeQuietly(inputStream);
             }
         } catch (IOException e) {
-            Log.e(TAG, "fastGetPatchPackageMeta exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "fastGetPatchPackageMeta exception:" + e.getMessage());
             return null;
         } finally {
             SharePatchFileUtil.closeZip(zipFile);
@@ -282,7 +281,7 @@ public class ShareTinkerInternals {
                 tinkerID = null;
             }
         } catch (Exception e) {
-            Log.e(TAG, "getManifestTinkerID exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getManifestTinkerID exception:" + e.getMessage());
             return null;
         }
         return tinkerID;
@@ -363,7 +362,7 @@ public class ShareTinkerInternals {
         String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG_PREFIX + processName;
         SharedPreferences sp = context.getSharedPreferences(preferName, Context.MODE_PRIVATE);
         int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT_PREFIX + ShareConstants.TINKER_VERSION, 0);
-        Log.w(TAG, "getSafeModeCount: preferName:" + preferName + " count:" + count);
+        ShareTinkerLog.w(TAG, "getSafeModeCount: preferName:" + preferName + " count:" + count);
         return count;
     }
 
@@ -372,7 +371,7 @@ public class ShareTinkerInternals {
         String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG_PREFIX + processName;
         SharedPreferences sp = context.getSharedPreferences(preferName, Context.MODE_PRIVATE);
         sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT_PREFIX + ShareConstants.TINKER_VERSION, count).commit();
-        Log.w(TAG, "setSafeModeCount: preferName:" + preferName + " count:" + count);
+        ShareTinkerLog.w(TAG, "setSafeModeCount: preferName:" + preferName + " count:" + count);
     }
 
     public static boolean isTinkerEnabled(int flag) {
@@ -508,7 +507,7 @@ public class ShareTinkerInternals {
                     }
                 }
             } catch (Exception e) {
-                Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
+                ShareTinkerLog.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
             }
         }
 
@@ -528,7 +527,7 @@ public class ShareTinkerInternals {
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
         } finally {
             try {
                 if (in != null) {
@@ -579,7 +578,7 @@ public class ShareTinkerInternals {
                 return true;
             }
         } catch (Throwable e) {
-            Log.e(TAG, "isVmJitInternal ex:" + e);
+            ShareTinkerLog.e(TAG, "isVmJitInternal ex:" + e);
         }
         return false;
     }

@@ -10,13 +10,13 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PersistableBundle;
-import android.util.Log;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.hotplug.EnvConsts;
 import com.tencent.tinker.loader.hotplug.IncrementComponentManager;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.lang.reflect.Field;
 
@@ -46,7 +46,7 @@ public class TinkerHackInstrumentation extends Instrumentation {
 
     public void install() throws IllegalAccessException {
         if (mInstrumentationField.get(mActivityThread) instanceof TinkerHackInstrumentation) {
-            Log.w(TAG, "already installed, skip rest logic.");
+            ShareTinkerLog.w(TAG, "already installed, skip rest logic.");
         } else {
             mInstrumentationField.set(mActivityThread, this);
         }
@@ -119,13 +119,13 @@ public class TinkerHackInstrumentation extends Instrumentation {
         ShareIntentUtil.fixIntentClassLoader(intent, cl);
         final ComponentName oldComponent = intent.getParcelableExtra(EnvConsts.INTENT_EXTRA_OLD_COMPONENT);
         if (oldComponent == null) {
-            Log.w(TAG, "oldComponent was null, start " + intent.getComponent() + " next.");
+            ShareTinkerLog.w(TAG, "oldComponent was null, start " + intent.getComponent() + " next.");
             return false;
         }
         final String oldComponentName = oldComponent.getClassName();
         final ActivityInfo targetAInfo = IncrementComponentManager.queryActivityInfo(oldComponentName);
         if (targetAInfo == null) {
-            Log.e(TAG, "Failed to query target activity's info,"
+            ShareTinkerLog.e(TAG, "Failed to query target activity's info,"
                     + " perhaps the target is not hotpluged component. Target: " + oldComponentName);
             return false;
         }

@@ -20,7 +20,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.util.Log;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
 
@@ -136,7 +135,7 @@ public class ShareSecurityCheck {
                     jarFile.close();
                 }
             } catch (IOException e) {
-                Log.e(TAG, path.getAbsolutePath(), e);
+                ShareTinkerLog.e(TAG, path.getAbsolutePath(), e);
             }
         }
         return true;
@@ -152,7 +151,7 @@ public class ShareSecurityCheck {
                         return true;
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, path.getAbsolutePath(), e);
+                    ShareTinkerLog.e(TAG, path.getAbsolutePath(), e);
                 }
             }
         }

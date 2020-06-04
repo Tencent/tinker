@@ -17,7 +17,6 @@
 package com.tencent.tinker.loader.shareutil;
 
 import android.os.Build;
-import android.util.Log;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
 
@@ -80,7 +79,7 @@ public class SharePatchInfo {
                     fileLock.close();
                 }
             } catch (IOException e) {
-                Log.w(TAG, "releaseInfoLock error", e);
+                ShareTinkerLog.w(TAG, "releaseInfoLock error", e);
             }
         }
 
@@ -108,7 +107,7 @@ public class SharePatchInfo {
                     fileLock.close();
                 }
             } catch (IOException e) {
-                Log.i(TAG, "releaseInfoLock error", e);
+                ShareTinkerLog.i(TAG, "releaseInfoLock error", e);
             }
 
         }
@@ -141,7 +140,7 @@ public class SharePatchInfo {
                 lastFingerPrint = properties.getProperty(FINGER_PRINT);
                 oatDir = properties.getProperty(OAT_DIR);
             } catch (IOException e) {
-                Log.w(TAG, "read property failed, e:" + e);
+                ShareTinkerLog.w(TAG, "read property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(inputStream);
             }
@@ -152,7 +151,7 @@ public class SharePatchInfo {
             //oldVer may be "" or 32 md5
             if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer))
                 || !SharePatchFileUtil.checkIfMd5Valid(newVer)) {
-                Log.w(TAG, "path info file  corrupted:" + pathInfoFile.getAbsolutePath());
+                ShareTinkerLog.w(TAG, "path info file  corrupted:" + pathInfoFile.getAbsolutePath());
                 continue;
             } else {
                 isReadPatchSuccessful = true;
@@ -177,7 +176,7 @@ public class SharePatchInfo {
         if (ShareTinkerInternals.isNullOrNil(info.oatDir)) {
             info.oatDir = DEFAULT_DIR;
         }
-        Log.i(TAG, "rewritePatchInfoFile file path:"
+        ShareTinkerLog.i(TAG, "rewritePatchInfoFile file path:"
             + pathInfoFile.getAbsolutePath()
             + " , oldVer:"
             + info.oldVersion
@@ -217,7 +216,7 @@ public class SharePatchInfo {
                 String comment = "from old version:" + info.oldVersion + " to new version:" + info.newVersion;
                 newProperties.store(outputStream, comment);
             } catch (Exception e) {
-                Log.w(TAG, "write property failed, e:" + e);
+                ShareTinkerLog.w(TAG, "write property failed, e:" + e);
             } finally {
                 SharePatchFileUtil.closeQuietly(outputStream);
             }

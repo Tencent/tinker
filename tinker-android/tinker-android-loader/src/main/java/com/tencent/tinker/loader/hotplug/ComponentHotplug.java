@@ -3,7 +3,6 @@ package com.tencent.tinker.loader.hotplug;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
-import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.hotplug.handler.AMSInterceptHandler;
@@ -14,6 +13,7 @@ import com.tencent.tinker.loader.hotplug.interceptor.ServiceBinderInterceptor;
 import com.tencent.tinker.loader.hotplug.interceptor.TinkerHackInstrumentation;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.lang.reflect.Field;
 
@@ -50,7 +50,7 @@ public final class ComponentHotplug {
 
                     sInstalled = true;
 
-                    Log.i(TAG, "installed successfully.");
+                    ShareTinkerLog.i(TAG, "installed successfully.");
                 }
             } catch (Throwable thr) {
                 uninstall();
@@ -76,7 +76,7 @@ public final class ComponentHotplug {
                 throw new UnsupportedEnvironmentException(thr);
             }
         } else {
-            Log.i(TAG, "method install() is not invoked, ignore ensuring operations.");
+            ShareTinkerLog.i(TAG, "method install() is not invoked, ignore ensuring operations.");
         }
     }
 
@@ -105,7 +105,7 @@ public final class ComponentHotplug {
                     sTinkerHackInstrumentation.uninstall();
                 }
             } catch (Throwable thr) {
-                Log.e(TAG, "exception when uninstall.", thr);
+                ShareTinkerLog.e(TAG, "exception when uninstall.", thr);
             }
 
             sInstalled = false;

@@ -18,7 +18,6 @@ package com.tencent.tinker.loader;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -26,6 +25,7 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareResPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 
@@ -55,22 +55,22 @@ public class TinkerResourceLoader {
 
         if (application.isTinkerLoadVerifyFlag()) {
             if (!SharePatchFileUtil.checkResourceArscMd5(resourceFile, resPatchInfo.resArscMd5)) {
-                Log.e(TAG, "Failed to load resource file, path: " + resourceFile.getPath() + ", expect md5: " + resPatchInfo.resArscMd5);
+                ShareTinkerLog.e(TAG, "Failed to load resource file, path: " + resourceFile.getPath() + ", expect md5: " + resPatchInfo.resArscMd5);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_MD5_MISMATCH);
                 return false;
             }
-            Log.i(TAG, "verify resource file:" + resourceFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
+            ShareTinkerLog.i(TAG, "verify resource file:" + resourceFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
         }
         try {
             TinkerResourcePatcher.monkeyPatchExistingResources(application, resourceString);
-            Log.i(TAG, "monkeyPatchExistingResources resource file:" + resourceString + ", use time: " + (System.currentTimeMillis() - start));
+            ShareTinkerLog.i(TAG, "monkeyPatchExistingResources resource file:" + resourceString + ", use time: " + (System.currentTimeMillis() - start));
         } catch (Throwable e) {
-            Log.e(TAG, "install resources failed");
+            ShareTinkerLog.e(TAG, "install resources failed");
             //remove patch dex if resource is installed failed
             try {
                 SystemClassLoaderAdder.uninstallPatchDex(application.getClassLoader());
             } catch (Throwable throwable) {
-                Log.e(TAG, "uninstallPatchDex failed", e);
+                ShareTinkerLog.e(TAG, "uninstallPatchDex failed", e);
             }
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION);
@@ -120,7 +120,7 @@ public class TinkerResourceLoader {
         try {
             TinkerResourcePatcher.isResourceCanPatch(context);
         } catch (Throwable e) {
-            Log.e(TAG, "resource hook check failed.", e);
+            ShareTinkerLog.e(TAG, "resource hook check failed.", e);
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_LOAD_EXCEPTION);
             return false;

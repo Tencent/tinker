@@ -25,6 +25,7 @@ import com.tencent.tinker.lib.reporter.LoadReporter;
 import com.tencent.tinker.lib.reporter.PatchReporter;
 import com.tencent.tinker.lib.service.AbstractResultService;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by zhangshaowen on 16/3/19.
@@ -73,11 +74,11 @@ public class TinkerInstaller {
     }
 
     public static void cleanPatch(Context context) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public static void onReceiveUpgradePatch(Context context, String patchLocation) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     /**
@@ -85,7 +86,7 @@ public class TinkerInstaller {
      *
      * @param imp
      */
-    public static void setLogIml(TinkerLog.TinkerLogImp imp) {
-        TinkerLog.setTinkerLogImp(imp);
+    public static void setLogIml(ShareTinkerLog.TinkerLogImp imp) {
+        ShareTinkerLog.setTinkerLogImp(imp);
     }
 }

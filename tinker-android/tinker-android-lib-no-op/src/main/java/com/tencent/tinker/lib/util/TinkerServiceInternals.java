@@ -19,6 +19,7 @@ package com.tencent.tinker.lib.util;
 import android.content.Context;
 
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by zhangshaowen on 16/3/10.
@@ -27,7 +28,7 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
     private static final String TAG = "Tinker.ServiceInternals";
 
     public static void killTinkerPatchServiceProcess(Context context) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public static boolean isTinkerPatchServiceRunning(Context context) {

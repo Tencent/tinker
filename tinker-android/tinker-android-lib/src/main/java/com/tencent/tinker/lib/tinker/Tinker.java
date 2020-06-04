@@ -30,7 +30,7 @@ import com.tencent.tinker.lib.reporter.PatchReporter;
 import com.tencent.tinker.lib.service.AbstractResultService;
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.lib.service.TinkerPatchService;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -140,10 +140,10 @@ public class Tinker {
         sInstalled = true;
         TinkerPatchService.setPatchProcessor(upgradePatch, serviceClass);
 
-        TinkerLog.i(TAG, "try to install tinker, isEnable: %b, version: %s", isTinkerEnabled(), ShareConstants.TINKER_VERSION);
+        ShareTinkerLog.i(TAG, "try to install tinker, isEnable: %b, version: %s", isTinkerEnabled(), ShareConstants.TINKER_VERSION);
 
         if (!isTinkerEnabled()) {
-            TinkerLog.e(TAG, "tinker is disabled");
+            ShareTinkerLog.e(TAG, "tinker is disabled");
             return;
         }
         if (intentResult == null) {
@@ -155,7 +155,7 @@ public class Tinker {
         loadReporter.onLoadResult(patchDirectory, tinkerLoadResult.loadCode, tinkerLoadResult.costTime);
 
         if (!loaded) {
-            TinkerLog.w(TAG, "tinker load fail!");
+            ShareTinkerLog.w(TAG, "tinker load fail!");
         }
     }
 
@@ -261,7 +261,7 @@ public class Tinker {
         }
         final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
         if (!patchInfoFile.exists()) {
-            TinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
+            ShareTinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
             return;
         }
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
@@ -277,7 +277,7 @@ public class Tinker {
      */
     public void rollbackPatch() {
         if (!isTinkerLoaded()) {
-            TinkerLog.w(TAG, "rollbackPatch: tinker is not loaded, just return");
+            ShareTinkerLog.w(TAG, "rollbackPatch: tinker is not loaded, just return");
             return;
         }
         // kill all other process
@@ -353,12 +353,12 @@ public class Tinker {
             this.patchProcess = TinkerServiceInternals.isInTinkerPatchServiceProcess(context);
             this.patchDirectory = SharePatchFileUtil.getPatchDirectory(context);
             if (this.patchDirectory == null) {
-                TinkerLog.e(TAG, "patchDirectory is null!");
+                ShareTinkerLog.e(TAG, "patchDirectory is null!");
                 return;
             }
             this.patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
             this.patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
-            TinkerLog.w(TAG, "tinker patch directory: %s", patchDirectory);
+            ShareTinkerLog.w(TAG, "tinker patch directory: %s", patchDirectory);
         }
 
         public Builder tinkerFlags(int tinkerFlags) {

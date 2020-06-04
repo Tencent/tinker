@@ -20,7 +20,7 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 
@@ -46,14 +46,14 @@ public abstract class AbstractResultService extends IntentService {
             intent.putExtra(RESULT_EXTRA, result);
             context.startService(intent);
         } catch (Throwable throwable) {
-            TinkerLog.e(TAG, "run result service fail, exception:" + throwable);
+            ShareTinkerLog.e(TAG, "run result service fail, exception:" + throwable);
         }
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent == null) {
-            TinkerLog.e(TAG, "AbstractResultService received a null intent, ignoring.");
+            ShareTinkerLog.e(TAG, "AbstractResultService received a null intent, ignoring.");
             return;
         }
         PatchResult result = (PatchResult) ShareIntentUtil.getSerializableExtra(intent, RESULT_EXTRA);

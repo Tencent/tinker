@@ -20,6 +20,7 @@ import android.content.Context;
 
 import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 
 /**
@@ -31,7 +32,7 @@ public class UpgradePatch extends AbstractPatch {
 
     @Override
     public boolean tryPatch(Context context, String tempPatchPath, PatchResult patchResult) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
         return false;
     }
 }

@@ -23,7 +23,7 @@ import android.os.SystemClock;
 import com.tencent.tinker.bsdiff.BSPatch;
 import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -54,20 +54,20 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                                                 String patchVersionDirectory, File patchFile) {
 
         if (!manager.isEnabledForResource()) {
-            TinkerLog.w(TAG, "patch recover, resource is not enabled");
+            ShareTinkerLog.w(TAG, "patch recover, resource is not enabled");
             return true;
         }
         String resourceMeta = checker.getMetaContentMap().get(RES_META_FILE);
 
         if (resourceMeta == null || resourceMeta.length() == 0) {
-            TinkerLog.w(TAG, "patch recover, resource is not contained");
+            ShareTinkerLog.w(TAG, "patch recover, resource is not contained");
             return true;
         }
 
         long begin = SystemClock.elapsedRealtime();
         boolean result = patchResourceExtractViaResourceDiff(context, patchVersionDirectory, resourceMeta, patchFile);
         long cost = SystemClock.elapsedRealtime() - begin;
-        TinkerLog.i(TAG, "recover resource result:%b, cost:%d", result, cost);
+        ShareTinkerLog.i(TAG, "recover resource result:%b, cost:%d", result, cost);
         return result;
     }
 
@@ -76,7 +76,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
         String dir = patchVersionDirectory + "/" + ShareConstants.RES_PATH + "/";
 
         if (!extractResourceDiffInternals(context, dir, meta, patchFile, TYPE_RESOURCE)) {
-            TinkerLog.w(TAG, "patch recover, extractDiffInternals fail");
+            ShareTinkerLog.w(TAG, "patch recover, extractDiffInternals fail");
             return false;
         }
         return true;
@@ -85,11 +85,11 @@ public class ResDiffPatchInternal extends BasePatchInternal {
     private static boolean extractResourceDiffInternals(Context context, String dir, String meta, File patchFile, int type) {
         ShareResPatchInfo resPatchInfo = new ShareResPatchInfo();
         ShareResPatchInfo.parseAllResPatchInfo(meta, resPatchInfo);
-        TinkerLog.i(TAG, "res dir: %s, meta: %s", dir, resPatchInfo.toString());
+        ShareTinkerLog.i(TAG, "res dir: %s, meta: %s", dir, resPatchInfo.toString());
         Tinker manager = Tinker.with(context);
 
         if (!SharePatchFileUtil.checkIfMd5Valid(resPatchInfo.resArscMd5)) {
-            TinkerLog.w(TAG, "resource meta file md5 mismatch, type:%s, md5: %s", ShareTinkerInternals.getTypeString(type), resPatchInfo.resArscMd5);
+            ShareTinkerLog.w(TAG, "resource meta file md5 mismatch, type:%s, md5: %s", ShareTinkerInternals.getTypeString(type), resPatchInfo.resArscMd5);
             manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
             return false;
         }
@@ -102,10 +102,10 @@ public class ResDiffPatchInternal extends BasePatchInternal {
         if (resOutput.exists()) {
             if (SharePatchFileUtil.checkResourceArscMd5(resOutput, resPatchInfo.resArscMd5)) {
                 //it is ok, just continue
-                TinkerLog.w(TAG, "resource file %s is already exist, and md5 match, just return true", resOutput.getPath());
+                ShareTinkerLog.w(TAG, "resource file %s is already exist, and md5 match, just return true", resOutput.getPath());
                 return true;
             } else {
-                TinkerLog.w(TAG, "have a mismatch corrupted resource " + resOutput.getPath());
+                ShareTinkerLog.w(TAG, "have a mismatch corrupted resource " + resOutput.getPath());
                 resOutput.delete();
             }
         } else {
@@ -116,7 +116,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             ApplicationInfo applicationInfo = context.getApplicationInfo();
             if (applicationInfo == null) {
                 //Looks like running on a test Context, so just return without patching.
-                TinkerLog.w(TAG, "applicationInfo == null!!!!");
+                ShareTinkerLog.w(TAG, "applicationInfo == null!!!!");
                 return false;
             }
             String apkPath = applicationInfo.sourceDir;
@@ -159,7 +159,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 //process manifest
                 TinkerZipEntry manifestZipEntry = oldApk.getEntry(ShareConstants.RES_MANIFEST);
                 if (manifestZipEntry == null) {
-                    TinkerLog.w(TAG, "manifest patch entry is null. path:" + ShareConstants.RES_MANIFEST);
+                    ShareTinkerLog.w(TAG, "manifest patch entry is null. path:" + ShareConstants.RES_MANIFEST);
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, ShareConstants.RES_MANIFEST, type);
                     return false;
                 }
@@ -169,7 +169,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 for (String name : resPatchInfo.largeModRes) {
                     TinkerZipEntry largeZipEntry = oldApk.getEntry(name);
                     if (largeZipEntry == null) {
-                        TinkerLog.w(TAG, "large patch entry is null. path:" + name);
+                        ShareTinkerLog.w(TAG, "large patch entry is null. path:" + name);
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, name, type);
                         return false;
                     }
@@ -181,7 +181,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 for (String name : resPatchInfo.addRes) {
                     TinkerZipEntry addZipEntry = newApk.getEntry(name);
                     if (addZipEntry == null) {
-                        TinkerLog.w(TAG, "add patch entry is null. path:" + name);
+                        ShareTinkerLog.w(TAG, "add patch entry is null. path:" + name);
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, name, type);
                         return false;
                     }
@@ -197,7 +197,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 for (String name : resPatchInfo.modRes) {
                     TinkerZipEntry modZipEntry = newApk.getEntry(name);
                     if (modZipEntry == null) {
-                        TinkerLog.w(TAG, "mod patch entry is null. path:" + name);
+                        ShareTinkerLog.w(TAG, "mod patch entry is null. path:" + name);
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, name, type);
                         return false;
                     }
@@ -222,13 +222,13 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             boolean result = SharePatchFileUtil.checkResourceArscMd5(resOutput, resPatchInfo.resArscMd5);
 
             if (!result) {
-                TinkerLog.i(TAG, "check final new resource file fail path:%s, entry count:%d, size:%d", resOutput.getAbsolutePath(), totalEntryCount, resOutput.length());
+                ShareTinkerLog.i(TAG, "check final new resource file fail path:%s, entry count:%d, size:%d", resOutput.getAbsolutePath(), totalEntryCount, resOutput.length());
                 SharePatchFileUtil.safeDeleteFile(resOutput);
                 manager.getPatchReporter().onPatchTypeExtractFail(patchFile, resOutput, ShareConstants.RES_NAME, type);
                 return false;
             }
 
-            TinkerLog.i(TAG, "final new resource file:%s, entry count:%d, size:%d", resOutput.getAbsolutePath(), totalEntryCount, resOutput.length());
+            ShareTinkerLog.i(TAG, "final new resource file:%s, entry count:%d, size:%d", resOutput.getAbsolutePath(), totalEntryCount, resOutput.length());
         } catch (Throwable e) {
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) +  " extract failed (" + e.getMessage() + ").", e);
         }
@@ -247,21 +247,21 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             ZipEntry arscEntry = apkFile.getEntry(ShareConstants.RES_ARSC);
             File arscFile = new File(directory, ShareConstants.RES_ARSC);
             if (arscEntry == null) {
-                TinkerLog.w(TAG, "resources apk entry is null. path:" + ShareConstants.RES_ARSC);
+                ShareTinkerLog.w(TAG, "resources apk entry is null. path:" + ShareConstants.RES_ARSC);
                 manager.getPatchReporter().onPatchTypeExtractFail(patchFile, arscFile, ShareConstants.RES_ARSC, type);
                 return false;
             }
             //use base resources.arsc crc to identify base.apk
             String baseArscCrc = String.valueOf(arscEntry.getCrc());
             if (!baseArscCrc.equals(resPatchInfo.arscBaseCrc)) {
-                TinkerLog.e(TAG, "resources.arsc's crc is not equal, expect crc: %s, got crc: %s", resPatchInfo.arscBaseCrc, baseArscCrc);
+                ShareTinkerLog.e(TAG, "resources.arsc's crc is not equal, expect crc: %s, got crc: %s", resPatchInfo.arscBaseCrc, baseArscCrc);
                 manager.getPatchReporter().onPatchTypeExtractFail(patchFile, arscFile, ShareConstants.RES_ARSC, type);
                 return false;
             }
 
             //resource arsc is not changed, just return true
             if (resPatchInfo.largeModRes.isEmpty() && resPatchInfo.storeRes.isEmpty()) {
-                TinkerLog.i(TAG, "no large modify or store resources, just return");
+                ShareTinkerLog.i(TAG, "no large modify or store resources, just return");
                 return true;
             }
             patchZipFile = new ZipFile(patchFile);
@@ -273,27 +273,27 @@ public class ResDiffPatchInternal extends BasePatchInternal {
 
                 ZipEntry patchEntry = patchZipFile.getEntry(name);
                 if (patchEntry == null) {
-                    TinkerLog.w(TAG, "store patch entry is null. path:" + name);
+                    ShareTinkerLog.w(TAG, "store patch entry is null. path:" + name);
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, destCopy, name, type);
                     return false;
                 }
                 extract(patchZipFile, patchEntry, destCopy, null, false);
                 //fast check, only check size
                 if (patchEntry.getSize() != destCopy.length()) {
-                    TinkerLog.w(TAG, "resource meta file size mismatch, type:%s, name: %s, patch size: %d, file size; %d", ShareTinkerInternals.getTypeString(type), name, patchEntry.getSize(), destCopy.length());
+                    ShareTinkerLog.w(TAG, "resource meta file size mismatch, type:%s, name: %s, patch size: %d, file size; %d", ShareTinkerInternals.getTypeString(type), name, patchEntry.getSize(), destCopy.length());
                     manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
                     return false;
                 }
                 resPatchInfo.storeRes.put(name, destCopy);
 
-                TinkerLog.w(TAG, "success recover store file:%s, file size:%d, use time:%d", destCopy.getPath(), destCopy.length(), (System.currentTimeMillis() - storeStart));
+                ShareTinkerLog.w(TAG, "success recover store file:%s, file size:%d, use time:%d", destCopy.getPath(), destCopy.length(), (System.currentTimeMillis() - storeStart));
             }
             for (String name : resPatchInfo.largeModRes) {
                 long largeStart = System.currentTimeMillis();
                 ShareResPatchInfo.LargeModeInfo largeModeInfo = resPatchInfo.largeModMap.get(name);
 
                 if (largeModeInfo == null) {
-                    TinkerLog.w(TAG, "resource not found largeModeInfo, type:%s, name: %s", ShareTinkerInternals.getTypeString(type), name);
+                    ShareTinkerLog.w(TAG, "resource not found largeModeInfo, type:%s, name: %s", ShareTinkerInternals.getTypeString(type), name);
                     manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
                     return false;
                 }
@@ -303,20 +303,20 @@ public class ResDiffPatchInternal extends BasePatchInternal {
 
                 // we do not check the intermediate files' md5 to save time, use check whether it is 32 length
                 if (!SharePatchFileUtil.checkIfMd5Valid(largeModeInfo.md5)) {
-                    TinkerLog.w(TAG, "resource meta file md5 mismatch, type:%s, name: %s, md5: %s", ShareTinkerInternals.getTypeString(type), name, largeModeInfo.md5);
+                    ShareTinkerLog.w(TAG, "resource meta file md5 mismatch, type:%s, name: %s, md5: %s", ShareTinkerInternals.getTypeString(type), name, largeModeInfo.md5);
                     manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
                     return false;
                 }
                 ZipEntry patchEntry = patchZipFile.getEntry(name);
                 if (patchEntry == null) {
-                    TinkerLog.w(TAG, "large mod patch entry is null. path:" + name);
+                    ShareTinkerLog.w(TAG, "large mod patch entry is null. path:" + name);
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, largeModeInfo.file, name, type);
                     return false;
                 }
 
                 ZipEntry baseEntry = apkFile.getEntry(name);
                 if (baseEntry == null) {
-                    TinkerLog.w(TAG, "resources apk entry is null. path:" + name);
+                    ShareTinkerLog.w(TAG, "resources apk entry is null. path:" + name);
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, largeModeInfo.file, name, type);
                     return false;
                 }
@@ -332,14 +332,14 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 }
                 // go go go bsdiff get the
                 if (!SharePatchFileUtil.verifyFileMd5(largeModeInfo.file, largeModeInfo.md5)) {
-                    TinkerLog.w(TAG, "Failed to recover large modify file:%s", largeModeInfo.file.getPath());
+                    ShareTinkerLog.w(TAG, "Failed to recover large modify file:%s", largeModeInfo.file.getPath());
                     SharePatchFileUtil.safeDeleteFile(largeModeInfo.file);
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, largeModeInfo.file, name, type);
                     return false;
                 }
-                TinkerLog.w(TAG, "success recover large modify file:%s, file size:%d, use time:%d", largeModeInfo.file.getPath(), largeModeInfo.file.length(), (System.currentTimeMillis() - largeStart));
+                ShareTinkerLog.w(TAG, "success recover large modify file:%s, file size:%d, use time:%d", largeModeInfo.file.getPath(), largeModeInfo.file.length(), (System.currentTimeMillis() - largeStart));
             }
-            TinkerLog.w(TAG, "success recover all large modify and store resources use time:%d", (System.currentTimeMillis() - start));
+            ShareTinkerLog.w(TAG, "success recover all large modify and store resources use time:%d", (System.currentTimeMillis() - start));
         } catch (Throwable e) {
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) +  " extract failed (" + e.getMessage() + ").", e);
         } finally {

@@ -21,6 +21,7 @@ import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -47,7 +48,7 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
-        Log.e(TAG, "TinkerUncaughtHandler catch exception:" + Log.getStackTraceString(ex));
+        ShareTinkerLog.e(TAG, "TinkerUncaughtHandler catch exception:" + Log.getStackTraceString(ex));
         ueh.uncaughtException(thread, ex);
 
         if (crashFile != null) {
@@ -57,7 +58,7 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
             if (handler instanceof TinkerUncaughtHandler) {
                 File parentFile = crashFile.getParentFile();
                 if (!parentFile.exists() && !parentFile.mkdirs()) {
-                    Log.e(TAG, "print crash file error: create directory fail!");
+                    ShareTinkerLog.e(TAG, "print crash file error: create directory fail!");
                     return;
                 }
                 PrintWriter pw = null;
@@ -67,7 +68,7 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
                     pw.println(ShareTinkerInternals.getExceptionCauseString(ex));
                 } catch (IOException e) {
                     //ignore
-                    Log.e(TAG, "print crash file error:" + Log.getStackTraceString(e));
+                    ShareTinkerLog.e(TAG, "print crash file error:" + Log.getStackTraceString(e));
                 } finally {
                     SharePatchFileUtil.closeQuietly(pw);
                 }

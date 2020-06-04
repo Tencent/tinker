@@ -19,6 +19,7 @@ import android.util.Xml;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -294,7 +295,7 @@ public final class IncrementComponentManager {
             } else if ("singleInstance".equalsIgnoreCase(attrValue)) {
                 return ActivityInfo.LAUNCH_SINGLE_INSTANCE;
             } else {
-                Log.w(TAG, "Unknown launchMode: " + attrValue);
+                ShareTinkerLog.w(TAG, "Unknown launchMode: " + attrValue);
                 return ActivityInfo.LAUNCH_MULTIPLE;
             }
         }
@@ -340,7 +341,7 @@ public final class IncrementComponentManager {
 
     public static synchronized boolean init(Context context, ShareSecurityCheck checker) throws IOException {
         if (!checker.getMetaContentMap().containsKey(EnvConsts.INCCOMPONENT_META_FILE)) {
-            Log.i(TAG, "package has no incremental component meta, skip init.");
+            ShareTinkerLog.i(TAG, "package has no incremental component meta, skip init.");
             return false;
         }
         while (context instanceof ContextWrapper) {
