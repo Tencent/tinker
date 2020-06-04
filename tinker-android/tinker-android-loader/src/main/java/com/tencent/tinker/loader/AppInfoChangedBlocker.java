@@ -8,6 +8,7 @@ import android.os.Message;
 import android.os.Process;
 import android.util.Log;
 
+import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
@@ -97,6 +98,7 @@ public final class AppInfoChangedBlocker {
                 // in front of user), and the signal was going to relaunch all our
                 // activities to apply new overlay resources. So we could simply kill
                 // ourselves, or ignore this signal, or reload tinker resources.
+                ShareTinkerLog.w(TAG, "Suicide now.");
                 Process.killProcess(Process.myPid());
                 return true;
             }
