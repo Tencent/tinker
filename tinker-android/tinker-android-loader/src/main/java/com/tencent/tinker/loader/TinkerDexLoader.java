@@ -17,7 +17,6 @@
 package com.tencent.tinker.loader;
 
 import android.content.Intent;
-import android.util.Log;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -26,6 +25,7 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -65,15 +65,15 @@ public class TinkerDexLoader {
      */
     public static boolean loadTinkerJars(final TinkerApplication application, String directory, String oatDir, Intent intentResult, boolean isSystemOTA, boolean isProtectedApp) {
         if (LOAD_DEX_LIST.isEmpty() && classNDexInfo.isEmpty()) {
-            Log.w(TAG, "there is no dex to load");
+            ShareTinkerLog.w(TAG, "there is no dex to load");
             return true;
         }
 
         ClassLoader classLoader = TinkerDexLoader.class.getClassLoader();
         if (classLoader != null) {
-            Log.i(TAG, "classloader: " + classLoader.toString());
+            ShareTinkerLog.i(TAG, "classloader: " + classLoader.toString());
         } else {
-            Log.e(TAG, "classloader is null");
+            ShareTinkerLog.e(TAG, "classloader is null");
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL);
             return false;
         }
@@ -100,7 +100,7 @@ public class TinkerDexLoader {
                         file.getAbsolutePath());
                     return false;
                 }
-                Log.i(TAG, "verify dex file:" + file.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
+                ShareTinkerLog.i(TAG, "verify dex file:" + file.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
             }
             legalFiles.add(file);
         }
@@ -119,7 +119,7 @@ public class TinkerDexLoader {
                     }
                 }
             }
-            Log.i(TAG, "verify dex file:" + classNFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
+            ShareTinkerLog.i(TAG, "verify dex file:" + classNFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
 
             legalFiles.add(classNFile);
         }
@@ -132,7 +132,7 @@ public class TinkerDexLoader {
             try {
                 targetISA = ShareTinkerInternals.getCurrentInstructionSet();
             } catch (Throwable throwable) {
-                Log.i(TAG, "getCurrentInstructionSet fail:" + throwable);
+                ShareTinkerLog.i(TAG, "getCurrentInstructionSet fail:" + throwable);
                 // try {
                 //     targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
                 // } catch (Throwable throwable) {
@@ -147,7 +147,7 @@ public class TinkerDexLoader {
 
             deleteOutOfDateOATFile(directory);
 
-            Log.w(TAG, "systemOTA, try parallel oat dexes, targetISA:" + targetISA);
+            ShareTinkerLog.w(TAG, "systemOTA, try parallel oat dexes, targetISA:" + targetISA);
             // change dir
             optimizeDir = new File(directory + "/" + INTERPRET_DEX_OPTIMIZE_PATH);
 
@@ -159,27 +159,27 @@ public class TinkerDexLoader {
                     @Override
                     public void onStart(File dexFile, File optimizedDir) {
                         start = System.currentTimeMillis();
-                        Log.i(TAG, "start to optimize dex:" + dexFile.getPath());
+                        ShareTinkerLog.i(TAG, "start to optimize dex:" + dexFile.getPath());
                     }
 
                     @Override
                     public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
                         // Do nothing.
-                        Log.i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                        ShareTinkerLog.i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
                     }
 
                     @Override
                     public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
                         parallelOTAResult[0] = false;
                         parallelOTAThrowable[0] = thr;
-                        Log.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                        ShareTinkerLog.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
                     }
                 }
             );
 
 
             if (!parallelOTAResult[0]) {
-                Log.e(TAG, "parallel oat dexes failed");
+                ShareTinkerLog.e(TAG, "parallel oat dexes failed");
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, parallelOTAThrowable[0]);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_OTA_INTERPRET_ONLY_EXCEPTION);
                 return false;
@@ -188,7 +188,7 @@ public class TinkerDexLoader {
         try {
             SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles, isProtectedApp);
         } catch (Throwable e) {
-            Log.e(TAG, "install dexes failed");
+            ShareTinkerLog.e(TAG, "install dexes failed");
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
             return false;

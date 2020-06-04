@@ -17,7 +17,6 @@
 package com.tencent.tinker.loader.shareutil;
 
 import android.content.Intent;
-import android.util.Log;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -114,7 +113,7 @@ public class ShareIntentUtil {
         try {
             ret = intent.getStringArrayListExtra(name);
         } catch (Exception e) {
-            Log.e(TAG, "getStringExtra exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getStringExtra exception:" + e.getMessage());
             ret = null;
         }
         return ret;
@@ -129,7 +128,7 @@ public class ShareIntentUtil {
         try {
             ret = intent.getStringExtra(name);
         } catch (Exception e) {
-            Log.e(TAG, "getStringExtra exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getStringExtra exception:" + e.getMessage());
             ret = null;
         }
         return ret;
@@ -143,7 +142,7 @@ public class ShareIntentUtil {
         try {
             ret = intent.getSerializableExtra(name);
         } catch (Exception e) {
-            Log.e(TAG, "getSerializableExtra exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getSerializableExtra exception:" + e.getMessage());
             ret = null;
         }
         return ret;
@@ -157,7 +156,7 @@ public class ShareIntentUtil {
         try {
             ret = intent.getIntExtra(name, defaultValue);
         } catch (Exception e) {
-            Log.e(TAG, "getIntExtra exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getIntExtra exception:" + e.getMessage());
             ret = defaultValue;
         }
         return ret;
@@ -172,7 +171,7 @@ public class ShareIntentUtil {
         try {
             ret = intent.getBooleanExtra(name, defaultValue);
         } catch (Exception e) {
-            Log.e(TAG, "getBooleanExtra exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getBooleanExtra exception:" + e.getMessage());
             ret = defaultValue;
         }
         return ret;
@@ -186,7 +185,7 @@ public class ShareIntentUtil {
         try {
             ret = intent.getLongExtra(name, defaultValue);
         } catch (Exception e) {
-            Log.e(TAG, "getIntExtra exception:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "getIntExtra exception:" + e.getMessage());
             ret = defaultValue;
         }
         return ret;

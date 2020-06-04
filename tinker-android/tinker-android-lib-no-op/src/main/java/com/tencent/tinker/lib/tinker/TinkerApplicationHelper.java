@@ -17,8 +17,8 @@
 package com.tencent.tinker.lib.tinker;
 
 import com.tencent.tinker.entry.ApplicationLike;
-import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 import java.util.HashMap;
@@ -72,7 +72,7 @@ public class TinkerApplicationHelper {
     }
 
     public static void cleanPatch(ApplicationLike applicationLike) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public static void loadArmV7aLibrary(ApplicationLike applicationLike, String libName) {

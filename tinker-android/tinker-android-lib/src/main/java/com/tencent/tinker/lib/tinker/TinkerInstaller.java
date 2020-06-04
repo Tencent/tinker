@@ -24,7 +24,7 @@ import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.reporter.LoadReporter;
 import com.tencent.tinker.lib.reporter.PatchReporter;
 import com.tencent.tinker.lib.service.AbstractResultService;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by zhangshaowen on 16/3/19.
@@ -92,11 +92,11 @@ public class TinkerInstaller {
     }
 
     /**
-     * set logIml for TinkerLog
+     * set logIml for ShareTinkerLog
      *
      * @param imp
      */
-    public static void setLogIml(TinkerLog.TinkerLogImp imp) {
-        TinkerLog.setTinkerLogImp(imp);
+    public static void setLogIml(ShareTinkerLog.TinkerLogImp imp) {
+        ShareTinkerLog.setTinkerLogImp(imp);
     }
 }

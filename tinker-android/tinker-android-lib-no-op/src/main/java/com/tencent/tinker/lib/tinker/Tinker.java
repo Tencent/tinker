@@ -29,11 +29,11 @@ import com.tencent.tinker.lib.reporter.LoadReporter;
 import com.tencent.tinker.lib.reporter.PatchReporter;
 import com.tencent.tinker.lib.service.AbstractResultService;
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
-import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 
@@ -135,7 +135,7 @@ public class Tinker {
     public void install(Intent intentResult, Class<? extends AbstractResultService> serviceClass,
                         AbstractPatch upgradePatch) {
         sInstalled = true;
-        TinkerLog.e(TAG, "[-] Tinker is disabled since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Tinker is disabled since I'm no-op version.");
     }
 
     /**
@@ -144,7 +144,7 @@ public class Tinker {
      * @param id
      */
     public void setPatchServiceNotificationId(int id) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     /**
@@ -191,7 +191,7 @@ public class Tinker {
     }
 
     public void setTinkerLoaded(boolean isLoaded) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public boolean isTinkerLoadVerify() {
@@ -235,14 +235,14 @@ public class Tinker {
      * clean all patch files
      */
     public void cleanPatch() {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     /**
      * rollback patch should restart all process
      */
     public void rollbackPatch() {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
     /**
      * clean the patch version files, such as tinker/patch-641e634c
@@ -250,7 +250,7 @@ public class Tinker {
      * @param versionName
      */
     public void cleanPatchByVersion(String versionName) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     /**
@@ -259,7 +259,7 @@ public class Tinker {
      * @return
      */
     public long getTinkerRomSpace() {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
         return 0;
     }
 
@@ -303,12 +303,12 @@ public class Tinker {
             this.patchProcess = TinkerServiceInternals.isInTinkerPatchServiceProcess(context);
             this.patchDirectory = SharePatchFileUtil.getPatchDirectory(context);
             if (this.patchDirectory == null) {
-                TinkerLog.e(TAG, "patchDirectory is null!");
+                ShareTinkerLog.e(TAG, "patchDirectory is null!");
                 return;
             }
             this.patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
             this.patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
-            TinkerLog.w(TAG, "tinker patch directory: %s", patchDirectory);
+            ShareTinkerLog.w(TAG, "tinker patch directory: %s", patchDirectory);
         }
 
         public Builder tinkerFlags(int tinkerFlags) {

@@ -15,7 +15,6 @@ package com.tencent.tinker.lib.patch;
 import android.content.Context;
 
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareArkHotDiffPatchInfo;

@@ -24,9 +24,10 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.util.Log;
 
 import com.tencent.tinker.anno.Keep;
+
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Empty implementation of {@link ApplicationLike}.
@@ -42,31 +43,31 @@ public class DefaultApplicationLike extends ApplicationLike {
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate");
+        ShareTinkerLog.d(TAG, "onCreate");
     }
 
     @Override
     public void onLowMemory() {
-        Log.d(TAG, "onLowMemory");
+        ShareTinkerLog.d(TAG, "onLowMemory");
     }
 
     @Override
     public void onTrimMemory(int level) {
-        Log.d(TAG, "onTrimMemory level:" + level);
+        ShareTinkerLog.d(TAG, "onTrimMemory level:" + level);
     }
 
     @Override
     public void onTerminate() {
-        Log.d(TAG, "onTerminate");
+        ShareTinkerLog.d(TAG, "onTerminate");
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        Log.d(TAG, "onConfigurationChanged:" + newConfig.toString());
+        ShareTinkerLog.d(TAG, "onConfigurationChanged:" + newConfig.toString());
     }
 
     @Override
     public void onBaseContextAttached(Context base) {
-        Log.d(TAG, "onBaseContextAttached:");
+        ShareTinkerLog.d(TAG, "onBaseContextAttached:");
     }
 }

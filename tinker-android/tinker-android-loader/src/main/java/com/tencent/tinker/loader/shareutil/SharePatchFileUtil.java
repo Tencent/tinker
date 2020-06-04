@@ -20,7 +20,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
-import android.util.Log;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
 
@@ -124,7 +123,7 @@ public class SharePatchFileUtil {
                 buffer.append("\n");
             }
         } catch (Exception e) {
-            Log.e(TAG, "checkTinkerLastUncaughtCrash exception: " + e);
+            ShareTinkerLog.e(TAG, "checkTinkerLastUncaughtCrash exception: " + e);
             return null;
         } finally {
             closeQuietly(in);
@@ -225,11 +224,11 @@ public class SharePatchFileUtil {
         }
 
         if (file.exists()) {
-            Log.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());
+            ShareTinkerLog.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());
 
             boolean deleted = file.delete();
             if (!deleted) {
-                Log.e(TAG, "Failed to delete file, try to delete when exit. path: " + file.getPath());
+                ShareTinkerLog.e(TAG, "Failed to delete file, try to delete when exit. path: " + file.getPath());
                 file.deleteOnExit();
             }
             return deleted;
@@ -311,7 +310,7 @@ public class SharePatchFileUtil {
                 ZipEntry classesDex = dexJar.getEntry(entryName);
                 // no code
                 if (null == classesDex) {
-                    Log.e(TAG, "There's no entry named: " + ShareConstants.DEX_IN_JAR + " in " + file.getAbsolutePath());
+                    ShareTinkerLog.e(TAG, "There's no entry named: " + ShareConstants.DEX_IN_JAR + " in " + file.getAbsolutePath());
                     return false;
                 }
                 InputStream is = null;
@@ -319,12 +318,12 @@ public class SharePatchFileUtil {
                     is = dexJar.getInputStream(classesDex);
                     fileMd5 = getMD5(is);
                 } catch (Throwable e) {
-                    Log.e(TAG, "exception occurred when get md5: " + file.getAbsolutePath(), e);
+                    ShareTinkerLog.e(TAG, "exception occurred when get md5: " + file.getAbsolutePath(), e);
                 } finally {
                     closeQuietly(is);
                 }
             } catch (Throwable e) {
-                Log.e(TAG, "Bad dex jar file: " + file.getAbsolutePath(), e);
+                ShareTinkerLog.e(TAG, "Bad dex jar file: " + file.getAbsolutePath(), e);
                 return false;
             } finally {
                 closeZip(dexJar);
@@ -452,7 +451,7 @@ public class SharePatchFileUtil {
             String md5 = getMD5(fin);
             return md5;
         } catch (Exception e) {
-            Log.e(TAG, e.getMessage());
+            ShareTinkerLog.e(TAG, e.getMessage());
             return null;
         } finally {
             closeQuietly(fin);
@@ -514,7 +513,7 @@ public class SharePatchFileUtil {
                 zipFile.close();
             }
         } catch (IOException e) {
-            Log.w(TAG, "Failed to close resource", e);
+            ShareTinkerLog.w(TAG, "Failed to close resource", e);
         }
     }
 
@@ -524,7 +523,7 @@ public class SharePatchFileUtil {
             resourceZip = new ZipFile(resOutput);
             ZipEntry arscEntry = resourceZip.getEntry(ShareConstants.RES_ARSC);
             if (arscEntry == null) {
-                Log.i(TAG, "checkResourceArscMd5 resources.arsc not found");
+                ShareTinkerLog.i(TAG, "checkResourceArscMd5 resources.arsc not found");
                 return false;
             }
             InputStream inputStream = null;
@@ -539,7 +538,7 @@ public class SharePatchFileUtil {
             }
 
         } catch (Throwable e) {
-            Log.i(TAG, "checkResourceArscMd5 throwable:" + e.getMessage());
+            ShareTinkerLog.i(TAG, "checkResourceArscMd5 throwable:" + e.getMessage());
 
         } finally {
             SharePatchFileUtil.closeZip(resourceZip);

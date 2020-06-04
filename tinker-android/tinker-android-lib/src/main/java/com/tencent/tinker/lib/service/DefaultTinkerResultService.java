@@ -19,7 +19,7 @@ package com.tencent.tinker.lib.service;
 
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -40,10 +40,10 @@ public class DefaultTinkerResultService extends AbstractResultService {
     @Override
     public void onPatchResult(PatchResult result) {
         if (result == null) {
-            TinkerLog.e(TAG, "DefaultTinkerResultService received null result!!!!");
+            ShareTinkerLog.e(TAG, "DefaultTinkerResultService received null result!!!!");
             return;
         }
-        TinkerLog.i(TAG, "DefaultTinkerResultService received a result:%s ", result.toString());
+        ShareTinkerLog.i(TAG, "DefaultTinkerResultService received a result:%s ", result.toString());
 
         //first, we want to kill the recover process
         TinkerServiceInternals.killTinkerPatchServiceProcess(getApplicationContext());
@@ -55,7 +55,7 @@ public class DefaultTinkerResultService extends AbstractResultService {
             if (checkIfNeedKill(result)) {
                 android.os.Process.killProcess(android.os.Process.myPid());
             } else {
-                TinkerLog.i(TAG, "I have already install the newly patch version!");
+                ShareTinkerLog.i(TAG, "I have already install the newly patch version!");
             }
         }
     }
@@ -68,7 +68,7 @@ public class DefaultTinkerResultService extends AbstractResultService {
         if (!SharePatchFileUtil.isLegalFile(rawFile)) {
             return;
         }
-        TinkerLog.w(TAG, "deleteRawPatchFile rawFile path: %s", rawFile.getPath());
+        ShareTinkerLog.w(TAG, "deleteRawPatchFile rawFile path: %s", rawFile.getPath());
         String fileName = rawFile.getName();
         if (!fileName.startsWith(ShareConstants.PATCH_BASE_NAME)
             || !fileName.endsWith(ShareConstants.PATCH_SUFFIX)) {

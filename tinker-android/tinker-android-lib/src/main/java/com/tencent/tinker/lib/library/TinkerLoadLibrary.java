@@ -24,7 +24,7 @@ import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -162,7 +162,7 @@ public class TinkerLoadLibrary {
                     tinker.getLoadReporter().onLoadFileMd5Mismatch(library, ShareConstants.TYPE_LIBRARY);
                 } else {
                     System.load(patchLibraryPath);
-                    TinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
+                    ShareTinkerLog.i(TAG, "loadLibraryFromTinker success:" + patchLibraryPath);
                     return true;
                 }
             }
@@ -180,34 +180,34 @@ public class TinkerLoadLibrary {
     public static boolean installNavitveLibraryABI(Context context, String currentABI) {
         Tinker tinker = Tinker.with(context);
         if (!tinker.isTinkerLoaded()) {
-            TinkerLog.i(TAG, "tinker is not loaded, just return");
+            ShareTinkerLog.i(TAG, "tinker is not loaded, just return");
             return false;
         }
         TinkerLoadResult loadResult = tinker.getTinkerLoadResultIfPresent();
         if (loadResult.libs == null) {
-            TinkerLog.i(TAG, "tinker libs is null, just return");
+            ShareTinkerLog.i(TAG, "tinker libs is null, just return");
             return false;
         }
         File soDir = new File(loadResult.libraryDirectory, "lib/" + currentABI);
         if (!soDir.exists()) {
-            TinkerLog.e(TAG, "current libraryABI folder is not exist, path: %s", soDir.getPath());
+            ShareTinkerLog.e(TAG, "current libraryABI folder is not exist, path: %s", soDir.getPath());
             return false;
         }
         ClassLoader classLoader = context.getClassLoader();
         if (classLoader == null) {
-            TinkerLog.e(TAG, "classloader is null");
+            ShareTinkerLog.e(TAG, "classloader is null");
             return false;
         }
-        TinkerLog.i(TAG, "before hack classloader:" + classLoader.toString());
+        ShareTinkerLog.i(TAG, "before hack classloader:" + classLoader.toString());
 
         try {
             installNativeLibraryPath(classLoader, soDir);
             return true;
         } catch (Throwable throwable) {
-            TinkerLog.e(TAG, "installNativeLibraryPath fail:" + throwable);
+            ShareTinkerLog.e(TAG, "installNativeLibraryPath fail:" + throwable);
             return false;
         } finally {
-            TinkerLog.i(TAG, "after hack classloader:" + classLoader.toString());
+            ShareTinkerLog.i(TAG, "after hack classloader:" + classLoader.toString());
         }
     }
 
@@ -221,29 +221,29 @@ public class TinkerLoadLibrary {
     public static boolean installNativeLibraryABIWithoutTinkerInstalled(ApplicationLike appLike, String currentABI) {
         final String currentVersion = TinkerApplicationHelper.getCurrentVersion(appLike);
         if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
-            TinkerLog.e(TAG, "failed to get current patch version.");
+            ShareTinkerLog.e(TAG, "failed to get current patch version.");
             return false;
         }
 
         final File patchDirectory = SharePatchFileUtil.getPatchDirectory(appLike.getApplication());
         if (patchDirectory == null) {
-            TinkerLog.e(TAG, "failed to get current patch directory.");
+            ShareTinkerLog.e(TAG, "failed to get current patch directory.");
             return false;
         }
 
         File patchVersionDirectory = new File(patchDirectory.getAbsolutePath() + "/" + SharePatchFileUtil.getPatchVersionDirectory(currentVersion));
         File libPath = new File(patchVersionDirectory.getAbsolutePath() + "/lib/lib/" + currentABI);
         if (!libPath.exists()) {
-            TinkerLog.e(TAG, "tinker lib path [%s] is not exists.", libPath);
+            ShareTinkerLog.e(TAG, "tinker lib path [%s] is not exists.", libPath);
             return false;
         }
 
         final ClassLoader classLoader = appLike.getApplication().getClassLoader();
         if (classLoader == null) {
-            TinkerLog.e(TAG, "classloader is null");
+            ShareTinkerLog.e(TAG, "classloader is null");
             return false;
         } else {
-            TinkerLog.i(TAG, "before hack classloader:" + classLoader.toString());
+            ShareTinkerLog.i(TAG, "before hack classloader:" + classLoader.toString());
             try {
                 final Method installNativeLibraryPathMethod =
                         TinkerLoadLibrary.class.getDeclaredMethod("installNativeLibraryPath", ClassLoader.class, File.class);
@@ -251,10 +251,10 @@ public class TinkerLoadLibrary {
                 installNativeLibraryPathMethod.invoke(null, classLoader, libPath);
                 return true;
             } catch (Throwable thr) {
-                TinkerLog.e(TAG, "installNativeLibraryPath fail:" + libPath + ", thr: " + thr);
+                ShareTinkerLog.e(TAG, "installNativeLibraryPath fail:" + libPath + ", thr: " + thr);
                 return false;
             } finally {
-                TinkerLog.i(TAG, "after hack classloader:" + classLoader.toString());
+                ShareTinkerLog.i(TAG, "after hack classloader:" + classLoader.toString());
             }
         }
     }
@@ -270,7 +270,7 @@ public class TinkerLoadLibrary {
     private static void installNativeLibraryPath(ClassLoader classLoader, File folder)
         throws Throwable {
         if (folder == null || !folder.exists()) {
-            TinkerLog.e(TAG, "installNativeLibraryPath, folder %s is illegal", folder);
+            ShareTinkerLog.e(TAG, "installNativeLibraryPath, folder %s is illegal", folder);
             return;
         }
         // android o sdk_int 26
@@ -282,7 +282,7 @@ public class TinkerLoadLibrary {
             } catch (Throwable throwable) {
                 // install fail, try to treat it as v23
                 // some preview N version may go here
-                TinkerLog.e(TAG, "installNativeLibraryPath, v25 fail, sdk: %d, error: %s, try to fallback to V23",
+                ShareTinkerLog.e(TAG, "installNativeLibraryPath, v25 fail, sdk: %d, error: %s, try to fallback to V23",
                         Build.VERSION.SDK_INT, throwable.getMessage());
                 V23.install(classLoader, folder);
             }
@@ -291,7 +291,7 @@ public class TinkerLoadLibrary {
                 V23.install(classLoader, folder);
             } catch (Throwable throwable) {
                 // install fail, try to treat it as v14
-                TinkerLog.e(TAG, "installNativeLibraryPath, v23 fail, sdk: %d, error: %s, try to fallback to V14",
+                ShareTinkerLog.e(TAG, "installNativeLibraryPath, v23 fail, sdk: %d, error: %s, try to fallback to V14",
                     Build.VERSION.SDK_INT, throwable.getMessage());
 
                 V14.install(classLoader, folder);

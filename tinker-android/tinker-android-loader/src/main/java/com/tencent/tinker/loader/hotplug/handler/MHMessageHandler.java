@@ -8,12 +8,12 @@ import android.content.pm.ActivityInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Message;
-import android.util.Log;
 
 import com.tencent.tinker.loader.hotplug.EnvConsts;
 import com.tencent.tinker.loader.hotplug.IncrementComponentManager;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -65,13 +65,13 @@ public class MHMessageHandler implements MessageHandler {
             try {
                 final Object activityClientRecord = msg.obj;
                 if (activityClientRecord == null) {
-                    Log.w(TAG, "msg: [" + msg.what + "] has no 'obj' value.");
+                    ShareTinkerLog.w(TAG, "msg: [" + msg.what + "] has no 'obj' value.");
                     return false;
                 }
                 final Field intentField = ShareReflectUtil.findField(activityClientRecord, "intent");
                 final Intent maybeHackedIntent = (Intent) intentField.get(activityClientRecord);
                 if (maybeHackedIntent == null) {
-                    Log.w(TAG, "cannot fetch intent from message received by mH.");
+                    ShareTinkerLog.w(TAG, "cannot fetch intent from message received by mH.");
                     return false;
                 }
 
@@ -79,7 +79,7 @@ public class MHMessageHandler implements MessageHandler {
 
                 final ComponentName oldComponent = maybeHackedIntent.getParcelableExtra(EnvConsts.INTENT_EXTRA_OLD_COMPONENT);
                 if (oldComponent == null) {
-                    Log.w(TAG, "oldComponent was null, start " + maybeHackedIntent.getComponent() + " next.");
+                    ShareTinkerLog.w(TAG, "oldComponent was null, start " + maybeHackedIntent.getComponent() + " next.");
                     return false;
                 }
                 final Field activityInfoField = ShareReflectUtil.findField(activityClientRecord, "activityInfo");
@@ -89,7 +89,7 @@ public class MHMessageHandler implements MessageHandler {
                 }
                 final ActivityInfo targetAInfo = IncrementComponentManager.queryActivityInfo(oldComponent.getClassName());
                 if (targetAInfo == null) {
-                    Log.e(TAG, "Failed to query target activity's info,"
+                    ShareTinkerLog.e(TAG, "Failed to query target activity's info,"
                             + " perhaps the target is not hotpluged component. Target: " + oldComponent.getClassName());
                     return false;
                 }
@@ -98,7 +98,7 @@ public class MHMessageHandler implements MessageHandler {
                 maybeHackedIntent.setComponent(oldComponent);
                 maybeHackedIntent.removeExtra(EnvConsts.INTENT_EXTRA_OLD_COMPONENT);
             } catch (Throwable thr) {
-                Log.e(TAG, "exception in handleMessage.", thr);
+                ShareTinkerLog.e(TAG, "exception in handleMessage.", thr);
             }
         }
 
@@ -150,7 +150,7 @@ public class MHMessageHandler implements MessageHandler {
             final Method setRequestedOrientationMethod = ShareReflectUtil.findMethod(amn, "setRequestedOrientation", IBinder.class, int.class);
             setRequestedOrientationMethod.invoke(amn, token, screenOrientation);
         } catch (Throwable thr) {
-            Log.e(TAG, "Failed to fix screen orientation.", thr);
+            ShareTinkerLog.e(TAG, "Failed to fix screen orientation.", thr);
         }
     }
 }

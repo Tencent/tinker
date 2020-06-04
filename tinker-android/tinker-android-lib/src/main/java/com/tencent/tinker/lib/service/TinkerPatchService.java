@@ -27,7 +27,7 @@ import android.os.SystemClock;
 
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
@@ -53,14 +53,14 @@ public class TinkerPatchService extends IntentService {
     }
 
     public static void runPatchService(final Context context, final String path) {
-        TinkerLog.i(TAG, "run patch service...");
+        ShareTinkerLog.i(TAG, "run patch service...");
         Intent intent = new Intent(context, TinkerPatchService.class);
         intent.putExtra(PATCH_PATH_EXTRA, path);
         intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
         try {
             context.startService(intent);
         } catch (Throwable thr) {
-            TinkerLog.e(TAG, "run patch service fail, exception:" + thr);
+            ShareTinkerLog.e(TAG, "run patch service fail, exception:" + thr);
         }
     }
 
@@ -71,7 +71,7 @@ public class TinkerPatchService extends IntentService {
         try {
             Class.forName(serviceClass.getName());
         } catch (ClassNotFoundException e) {
-            TinkerLog.printErrStackTrace(TAG, e, "patch processor class not found.");
+            ShareTinkerLog.printErrStackTrace(TAG, e, "patch processor class not found.");
         }
     }
 
@@ -109,7 +109,7 @@ public class TinkerPatchService extends IntentService {
         // Since we may retry with IntentService, we should prevent
         // racing here again.
         if (!sIsPatchApplying.compareAndSet(false, true)) {
-            TinkerLog.w(TAG, "TinkerPatchService doApplyPatch is running by another runner.");
+            ShareTinkerLog.w(TAG, "TinkerPatchService doApplyPatch is running by another runner.");
             return;
         }
 
@@ -117,12 +117,12 @@ public class TinkerPatchService extends IntentService {
         tinker.getPatchReporter().onPatchServiceStart(intent);
 
         if (intent == null) {
-            TinkerLog.e(TAG, "TinkerPatchService received a null intent, ignoring.");
+            ShareTinkerLog.e(TAG, "TinkerPatchService received a null intent, ignoring.");
             return;
         }
         String path = getPatchPathExtra(intent);
         if (path == null) {
-            TinkerLog.e(TAG, "TinkerPatchService can't get the path extra, ignoring.");
+            ShareTinkerLog.e(TAG, "TinkerPatchService can't get the path extra, ignoring.");
             return;
         }
         File patchFile = new File(path);
@@ -160,18 +160,18 @@ public class TinkerPatchService extends IntentService {
 
     private void increasingPriority() {
         if (Build.VERSION.SDK_INT >= 26) {
-            TinkerLog.i(TAG, "for system version >= Android O, we just ignore increasingPriority "
+            ShareTinkerLog.i(TAG, "for system version >= Android O, we just ignore increasingPriority "
                     + "job to avoid crash or toasts.");
             return;
         }
 
         if ("ZUK".equals(Build.MANUFACTURER)) {
-            TinkerLog.i(TAG, "for ZUK device, we just ignore increasingPriority "
+            ShareTinkerLog.i(TAG, "for ZUK device, we just ignore increasingPriority "
                     + "job to avoid crash.");
             return;
         }
 
-        TinkerLog.i(TAG, "try to increase patch process priority");
+        ShareTinkerLog.i(TAG, "try to increase patch process priority");
         try {
             Notification notification = new Notification();
             if (Build.VERSION.SDK_INT < 18) {
@@ -182,7 +182,7 @@ public class TinkerPatchService extends IntentService {
                 startService(new Intent(this, InnerService.class));
             }
         } catch (Throwable e) {
-            TinkerLog.i(TAG, "try to increase patch process priority error:" + e);
+            ShareTinkerLog.i(TAG, "try to increase patch process priority error:" + e);
         }
     }
 
@@ -196,7 +196,7 @@ public class TinkerPatchService extends IntentService {
             try {
                 startForeground(notificationId, new Notification());
             } catch (Throwable e) {
-                TinkerLog.e(TAG, "InnerService set service for push exception:%s.", e);
+                ShareTinkerLog.e(TAG, "InnerService set service for push exception:%s.", e);
             }
             stopSelf();
         }

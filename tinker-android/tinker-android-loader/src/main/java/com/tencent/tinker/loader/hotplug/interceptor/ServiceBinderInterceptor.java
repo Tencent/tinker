@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.tencent.tinker.loader.hotplug.EnvConsts;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -42,7 +43,7 @@ public class ServiceBinderInterceptor extends Interceptor<IBinder> {
                     sSCacheField = ShareReflectUtil.findField(sServiceManagerClazz, "sCache");
                     sGetServiceMethod = ShareReflectUtil.findMethod(sServiceManagerClazz, "getService", String.class);
                 } catch (Throwable thr) {
-                    Log.e(TAG, "unexpected exception.", thr);
+                    ShareTinkerLog.e(TAG, "unexpected exception.", thr);
                 }
             }
         }

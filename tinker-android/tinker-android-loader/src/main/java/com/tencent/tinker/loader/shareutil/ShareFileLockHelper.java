@@ -16,8 +16,6 @@
 
 package com.tencent.tinker.loader.shareutil;
 
-import android.util.Log;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -53,14 +51,14 @@ public class ShareFileLockHelper implements Closeable {
 
             } catch (Exception e) {
                 saveException = e;
-                Log.e(TAG, "getInfoLock Thread failed time:" + LOCK_WAIT_EACH_TIME);
+                ShareTinkerLog.e(TAG, "getInfoLock Thread failed time:" + LOCK_WAIT_EACH_TIME);
             }
 
             //it can just sleep 0, afraid of cpu scheduling
             try {
                 Thread.sleep(LOCK_WAIT_EACH_TIME);
             } catch (Exception ignore) {
-                Log.e(TAG, "getInfoLock Thread sleep exception", ignore);
+                ShareTinkerLog.e(TAG, "getInfoLock Thread sleep exception", ignore);
             }
         }
 

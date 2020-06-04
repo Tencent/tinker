@@ -17,7 +17,7 @@
 package com.tencent.tinker.lib.service;
 
 
-import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 
@@ -29,11 +29,11 @@ public class DefaultTinkerResultService extends AbstractResultService {
 
     @Override
     public void onPatchResult(PatchResult result) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public void deleteRawPatchFile(File rawFile) {
-        TinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 
     public boolean checkIfNeedKill(PatchResult result) {

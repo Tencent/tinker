@@ -27,6 +27,7 @@ import android.util.Log;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -277,7 +278,7 @@ class TinkerResourcePatcher {
         // if (!isMiuiSystem) {
         //     return;
         // }
-        Log.w(TAG, "try to clear typedArray cache!");
+        ShareTinkerLog.w(TAG, "try to clear typedArray cache!");
         // Clear typedArray cache.
         try {
             final Field typedArrayPoolField = findField(Resources.class, "mTypedArrayPool");
@@ -289,7 +290,7 @@ class TinkerResourcePatcher {
                 }
             }
         } catch (Throwable ignored) {
-            Log.e(TAG, "clearPreloadTypedArrayIssue failed, ignore error: " + ignored);
+            ShareTinkerLog.e(TAG, "clearPreloadTypedArrayIssue failed, ignore error: " + ignored);
         }
     }
 
@@ -298,12 +299,12 @@ class TinkerResourcePatcher {
         try {
             is = context.getAssets().open(TEST_ASSETS_VALUE);
         } catch (Throwable e) {
-            Log.e(TAG, "checkResUpdate failed, can't find test resource assets file " + TEST_ASSETS_VALUE + " e:" + e.getMessage());
+            ShareTinkerLog.e(TAG, "checkResUpdate failed, can't find test resource assets file " + TEST_ASSETS_VALUE + " e:" + e.getMessage());
             return false;
         } finally {
             SharePatchFileUtil.closeQuietly(is);
         }
-        Log.i(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
+        ShareTinkerLog.i(TAG, "checkResUpdate success, found test resource assets file " + TEST_ASSETS_VALUE);
         return true;
     }
 

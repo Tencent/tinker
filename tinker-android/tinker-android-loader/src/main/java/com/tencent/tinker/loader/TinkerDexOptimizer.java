@@ -28,6 +28,7 @@ import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -147,7 +148,7 @@ public final class TinkerDexOptimizer {
                     callback.onSuccess(dexFile, optimizedDir, new File(optimizedPath));
                 }
             } catch (final Throwable e) {
-                Log.e(TAG, "Failed to optimize dex: " + dexFile.getAbsolutePath(), e);
+                ShareTinkerLog.e(TAG, "Failed to optimize dex: " + dexFile.getAbsolutePath(), e);
                 if (callback != null) {
                     callback.onFailed(dexFile, optimizedDir, e);
                     return false;
@@ -278,7 +279,7 @@ public final class TinkerDexOptimizer {
                         fileLock.close();
                     }
                 } catch (IOException e) {
-                    Log.w(TAG, "release interpret Lock error", e);
+                    ShareTinkerLog.w(TAG, "release interpret Lock error", e);
                 }
             }
         }

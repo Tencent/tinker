@@ -24,6 +24,7 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,15 +62,15 @@ public class TinkerArkHotLoader {
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public static boolean loadTinkerArkHot(final TinkerApplication application, String directory, Intent intentResult) {
         if (arkHotApkInfo.isEmpty()) {
-            Log.w(TAG, "there is no apk to load");
+            ShareTinkerLog.w(TAG, "there is no apk to load");
             return true;
         }
 
         PathClassLoader classLoader = (PathClassLoader) TinkerArkHotLoader.class.getClassLoader();
         if (classLoader != null) {
-            Log.i(TAG, "classloader: " + classLoader.toString());
+            ShareTinkerLog.i(TAG, "classloader: " + classLoader.toString());
         } else {
-            Log.e(TAG, "classloader is null");
+            ShareTinkerLog.e(TAG, "classloader is null");
             ShareIntentUtil.setIntentReturnCode(intentResult,
                     ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL);
             return false;
@@ -89,7 +90,7 @@ public class TinkerArkHotLoader {
             // 加载Apk
             SystemClassLoaderAdder.installApk(classLoader, legalFiles);
         } catch (Throwable e) {
-            Log.e(TAG, "install dexes failed");
+            ShareTinkerLog.e(TAG, "install dexes failed");
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
             ShareIntentUtil.setIntentReturnCode(intentResult,
                     ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
