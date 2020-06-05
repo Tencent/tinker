@@ -217,7 +217,7 @@ public final class TinkerDexOptimizer {
                 }
                 result = (0 != reply.readInt());
                 if (!result) {
-                    throw new IllegalStateException("System API return false.");
+                    ShareTinkerLog.w(TAG, "[!] System API return false.");
                 }
             } finally {
                 Binder.restoreCallingIdentity(identity);
