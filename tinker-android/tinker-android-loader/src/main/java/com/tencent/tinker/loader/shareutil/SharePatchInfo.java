@@ -158,7 +158,6 @@ public class SharePatchInfo {
             if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer))
                 || !SharePatchFileUtil.checkIfMd5Valid(newVer)) {
                 Log.w(TAG, "path info file  corrupted:" + pathInfoFile.getAbsolutePath());
-                continue;
             } else {
                 isReadPatchSuccessful = true;
             }
@@ -238,12 +237,6 @@ public class SharePatchInfo {
                 pathInfoFile.delete();
             }
         }
-        if (isWritePatchSuccessful) {
-            return true;
-        }
-
-        return false;
+        return isWritePatchSuccessful;
     }
-
-
 }
