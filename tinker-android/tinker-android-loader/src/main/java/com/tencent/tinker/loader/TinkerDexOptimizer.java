@@ -22,7 +22,6 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
-import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -31,6 +30,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -43,6 +43,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import dalvik.system.DexFile;
+import dalvik.system.PathClassLoader;
 
 
 /**
@@ -139,7 +140,7 @@ public final class TinkerDexOptimizer {
                         NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir, dexFile.getAbsolutePath());
                         // Android Q is significantly slowed down by Fallback Dex Loading procedure, so we
                         // trigger background dexopt to generate executable odex here.
-                        triggerPMDexOptOnDemand();
+                        triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);
                     } else {
                         DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
                     }
@@ -157,18 +158,68 @@ public final class TinkerDexOptimizer {
             return true;
         }
 
-        private static final String PM_INTERFACE_DESCRIPTOR = "android.content.pm.IPackageManager";
+        private static void triggerPMDexOptOnDemand(Context context, String dexPath, String oatPath) {
+            if (Build.VERSION.SDK_INT != 29) {
+                // Only do this trick on Android Q devices.
+                ShareTinkerLog.w(TAG, "[+] Not API 29 device, skip fixing.");
+                return;
+            }
+            if (!"huawei".equalsIgnoreCase(Build.MANUFACTURER)) {
+                // Only do this trick on huawei devices.
+                ShareTinkerLog.w(TAG, "[!] Not Huawei device, skip fixing.");
+                return;
+            }
 
-        private void triggerPMDexOptOnDemand() throws TinkerRuntimeException {
+            ShareTinkerLog.i(TAG, "[+] Hit target device, do fix logic now.");
+
             try {
-                if (Build.VERSION.SDK_INT != 29) {
-                    // Not Android Q
+                final File oatFile = new File(oatPath);
+                loadDexByPathClassLoader(dexPath);
+                if (oatFile.exists()) {
+                    ShareTinkerLog.i(TAG, "[+] PathClassLoader generated odex file, skip bg-dexopt triggering.");
                     return;
                 }
 
-                final int transactionCode = 0x78;
+                try {
+                    triggerPMDexOpt(context);
+                    if (oatFile.exists()) {
+                        ShareTinkerLog.i(TAG, "[+] Bg-dexopt was triggered successfully.");
+                        return;
+                    } else {
+                        throw new IllegalStateException("Bg-dexopt was triggered, but no odex file was generated.");
+                    }
+                } catch (Throwable thr) {
+                    if (!"huawei".equalsIgnoreCase(Build.MANUFACTURER)) {
+                        throw thr;
+                    }
+                }
+
+                triggerPMDexOpt2(context, dexPath);
+                if (oatFile.exists()) {
+                    ShareTinkerLog.i(TAG, "[+] Bg-dexopt was triggered by registerDexModule successfully.");
+                    return;
+                } else {
+                    throw new IllegalStateException("Bg-dexopt was triggered by registerDexModule, but no odex file was generated.");
+                }
+            } catch (Throwable thr) {
+                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call triggerPMDexOptAsyncOnDemand.");
+            }
+        }
+
+        private static void loadDexByPathClassLoader(String dexPath) throws IOException {
+            ShareTinkerLog.i(TAG, "[+] Load patch by PathClassLoader start.");
+            final PathClassLoader cl = new PathClassLoader(dexPath, ClassLoader.getSystemClassLoader());
+            ShareTinkerLog.i(TAG, "[+] Load patch by PathClassLoader [%s] done.", cl);
+        }
+
+        private static final String PM_INTERFACE_DESCRIPTOR = "android.content.pm.IPackageManager";
+
+        private static void triggerPMDexOpt(Context context) throws IllegalStateException {
+            try {
+                ShareTinkerLog.i(TAG, "[+] Start trigger secondary dexopt.");
+                final int transactionCode = ("xiaomi".equalsIgnoreCase(Build.MANUFACTURER) ? 0x79 : 0x78);
                 final String packageName = context.getPackageName();
-                final String targetCompilerFilter = "quicken";
+                final String targetCompilerFilter = "speed";
                 final boolean force = true;
 
                 final Class<?> serviceManagerClazz = Class.forName("android.os.ServiceManager");
@@ -184,12 +235,42 @@ public final class TinkerDexOptimizer {
                     // First invocation should always failed.
                     triggerPMDexOptImpl(pmBinder, transactionCode, packageName, targetCompilerFilter, force);
                 }
+                ShareTinkerLog.i(TAG, "[+] Secondary dexopt done.");
+            } catch (IllegalStateException e) {
+                throw e;
             } catch (Throwable thr) {
-                throw new TinkerRuntimeException("Failure on triggering bg dexopt", thr);
+                throw new IllegalStateException("Failure on triggering secondary dexopt", thr);
             }
         }
 
-        private void triggerPMDexOptImpl(IBinder pmBinder, int transactionCode, String packageName, String compileFilter, boolean force) {
+        private static void triggerPMDexOpt2(Context context, String dexPath) throws IllegalStateException {
+            try {
+                ShareTinkerLog.i(TAG, "[+] Start trigger secondary dexopt by registerDexModule.");
+                final int transactionCode = ("xiaomi".equalsIgnoreCase(Build.MANUFACTURER) ? 0x77 : 0x76);
+                final String packageName = context.getPackageName();
+
+                final Class<?> serviceManagerClazz = Class.forName("android.os.ServiceManager");
+                final Method getServiceMethod = ShareReflectUtil.findMethod(serviceManagerClazz, "getService", String.class);
+                final IBinder pmBinder = (IBinder) getServiceMethod.invoke(null, "package");
+                if (pmBinder == null) {
+                    throw new IllegalStateException("Fail to get pm binder.");
+                }
+
+                try {
+                    triggerPMDexOptImpl2(pmBinder, transactionCode, packageName, dexPath);
+                } catch (Throwable thr) {
+                    // First invocation may failed.
+                    triggerPMDexOptImpl2(pmBinder, transactionCode, packageName, dexPath);
+                }
+                ShareTinkerLog.i(TAG, "[+] Secondary dexopt by registerDexModule done.");
+            } catch (IllegalStateException e) {
+                throw e;
+            } catch (Throwable thr) {
+                throw new IllegalStateException("Failure on triggering secondary dexopt by registerDexModule.", thr);
+            }
+        }
+
+        private static void triggerPMDexOptImpl(IBinder pmBinder, int transactionCode, String packageName, String compileFilter, boolean force) {
             Parcel data = null;
             Parcel reply = null;
             final long identity = Binder.clearCallingIdentity();
@@ -218,6 +299,43 @@ public final class TinkerDexOptimizer {
                 result = (0 != reply.readInt());
                 if (!result) {
                     ShareTinkerLog.w(TAG, "[!] System API return false.");
+                }
+            } finally {
+                Binder.restoreCallingIdentity(identity);
+                if (reply != null) {
+                    reply.recycle();
+                }
+                if (data != null) {
+                    data.recycle();
+                }
+            }
+        }
+
+        private static void triggerPMDexOptImpl2(IBinder pmBinder, int transactionCode, String packageName, String dexPath) {
+            Parcel data = null;
+            Parcel reply = null;
+            final long identity = Binder.clearCallingIdentity();
+            try {
+                data = Parcel.obtain();
+                reply = Parcel.obtain();
+                data.writeInterfaceToken(PM_INTERFACE_DESCRIPTOR);
+                data.writeString(packageName);
+                data.writeString(dexPath);
+                data.writeInt(0); // Not a shared module.
+                data.writeInt(0); // Callback is null.
+                boolean status = false;
+                try {
+                    status = pmBinder.transact(transactionCode, data, reply, 0);
+                    if (!status) {
+                        throw new IllegalStateException("Binder transaction failure.");
+                    }
+                } catch (RemoteException e) {
+                    throw new IllegalStateException(e);
+                }
+                try {
+                    reply.readException();
+                } catch (Throwable thr) {
+                    throw new IllegalStateException(thr);
                 }
             } finally {
                 Binder.restoreCallingIdentity(identity);
