@@ -1197,13 +1197,7 @@ public final class DexClassesComparator {
             return false;
         }
 
-        if (!isSameTries(oldDex, newDex, oldCode.tries, newCode.tries, insnComparator)) {
-            return false;
-        }
-
-        return isSameCatchHandlers(
-                oldDex, newDex, oldCode.catchHandlers, newCode.catchHandlers, insnComparator
-        );
+        return isSameTriesAndCatchHandlers(oldDex, newDex, oldCode.tries, newCode.tries, oldCode.catchHandlers, newCode.catchHandlers, insnComparator);
     }
 
     private boolean isSameDebugInfo(
@@ -1368,11 +1362,13 @@ public final class DexClassesComparator {
         return true;
     }
 
-    private boolean isSameTries(
+    private boolean isSameTriesAndCatchHandlers(
             Dex oldDex,
             Dex newDex,
             Code.Try[] oldTries,
             Code.Try[] newTries,
+            Code.CatchHandler[] oldHandlers,
+            Code.CatchHandler[] newHandlers,
             InstructionComparator insnComparator
     ) {
         if (oldTries.length != newTries.length) {
@@ -1385,7 +1381,9 @@ public final class DexClassesComparator {
             if (oldTry.instructionCount != newTry.instructionCount) {
                 return false;
             }
-            if (oldTry.catchHandlerIndex != newTry.catchHandlerIndex) {
+            final Code.CatchHandler oldCatchHandler = oldHandlers[oldTry.catchHandlerIndex];
+            final Code.CatchHandler newCatchHandler = newHandlers[newTry.catchHandlerIndex];
+            if (!isSameCatchHandler(oldDex, newDex, oldCatchHandler, newCatchHandler, insnComparator)) {
                 return false;
             }
             if (!insnComparator.isSameInstruction(oldTry.startAddress, newTry.startAddress)) {
@@ -1396,52 +1394,43 @@ public final class DexClassesComparator {
         return true;
     }
 
-    private boolean isSameCatchHandlers(
+    private boolean isSameCatchHandler(
             Dex oldDex,
             Dex newDex,
-            Code.CatchHandler[] oldCatchHandlers,
-            Code.CatchHandler[] newCatchHandlers,
+            Code.CatchHandler oldCatchHandler,
+            Code.CatchHandler newCatchHandler,
             InstructionComparator insnComparator
     ) {
-        if (oldCatchHandlers.length != newCatchHandlers.length) {
+        int oldTypeAddrPairCount = oldCatchHandler.typeIndexes.length;
+        int newTypeAddrPairCount = newCatchHandler.typeIndexes.length;
+        if (oldTypeAddrPairCount != newTypeAddrPairCount) {
             return false;
         }
 
-        for (int i = 0; i < oldCatchHandlers.length; ++i) {
-            Code.CatchHandler oldCatchHandler = oldCatchHandlers[i];
-            Code.CatchHandler newCatchHandler = newCatchHandlers[i];
+        if (oldCatchHandler.catchAllAddress != -1 && newCatchHandler.catchAllAddress != -1) {
+            return insnComparator.isSameInstruction(
+                    oldCatchHandler.catchAllAddress, newCatchHandler.catchAllAddress
+            );
+        } else {
+            if (!(oldCatchHandler.catchAllAddress == -1 && newCatchHandler.catchAllAddress == -1)) {
+                return false;
+            }
+        }
 
-            int oldTypeAddrPairCount = oldCatchHandler.typeIndexes.length;
-            int newTypeAddrPairCount = newCatchHandler.typeIndexes.length;
-            if (oldTypeAddrPairCount != newTypeAddrPairCount) {
+        for (int j = 0; j < oldTypeAddrPairCount; ++j) {
+            if (!isSameClassDesc(
+                    oldDex,
+                    newDex,
+                    oldCatchHandler.typeIndexes[j],
+                    newCatchHandler.typeIndexes[j]
+            )) {
                 return false;
             }
 
-            if (oldCatchHandler.catchAllAddress != -1 && newCatchHandler.catchAllAddress != -1) {
-                return insnComparator.isSameInstruction(
-                        oldCatchHandler.catchAllAddress, newCatchHandler.catchAllAddress
-                );
-            } else {
-                if (!(oldCatchHandler.catchAllAddress == -1 && newCatchHandler.catchAllAddress == -1)) {
-                    return false;
-                }
-            }
-
-            for (int j = 0; j < oldTypeAddrPairCount; ++j) {
-                if (!isSameClassDesc(
-                        oldDex,
-                        newDex,
-                        oldCatchHandler.typeIndexes[j],
-                        newCatchHandler.typeIndexes[j]
-                )) {
-                    return false;
-                }
-
-                if (!insnComparator.isSameInstruction(
-                        oldCatchHandler.addresses[j], newCatchHandler.addresses[j]
-                )) {
-                    return false;
-                }
+            if (!insnComparator.isSameInstruction(
+                    oldCatchHandler.addresses[j], newCatchHandler.addresses[j]
+            )) {
+                return false;
             }
         }
 
