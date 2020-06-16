@@ -126,5 +126,11 @@ public abstract class ApplicationLike implements ApplicationLifeCycle {
     public Context getBaseContext(Context base) {
         return base;
     }
+
+    @Keep
+    public int mzNightModeUseOf() {
+        // Return 1 for default according to MeiZu's announcement.
+        return 1;
+    }
 }
 

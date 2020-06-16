@@ -38,6 +38,7 @@ public final class TinkerInlineFenceAction {
     public static final int ACTION_GET_ASSETS = 9;
     public static final int ACTION_GET_RESOURCES = 10;
     public static final int ACTION_GET_SYSTEM_SERVICE = 11;
+    public static final int ACTION_MZ_NIGHTMODE_USE_OF = 12;
 
     static void callOnBaseContextAttached(Handler inlineFence, Context context) {
         final Message msg = Message.obtain(inlineFence, ACTION_ON_BASE_CONTEXT_ATTACHED, context);
@@ -97,5 +98,11 @@ public final class TinkerInlineFenceAction {
         final Message msg = Message.obtain(inlineFence, ACTION_GET_SYSTEM_SERVICE, new Object[] {name, service});
         inlineFence.handleMessage(msg);
         return msg.obj;
+    }
+
+    static int callMZNightModeUseOf(Handler inlineFence) {
+        final Message msg = Message.obtain(inlineFence, ACTION_MZ_NIGHTMODE_USE_OF);
+        inlineFence.handleMessage(msg);
+        return (int) msg.obj;
     }
 }

@@ -25,6 +25,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.SystemClock;
 
+import com.tencent.tinker.anno.Keep;
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -166,6 +167,11 @@ public abstract class TinkerApplication extends Application {
     public Context getBaseContext() {
         final Context base = super.getBaseContext();
         return mAppLike.getBaseContext(base);
+    }
+
+    @Keep
+    public int mzNightModeUseOf() {
+        return mAppLike.mzNightModeUseOf();
     }
 
     public void setUseSafeMode(boolean useSafeMode) {

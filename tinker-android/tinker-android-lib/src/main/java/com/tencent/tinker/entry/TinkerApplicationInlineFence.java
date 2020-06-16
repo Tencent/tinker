@@ -29,6 +29,7 @@ import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_B
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_CLASSLOADER;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_RESOURCES;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_SYSTEM_SERVICE;
+import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_MZ_NIGHTMODE_USE_OF;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_ON_BASE_CONTEXT_ATTACHED;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_ON_CONFIGURATION_CHANGED;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_ON_CREATE;
@@ -105,6 +106,10 @@ public final class TinkerApplicationInlineFence extends Handler {
             case ACTION_GET_SYSTEM_SERVICE : {
                 final Object[] params = (Object[]) msg.obj;
                 msg.obj = mAppLike.getSystemService((String) params[0], params[1]);
+                break;
+            }
+            case ACTION_MZ_NIGHTMODE_USE_OF: {
+                msg.obj = mAppLike.mzNightModeUseOf();
                 break;
             }
             default: {
