@@ -43,8 +43,8 @@ public abstract class TinkerApplication extends Application {
     /**
      * if we have load patch, we should use safe mode
      */
-    private Intent tinkerResultIntent;
-    private ClassLoader mCurrentClassLoader = null;
+    protected Intent tinkerResultIntent;
+    protected ClassLoader mCurrentClassLoader = null;
     private ApplicationLike mAppLike = null;
 
     protected TinkerApplication(int tinkerFlags) {
@@ -83,12 +83,8 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
-    @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
+    protected void onBaseContextAttached(Context base, long applicationStartElapsedTime, long applicationStartMillisTime) {
         try {
-            final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
-            final long applicationStartMillisTime = System.currentTimeMillis();
             mCurrentClassLoader = base.getClassLoader();
             this.tinkerResultIntent = new Intent();
             ShareIntentUtil.setIntentReturnCode(this.tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
@@ -101,6 +97,14 @@ public abstract class TinkerApplication extends Application {
         } catch (Throwable thr) {
             throw new TinkerRuntimeException(thr.getMessage(), thr);
         }
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
+        final long applicationStartMillisTime = System.currentTimeMillis();
+        onBaseContextAttached(base, applicationStartElapsedTime, applicationStartMillisTime);
     }
 
     @Override

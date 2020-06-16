@@ -26,7 +26,6 @@ import android.content.res.Resources;
 import android.os.Handler;
 import android.os.SystemClock;
 
-import com.tencent.tinker.loader.AppInfoChangedBlocker;
 import com.tencent.tinker.loader.TinkerLoader;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.TinkerUncaughtHandler;
@@ -65,9 +64,9 @@ public abstract class TinkerApplication extends Application {
      * if we have load patch, we should use safe mode
      */
     private boolean useSafeMode;
-    private Intent tinkerResultIntent;
+    protected Intent tinkerResultIntent;
 
-    private ClassLoader mCurrentClassLoader = null;
+    protected ClassLoader mCurrentClassLoader = null;
     private Handler mInlineFence = null;
 
     protected TinkerApplication(int tinkerFlags) {
@@ -129,10 +128,8 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
-    private void onBaseContextAttached(Context base) {
+    protected void onBaseContextAttached(Context base, long applicationStartElapsedTime, long applicationStartMillisTime) {
         try {
-            final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
-            final long applicationStartMillisTime = System.currentTimeMillis();
             loadTinker();
             mCurrentClassLoader = base.getClassLoader();
             mInlineFence = createInlineFence(this, tinkerFlags, delegateClassName,
@@ -153,8 +150,10 @@ public abstract class TinkerApplication extends Application {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
+        final long applicationStartMillisTime = System.currentTimeMillis();
         Thread.setDefaultUncaughtExceptionHandler(new TinkerUncaughtHandler(this));
-        onBaseContextAttached(base);
+        onBaseContextAttached(base, applicationStartElapsedTime, applicationStartMillisTime);
     }
 
     @Override
@@ -259,4 +258,5 @@ public abstract class TinkerApplication extends Application {
     public int getTinkerFlags() {
         return tinkerFlags;
     }
+
 }
