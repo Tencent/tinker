@@ -5,9 +5,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import androidx.annotation.Keep;
-import androidx.annotation.NonNull;
-
+import com.tencent.tinker.anno.Keep;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.text.SimpleDateFormat;
@@ -33,7 +31,7 @@ final class TinkerLogInlineFence extends Handler {
     private static final List<Object[]> pendingLogs = Collections.synchronizedList(new ArrayList<Object[]>());
 
     @Override
-    public void handleMessage(@NonNull Message msg) {
+    public void handleMessage(Message msg) {
         handleMessage_$noinline$(msg);
     }
 
@@ -45,7 +43,7 @@ final class TinkerLogInlineFence extends Handler {
         }
     }
 
-    private void handleMessageImpl(@NonNull Message msg) {
+    private void handleMessageImpl(Message msg) {
         final ShareTinkerLog.TinkerLogImp defaultLogImp = getDefaultImpl();
         final ShareTinkerLog.TinkerLogImp logImp = getImpl();
         switch (msg.what) {
