@@ -24,6 +24,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly fileTree(dir: 'stubs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
     implementation "androidx.annotation:annotation:${rootProject.ext.androidXAnnotationVersion}"
 }
