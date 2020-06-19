@@ -26,6 +26,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly fileTree(dir: 'stubs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
     implementation project(':tinker-android:tinker-android-anno-support')
 }

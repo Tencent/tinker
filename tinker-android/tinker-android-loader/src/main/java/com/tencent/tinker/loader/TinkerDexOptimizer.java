@@ -17,8 +17,14 @@
 package com.tencent.tinker.loader;
 
 import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager$DexModuleRegisterCallback;
 import android.os.Build;
+import android.os.IBinder;
+import android.os.IInterface;
 
+import com.tencent.tinker.anno.Keep;
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -28,7 +34,10 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -167,13 +176,27 @@ public final class TinkerDexOptimizer {
                     ShareTinkerLog.i(TAG, "[+] Odex file exists, skip bg-dexopt triggering.");
                     return;
                 }
-                final Class<?> pmClazz = Class.forName("android.app.ApplicationPackageManager");
-                final Class<?> cbClazz = Class.forName("android.content.pm.PackageManager$DexModuleRegisterCallback");
-                final Method registerDexModuleMethod = ShareReflectUtil.findMethod(pmClazz, "registerDexModule", String.class, cbClazz);
+                final PackageManager syncPM = getSynchronizedPackageManager(context);
+                final Method registerDexModuleMethod = ShareReflectUtil.findMethod(syncPM.getClass(), "registerDexModule", String.class, PackageManager$DexModuleRegisterCallback.class);
                 try {
-                    registerDexModuleMethod.invoke(context.getPackageManager(), dexPath, null);
+                    registerDexModuleMethod.invoke(syncPM, dexPath, new PackageManager$DexModuleRegisterCallback() {
+                        @Override
+                        @Keep
+                        public void onDexModuleRegistered(String dexModulePath, boolean success, String message) {
+                            ShareTinkerLog.i(TAG, "[+] onDexModuleRegistered, path: %s, is_success: %s, msg: %s", dexModulePath, success, message);
+                        }
+                    });
                 } catch (Throwable ignored) {
-                    registerDexModuleMethod.invoke(context.getPackageManager(), dexPath, null);
+                    // Ignored.
+                }
+                if (!oatFile.exists()) {
+                    registerDexModuleMethod.invoke(syncPM, dexPath, new PackageManager$DexModuleRegisterCallback() {
+                        @Override
+                        @Keep
+                        public void onDexModuleRegistered(String dexModulePath, boolean success, String message) {
+                            ShareTinkerLog.i(TAG, "[+] onDexModuleRegistered again, path: %s, is_success: %s, msg: %s", dexModulePath, success, message);
+                        }
+                    });
                 }
                 if (oatFile.exists()) {
                     ShareTinkerLog.i(TAG, "[+] Bg-dexopt was triggered successfully.");
@@ -182,6 +205,38 @@ public final class TinkerDexOptimizer {
                 }
             } catch (Throwable thr) {
                 ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call triggerPMDexOptAsyncOnDemand.");
+            }
+        }
+
+        private static final PackageManager[] CACHED_SYNC_PM  = {null};
+
+        private static PackageManager getSynchronizedPackageManager(Context context) throws Throwable {
+            synchronized (CACHED_SYNC_PM) {
+                if (CACHED_SYNC_PM[0] != null) {
+                    return CACHED_SYNC_PM[0];
+                }
+                final Class<?> serviceManagerClazz = Class.forName("android.os.ServiceManager");
+                final Method getServiceMethod = ShareReflectUtil.findMethod(serviceManagerClazz, "getService", String.class);
+                final IBinder pmBinder = (IBinder) getServiceMethod.invoke(null, "package");
+                final IBinder syncPMBinder = (IBinder) Proxy.newProxyInstance(context.getClassLoader(), pmBinder.getClass().getInterfaces(), new InvocationHandler() {
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        if ("transact".equals(method.getName())) {
+                            // FLAG_ONEWAY => NONE.
+                            args[3] = 0;
+                        }
+                        return method.invoke(pmBinder, args);
+                    }
+                });
+                final Class<?> pmStubClazz = Class.forName("android.content.pm.IPackageManager$Stub");
+                final Method asInterfaceMethod = ShareReflectUtil.findMethod(pmStubClazz, "asInterface", IBinder.class);
+                final IInterface pmItf = (IInterface) asInterfaceMethod.invoke(null, syncPMBinder);
+                final Object contextImpl = (context instanceof ContextWrapper ? ((ContextWrapper) context).getBaseContext() : context);
+                final Class<?> appPMClazz = Class.forName("android.app.ApplicationPackageManager");
+                final Constructor<?> appPMCtor = appPMClazz.getDeclaredConstructor(contextImpl.getClass(), pmItf.getClass().getInterfaces()[0]);
+                final PackageManager res = (PackageManager) appPMCtor.newInstance(contextImpl, pmItf);
+                CACHED_SYNC_PM[0] = res;
+                return res;
             }
         }
 

@@ -14,3 +14,10 @@
 -keepclasseswithmembers class * {
     @com.tencent.tinker.anno.Keep <init>(...);
 }
+
+-dontwarn android.content.pm.PackageManager$DexModuleRegisterCallback
+
+-keepclassmembernames class com.tencent.tinker.loader.** {
+    <fields>;
+    <methods>;
+}
