@@ -15,7 +15,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import java.lang.reflect.Field;
 
 /**
- * Created by tomystang on 2020/5/10.
+ * Created by tangyinsheng on 2020/5/10.
  * <p>
  * Some situations may cause our resource modification to be ineffective,
  * for example, an APPLICATION_INFO_CHANGED message will reset LoadedApk#mResDir
