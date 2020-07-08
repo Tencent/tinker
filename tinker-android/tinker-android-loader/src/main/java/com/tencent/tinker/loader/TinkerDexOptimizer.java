@@ -24,7 +24,6 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.IInterface;
 
-import com.tencent.tinker.anno.Keep;
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -161,7 +160,7 @@ public final class TinkerDexOptimizer {
             return true;
         }
 
-        private static void triggerPMDexOptOnDemand(Context context, String dexPath, String oatPath) {
+        private static void triggerPMDexOptOnDemand(Context context, String dexPath, String oatPath) throws Throwable {
             if (Build.VERSION.SDK_INT != 29) {
                 // Only do this trick on Android Q devices.
                 ShareTinkerLog.w(TAG, "[+] Not API 29 device, skip fixing.");
@@ -181,7 +180,6 @@ public final class TinkerDexOptimizer {
                 try {
                     registerDexModuleMethod.invoke(syncPM, dexPath, new PackageManager$DexModuleRegisterCallback() {
                         @Override
-                        @Keep
                         public void onDexModuleRegistered(String dexModulePath, boolean success, String message) {
                             ShareTinkerLog.i(TAG, "[+] onDexModuleRegistered, path: %s, is_success: %s, msg: %s", dexModulePath, success, message);
                         }
@@ -192,7 +190,6 @@ public final class TinkerDexOptimizer {
                 if (!oatFile.exists()) {
                     registerDexModuleMethod.invoke(syncPM, dexPath, new PackageManager$DexModuleRegisterCallback() {
                         @Override
-                        @Keep
                         public void onDexModuleRegistered(String dexModulePath, boolean success, String message) {
                             ShareTinkerLog.i(TAG, "[+] onDexModuleRegistered again, path: %s, is_success: %s, msg: %s", dexModulePath, success, message);
                         }
@@ -205,6 +202,7 @@ public final class TinkerDexOptimizer {
                 }
             } catch (Throwable thr) {
                 ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call triggerPMDexOptAsyncOnDemand.");
+                throw thr;
             }
         }
 
