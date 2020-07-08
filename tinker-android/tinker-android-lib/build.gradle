@@ -10,6 +10,7 @@ android {
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        consumerProguardFiles file('../consumer-proguard.txt')
     }
 
     lintOptions {
