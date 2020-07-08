@@ -24,8 +24,11 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -357,21 +360,51 @@ public class ShareTinkerInternals {
         return ShareConstants.TINKER_ENABLE_CONFIG_PREFIX + ShareConstants.TINKER_VERSION + "_" + tmpTinkerId;
     }
 
+    private static final String SAFEMODE_COUNT_REC_PREFIX = "safemode_count_rec_";
+
     public static int getSafeModeCount(Context context) {
-        String processName = ShareTinkerInternals.getProcessName(context);
-        String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG_PREFIX + processName;
-        SharedPreferences sp = context.getSharedPreferences(preferName, Context.MODE_PRIVATE);
-        int count = sp.getInt(ShareConstants.TINKER_SAFE_MODE_COUNT_PREFIX + ShareConstants.TINKER_VERSION, 0);
-        ShareTinkerLog.w(TAG, "getSafeModeCount: preferName:" + preferName + " count:" + count);
-        return count;
+        final String processName = ShareTinkerInternals.getProcessName(context);
+        final String recFileName = SAFEMODE_COUNT_REC_PREFIX + processName;
+        final File safeModeRecFile = new File(SharePatchFileUtil.getPatchDirectory(context), recFileName);
+        DataInputStream dis = null;
+        try {
+            dis = new DataInputStream(new FileInputStream(safeModeRecFile));
+            final String expectedKey = ShareConstants.TINKER_SAFE_MODE_COUNT_PREFIX + ShareConstants.TINKER_VERSION;
+            final String actualKey = dis.readUTF();
+            if (!expectedKey.equals(actualKey)) {
+                ShareTinkerLog.w(TAG, "getSafeModeCount: key is not equal, expt: %s, actul: %s, return 0 instead.", expectedKey, actualKey);
+                return 0;
+            }
+            final int count = dis.readInt();
+            ShareTinkerLog.i(TAG, "getSafeModeCount: count: %s", count);
+            return count;
+        } catch (Throwable ignored) {
+            ShareTinkerLog.w(TAG, "getSafeModeCount: recFileName:" + recFileName + " failed, return 0 instead.");
+            return 0;
+        } finally {
+            SharePatchFileUtil.closeQuietly(dis);
+        }
     }
 
     public static void setSafeModeCount(Context context, int count) {
-        String processName = ShareTinkerInternals.getProcessName(context);
-        String preferName = ShareConstants.TINKER_OWN_PREFERENCE_CONFIG_PREFIX + processName;
-        SharedPreferences sp = context.getSharedPreferences(preferName, Context.MODE_PRIVATE);
-        sp.edit().putInt(ShareConstants.TINKER_SAFE_MODE_COUNT_PREFIX + ShareConstants.TINKER_VERSION, count).commit();
-        ShareTinkerLog.w(TAG, "setSafeModeCount: preferName:" + preferName + " count:" + count);
+        final String processName = ShareTinkerInternals.getProcessName(context);
+        final String recFileName = SAFEMODE_COUNT_REC_PREFIX + processName;
+        final File safeModeRecFile = new File(SharePatchFileUtil.getPatchDirectory(context), recFileName);
+        if (!safeModeRecFile.exists()) {
+            safeModeRecFile.getParentFile().mkdirs();
+        }
+        DataOutputStream dos = null;
+        try {
+            dos = new DataOutputStream(new FileOutputStream(safeModeRecFile));
+            final String key = ShareConstants.TINKER_SAFE_MODE_COUNT_PREFIX + ShareConstants.TINKER_VERSION;
+            dos.writeUTF(key);
+            dos.writeInt(count);
+            ShareTinkerLog.i(TAG, "setSafeModeCount: count: %s", count);
+        } catch (Throwable ignored) {
+            ShareTinkerLog.w(TAG, "setSafeModeCount: recFileName:" + recFileName + " failed, return 0 instead.");
+        } finally {
+            SharePatchFileUtil.closeQuietly(dos);
+        }
     }
 
     public static boolean isTinkerEnabled(int flag) {
