@@ -98,6 +98,7 @@ public class ShareConstants {
     public static final String DEX_IN_JAR  = "classes.dex";
 
     public static final String PATCH_DIRECTORY_NAME       = "tinker";
+    public static final String PATCH_DIRECTORY_NAME_SPEC  = "wc_tinker_dir";
     public static final String PATCH_TEMP_DIRECTORY_NAME  = "tinker_temp";
     public static final String PATCH_TEMP_LAST_CRASH_NAME = "tinker_last_crash";
 

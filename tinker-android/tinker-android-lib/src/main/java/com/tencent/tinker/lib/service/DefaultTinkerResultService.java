@@ -80,7 +80,8 @@ public class DefaultTinkerResultService extends AbstractResultService {
             SharePatchFileUtil.safeDeleteFile(rawFile);
         } else {
             File grandFile = parentFile.getParentFile();
-            if (!grandFile.getName().equals(ShareConstants.PATCH_DIRECTORY_NAME)) {
+            if (!grandFile.getName().equals(ShareConstants.PATCH_DIRECTORY_NAME)
+                && !grandFile.getName().equals(ShareConstants.PATCH_DIRECTORY_NAME_SPEC)) {
                 SharePatchFileUtil.safeDeleteFile(rawFile);
             }
         }
