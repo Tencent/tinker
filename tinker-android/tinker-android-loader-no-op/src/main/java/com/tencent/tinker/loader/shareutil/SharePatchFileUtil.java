@@ -55,8 +55,9 @@ public class SharePatchFileUtil {
             // Looks like running on a test Context, so just return without patching.
             return null;
         }
-
-        return new File(applicationInfo.dataDir, ShareConstants.PATCH_DIRECTORY_NAME);
+        final String dirName = ("oppo".equalsIgnoreCase(Build.MANUFACTURER) && Build.VERSION.SDK_INT == 22)
+                ? ShareConstants.PATCH_DIRECTORY_NAME_SPEC : ShareConstants.PATCH_DIRECTORY_NAME;
+        return new File(applicationInfo.dataDir, dirName);
     }
 
     public static File getPatchTempDirectory(Context context) {
