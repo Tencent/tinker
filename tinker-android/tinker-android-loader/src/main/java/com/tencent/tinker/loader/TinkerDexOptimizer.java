@@ -198,11 +198,10 @@ public final class TinkerDexOptimizer {
                 if (oatFile.exists()) {
                     ShareTinkerLog.i(TAG, "[+] Bg-dexopt was triggered successfully.");
                 } else {
-                    throw new IllegalStateException("Bg-dexopt was triggered, but no odex file was generated.");
+                    ShareTinkerLog.w(TAG, "Bg-dexopt was triggered, but no odex file was generated.");
                 }
             } catch (Throwable thr) {
                 ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call triggerPMDexOptAsyncOnDemand.");
-                throw thr;
             }
         }
 
