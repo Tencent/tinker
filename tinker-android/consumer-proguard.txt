@@ -17,6 +17,11 @@
 
 -dontwarn android.content.pm.PackageManager$DexModuleRegisterCallback
 
+-keep class * extends android.content.pm.PackageManager$DexModuleRegisterCallback {
+    <fields>;
+    <methods>;
+}
+
 -keepclassmembernames class com.tencent.tinker.loader.** {
     <fields>;
     <methods>;
