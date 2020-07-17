@@ -154,7 +154,7 @@ public class UpgradePatch extends AbstractPatch {
         }
 
         //we use destPatchFile instead of patchFile, because patchFile may be deleted during the patch process
-        if (!DexDiffPatchInternal.tryRecoverDexFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile)) {
+        if (!DexDiffPatchInternal.tryRecoverDexFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile, patchResult)) {
             ShareTinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch dex failed");
             return false;
         }
