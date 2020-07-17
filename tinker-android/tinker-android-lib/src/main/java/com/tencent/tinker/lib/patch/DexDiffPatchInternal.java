@@ -24,6 +24,7 @@ import android.os.SystemClock;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.util.DigestUtil;
 import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerDexOptimizer;
@@ -69,7 +70,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
 
     protected static boolean tryRecoverDexFiles(Tinker manager, ShareSecurityCheck checker, Context context,
-                                                String patchVersionDirectory, File patchFile) {
+                                                String patchVersionDirectory, File patchFile, PatchResult patchResult) {
         if (!manager.isEnabledForDex()) {
             ShareTinkerLog.w(TAG, "patch recover, dex is not enabled");
             return true;
@@ -82,7 +83,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         }
 
         long begin = SystemClock.elapsedRealtime();
-        boolean result = patchDexExtractViaDexDiff(context, patchVersionDirectory, dexMeta, patchFile);
+        boolean result = patchDexExtractViaDexDiff(context, patchVersionDirectory, dexMeta, patchFile, patchResult);
         long cost = SystemClock.elapsedRealtime() - begin;
         ShareTinkerLog.i(TAG, "recover dex result:%b, cost:%d", result, cost);
         return result;
@@ -163,7 +164,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return true;
     }
 
-    private static boolean patchDexExtractViaDexDiff(Context context, String patchVersionDirectory, String meta, final File patchFile) {
+    private static boolean patchDexExtractViaDexDiff(Context context, String patchVersionDirectory, String meta, final File patchFile, PatchResult patchResult) {
         String dir = patchVersionDirectory + "/" + DEX_PATH + "/";
 
         if (!extractDexDiffInternals(context, dir, meta, patchFile, TYPE_DEX)) {
@@ -191,7 +192,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         ShareTinkerLog.i(TAG, "legal files to do dexopt: " + legalFiles);
 
         final String optimizeDexDirectory = patchVersionDirectory + "/" + DEX_OPTIMIZE_PATH + "/";
-        return dexOptimizeDexFiles(context, legalFiles, optimizeDexDirectory, patchFile);
+        return dexOptimizeDexFiles(context, legalFiles, optimizeDexDirectory, patchFile, patchResult);
 
     }
 
@@ -343,7 +344,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         return result;
     }
 
-    private static boolean dexOptimizeDexFiles(Context context, List<File> dexFiles, String optimizeDexDirectory, final File patchFile) {
+    private static boolean dexOptimizeDexFiles(Context context, List<File> dexFiles, String optimizeDexDirectory, final File patchFile, final PatchResult patchResult) {
         final Tinker manager = Tinker.with(context);
 
         optFiles.clear();
@@ -367,6 +368,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             final List<File> failOptDexFile = new Vector<>();
             final Throwable[] throwable = new Throwable[1];
 
+            if (patchResult != null) {
+                patchResult.dexoptTriggerTime = System.currentTimeMillis();
+            }
+
+            final boolean[] anyOatNotGenerated = {false};
+
             // try parallel dex optimizer
             TinkerDexOptimizer.optimizeAll(
                 context, dexFiles, optimizeDexDirectoryFile,
@@ -381,9 +388,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
                     @Override
                     public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
-                        // Do nothing.
                         ShareTinkerLog.i(TAG, "success to parallel optimize dex %s, opt file:%s, opt file size: %d, use time %d",
                             dexFile.getPath(), optimizedFile.getPath(), optimizedFile.length(), (System.currentTimeMillis() - startTime));
+                        if (!optimizedFile.exists()) {
+                            synchronized (anyOatNotGenerated) {
+                                anyOatNotGenerated[0] = true;
+                            }
+                        }
                     }
 
                     @Override
@@ -395,6 +406,12 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                     }
                 }
             );
+
+            if (patchResult != null) {
+                synchronized (anyOatNotGenerated) {
+                    patchResult.isOatGenerated = !anyOatNotGenerated[0];
+                }
+            }
 
             if (!failOptDexFile.isEmpty()) {
                 manager.getPatchReporter().onPatchDexOptFail(patchFile, failOptDexFile, throwable[0]);

@@ -28,6 +28,10 @@ public class PatchResult implements Serializable {
 
     public long costTime;
 
+    public long dexoptTriggerTime;
+
+    public boolean isOatGenerated;
+
     public Throwable e;
 
     //@Nullable
@@ -40,6 +44,8 @@ public class PatchResult implements Serializable {
         sb.append("isSuccess:" + isSuccess + "\n");
         sb.append("rawPatchFilePath:" + rawPatchFilePath + "\n");
         sb.append("costTime:" + costTime + "\n");
+        sb.append("dexoptTriggerTime:" + dexoptTriggerTime + "\n");
+        sb.append("isOatGenerated:" + isOatGenerated + "\n");
         if (patchVersion != null) {
             sb.append("patchVersion:" + patchVersion + "\n");
         }
