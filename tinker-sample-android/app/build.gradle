@@ -440,15 +440,19 @@ if (buildWithTinker()) {
                             fileName.replace("${fileNamePrefix}.apk", "${newFileNamePrefix}.apk")
                         }
 
-                        from "${buildDir}/outputs/mapping/${variant.dirName}/mapping.txt"
+                        def dirName = variant.dirName
+                        if (hasFlavors) {
+                            dirName = taskName
+                        }
+                        from "${buildDir}/outputs/mapping/${dirName}/mapping.txt"
                         into destPath
                         rename { String fileName ->
                             fileName.replace("mapping.txt", "${newFileNamePrefix}-mapping.txt")
                         }
 
-                        from "${buildDir}/intermediates/symbols/${variant.dirName}/R.txt"
-                        from "${buildDir}/intermediates/symbol_list/${variant.dirName}/R.txt"
-                        from "${buildDir}/intermediates/runtime_symbol_list/${variant.dirName}/R.txt"
+                        from "${buildDir}/intermediates/symbols/${dirName}/R.txt"
+                        from "${buildDir}/intermediates/symbol_list/${dirName}/R.txt"
+                        from "${buildDir}/intermediates/runtime_symbol_list/${dirName}/R.txt"
                         into destPath
                         rename { String fileName ->
                             fileName.replace("R.txt", "${newFileNamePrefix}-R.txt")
