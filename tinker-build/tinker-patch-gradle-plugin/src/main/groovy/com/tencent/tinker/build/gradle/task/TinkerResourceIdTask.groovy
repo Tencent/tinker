@@ -185,7 +185,7 @@ public class TinkerResourceIdTask extends DefaultTask {
         def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
         List<File> resDirCandidateList = new ArrayList<>()
         try {
-            def output = mergeResourcesTask.outputDir
+            def output = mergeResourcesTask.getOutputDir()
             if (output instanceof File) {
                 resDirCandidateList.add(output)
             } else {
@@ -310,12 +310,16 @@ public class TinkerResourceIdTask extends DefaultTask {
         def variantData = foundVariant.getMetaClass().getProperty(foundVariant, 'variantData')
         def variantScope = variantData.getScope()
         def globalScope = variantScope.getGlobalScope()
-        def androidBuilder = globalScope.getAndroidBuilder()
-        def targetInfo = androidBuilder.getTargetInfo()
-        def buildTools = targetInfo.getBuildTools()
+        def buildTools
+        try {
+            def androidBuilder = globalScope.getAndroidBuilder()
+            def targetInfo = androidBuilder.getTargetInfo()
+            buildTools = targetInfo.getBuildTools()
+        } catch (Exception e) {
+            buildTools = globalScope.sdkComponents.buildToolInfoProvider.get()
+        }
         Map paths = buildTools.getMetaClass().getProperty(buildTools, "mPaths")
         String aapt2Path = paths.get(resolveEnumValue("AAPT2", Class.forName('com.android.sdklib.BuildToolInfo$PathId')))
-
         try {
             //may be from maven, the flat magic number don't match. so we should also use the aapt2 from maven.
             Class aapt2MavenUtilsClass = Class.forName("com.android.build.gradle.internal.res.Aapt2MavenUtils")
@@ -331,12 +335,18 @@ public class TinkerResourceIdTask extends DefaultTask {
         project.logger.error("tinker get aapt2 path ${aapt2Path}")
         def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
         if (xmlFile.exists()) {
+            def output = mergeResourcesTask.getOutputDir()
+            if (output instanceof org.gradle.api.provider.Provider<File>) {
+                output = output.get()
+            }
+            project.logger.error("public.xml path: ${xmlFile.absolutePath}")
+            project.logger.error("public.xml outpath: ${output}")
             project.exec { def execSpec ->
                 execSpec.executable "${aapt2Path}"
                 execSpec.args("compile")
                 execSpec.args("--legacy")
                 execSpec.args("-o")
-                execSpec.args("${mergeResourcesTask.outputDir}")
+                execSpec.args("${output}")
                 execSpec.args("${xmlFile}")
             }
         }

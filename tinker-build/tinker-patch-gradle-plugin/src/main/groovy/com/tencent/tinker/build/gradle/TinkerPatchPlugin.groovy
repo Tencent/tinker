@@ -195,7 +195,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.applicationId = variantData.getApplicationId()
+                try {
+                    applyResourceTask.applicationId = variantData.getApplicationId()
+                } catch (Exception e) {
+                    applyResourceTask.applicationId = variantData.getVariantDslInfo().applicationId
+                }
                 applyResourceTask.variantName = variant.name
                 applyResourceTask.resDir = resDir
 
