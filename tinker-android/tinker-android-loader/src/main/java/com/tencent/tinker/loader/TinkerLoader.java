@@ -282,7 +282,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         //android o use quicken default, we don't need to use interpret mode
         boolean isSystemOTA = ShareTinkerInternals.isVmArt()
             && ShareTinkerInternals.isSystemOTA(patchInfo.fingerPrint)
-            && Build.VERSION.SDK_INT >= 21;
+            && Build.VERSION.SDK_INT >= 21 && !ShareTinkerInternals.isAfterAndroidO();
 
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_SYSTEM_OTA, isSystemOTA);
 

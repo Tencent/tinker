@@ -17,7 +17,6 @@
 package com.tencent.tinker.loader;
 
 import android.content.Intent;
-import android.os.Build;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -127,80 +126,63 @@ public class TinkerDexLoader {
         File optimizeDir = new File(directory + "/" + oatDir);
 
         if (isSystemOTA) {
-            if (Build.VERSION.SDK_INT >= 29) {
-                final String[] dexFiles = new String[legalFiles.size()];
-                for (int i = 0; i < dexFiles.length; ++i) {
-                    dexFiles[i] = legalFiles.get(i).getAbsolutePath();
-                }
-                try {
-                    NewClassLoaderInjector.triggerDex2Oat(application, optimizeDir, dexFiles);
-                } catch (Throwable thr) {
-                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Trigger dex2oat using PathClassLoader failed on API 29 or newer system, dex loading may become slow.");
-                }
-            } else if (!ShareTinkerInternals.isAfterAndroidO()) {
-                final boolean[] parallelOTAResult = {true};
-                final Throwable[] parallelOTAThrowable = new Throwable[1];
-                String targetISA;
-                try {
-                    targetISA = ShareTinkerInternals.getCurrentInstructionSet();
-                } catch (Throwable throwable) {
-                    ShareTinkerLog.i(TAG, "getCurrentInstructionSet fail:" + throwable);
-                    // try {
-                    //     targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
-                    // } catch (Throwable throwable) {
-                    // don't ota on the front
-                    deleteOutOfDateOATFile(directory);
-
-                    intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, throwable);
-                    ShareIntentUtil
-                          .setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_GET_OTA_INSTRUCTION_SET_EXCEPTION);
-                    return false;
-                    // }
-                }
-
+            final boolean[] parallelOTAResult = {true};
+            final Throwable[] parallelOTAThrowable = new Throwable[1];
+            String targetISA;
+            try {
+                targetISA = ShareTinkerInternals.getCurrentInstructionSet();
+            } catch (Throwable throwable) {
+                ShareTinkerLog.i(TAG, "getCurrentInstructionSet fail:" + throwable);
+                // try {
+                //     targetISA = ShareOatUtil.getOatFileInstructionSet(testOptDexFile);
+                // } catch (Throwable throwable) {
+                // don't ota on the front
                 deleteOutOfDateOATFile(directory);
 
-                ShareTinkerLog.w(TAG, "systemOTA, try parallel oat dexes, targetISA:" + targetISA);
-                // change dir
-                optimizeDir = new File(directory + "/" + INTERPRET_DEX_OPTIMIZE_PATH);
+                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, throwable);
+                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_GET_OTA_INSTRUCTION_SET_EXCEPTION);
+                return false;
+                // }
+            }
 
-                TinkerDexOptimizer.optimizeAll(
-                      application, legalFiles, optimizeDir, true, targetISA,
-                      new TinkerDexOptimizer.ResultCallback() {
-                          long start;
+            deleteOutOfDateOATFile(directory);
 
-                          @Override
-                          public void onStart(File dexFile, File optimizedDir) {
-                              start = System.currentTimeMillis();
-                              ShareTinkerLog.i(TAG, "start to optimize dex:" + dexFile.getPath());
-                          }
+            ShareTinkerLog.w(TAG, "systemOTA, try parallel oat dexes, targetISA:" + targetISA);
+            // change dir
+            optimizeDir = new File(directory + "/" + INTERPRET_DEX_OPTIMIZE_PATH);
 
-                          @Override
-                          public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
-                              // Do nothing.
-                              ShareTinkerLog
-                                    .i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System
-                                          .currentTimeMillis() - start));
-                          }
+            TinkerDexOptimizer.optimizeAll(
+                application, legalFiles, optimizeDir, true, targetISA,
+                new TinkerDexOptimizer.ResultCallback() {
+                    long start;
 
-                          @Override
-                          public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
-                              parallelOTAResult[0] = false;
-                              parallelOTAThrowable[0] = thr;
-                              ShareTinkerLog
-                                    .i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System
-                                          .currentTimeMillis() - start));
-                          }
-                      }
-                );
+                    @Override
+                    public void onStart(File dexFile, File optimizedDir) {
+                        start = System.currentTimeMillis();
+                        ShareTinkerLog.i(TAG, "start to optimize dex:" + dexFile.getPath());
+                    }
 
-                if (!parallelOTAResult[0]) {
-                    ShareTinkerLog.e(TAG, "parallel oat dexes failed");
-                    intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, parallelOTAThrowable[0]);
-                    ShareIntentUtil
-                          .setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_OTA_INTERPRET_ONLY_EXCEPTION);
-                    return false;
+                    @Override
+                    public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                        // Do nothing.
+                        ShareTinkerLog.i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                    }
+
+                    @Override
+                    public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                        parallelOTAResult[0] = false;
+                        parallelOTAThrowable[0] = thr;
+                        ShareTinkerLog.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                    }
                 }
+            );
+
+
+            if (!parallelOTAResult[0]) {
+                ShareTinkerLog.e(TAG, "parallel oat dexes failed");
+                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_INTERPRET_EXCEPTION, parallelOTAThrowable[0]);
+                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_OTA_INTERPRET_ONLY_EXCEPTION);
+                return false;
             }
         }
         try {
