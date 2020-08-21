@@ -70,21 +70,25 @@ public abstract class TinkerApplication extends Application {
     protected ClassLoader mCurrentClassLoader = null;
     private Handler mInlineFence = null;
 
+    private final boolean useDelegateLastClassLoaderOnAPI29AndAbove;
+
     protected TinkerApplication(int tinkerFlags) {
         this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike",
-                TinkerLoader.class.getName(), false);
+                TinkerLoader.class.getName(), false, false);
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
-                                String loaderClassName, boolean tinkerLoadVerifyFlag) {
+                                String loaderClassName, boolean tinkerLoadVerifyFlag,
+                                boolean useDelegateLastClassLoaderOnAPI29AndAbove) {
         this.tinkerFlags = tinkerFlags;
         this.delegateClassName = delegateClassName;
         this.loaderClassName = loaderClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
+        this.useDelegateLastClassLoaderOnAPI29AndAbove = useDelegateLastClassLoaderOnAPI29AndAbove;
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
+        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, false);
     }
 
     private void loadTinker() {
@@ -269,4 +273,7 @@ public abstract class TinkerApplication extends Application {
         return tinkerFlags;
     }
 
+    public boolean isUseDelegateLastClassLoaderOnAPI29AndAbove() {
+        return useDelegateLastClassLoaderOnAPI29AndAbove;
+    }
 }

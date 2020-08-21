@@ -19,7 +19,6 @@ package com.tencent.tinker.loader;
 
 import android.app.Application;
 import android.os.Build;
-import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -52,15 +51,15 @@ public class SystemClassLoaderAdder {
     private static final String TAG = "Tinker.ClassLoaderAdder";
     private static int sPatchDexCount = 0;
 
-    public static void installDexes(Application application, ClassLoader loader, File dexOptDir, List<File> files, boolean isProtectedApp)
-        throws Throwable {
+    public static void installDexes(Application application, ClassLoader loader, File dexOptDir, List<File> files,
+                                    boolean isProtectedApp, boolean useDLCOnAPI29AndAbove) throws Throwable {
         ShareTinkerLog.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
 
         if (!files.isEmpty()) {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
-                classLoader = NewClassLoaderInjector.inject(application, loader, dexOptDir, files);
+                classLoader = NewClassLoaderInjector.inject(application, loader, dexOptDir, useDLCOnAPI29AndAbove, files);
             } else {
                 //because in dalvik, if inner class is not the same classloader with it wrapper class.
                 //it won't fail at dex2opt

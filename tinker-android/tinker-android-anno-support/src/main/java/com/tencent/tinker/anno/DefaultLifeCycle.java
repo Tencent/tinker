@@ -39,4 +39,6 @@ public @interface DefaultLifeCycle {
     int flags();
 
     boolean loadVerifyFlag() default false;
+
+    boolean useDelegateLastClassLoaderOnAPI29AndAbove() default false;
 }

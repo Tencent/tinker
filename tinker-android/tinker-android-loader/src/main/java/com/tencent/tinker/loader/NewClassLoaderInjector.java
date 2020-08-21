@@ -26,18 +26,21 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
+import dalvik.system.DelegateLastClassLoader;
 import dalvik.system.PathClassLoader;
 
 /**
  * Created by tangyinsheng on 2019-10-31.
  */
 final class NewClassLoaderInjector {
-    public static ClassLoader inject(Application app, ClassLoader oldClassLoader, File dexOptDir, List<File> patchedDexes) throws Throwable {
+    public static ClassLoader inject(Application app, ClassLoader oldClassLoader, File dexOptDir,
+                                     boolean useDLCOnAPI29AndAbove, List<File> patchedDexes) throws Throwable {
         final String[] patchedDexPaths = new String[patchedDexes.size()];
         for (int i = 0; i < patchedDexPaths.length; ++i) {
             patchedDexPaths[i] = patchedDexes.get(i).getAbsolutePath();
         }
-        final ClassLoader newClassLoader = createNewClassLoader(app, oldClassLoader, dexOptDir, patchedDexPaths);
+        final ClassLoader newClassLoader = createNewClassLoader(oldClassLoader,
+              dexOptDir, useDLCOnAPI29AndAbove, patchedDexPaths);
         doInject(app, newClassLoader);
         return newClassLoader;
     }
@@ -60,8 +63,9 @@ final class NewClassLoaderInjector {
     }
 
     @SuppressWarnings("unchecked")
-    private static ClassLoader createNewClassLoader(Context context, ClassLoader oldClassLoader,
+    private static ClassLoader createNewClassLoader(ClassLoader oldClassLoader,
                                                     File dexOptDir,
+                                                    boolean useDLCOnAPI29AndAbove,
                                                     String... patchDexPaths) throws Throwable {
         final Field pathListField = findField(
                 Class.forName("dalvik.system.BaseDexClassLoader", false, oldClassLoader),
@@ -105,8 +109,21 @@ final class NewClassLoaderInjector {
 
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
-        final ClassLoader result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
-        findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
+        ClassLoader result = null;
+        if (useDLCOnAPI29AndAbove && Build.VERSION.SDK_INT >= 29) {
+            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, ClassLoader.getSystemClassLoader());
+            final Field parentField = ClassLoader.class.getDeclaredField("parent");
+            parentField.setAccessible(true);
+            parentField.set(result, oldClassLoader);
+        } else {
+            result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
+        }
+
+        // 'EnsureSameClassLoader' mechanism which is first introduced in Android O
+        // may cause exception if we replace definingContext of old classloader.
+        if (Build.VERSION.SDK_INT < 26) {
+            findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
+        }
 
         return result;
     }

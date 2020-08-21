@@ -186,7 +186,8 @@ public class TinkerDexLoader {
             }
         }
         try {
-            SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles, isProtectedApp);
+            final boolean useDLCOnAPI29AndAbove = application.isUseDelegateLastClassLoaderOnAPI29AndAbove();
+            SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles, isProtectedApp, useDLCOnAPI29AndAbove);
         } catch (Throwable e) {
             ShareTinkerLog.e(TAG, "install dexes failed");
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);

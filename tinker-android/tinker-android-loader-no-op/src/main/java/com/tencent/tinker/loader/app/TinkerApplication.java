@@ -40,6 +40,7 @@ public abstract class TinkerApplication extends Application {
     private final int tinkerFlags;
     private final boolean tinkerLoadVerifyFlag;
     private final String delegateClassName;
+    private final boolean useDelegateLastClassLoaderOnAPI29AndAbove;
 
     /**
      * if we have load patch, we should use safe mode
@@ -50,18 +51,20 @@ public abstract class TinkerApplication extends Application {
 
     protected TinkerApplication(int tinkerFlags) {
         this(ShareConstants.TINKER_DISABLE, "com.tencent.tinker.entry.DefaultApplicationLike",
-                null, false);
+                null, false, false);
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(ShareConstants.TINKER_DISABLE, delegateClassName, null, false);
+        this(ShareConstants.TINKER_DISABLE, delegateClassName, null, false, false);
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
-                                String loaderClassName, boolean tinkerLoadVerifyFlag) {
+                                String loaderClassName, boolean tinkerLoadVerifyFlag,
+                                boolean useDelegateLastClassLoaderOnAPI29AndAbove) {
         this.tinkerFlags = ShareConstants.TINKER_DISABLE;
         this.delegateClassName = delegateClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
+        this.useDelegateLastClassLoaderOnAPI29AndAbove = useDelegateLastClassLoaderOnAPI29AndAbove;
     }
 
     private ApplicationLike createDelegate(Application app,
@@ -184,5 +187,9 @@ public abstract class TinkerApplication extends Application {
 
     public int getTinkerFlags() {
         return tinkerFlags;
+    }
+
+    public boolean isUseDelegateLastClassLoaderOnAPI29AndAbove() {
+        return useDelegateLastClassLoaderOnAPI29AndAbove;
     }
 }
