@@ -44,6 +44,8 @@ public abstract class TinkerApplication extends Application {
     private static final String INTENT_PATCH_EXCEPTION = ShareIntentUtil.INTENT_PATCH_EXCEPTION;
     private static final String TINKER_LOADER_METHOD = "tryLoad";
 
+    private static final TinkerApplication[] SELF_HOLDER = {null};
+
     /**
      * tinkerFlags, which types is supported
      * dex only, library only, all support
@@ -77,9 +79,16 @@ public abstract class TinkerApplication extends Application {
                 TinkerLoader.class.getName(), false, false);
     }
 
+    protected TinkerApplication(int tinkerFlags, String delegateClassName) {
+        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, false);
+    }
+
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
                                 String loaderClassName, boolean tinkerLoadVerifyFlag,
                                 boolean useDelegateLastClassLoaderOnAPI29AndAbove) {
+        synchronized (SELF_HOLDER) {
+            SELF_HOLDER[0] = this;
+        }
         this.tinkerFlags = tinkerFlags;
         this.delegateClassName = delegateClassName;
         this.loaderClassName = loaderClassName;
@@ -87,8 +96,13 @@ public abstract class TinkerApplication extends Application {
         this.useDelegateLastClassLoaderOnAPI29AndAbove = useDelegateLastClassLoaderOnAPI29AndAbove;
     }
 
-    protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, false);
+    public static TinkerApplication getInstance() {
+        synchronized (SELF_HOLDER) {
+            if (SELF_HOLDER[0] == null) {
+                throw new IllegalStateException("TinkerApplication is not initialized.");
+            }
+            return SELF_HOLDER[0];
+        }
     }
 
     private void loadTinker() {

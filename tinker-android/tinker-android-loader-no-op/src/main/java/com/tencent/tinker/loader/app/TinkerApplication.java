@@ -37,6 +37,8 @@ import java.lang.reflect.Constructor;
  * Created by zhangshaowen on 16/3/8.
  */
 public abstract class TinkerApplication extends Application {
+    private static final TinkerApplication[] SELF_HOLDER = {null};
+
     private final int tinkerFlags;
     private final boolean tinkerLoadVerifyFlag;
     private final String delegateClassName;
@@ -61,10 +63,22 @@ public abstract class TinkerApplication extends Application {
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
                                 String loaderClassName, boolean tinkerLoadVerifyFlag,
                                 boolean useDelegateLastClassLoaderOnAPI29AndAbove) {
+        synchronized (SELF_HOLDER) {
+            SELF_HOLDER[0] = this;
+        }
         this.tinkerFlags = ShareConstants.TINKER_DISABLE;
         this.delegateClassName = delegateClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
         this.useDelegateLastClassLoaderOnAPI29AndAbove = useDelegateLastClassLoaderOnAPI29AndAbove;
+    }
+
+    public static TinkerApplication getInstance() {
+        synchronized (SELF_HOLDER) {
+            if (SELF_HOLDER[0] == null) {
+                throw new IllegalStateException("TinkerApplication is not initialized.");
+            }
+            return SELF_HOLDER[0];
+        }
     }
 
     private ApplicationLike createDelegate(Application app,
