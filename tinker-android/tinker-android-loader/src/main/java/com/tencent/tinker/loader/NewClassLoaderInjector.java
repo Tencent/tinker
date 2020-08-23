@@ -45,21 +45,27 @@ final class NewClassLoaderInjector {
         return newClassLoader;
     }
 
-    public static void triggerDex2Oat(Context context, File dexOptDir, String... dexPaths) throws Throwable {
-        // Suggestion from Huawei: Only PathClassLoader (Perhaps other ClassLoaders known by system
-        // like DexClassLoader also works ?) can be used here to trigger dex2oat so that JIT
-        // mechanism can participate in runtime Dex optimization.
-        final StringBuilder sb = new StringBuilder();
-        boolean isFirst = true;
-        for (String dexPath : dexPaths) {
-            if (isFirst) {
-                isFirst = false;
-            } else {
-                sb.append(File.pathSeparator);
+    public static void triggerDex2Oat(Context context, File dexOptDir, boolean useDLCOnAPI29AndAbove,
+                                      String... dexPaths) throws Throwable {
+        ClassLoader triggerClassLoader;
+        if (useDLCOnAPI29AndAbove && Build.VERSION.SDK_INT >= 29) {
+            triggerClassLoader = createNewClassLoader(context.getClassLoader(), dexOptDir, useDLCOnAPI29AndAbove, dexPaths);
+        } else {
+            // Suggestion from Huawei: Only PathClassLoader (Perhaps other ClassLoaders known by system
+            // like DexClassLoader also works ?) can be used here to trigger dex2oat so that JIT
+            // mechanism can participate in runtime Dex optimization.
+            final StringBuilder sb = new StringBuilder();
+            boolean isFirst = true;
+            for (String dexPath : dexPaths) {
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    sb.append(File.pathSeparator);
+                }
+                sb.append(dexPath);
             }
-            sb.append(dexPath);
+            triggerClassLoader = new PathClassLoader(sb.toString(), ClassLoader.getSystemClassLoader());
         }
-        final ClassLoader triggerClassLoader = new PathClassLoader(sb.toString(), ClassLoader.getSystemClassLoader());
     }
 
     @SuppressWarnings("unchecked")

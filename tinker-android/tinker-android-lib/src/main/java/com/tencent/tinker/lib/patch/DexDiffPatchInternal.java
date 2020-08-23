@@ -26,15 +26,16 @@ import com.tencent.tinker.commons.util.DigestUtil;
 import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerDexOptimizer;
 import com.tencent.tinker.loader.TinkerRuntimeException;
+import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareDexDiffPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareElfFile;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream;
 
 import java.io.BufferedInputStream;
@@ -372,39 +373,42 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 patchResult.dexoptTriggerTime = System.currentTimeMillis();
             }
 
+            final boolean useDLCOnAPI29AndAbove = TinkerApplication
+                  .getInstance().isUseDelegateLastClassLoaderOnAPI29AndAbove();
             final boolean[] anyOatNotGenerated = {false};
 
             // try parallel dex optimizer
             TinkerDexOptimizer.optimizeAll(
-                context, dexFiles, optimizeDexDirectoryFile,
-                new TinkerDexOptimizer.ResultCallback() {
-                    long startTime;
+                  context, dexFiles, optimizeDexDirectoryFile,
+                  useDLCOnAPI29AndAbove,
+                  new TinkerDexOptimizer.ResultCallback() {
+                      long startTime;
 
-                    @Override
-                    public void onStart(File dexFile, File optimizedDir) {
-                        startTime = System.currentTimeMillis();
-                        ShareTinkerLog.i(TAG, "start to parallel optimize dex %s, size: %d", dexFile.getPath(), dexFile.length());
-                    }
+                      @Override
+                      public void onStart(File dexFile, File optimizedDir) {
+                          startTime = System.currentTimeMillis();
+                          ShareTinkerLog.i(TAG, "start to parallel optimize dex %s, size: %d", dexFile.getPath(), dexFile.length());
+                      }
 
-                    @Override
-                    public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
-                        ShareTinkerLog.i(TAG, "success to parallel optimize dex %s, opt file:%s, opt file size: %d, use time %d",
-                            dexFile.getPath(), optimizedFile.getPath(), optimizedFile.length(), (System.currentTimeMillis() - startTime));
-                        if (!optimizedFile.exists()) {
-                            synchronized (anyOatNotGenerated) {
-                                anyOatNotGenerated[0] = true;
-                            }
-                        }
-                    }
+                      @Override
+                      public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                          ShareTinkerLog.i(TAG, "success to parallel optimize dex %s, opt file:%s, opt file size: %d, use time %d",
+                              dexFile.getPath(), optimizedFile.getPath(), optimizedFile.length(), (System.currentTimeMillis() - startTime));
+                          if (!optimizedFile.exists()) {
+                              synchronized (anyOatNotGenerated) {
+                                  anyOatNotGenerated[0] = true;
+                              }
+                          }
+                      }
 
-                    @Override
-                    public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
-                        ShareTinkerLog.i(TAG, "fail to parallel optimize dex %s use time %d",
-                            dexFile.getPath(), (System.currentTimeMillis() - startTime));
-                        failOptDexFile.add(dexFile);
-                        throwable[0] = thr;
-                    }
-                }
+                      @Override
+                      public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                          ShareTinkerLog.i(TAG, "fail to parallel optimize dex %s use time %d",
+                              dexFile.getPath(), (System.currentTimeMillis() - startTime));
+                          failOptDexFile.add(dexFile);
+                          throwable[0] = thr;
+                      }
+                  }
             );
 
             if (patchResult != null) {

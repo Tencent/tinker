@@ -28,7 +28,6 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.os.SystemClock;
 
-import com.tencent.tinker.anno.Keep;
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -71,12 +70,14 @@ public final class TinkerDexOptimizer {
      * @param cb
      * @return If all dexes are optimized successfully, return true. Otherwise return false.
      */
-    public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir, ResultCallback cb) {
-        return optimizeAll(context, dexFiles, optimizedDir, false, null, cb);
+    public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir,
+                                      boolean useDLCOnAPI29AndAbove, ResultCallback cb) {
+        return optimizeAll(context, dexFiles, optimizedDir, false, useDLCOnAPI29AndAbove, null, cb);
     }
 
     public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir,
-                                      boolean useInterpretMode, String targetISA, ResultCallback cb) {
+                                      boolean useInterpretMode, boolean useDLCOnAPI29AndAbove,
+                                      String targetISA, ResultCallback cb) {
         ArrayList<File> sortList = new ArrayList<>(dexFiles);
         // sort input dexFiles with its file length in reverse order.
         Collections.sort(sortList, new Comparator<File>() {
@@ -94,7 +95,8 @@ public final class TinkerDexOptimizer {
             }
         });
         for (File dexFile : sortList) {
-            OptimizeWorker worker = new OptimizeWorker(context, dexFile, optimizedDir, useInterpretMode, targetISA, cb);
+            OptimizeWorker worker = new OptimizeWorker(context, dexFile, optimizedDir, useInterpretMode,
+                  useDLCOnAPI29AndAbove, targetISA, cb);
             if (!worker.run()) {
                 return false;
             }
@@ -116,13 +118,16 @@ public final class TinkerDexOptimizer {
         private final File           dexFile;
         private final File           optimizedDir;
         private final boolean        useInterpretMode;
+        private final boolean        useDLCOnAPI29AndAbove;
         private final ResultCallback callback;
 
-        OptimizeWorker(Context context, File dexFile, File optimizedDir, boolean useInterpretMode, String targetISA, ResultCallback cb) {
+        OptimizeWorker(Context context, File dexFile, File optimizedDir, boolean useInterpretMode,
+                       boolean useDLCOnAPI29AndAbove, String targetISA, ResultCallback cb) {
             this.context = context;
             this.dexFile = dexFile;
             this.optimizedDir = optimizedDir;
             this.useInterpretMode = useInterpretMode;
+            this.useDLCOnAPI29AndAbove = useDLCOnAPI29AndAbove;
             this.callback = cb;
             this.targetISA = targetISA;
         }
@@ -145,7 +150,8 @@ public final class TinkerDexOptimizer {
                         interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
                     } else if (Build.VERSION.SDK_INT >= 26
                             || (Build.VERSION.SDK_INT >= 25 && Build.VERSION.PREVIEW_SDK_INT != 0)) {
-                        NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir, dexFile.getAbsolutePath());
+                        NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir,
+                              useDLCOnAPI29AndAbove, dexFile.getAbsolutePath());
                         // Android Q is significantly slowed down by Fallback Dex Loading procedure, so we
                         // trigger background dexopt to generate executable odex here.
                         triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);

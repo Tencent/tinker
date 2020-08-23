@@ -152,29 +152,30 @@ public class TinkerDexLoader {
             optimizeDir = new File(directory + "/" + INTERPRET_DEX_OPTIMIZE_PATH);
 
             TinkerDexOptimizer.optimizeAll(
-                application, legalFiles, optimizeDir, true, targetISA,
-                new TinkerDexOptimizer.ResultCallback() {
-                    long start;
+                  application, legalFiles, optimizeDir, true,
+                  application.isUseDelegateLastClassLoaderOnAPI29AndAbove(), targetISA,
+                  new TinkerDexOptimizer.ResultCallback() {
+                      long start;
 
-                    @Override
-                    public void onStart(File dexFile, File optimizedDir) {
-                        start = System.currentTimeMillis();
-                        ShareTinkerLog.i(TAG, "start to optimize dex:" + dexFile.getPath());
-                    }
+                      @Override
+                      public void onStart(File dexFile, File optimizedDir) {
+                          start = System.currentTimeMillis();
+                          ShareTinkerLog.i(TAG, "start to optimize dex:" + dexFile.getPath());
+                      }
 
-                    @Override
-                    public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
-                        // Do nothing.
-                        ShareTinkerLog.i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
-                    }
+                      @Override
+                      public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                          // Do nothing.
+                          ShareTinkerLog.i(TAG, "success to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                      }
 
-                    @Override
-                    public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
-                        parallelOTAResult[0] = false;
-                        parallelOTAThrowable[0] = thr;
-                        ShareTinkerLog.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
-                    }
-                }
+                      @Override
+                      public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                          parallelOTAResult[0] = false;
+                          parallelOTAThrowable[0] = thr;
+                          ShareTinkerLog.i(TAG, "fail to optimize dex " + dexFile.getPath() + ", use time " + (System.currentTimeMillis() - start));
+                      }
+                  }
             );
 
 
