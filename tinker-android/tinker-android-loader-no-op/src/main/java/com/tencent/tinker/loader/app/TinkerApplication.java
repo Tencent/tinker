@@ -128,67 +128,102 @@ public abstract class TinkerApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        mAppLike.onCreate();
+        if (mAppLike != null) {
+            mAppLike.onCreate();
+        }
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
-        mAppLike.onTerminate();
+        if (mAppLike != null) {
+            mAppLike.onTerminate();
+        }
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        mAppLike.onLowMemory();
+        if (mAppLike != null) {
+            mAppLike.onLowMemory();
+        }
     }
 
     @TargetApi(14)
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        mAppLike.onTrimMemory(level);
+        if (mAppLike != null) {
+            mAppLike.onTrimMemory(level);
+        }
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        mAppLike.onConfigurationChanged(newConfig);
+        if (mAppLike != null) {
+            mAppLike.onConfigurationChanged(newConfig);
+        }
     }
 
     @Override
     public Resources getResources() {
         final Resources resources = super.getResources();
-        return mAppLike.getResources(resources);
+        if (mAppLike != null) {
+            return mAppLike.getResources(resources);
+        } else {
+            return resources;
+        }
     }
 
     @Override
     public ClassLoader getClassLoader() {
         final ClassLoader classLoader = super.getClassLoader();
-        return mAppLike.getClassLoader(classLoader);
+        if (mAppLike != null) {
+            return mAppLike.getClassLoader(classLoader);
+        } else {
+            return classLoader;
+        }
     }
 
     @Override
     public AssetManager getAssets() {
         final AssetManager assets = super.getAssets();
-        return mAppLike.getAssets(assets);
+        if (mAppLike != null) {
+            return mAppLike.getAssets(assets);
+        } else {
+            return assets;
+        }
     }
 
     @Override
     public Object getSystemService(String name) {
         final Object service = super.getSystemService(name);
-        return mAppLike.getSystemService(name, service);
+        if (mAppLike != null) {
+            return mAppLike.getSystemService(name, service);
+        } else {
+            return service;
+        }
     }
 
     @Override
     public Context getBaseContext() {
         final Context base = super.getBaseContext();
-        return mAppLike.getBaseContext(base);
+        if (mAppLike != null) {
+            return mAppLike.getBaseContext(base);
+        } else {
+            return base;
+        }
     }
 
     @Keep
     public int mzNightModeUseOf() {
-        return mAppLike.mzNightModeUseOf();
+        if (mAppLike != null) {
+            return mAppLike.mzNightModeUseOf();
+        } else {
+            // Return 1 for default according to MeiZu's announcement.
+            return 1;
+        }
     }
 
     public void setUseSafeMode(boolean useSafeMode) {
