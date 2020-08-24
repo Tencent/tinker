@@ -22,11 +22,8 @@ import android.content.res.Resources;
 import android.os.Build;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.URL;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 
 import dalvik.system.DelegateLastClassLoader;
@@ -36,8 +33,6 @@ import dalvik.system.PathClassLoader;
  * Created by tangyinsheng on 2019-10-31.
  */
 final class NewClassLoaderInjector {
-    static final String LOADER_CLASSNAME_PREFIX = "com.tencent.tinker.loader.";
-
     public static ClassLoader inject(Application app, ClassLoader oldClassLoader, File dexOptDir,
                                      boolean useDLCOnAPI29AndAbove, List<File> patchedDexes) throws Throwable {
         final String[] patchedDexPaths = new String[patchedDexes.size()];
@@ -122,11 +117,10 @@ final class NewClassLoaderInjector {
 
         ClassLoader result = null;
         if (useDLCOnAPI29AndAbove && Build.VERSION.SDK_INT >= 29) {
-            final ClassLoader removedItemFixCL = new RemovedItemFixClassLoader(oldClassLoader);
             result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, ClassLoader.getSystemClassLoader());
             final Field parentField = ClassLoader.class.getDeclaredField("parent");
             parentField.setAccessible(true);
-            parentField.set(result, removedItemFixCL);
+            parentField.set(result, oldClassLoader);
         } else {
             result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
         }
@@ -138,40 +132,6 @@ final class NewClassLoaderInjector {
         }
 
         return result;
-    }
-
-    private static class RemovedItemFixClassLoader extends ClassLoader {
-        RemovedItemFixClassLoader(ClassLoader parent) {
-            super(parent);
-        }
-
-        @Override
-        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-            final ClassLoader parentCL = getParent();
-            final Class<?> result = parentCL.loadClass(name);
-            if (result == null) {
-                throw new ClassNotFoundException(name);
-            }
-            if (result.getClassLoader() != parentCL) {
-                return result;
-            } else if (name.startsWith(LOADER_CLASSNAME_PREFIX)) {
-                return result;
-            } else {
-                throw new ClassNotFoundException(name);
-            }
-        }
-
-        @Override
-        public URL getResource(String name) {
-            final ClassLoader parentCL = super.getParent();
-            return parentCL != null ? parentCL.getResource(name) : null;
-        }
-
-        @Override
-        public Enumeration<URL> getResources(String name) throws IOException {
-            final ClassLoader parentCL = super.getParent();
-            return parentCL != null ? parentCL.getResources(name) : null;
-        }
     }
 
     private static void doInject(Application app, ClassLoader classLoader) throws Throwable {

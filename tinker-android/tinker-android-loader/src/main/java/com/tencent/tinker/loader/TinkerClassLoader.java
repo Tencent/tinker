@@ -12,8 +12,6 @@ import java.util.NoSuchElementException;
 
 import dalvik.system.BaseDexClassLoader;
 
-import static com.tencent.tinker.loader.NewClassLoaderInjector.LOADER_CLASSNAME_PREFIX;
-
 /**
  * Created by tangyinsheng on 2020-01-09.
  */
@@ -38,20 +36,7 @@ public final class TinkerClassLoader extends BaseDexClassLoader {
         if (cl != null) {
             return cl;
         } else {
-            cl = mOriginAppClassLoader.loadClass(name);
-        }
-        if (cl == null) {
-            throw new ClassNotFoundException(name);
-        }
-        if (cl.getClassLoader() != mOriginAppClassLoader) {
-            return cl;
-        } else if (name.startsWith(LOADER_CLASSNAME_PREFIX)) {
-            return cl;
-        } else {
-            // Classes whose name does not start with loader class name prefix
-            // and cannot be found in patched new dex should be reguard as
-            // removed. So we skip looking them up in the original app ClassLoader here.
-            throw new ClassNotFoundException(name);
+            return mOriginAppClassLoader.loadClass(name);
         }
     }
 
@@ -71,13 +56,13 @@ public final class TinkerClassLoader extends BaseDexClassLoader {
         return mOriginAppClassLoader.getResource(name);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        final Enumeration<URL>[] resources =(Enumeration<URL>[]) new Enumeration<?>[]{
-              Object.class.getClassLoader().getResources(name),
-              findResources(name),
-              mOriginAppClassLoader.getResources(name)
+        @SuppressWarnings("unchecked")
+        final Enumeration<URL>[] resources = (Enumeration<URL>[]) new Enumeration<?>[] {
+                Object.class.getClassLoader().getResources(name),
+                findResources(name),
+                mOriginAppClassLoader.getResources(name)
         };
         return new CompoundEnumeration<>(resources);
     }
