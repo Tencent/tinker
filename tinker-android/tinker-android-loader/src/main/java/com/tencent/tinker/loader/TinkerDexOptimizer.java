@@ -71,12 +71,12 @@ public final class TinkerDexOptimizer {
      * @return If all dexes are optimized successfully, return true. Otherwise return false.
      */
     public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir,
-                                      boolean useDLCOnAPI29AndAbove, ResultCallback cb) {
-        return optimizeAll(context, dexFiles, optimizedDir, false, useDLCOnAPI29AndAbove, null, cb);
+                                      boolean useDLC, ResultCallback cb) {
+        return optimizeAll(context, dexFiles, optimizedDir, false, useDLC, null, cb);
     }
 
     public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir,
-                                      boolean useInterpretMode, boolean useDLCOnAPI29AndAbove,
+                                      boolean useInterpretMode, boolean useDLC,
                                       String targetISA, ResultCallback cb) {
         ArrayList<File> sortList = new ArrayList<>(dexFiles);
         // sort input dexFiles with its file length in reverse order.
@@ -96,7 +96,7 @@ public final class TinkerDexOptimizer {
         });
         for (File dexFile : sortList) {
             OptimizeWorker worker = new OptimizeWorker(context, dexFile, optimizedDir, useInterpretMode,
-                  useDLCOnAPI29AndAbove, targetISA, cb);
+                  useDLC, targetISA, cb);
             if (!worker.run()) {
                 return false;
             }
@@ -114,20 +114,20 @@ public final class TinkerDexOptimizer {
 
     private static class OptimizeWorker {
         private static String targetISA = null;
-        private final Context        context;
-        private final File           dexFile;
-        private final File           optimizedDir;
-        private final boolean        useInterpretMode;
-        private final boolean        useDLCOnAPI29AndAbove;
+        private final Context context;
+        private final File dexFile;
+        private final File optimizedDir;
+        private final boolean useInterpretMode;
+        private final boolean useDLC;
         private final ResultCallback callback;
 
         OptimizeWorker(Context context, File dexFile, File optimizedDir, boolean useInterpretMode,
-                       boolean useDLCOnAPI29AndAbove, String targetISA, ResultCallback cb) {
+                       boolean useDLC, String targetISA, ResultCallback cb) {
             this.context = context;
             this.dexFile = dexFile;
             this.optimizedDir = optimizedDir;
             this.useInterpretMode = useInterpretMode;
-            this.useDLCOnAPI29AndAbove = useDLCOnAPI29AndAbove;
+            this.useDLC = useDLC;
             this.callback = cb;
             this.targetISA = targetISA;
         }
@@ -151,7 +151,7 @@ public final class TinkerDexOptimizer {
                     } else if (Build.VERSION.SDK_INT >= 26
                             || (Build.VERSION.SDK_INT >= 25 && Build.VERSION.PREVIEW_SDK_INT != 0)) {
                         NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir,
-                              useDLCOnAPI29AndAbove, dexFile.getAbsolutePath());
+                                                              useDLC, dexFile.getAbsolutePath());
                         // Android Q is significantly slowed down by Fallback Dex Loading procedure, so we
                         // trigger background dexopt to generate executable odex here.
                         triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);

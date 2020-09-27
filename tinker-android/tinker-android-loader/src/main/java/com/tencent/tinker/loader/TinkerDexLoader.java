@@ -153,7 +153,7 @@ public class TinkerDexLoader {
 
             TinkerDexOptimizer.optimizeAll(
                   application, legalFiles, optimizeDir, true,
-                  application.isUseDelegateLastClassLoaderOnAPI29AndAbove(), targetISA,
+                  application.isUseDelegateLastClassLoader(), targetISA,
                   new TinkerDexOptimizer.ResultCallback() {
                       long start;
 
@@ -187,8 +187,8 @@ public class TinkerDexLoader {
             }
         }
         try {
-            final boolean useDLCOnAPI29AndAbove = application.isUseDelegateLastClassLoaderOnAPI29AndAbove();
-            SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles, isProtectedApp, useDLCOnAPI29AndAbove);
+            final boolean useDLC = application.isUseDelegateLastClassLoader();
+            SystemClassLoaderAdder.installDexes(application, classLoader, optimizeDir, legalFiles, isProtectedApp, useDLC);
         } catch (Throwable e) {
             ShareTinkerLog.e(TAG, "install dexes failed");
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);

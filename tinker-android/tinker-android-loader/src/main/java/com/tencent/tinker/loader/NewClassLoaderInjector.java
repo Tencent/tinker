@@ -27,51 +27,32 @@ import java.util.Arrays;
 import java.util.List;
 
 import dalvik.system.DelegateLastClassLoader;
-import dalvik.system.PathClassLoader;
 
 /**
  * Created by tangyinsheng on 2019-10-31.
  */
 final class NewClassLoaderInjector {
     public static ClassLoader inject(Application app, ClassLoader oldClassLoader, File dexOptDir,
-                                     boolean useDLCOnAPI29AndAbove, List<File> patchedDexes) throws Throwable {
+                                     boolean useDLC, List<File> patchedDexes) throws Throwable {
         final String[] patchedDexPaths = new String[patchedDexes.size()];
         for (int i = 0; i < patchedDexPaths.length; ++i) {
             patchedDexPaths[i] = patchedDexes.get(i).getAbsolutePath();
         }
         final ClassLoader newClassLoader = createNewClassLoader(oldClassLoader,
-              dexOptDir, useDLCOnAPI29AndAbove, patchedDexPaths);
+              dexOptDir, useDLC, patchedDexPaths);
         doInject(app, newClassLoader);
         return newClassLoader;
     }
 
-    public static void triggerDex2Oat(Context context, File dexOptDir, boolean useDLCOnAPI29AndAbove,
+    public static void triggerDex2Oat(Context context, File dexOptDir, boolean useDLC,
                                       String... dexPaths) throws Throwable {
-        ClassLoader triggerClassLoader;
-        if (useDLCOnAPI29AndAbove && Build.VERSION.SDK_INT >= 29) {
-            triggerClassLoader = createNewClassLoader(context.getClassLoader(), dexOptDir, useDLCOnAPI29AndAbove, dexPaths);
-        } else {
-            // Suggestion from Huawei: Only PathClassLoader (Perhaps other ClassLoaders known by system
-            // like DexClassLoader also works ?) can be used here to trigger dex2oat so that JIT
-            // mechanism can participate in runtime Dex optimization.
-            final StringBuilder sb = new StringBuilder();
-            boolean isFirst = true;
-            for (String dexPath : dexPaths) {
-                if (isFirst) {
-                    isFirst = false;
-                } else {
-                    sb.append(File.pathSeparator);
-                }
-                sb.append(dexPath);
-            }
-            triggerClassLoader = new PathClassLoader(sb.toString(), ClassLoader.getSystemClassLoader());
-        }
+        final ClassLoader triggerClassLoader = createNewClassLoader(context.getClassLoader(), dexOptDir, useDLC, dexPaths);
     }
 
     @SuppressWarnings("unchecked")
     private static ClassLoader createNewClassLoader(ClassLoader oldClassLoader,
                                                     File dexOptDir,
-                                                    boolean useDLCOnAPI29AndAbove,
+                                                    boolean useDLC,
                                                     String... patchDexPaths) throws Throwable {
         final Field pathListField = findField(
                 Class.forName("dalvik.system.BaseDexClassLoader", false, oldClassLoader),
@@ -116,7 +97,7 @@ final class NewClassLoaderInjector {
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
         ClassLoader result = null;
-        if (useDLCOnAPI29AndAbove && Build.VERSION.SDK_INT >= 29) {
+        if (useDLC && Build.VERSION.SDK_INT >= 27) {
             result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, ClassLoader.getSystemClassLoader());
             final Field parentField = ClassLoader.class.getDeclaredField("parent");
             parentField.setAccessible(true);
