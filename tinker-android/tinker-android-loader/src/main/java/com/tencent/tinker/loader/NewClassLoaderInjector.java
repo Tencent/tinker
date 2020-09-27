@@ -119,6 +119,14 @@ final class NewClassLoaderInjector {
         Thread.currentThread().setContextClassLoader(classLoader);
 
         final Context baseContext = (Context) findField(app.getClass(), "mBase").get(app);
+        try {
+            findField(baseContext.getClass(), "mClassLoader").set(baseContext, classLoader);
+        } catch (Throwable ignored) {
+            // There's no mClassLoader field in ContextImpl before Android O.
+            // However we should try our best to replace this field in case some
+            // customized system has one.
+        }
+
         final Object basePackageInfo = findField(baseContext.getClass(), "mPackageInfo").get(baseContext);
         findField(basePackageInfo.getClass(), "mClassLoader").set(basePackageInfo, classLoader);
 
