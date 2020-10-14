@@ -373,14 +373,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                 patchResult.dexoptTriggerTime = System.currentTimeMillis();
             }
 
-            final boolean useDLCOnAPI29AndAbove = TinkerApplication
-                  .getInstance().isUseDelegateLastClassLoaderOnAPI29AndAbove();
+            final boolean useDLC = TinkerApplication.getInstance().isUseDelegateLastClassLoader();
             final boolean[] anyOatNotGenerated = {false};
 
             // try parallel dex optimizer
             TinkerDexOptimizer.optimizeAll(
                   context, dexFiles, optimizeDexDirectoryFile,
-                  useDLCOnAPI29AndAbove,
+                  useDLC,
                   new TinkerDexOptimizer.ResultCallback() {
                       long startTime;
 

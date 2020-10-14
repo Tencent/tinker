@@ -52,14 +52,14 @@ public class SystemClassLoaderAdder {
     private static int sPatchDexCount = 0;
 
     public static void installDexes(Application application, ClassLoader loader, File dexOptDir, List<File> files,
-                                    boolean isProtectedApp, boolean useDLCOnAPI29AndAbove) throws Throwable {
+                                    boolean isProtectedApp, boolean useDLC) throws Throwable {
         ShareTinkerLog.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
 
         if (!files.isEmpty()) {
             files = createSortedAdditionalPathEntries(files);
             ClassLoader classLoader = loader;
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
-                classLoader = NewClassLoaderInjector.inject(application, loader, dexOptDir, useDLCOnAPI29AndAbove, files);
+                classLoader = NewClassLoaderInjector.inject(application, loader, dexOptDir, useDLC, files);
             } else {
                 //because in dalvik, if inner class is not the same classloader with it wrapper class.
                 //it won't fail at dex2opt
