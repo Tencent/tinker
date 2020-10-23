@@ -136,8 +136,13 @@ public class TinkerResourceIdTask extends DefaultTask {
         try {
             aaptOptions = processAndroidResourceTask.getAaptOptions()
         } catch (Exception e) {
-            //agp 3.5.0+
-            aaptOptions = Class.forName("com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask").metaClass.getProperty(processAndroidResourceTask, "aaptOptions")
+            try {
+                //agp 3.5.0+
+                aaptOptions = Class.forName("com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask").metaClass.getProperty(processAndroidResourceTask, "aaptOptions")
+            } catch (MissingPropertyException mpe) {
+                // agp 4.1.0 之后LinkApplicationAndroidResourcesTask没有aaptOptions属性
+                return
+            }
         }
         List<String> additionalParameters = new ArrayList<>()
         List<String> originalAdditionalParameters = aaptOptions.getAdditionalParameters()

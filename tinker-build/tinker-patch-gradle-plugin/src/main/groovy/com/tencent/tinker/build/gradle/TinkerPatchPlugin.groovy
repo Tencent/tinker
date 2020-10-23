@@ -16,7 +16,6 @@
 
 package com.tencent.tinker.build.gradle
 
-
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
@@ -130,6 +129,17 @@ class TinkerPatchPlugin implements Plugin<Project> {
             mProject.logger.error("if resources.arsc has changed, you should use applyResource mode to build the new apk!")
             mProject.logger.error("-----------------------------------------------------------------")
 
+            def isTinkerPatchTask = mProject.gradle.startParameter.taskNames.find {
+                it.startsWith("tinkerPatch")
+            } != null
+
+            // AGP 4.1.0之后无法通过反射的方式修改LinkApplicationAndroidResourcesTask的aaptAdditionalParameters
+            if (TinkerResourceIdTask.getAndroidGradlePluginVersionCompat() >= '4.1.0' && isTinkerPatchTask) {
+                def stableIdsFile = mProject.file(TinkerResourceIdTask.RESOURCE_PUBLIC_TXT).getAbsolutePath()
+                android.aaptOptions.additionalParameters("--stable-ids", stableIdsFile)
+                mProject.logger.info("tinker add additionalParameters --stable-ids :${stableIdsFile}")
+            }
+
             android.applicationVariants.all { variant ->
                 def variantName = variant.name.capitalize()
 
@@ -147,19 +157,14 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 tinkerPatchBuildTask.signConfig = variant.signingConfig
 
                 def agpProcessManifestTask = project.tasks.findByName("process${variantName}Manifest")
-                File manifestOutputBaseDir
-                try {
-                    manifestOutputBaseDir = agpProcessManifestTask.manifestOutputDirectory.asFile.get()
-                } catch (Throwable ignored) {
-                    manifestOutputBaseDir = agpProcessManifestTask.manifestOutputDirectory
-                }
+                File manifestOutputBaseDir = getManifestOutputBaseDir(agpProcessManifestTask)
 
                 Map<String, File> outputNameToManifestMap = new HashMap<>()
                 variant.outputs.each { variantOutput ->
                     setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
                     setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)
 
-                    def outputName = variantOutput.apkData.dirName
+                    def outputName = getApkOutputFileDirName(variantOutput)
                     if (outputName.endsWith(File.separator)) {
                         outputName = outputName.substring(0, outputName.length() - 1)
                     }
@@ -195,7 +200,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.applicationId = variantData.getApplicationId()
+                applyResourceTask.applicationId = variant.getApplicationId()
                 applyResourceTask.variantName = variant.name
                 applyResourceTask.resDir = resDir
 
@@ -297,10 +302,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
         if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
             def packageAndroidArtifact = variant.packageApplicationProvider.get()
             if (packageAndroidArtifact != null) {
+                def apkOutputFileName = getApkOutputFileName(output)
                 try {
-                    parentFile = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), output.apkData.outputFileName)
+                    parentFile = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), apkOutputFileName)
                 } catch (Exception e) {
-                    parentFile = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+                    parentFile = new File(packageAndroidArtifact.outputDirectory, apkOutputFileName)
                 }
             } else {
                 parentFile = output.mainOutputFile.outputFile
@@ -360,10 +366,12 @@ class TinkerPatchPlugin implements Plugin<Project> {
         if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
             def packageAndroidArtifact = variant.packageApplicationProvider.get()
             if (packageAndroidArtifact != null) {
+                def apkOutputFileName = getApkOutputFileName(output)
                 try {
-                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), output.apkData.outputFileName)
+                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), apkOutputFileName)
                 } catch (Exception e) {
-                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
+                    e.printStackTrace()
+                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory, apkOutputFileName)
                 }
             } else {
                 tinkerPatchBuildTask.buildApkPath = output.mainOutputFile.outputFile
@@ -526,4 +534,36 @@ class TinkerPatchPlugin implements Plugin<Project> {
         return multiDexKeepProguard
     }
 
+    File getManifestOutputBaseDir(agpProcessManifestTask) {
+        // AGP version >= 4.1.0
+        try {
+            return agpProcessManifestTask.multiApkManifestOutputDirectory.get().asFile
+        } catch (Exception e) {
+
+        }
+        // AGP version < 4.1.0
+        try {
+            return agpProcessManifestTask.manifestOutputDirectory.asFile.get()
+        } catch (Exception e) {
+            return agpProcessManifestTask.manifestOutputDirectory
+        }
+    }
+
+    String getApkOutputFileName(output) {
+        try {
+            return output.apkData.outputFileName
+        } catch (Exception e) {
+            // AGP version >= 4.1.0
+            return output.outputFileName
+        }
+    }
+
+    String getApkOutputFileDirName(output) {
+        try {
+            return output.apkData.dirName
+        } catch (Exception e) {
+            // AGP version >= 4.1.0
+            return output.dirName
+        }
+    }
 }
