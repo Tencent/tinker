@@ -1378,9 +1378,11 @@ public final class DexClassesComparator {
         for (int i = 0; i < oldTries.length; ++i) {
             Code.Try oldTry = oldTries[i];
             Code.Try newTry = newTries[i];
-            if (oldTry.instructionCount != newTry.instructionCount) {
-                return false;
-            }
+            // Let InstructionComparator do this since it can translate 16-bit code unit count
+            // into actual instruction count.
+            // if (oldTry.instructionCount != newTry.instructionCount) {
+            //     return false;
+            // }
             final Code.CatchHandler oldCatchHandler = oldHandlers[oldTry.catchHandlerIndex];
             final Code.CatchHandler newCatchHandler = newHandlers[newTry.catchHandlerIndex];
             if (!isSameCatchHandler(oldDex, newDex, oldCatchHandler, newCatchHandler, insnComparator)) {

@@ -265,6 +265,38 @@ public abstract class InstructionComparator {
         return insnHolderCount1 == insnHolderCount2;
     }
 
+    private int getPromotedOpCodeOnDemand(InstructionHolder insn) {
+        final int opcode = insn.opcode;
+        if (opcode == Opcodes.CONST_STRING) {
+            if (insn.index > 0xFFFF) {
+                return Opcodes.CONST_STRING_JUMBO;
+            }
+        } else if (opcode == Opcodes.CONST_STRING_JUMBO) {
+            if (insn.index <= 0xFFFF) {
+                return Opcodes.CONST_STRING;
+            }
+        } else if (opcode == Opcodes.GOTO) {
+            if (insn.address > 0xFF && insn.address <= 0xFFFF) {
+                return Opcodes.GOTO_16;
+            } else if (insn.address > 0xFFFF) {
+                return Opcodes.GOTO_32;
+            }
+        } else if (opcode == Opcodes.GOTO_16) {
+            if (insn.address <= 0xFF) {
+                return Opcodes.GOTO;
+            } else if (insn.address > 0xFFFF) {
+                return Opcodes.GOTO_32;
+            }
+        } else if (opcode == Opcodes.GOTO_32) {
+            if (insn.address <= 0xFF) {
+                return Opcodes.GOTO;
+            } else if (insn.address <= 0xFFFF) {
+                return Opcodes.GOTO_16;
+            }
+        }
+        return opcode;
+    }
+
     public boolean isSameInstruction(int insnAddress1, int insnAddress2) {
         InstructionHolder insnHolder1 = this.insnHolders1[insnAddress1];
         InstructionHolder insnHolder2 = this.insnHolders2[insnAddress2];
@@ -274,7 +306,7 @@ public abstract class InstructionComparator {
         if (insnHolder1 == null || insnHolder2 == null) {
             return false;
         }
-        if (insnHolder1.opcode != insnHolder2.opcode) {
+        if (getPromotedOpCodeOnDemand(insnHolder1) != getPromotedOpCodeOnDemand(insnHolder2)) {
             return false;
         }
         int opcode = insnHolder1.opcode;
@@ -284,8 +316,7 @@ public abstract class InstructionComparator {
             case InstructionCodec.INSN_FORMAT_20T:
             case InstructionCodec.INSN_FORMAT_21T:
             case InstructionCodec.INSN_FORMAT_22T:
-            case InstructionCodec.INSN_FORMAT_30T:
-            case InstructionCodec.INSN_FORMAT_31T: {
+            case InstructionCodec.INSN_FORMAT_30T: {
                 final String addrPairStr = insnAddress1 + "-" + insnAddress2;
                 if (this.visitedInsnAddrPairs.add(addrPairStr)) {
                     // If we haven't compared target insns, following the control flow
