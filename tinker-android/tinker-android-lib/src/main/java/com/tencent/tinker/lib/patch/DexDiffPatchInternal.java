@@ -94,22 +94,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         if (optFiles.isEmpty()) {
             return true;
         }
-        // should use patch list size
-        int size = patchList.size() * 30;
-        if (size > MAX_WAIT_COUNT) {
-            size = MAX_WAIT_COUNT;
-        }
-        ShareTinkerLog.i(TAG, "raw dex count: %d, dex opt dex count: %d, final wait times: %d", patchList.size(), optFiles.size(), size);
 
-        for (int i = 0; i < size; i++) {
-            if (!checkAllDexOptFile(optFiles, i + 1)) {
-                try {
-                    Thread.sleep(WAIT_ASYN_OAT_TIME);
-                } catch (InterruptedException e) {
-                    ShareTinkerLog.e(TAG, "thread sleep InterruptedException e:" + e);
-                }
-            }
-        }
         List<File> failDexFiles = new ArrayList<>();
         // check again, if still can't be found, just return
         for (File file : optFiles) {
