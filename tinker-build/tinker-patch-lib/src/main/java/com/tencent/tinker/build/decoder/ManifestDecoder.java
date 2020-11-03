@@ -224,12 +224,19 @@ public class ManifestDecoder extends BaseDecoder {
                         + ", new: " + newMeta.getIcon());
             }
             if (!nullSafeEquals(oldMeta.getVersionName(), newMeta.getVersionName())) {
-                announceWarningOrException("Version name changed, old: " + oldMeta.getVersionName()
+                Logger.e("Note: Version name changed, old: " + oldMeta.getVersionName()
                         + ", new: " + newMeta.getVersionName());
             }
-            if (!nullSafeEquals(oldMeta.getVersionCode(), newMeta.getVersionCode())) {
-                announceWarningOrException("Version code changed, old: " + oldMeta.getVersionCode()
-                        + ", new: " + newMeta.getVersionCode());
+            final Long oldVersionCode = oldMeta.getVersionCode();
+            final Long newVersionCode = newMeta.getVersionCode();
+            if (oldVersionCode != null && newVersionCode != null) {
+                if (newVersionCode < oldVersionCode) {
+                    announceWarningOrException("Version code downgrade, old: " + oldVersionCode
+                            + ", new: " + newVersionCode);
+                }
+            } else if (!(oldVersionCode == null && newVersionCode == null)) {
+                announceWarningOrException("Version code of old or new apk is missing, old: " + oldVersionCode
+                        + ", new: " + newVersionCode);
             }
             if (!nullSafeEquals(oldMeta.getInstallLocation(), newMeta.getInstallLocation())) {
                 announceWarningOrException("Install location changed, old: " + oldMeta.getInstallLocation()
