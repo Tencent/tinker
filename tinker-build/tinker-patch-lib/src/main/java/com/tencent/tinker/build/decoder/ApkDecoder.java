@@ -190,6 +190,19 @@ public class ApkDecoder extends BaseDecoder {
                 if (Utils.checkFileInPattern(config.mResFilePattern, patternKey) && oldFile != null) {
                     resDuplicateFiles.add(oldFile);
                 }
+
+                // For abi validation purpose.
+                if (file.toFile().exists()) {
+                    final String newAbi = getAbiFromPath(file.toFile().getAbsolutePath());
+                    if (newAbi != null) {
+                        final File oldSoPathWithNewAbi = new File(oldApkPath.toFile(), "lib/" + newAbi);
+                        if (!oldSoPathWithNewAbi.exists()) {
+                            throw new UnsupportedOperationException("Tinker does not support to add new ABI: " + newAbi
+                                    + ", related new so: " + file.toFile().getAbsolutePath());
+                        }
+                    }
+                }
+
                 try {
                     soDecoder.patch(oldFile, file.toFile());
                 } catch (Exception e) {
@@ -206,6 +219,19 @@ public class ApkDecoder extends BaseDecoder {
                 return FileVisitResult.CONTINUE;
             }
             return FileVisitResult.CONTINUE;
+        }
+
+        private String getAbiFromPath(String path) {
+            path = path.replaceAll(File.separator, "/");
+            final int prefixPos = path.indexOf("/lib/");
+            if (prefixPos < 0) {
+                return null;
+            }
+            final int suffixPos = path.indexOf("/", prefixPos + 5);
+            if (suffixPos < 0) {
+                return null;
+            }
+            return path.substring(prefixPos + 5, suffixPos);
         }
     }
 }
