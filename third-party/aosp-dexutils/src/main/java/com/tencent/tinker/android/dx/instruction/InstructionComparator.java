@@ -62,14 +62,16 @@ public abstract class InstructionComparator {
         try {
             ir.accept(new InstructionVisitor(null) {
                 public void visitZeroRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal) {
-                    InstructionHolder insnHolder = new InstructionHolder();
-                    insnHolder.insnFormat = InstructionCodec.getInstructionFormat(opcode);
-                    insnHolder.address = currentAddress;
-                    insnHolder.opcode = opcode;
-                    insnHolder.index = index;
-                    insnHolder.target = target;
-                    insnHolder.literal = literal;
-                    result[currentAddress] = insnHolder;
+                    if (opcode != Opcodes.NOP) {
+                        InstructionHolder insnHolder = new InstructionHolder();
+                        insnHolder.insnFormat = InstructionCodec.getInstructionFormat(opcode);
+                        insnHolder.address = currentAddress;
+                        insnHolder.opcode = opcode;
+                        insnHolder.index = index;
+                        insnHolder.target = target;
+                        insnHolder.literal = literal;
+                        result[currentAddress] = insnHolder;
+                    }
                 }
 
                 public void visitOneRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a) {
