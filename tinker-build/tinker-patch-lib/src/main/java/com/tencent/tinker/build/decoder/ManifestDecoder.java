@@ -211,19 +211,19 @@ public class ManifestDecoder extends BaseDecoder {
             return;
         }
         if (oldMeta != null && newMeta != null) {
-            if (!nullSafeEquals(oldMeta.getPackageName(), newMeta.getPackageName())) {
+            if (!nullSafeEquals(oldMeta.getPackageName(), newMeta.getPackageName(), null)) {
                 announceWarningOrException("Package name changed, old: " + oldMeta.getPackageName()
                         + ", new: " + newMeta.getPackageName());
             }
-            if (!nullSafeEquals(oldMeta.getLabel(), newMeta.getLabel())) {
+            if (!nullSafeEquals(oldMeta.getLabel(), newMeta.getLabel(), null)) {
                 announceWarningOrException("App label changed, old: " + oldMeta.getLabel()
                         + ", new: " + newMeta.getLabel());
             }
-            if (!nullSafeEquals(oldMeta.getIcon(), newMeta.getIcon())) {
+            if (!nullSafeEquals(oldMeta.getIcon(), newMeta.getIcon(), null)) {
                 announceWarningOrException("App icon res ref changed, old: " + oldMeta.getIcon()
                         + ", new: " + newMeta.getIcon());
             }
-            if (!nullSafeEquals(oldMeta.getVersionName(), newMeta.getVersionName())) {
+            if (!nullSafeEquals(oldMeta.getVersionName(), newMeta.getVersionName(), null)) {
                 Logger.e("Note: Version name changed, old: " + oldMeta.getVersionName()
                         + ", new: " + newMeta.getVersionName());
             }
@@ -238,19 +238,19 @@ public class ManifestDecoder extends BaseDecoder {
                 announceWarningOrException("Version code of old or new apk is missing, old: " + oldVersionCode
                         + ", new: " + newVersionCode);
             }
-            if (!nullSafeEquals(oldMeta.getInstallLocation(), newMeta.getInstallLocation())) {
+            if (!nullSafeEquals(oldMeta.getInstallLocation(), newMeta.getInstallLocation(), null)) {
                 announceWarningOrException("Install location changed, old: " + oldMeta.getInstallLocation()
                         + ", new: " + newMeta.getInstallLocation());
             }
-            if (!nullSafeEquals(oldMeta.getMinSdkVersion(), newMeta.getMinSdkVersion())) {
+            if (!nullSafeEquals(oldMeta.getMinSdkVersion(), newMeta.getMinSdkVersion(), null)) {
                 announceWarningOrException("MinSdkVersion changed, old: " + oldMeta.getMinSdkVersion()
                         + ", new: " + newMeta.getMinSdkVersion());
             }
-            if (!nullSafeEquals(oldMeta.getTargetSdkVersion(), newMeta.getTargetSdkVersion())) {
+            if (!nullSafeEquals(oldMeta.getTargetSdkVersion(), newMeta.getTargetSdkVersion(), null)) {
                 announceWarningOrException("TargetSdkVersion changed, old: " + oldMeta.getTargetSdkVersion()
                         + ", new: " + newMeta.getTargetSdkVersion());
             }
-            if (!nullSafeEquals(oldMeta.getMaxSdkVersion(), newMeta.getMaxSdkVersion())) {
+            if (!nullSafeEquals(oldMeta.getMaxSdkVersion(), newMeta.getMaxSdkVersion(), null)) {
                 announceWarningOrException("MaxSdkVersion changed, old: " + oldMeta.getMaxSdkVersion()
                         + ", new: " + newMeta.getMaxSdkVersion());
             }
@@ -259,31 +259,31 @@ public class ManifestDecoder extends BaseDecoder {
                         + GLES_VERSION_DESCRIBER.describe(oldMeta.getGlEsVersion())
                         + ", new: " + GLES_VERSION_DESCRIBER.describe(newMeta.getGlEsVersion()));
             }
-            if (!nullSafeEquals(oldMeta.isAnyDensity(), newMeta.isAnyDensity())) {
+            if (!nullSafeEquals(oldMeta.isAnyDensity(), newMeta.isAnyDensity(), null)) {
                 announceWarningOrException("Value of isAnyDensity changed, old: " + oldMeta.isAnyDensity()
                         + ", new: " + newMeta.isAnyDensity());
             }
-            if (!nullSafeEquals(oldMeta.isSmallScreens(), newMeta.isSmallScreens())) {
+            if (!nullSafeEquals(oldMeta.isSmallScreens(), newMeta.isSmallScreens(), null)) {
                 announceWarningOrException("Value of isSmallScreens changed, old: " + oldMeta.isSmallScreens()
                         + ", new: " + newMeta.isSmallScreens());
             }
-            if (!nullSafeEquals(oldMeta.isNormalScreens(), newMeta.isNormalScreens())) {
+            if (!nullSafeEquals(oldMeta.isNormalScreens(), newMeta.isNormalScreens(), null)) {
                 announceWarningOrException("Value of isNormalScreens changed, old: " + oldMeta.isNormalScreens()
                         + ", new: " + newMeta.isNormalScreens());
             }
-            if (!nullSafeEquals(oldMeta.isLargeScreens(), newMeta.isLargeScreens())) {
+            if (!nullSafeEquals(oldMeta.isLargeScreens(), newMeta.isLargeScreens(), null)) {
                 announceWarningOrException("Value of isLargeScreens changed, old: " + oldMeta.isLargeScreens()
                         + ", new: " + newMeta.isLargeScreens());
             }
-            if (!nullSafeEquals(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions(), USES_PERMISSION_EQUALS)) {
+            if (!nullSafeEqualsIgnoreOrder(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions(), null)) {
                 announceWarningOrException("Uses permissions changed, related uses-permissions: "
                         + describeChanges(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions()));
             }
-            if (!nullSafeEquals(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_EQUALS)) {
+            if (!nullSafeEqualsIgnoreOrder(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_DESCRIBER)) {
                 announceWarningOrException("Uses features changed, related uses-features: "
                         + describeChanges(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_DESCRIBER));
             }
-            if (!nullSafeEquals(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_EQUALS)) {
+            if (!nullSafeEqualsIgnoreOrder(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_DESCRIBER)) {
                 announceWarningOrException("Uses features changed, related permissions: "
                         + describeChanges(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_DESCRIBER));
             }
@@ -309,49 +309,6 @@ public class ManifestDecoder extends BaseDecoder {
         }
     };
 
-    private static final EqualsChecker<String> USES_PERMISSION_EQUALS = new EqualsChecker<String>() {
-        @Override
-        public boolean isEquals(String lhs, String rhs) {
-            return lhs.equals(rhs);
-        }
-    };
-
-    private static final EqualsChecker<UseFeature> USE_FEATURE_EQUALS = new EqualsChecker<UseFeature>() {
-        @Override
-        public boolean isEquals(UseFeature lhs, UseFeature rhs) {
-            if (!nullSafeEquals(lhs.getName(), rhs.getName())) {
-                return false;
-            }
-            return lhs.isRequired() == rhs.isRequired();
-        }
-    };
-
-    private static final EqualsChecker<Permission> PERMISSION_EQUALS = new EqualsChecker<Permission>() {
-        @Override
-        public boolean isEquals(Permission lhs, Permission rhs) {
-            if (!nullSafeEquals(lhs.getName(), rhs.getName())) {
-                return false;
-            }
-            if (!nullSafeEquals(lhs.getLabel(), rhs.getLabel())) {
-                return false;
-            }
-            if (!nullSafeEquals(lhs.getIcon(), rhs.getIcon())) {
-                return false;
-            }
-            if (!nullSafeEquals(lhs.getDescription(), rhs.getDescription())) {
-                return false;
-            }
-            if (!nullSafeEquals(lhs.getGroup(), rhs.getGroup())) {
-                return false;
-            }
-            return nullSafeEquals(lhs.getProtectionLevel(), rhs.getProtectionLevel());
-        }
-    };
-
-    private static <T> boolean nullSafeEquals(T lhs, T rhs) {
-        return nullSafeEquals(lhs, rhs, null);
-    }
-
     private static <T> boolean nullSafeEquals(T lhs, T rhs, EqualsChecker<T> equalsChecker) {
         if (lhs == null && rhs == null) {
             return true;
@@ -362,30 +319,43 @@ public class ManifestDecoder extends BaseDecoder {
         return false;
     }
 
-    private static <T> boolean nullSafeEquals(List<T> lhs, List<T> rhs, EqualsChecker<T> equalsChecker) {
+    private static <T> boolean nullSafeEqualsIgnoreOrder(List<T> lhs, List<T> rhs, ObjectDescriber<T> describer) {
         if (lhs == null && rhs == null) {
             return true;
         }
         if (lhs != null && rhs != null) {
-            if (lhs.size() != rhs.size()) {
-                return false;
-            }
+            final Set<String> lhsDescs = new HashSet<>();
+            int lhsNotNullElemCount = 0;
+            int rhsNotNullElemCount = 0;
             for (int i = 0; i < lhs.size(); ++i) {
                 final T lhsElem = lhs.get(i);
-                final T rhsElem = rhs.get(i);
-                if (lhsElem != null) {
-                    if (rhsElem != null) {
-                        if (!equalsChecker.isEquals(lhsElem, rhsElem)) {
-                            return false;
-                        }
-                    } else {
-                        return false;
-                    }
-                } else if (rhsElem != null) {
-                    return false;
+                if (lhsElem == null) {
+                    continue;
                 }
+                lhsDescs.add(describer != null ? describer.describe(lhsElem) : lhsElem.toString());
+                ++lhsNotNullElemCount;
             }
-            return true;
+            boolean hasAddedElemDesc = false;
+            for (int i = 0; i < rhs.size(); ++i) {
+                final T rhsElem = rhs.get(i);
+                if (rhsElem == null) {
+                    continue;
+                }
+                final String rhsElemDesc = describer != null ? describer.describe(rhsElem) : rhsElem.toString();
+                if (!lhsDescs.remove(rhsElemDesc)) {
+                    hasAddedElemDesc = true;
+                    break;
+                }
+                ++rhsNotNullElemCount;
+            }
+            if (hasAddedElemDesc) {
+                return false;
+            }
+            if (lhsDescs.size() > 0) {
+                // Has removed items.
+                return false;
+            }
+            return lhsNotNullElemCount == rhsNotNullElemCount;
         }
         return false;
     }
@@ -435,22 +405,6 @@ public class ManifestDecoder extends BaseDecoder {
         }
     };
 
-    private static <T> String describeObjects(Collection<T> objs, ObjectDescriber<T> describer) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        boolean isFirst = true;
-        for (T obj : objs) {
-            if (isFirst) {
-                isFirst = false;
-            } else {
-                sb.append(",");
-            }
-            sb.append(describer != null ? describer.describe(obj) : obj.toString());
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
     private static <T> String describeChanges(Collection<T> oldObjs, Collection<T> newObjs) {
         return describeChanges(oldObjs, newObjs, null);
     }
@@ -458,7 +412,6 @@ public class ManifestDecoder extends BaseDecoder {
     private static <T> String describeChanges(Collection<T> oldObjs, Collection<T> newObjs, ObjectDescriber<T> describer) {
         final Set<String> oldDescs = new HashSet<>();
         final List<String> addedDescs = new ArrayList<>();
-        final List<String> removedDescs = new ArrayList<>();
         for (T oldObj : oldObjs) {
             oldDescs.add(describer != null ? describer.describe(oldObj) : oldObj.toString());
         }
@@ -468,9 +421,7 @@ public class ManifestDecoder extends BaseDecoder {
                 addedDescs.add(newDesc);
             }
         }
-        for (String oldDesc : oldDescs) {
-            removedDescs.add(oldDesc);
-        }
+        final List<String> removedDescs = new ArrayList<>(oldDescs);
         final StringBuilder sb = new StringBuilder();
         sb.append("{added:").append(addedDescs)
           .append(",removed:").append(removedDescs)
