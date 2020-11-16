@@ -20,7 +20,7 @@ import com.tencent.tinker.build.aapt.AaptResourceCollector
 import com.tencent.tinker.build.aapt.AaptUtil
 import com.tencent.tinker.build.aapt.PatchUtil
 import com.tencent.tinker.build.aapt.RDotTxtEntry
-import com.tencent.tinker.build.gradle.TinkerPatchPlugin
+import com.tencent.tinker.build.gradle.TinkerBuildPath
 import com.tencent.tinker.build.util.FileOperation
 import groovy.io.FileType
 import org.gradle.api.DefaultTask
@@ -40,14 +40,6 @@ import java.util.regex.Pattern
  * @author zhangshaowen
  */
 public class TinkerResourceIdTask extends DefaultTask {
-    static final String RESOURCE_PUBLIC_XML = TinkerPatchPlugin.TINKER_INTERMEDIATES + "public.xml"
-    static final String RESOURCE_IDX_XML = TinkerPatchPlugin.TINKER_INTERMEDIATES + "idx.xml"
-    static final String RESOURCE_VALUES_BACKUP = TinkerPatchPlugin.TINKER_INTERMEDIATES + "values_backup"
-    static final String RESOURCE_PUBLIC_TXT = TinkerPatchPlugin.TINKER_INTERMEDIATES + "public.txt"
-
-    //it's parent dir must start with values
-    static final String RESOURCE_TO_COMPILE_PUBLIC_XML = TinkerPatchPlugin.TINKER_INTERMEDIATES + "aapt2/res/values/tinker_public.xml"
-
     String resDir
     String variantName
     String applicationId
@@ -146,8 +138,9 @@ public class TinkerResourceIdTask extends DefaultTask {
         }
         replaceFinalField(aaptOptions.getClass().getName(), "additionalParameters", aaptOptions, additionalParameters)
         additionalParameters.add("--stable-ids")
-        additionalParameters.add(project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath())
-        project.logger.error("tinker add additionalParameters --stable-ids ${project.file(RESOURCE_PUBLIC_TXT).getAbsolutePath()}")
+        String resourcePublicTxt = TinkerBuildPath.getResourcePublicTxt(project)
+        additionalParameters.add(project.file(resourcePublicTxt).getAbsolutePath())
+        project.logger.error("tinker add additionalParameters --stable-ids ${project.file(resourcePublicTxt).getAbsolutePath()}")
         return additionalParameters
     }
 
@@ -199,14 +192,14 @@ public class TinkerResourceIdTask extends DefaultTask {
         resDirCandidateList.each {
             it.eachFileRecurse(FileType.FILES) {
                 if (it.getParentFile().getName().startsWith("values") && it.getName().startsWith("values") && it.getName().endsWith(".xml")) {
-                    File destFile = new File(project.file(RESOURCE_VALUES_BACKUP), "${it.getParentFile().getName()}/${it.getName()}")
+                    File destFile = new File(project.file(TinkerBuildPath.getResourceValuesBackup(project)), "${it.getParentFile().getName()}/${it.getName()}")
                     GFileUtils.deleteQuietly(destFile)
                     GFileUtils.mkdirs(destFile.getParentFile())
                     GFileUtils.copyFile(it, destFile)
                 }
             }
         }
-        project.file(RESOURCE_VALUES_BACKUP).eachFileRecurse(FileType.FILES) {
+        project.file(TinkerBuildPath.getResourceValuesBackup(project)).eachFileRecurse(FileType.FILES) {
             new XmlParser().parse(it).each {
                 String originalName = "${it.@name}".toString()
                 //replace . to _ for all types with the same converting rule
@@ -368,16 +361,18 @@ public class TinkerResourceIdTask extends DefaultTask {
             PatchUtil.generatePublicResourceXml(aaptResourceCollector, idsXml, publicXml)
             File publicFile = new File(publicXml)
             if (publicFile.exists()) {
-                FileOperation.copyFileUsingStream(publicFile, project.file(RESOURCE_PUBLIC_XML))
-                project.logger.error("tinker gen resource public.xml in ${RESOURCE_PUBLIC_XML}")
+                String resourcePublicXml = TinkerBuildPath.getResourcePublicXml(project)
+                FileOperation.copyFileUsingStream(publicFile, project.file(resourcePublicXml))
+                project.logger.error("tinker gen resource public.xml in ${resourcePublicXml}")
             }
             File idxFile = new File(idsXml)
             if (idxFile.exists()) {
-                FileOperation.copyFileUsingStream(idxFile, project.file(RESOURCE_IDX_XML))
-                project.logger.error("tinker gen resource idx.xml in ${RESOURCE_IDX_XML}")
+                String resourceIdxXml = TinkerBuildPath.getResourceIdxXml(project)
+                FileOperation.copyFileUsingStream(idxFile, project.file(resourceIdxXml))
+                project.logger.error("tinker gen resource idx.xml in ${resourceIdxXml}")
             }
         } else {
-            File stableIdsFile = project.file(RESOURCE_PUBLIC_TXT)
+            File stableIdsFile = project.file(TinkerBuildPath.getResourcePublicTxt(project))
             FileOperation.deleteFile(stableIdsFile);
             ArrayList<String> sortedLines = getSortedStableIds(rTypeResourceMap)
 
@@ -396,7 +391,7 @@ public class TinkerResourceIdTask extends DefaultTask {
                 if (addPublicFlagForAapt2) {
                     //if we need add public flag for resource, we need to compile public.xml to .flat file
                     //it's parent dir must start with values
-                    File publicXmlFile = project.file(RESOURCE_TO_COMPILE_PUBLIC_XML)
+                    File publicXmlFile = project.file(TinkerBuildPath.getResourceToCompilePublicXml(project))
                     //convert public.txt to public.xml
                     convertPublicTxtToPublicXml(stableIdsFile, publicXmlFile, false)
                     //dest file is mergeResourceTask output dir

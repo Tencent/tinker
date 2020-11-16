@@ -24,7 +24,7 @@ import com.google.common.base.Joiner
 import com.google.common.collect.Lists
 import com.tencent.tinker.android.dex.ClassDef
 import com.tencent.tinker.android.dex.Dex
-import com.tencent.tinker.build.gradle.TinkerPatchPlugin
+import com.tencent.tinker.build.gradle.TinkerBuildPath
 import com.tencent.tinker.build.immutable.ClassSimDef
 import com.tencent.tinker.build.immutable.DexRefData
 import com.tencent.tinker.build.util.FileOperation
@@ -96,8 +96,8 @@ public class ImmutableDexTransform extends Transform {
     }
 
     private File getDirInWorkDir(String name) {
-        return new File(PATH_JOINER.join(project.projectDir,
-                TinkerPatchPlugin.TINKER_INTERMEDIATES,
+        return new File(PATH_JOINER.join(
+                TinkerBuildPath.getTinkerIntermediates(project),
                 TASK_WORK_DIR,
                 name,
                 varDirName)
