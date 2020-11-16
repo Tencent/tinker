@@ -62,14 +62,16 @@ public abstract class InstructionComparator {
         try {
             ir.accept(new InstructionVisitor(null) {
                 public void visitZeroRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal) {
-                    InstructionHolder insnHolder = new InstructionHolder();
-                    insnHolder.insnFormat = InstructionCodec.getInstructionFormat(opcode);
-                    insnHolder.address = currentAddress;
-                    insnHolder.opcode = opcode;
-                    insnHolder.index = index;
-                    insnHolder.target = target;
-                    insnHolder.literal = literal;
-                    result[currentAddress] = insnHolder;
+                    if (opcode != Opcodes.NOP) {
+                        InstructionHolder insnHolder = new InstructionHolder();
+                        insnHolder.insnFormat = InstructionCodec.getInstructionFormat(opcode);
+                        insnHolder.address = currentAddress;
+                        insnHolder.opcode = opcode;
+                        insnHolder.index = index;
+                        insnHolder.target = target;
+                        insnHolder.literal = literal;
+                        result[currentAddress] = insnHolder;
+                    }
                 }
 
                 public void visitOneRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a) {
@@ -231,25 +233,8 @@ public abstract class InstructionComparator {
             } else {
                 break;
             }
-            if (insnHolder1.opcode != insnHolder2.opcode) {
-                if (insnHolder1.opcode == Opcodes.CONST_STRING
-                        && insnHolder2.opcode == Opcodes.CONST_STRING_JUMBO) {
-                    if (!compareString(insnHolder1.index, insnHolder2.index)) {
-                        return false;
-                    }
-                } else
-                if (insnHolder1.opcode == Opcodes.CONST_STRING_JUMBO
-                        && insnHolder2.opcode == Opcodes.CONST_STRING) {
-                    if (!compareString(insnHolder1.index, insnHolder2.index)) {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            } else {
-                if (!isSameInstruction(insnHolder1.address, insnHolder2.address)) {
-                    return false;
-                }
+            if (!isSameInstruction(insnHolder1, insnHolder2)) {
+                return false;
             }
         }
         while (currAddress1 < insnHolders1.length) {
@@ -265,16 +250,30 @@ public abstract class InstructionComparator {
         return insnHolderCount1 == insnHolderCount2;
     }
 
+    private int getPromotedOpCodeOnDemand(InstructionHolder insn) {
+        final int opcode = insn.opcode;
+        if (opcode == Opcodes.CONST_STRING || opcode == Opcodes.CONST_STRING_JUMBO) {
+            return Opcodes.CONST_STRING_JUMBO;
+        } else if (opcode == Opcodes.GOTO || opcode == Opcodes.GOTO_16 || opcode == Opcodes.GOTO_32) {
+            return Opcodes.GOTO_32;
+        }
+        return opcode;
+    }
+
     public boolean isSameInstruction(int insnAddress1, int insnAddress2) {
         InstructionHolder insnHolder1 = this.insnHolders1[insnAddress1];
         InstructionHolder insnHolder2 = this.insnHolders2[insnAddress2];
+        return isSameInstruction(insnHolder1, insnHolder2);
+    }
+
+    public boolean isSameInstruction(InstructionHolder insnHolder1, InstructionHolder insnHolder2) {
         if (insnHolder1 == null && insnHolder2 == null) {
             return true;
         }
         if (insnHolder1 == null || insnHolder2 == null) {
             return false;
         }
-        if (insnHolder1.opcode != insnHolder2.opcode) {
+        if (getPromotedOpCodeOnDemand(insnHolder1) != getPromotedOpCodeOnDemand(insnHolder2)) {
             return false;
         }
         int opcode = insnHolder1.opcode;
@@ -286,7 +285,7 @@ public abstract class InstructionComparator {
             case InstructionCodec.INSN_FORMAT_22T:
             case InstructionCodec.INSN_FORMAT_30T:
             case InstructionCodec.INSN_FORMAT_31T: {
-                final String addrPairStr = insnAddress1 + "-" + insnAddress2;
+                final String addrPairStr = insnHolder1.address + "-" + insnHolder2.address;
                 if (this.visitedInsnAddrPairs.add(addrPairStr)) {
                     // If we haven't compared target insns, following the control flow
                     // and do further compare.

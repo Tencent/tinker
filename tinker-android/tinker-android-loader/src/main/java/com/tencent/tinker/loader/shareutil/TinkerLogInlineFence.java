@@ -1,4 +1,4 @@
-package com.tencent.tinker.lib.util;
+package com.tencent.tinker.loader.shareutil;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -6,7 +6,6 @@ import android.os.Message;
 import android.util.Log;
 
 import com.tencent.tinker.anno.Keep;
-import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
