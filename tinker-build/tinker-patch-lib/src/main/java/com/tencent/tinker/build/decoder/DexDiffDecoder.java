@@ -188,6 +188,17 @@ public class DexDiffDecoder extends BaseDecoder {
             e.printStackTrace();
         }
 
+        if (config.mIsProtectedApp) {
+            hasDexChanged = true;
+            // collect current old dex file and corresponding new dex file for further processing.
+            oldAndNewDexFilePairList.add(new AbstractMap.SimpleEntry<>(oldFile, newFile));
+            if (oldFile != null && oldFile.exists() && oldFile.length() > 0) {
+                oldDexFiles.add(oldFile);
+            }
+            Logger.d("enable protected app, just record");
+            return true;
+        }
+
         // If corresponding new dex was completely deleted, just return false.
         // don't process 0 length dex
         if (newFile == null || !newFile.exists() || newFile.length() == 0) {
