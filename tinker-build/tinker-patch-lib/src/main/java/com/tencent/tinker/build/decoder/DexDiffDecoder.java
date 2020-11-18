@@ -195,7 +195,6 @@ public class DexDiffDecoder extends BaseDecoder {
             if (oldFile != null && oldFile.exists() && oldFile.length() > 0) {
                 oldDexFiles.add(oldFile);
             }
-            Logger.d("enable protected app, just record");
             return true;
         }
 
