@@ -39,7 +39,6 @@ import java.lang.reflect.Modifier
  */
 
 class TinkerPatchPlugin implements Plugin<Project> {
-    public static final String TINKER_INTERMEDIATES = "build/intermediates/tinker_intermediates/"
     public static final String ISSUE_URL = "https://github.com/Tencent/tinker/issues"
 
     private Project mProject = null
@@ -103,7 +102,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
             mProject.logger.error("disable archive dex mode so far for keeping dex apply.")
             mProject.logger.error("")
             mProject.logger.error("tinker will change your build configs:")
-            mProject.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
+            mProject.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file ${project.buildDir}/intermediates/manifests/full/*")
             mProject.logger.error("")
             mProject.logger.error("if minifyEnabled is true")
 
@@ -113,11 +112,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 mProject.logger.error("we will build ${mProject.getName()} apk with apply mapping file ${tempMappingPath}")
             }
 
-            mProject.logger.error("you will find the gen proguard rule file at ${TinkerProguardConfigTask.PROGUARD_CONFIG_PATH}")
+            mProject.logger.error("you will find the gen proguard rule file at ${TinkerBuildPath.getProguardConfigPath(project)}")
             mProject.logger.error("and we will help you to put it in the proguardFiles.")
             mProject.logger.error("")
             mProject.logger.error("if multiDexEnabled is true")
-            mProject.logger.error("you will find the gen multiDexKeepProguard file at ${TinkerMultidexConfigTask.MULTIDEX_CONFIG_PATH}")
+            mProject.logger.error("you will find the gen multiDexKeepProguard file at ${TinkerBuildPath.getMultidexConfigPath(project)}")
             mProject.logger.error("and we will help you to put it in the MultiDexKeepProguardFile.")
             mProject.logger.error("")
             mProject.logger.error("if applyResourceMapping file is exist")

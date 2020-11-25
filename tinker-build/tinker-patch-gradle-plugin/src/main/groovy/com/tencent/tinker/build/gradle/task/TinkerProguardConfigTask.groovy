@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.gradle.task
 
-import com.tencent.tinker.build.gradle.TinkerPatchPlugin
+import com.tencent.tinker.build.gradle.TinkerBuildPath
 import com.tencent.tinker.build.util.FileOperation
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -27,7 +27,6 @@ import org.gradle.api.tasks.TaskAction
  * @author zhangshaowen
  */
 public class TinkerProguardConfigTask extends DefaultTask {
-    static final String PROGUARD_CONFIG_PATH =  TinkerPatchPlugin.TINKER_INTERMEDIATES + "tinker_proguard.pro"
     static final String PROGUARD_CONFIG_SETTINGS =
             "-keepattributes *Annotation* \n" +
                     "-dontwarn com.tencent.tinker.anno.AnnotationProcessor \n" +
@@ -65,7 +64,7 @@ public class TinkerProguardConfigTask extends DefaultTask {
 
     @TaskAction
     def updateTinkerProguardConfig() {
-        def file = project.file(PROGUARD_CONFIG_PATH)
+        def file = project.file(TinkerBuildPath.getProguardConfigPath(project))
         project.logger.error("try update tinker proguard file with ${file}")
 
         // Create the directory if it doesnt exist already
