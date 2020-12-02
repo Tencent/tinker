@@ -37,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Stack;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -52,103 +53,250 @@ public class BSDiff {
         0x72, 0x6F, 0x4D, 0x73, 0x67};
 
     private static void split(int[] arrayI, int[] arrayV, int start, int len, int h) {
+        final int STM_ENTER = 0x00;
+        final int STM_RECURSIVE_CALLSITE1_NEXT = 0x01;
+        final int STM_EXIT = 0x02;
 
-        int i, j, k, x, tmp, jj, kk;
+        class EmuStackFrame {
+            int stmRetLabel;
+            int start, len, h;
+            int i, j, k, x, jj, kk;
 
-        if (len < 16) {
-            for (k = start; k < start + len; k += j) {
-                j = 1;
-                x = arrayV[arrayI[k] + h];
-                for (i = 1; k + i < start + len; i++) {
-                    if (arrayV[arrayI[k + i] + h] < x) {
-                        x = arrayV[arrayI[k + i] + h];
-                        j = 0;
+            EmuStackFrame(int stmRetLabel, int start, int len, int h) {
+                this.stmRetLabel = stmRetLabel;
+                this.start = start;
+                this.len = len;
+                this.h = h;
+                this.i = 0;
+                this.j = 0;
+                this.k = 0;
+                this.x = 0;
+                this.jj = 0;
+                this.kk = 0;
+            }
+        }
+
+        final Stack<EmuStackFrame> emuStack = new Stack<>();
+        emuStack.push(new EmuStackFrame(STM_EXIT, start, len, h));
+
+        int stmLabel = STM_ENTER;
+        while (!emuStack.empty()) {
+            final EmuStackFrame currFrame = emuStack.peek();
+            switch (stmLabel) {
+                case STM_ENTER: {
+                    if (currFrame.len < 16) {
+                        for (currFrame.k = currFrame.start; currFrame.k < currFrame.start + currFrame.len; currFrame.k += currFrame.j) {
+                            currFrame.j = 1;
+                            currFrame.x = arrayV[arrayI[currFrame.k] + currFrame.h];
+                            for (currFrame.i = 1; currFrame.k + currFrame.i < currFrame.start + currFrame.len; currFrame.i++) {
+                                if (arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h] < currFrame.x) {
+                                    currFrame.x = arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h];
+                                    currFrame.j = 0;
+                                }
+
+                                if (arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h] == currFrame.x) {
+                                    int tmp = arrayI[currFrame.k + currFrame.j];
+                                    arrayI[currFrame.k + currFrame.j] = arrayI[currFrame.k + currFrame.i];
+                                    arrayI[currFrame.k + currFrame.i] = tmp;
+                                    currFrame.j++;
+                                }
+
+                            }
+
+                            for (currFrame.i = 0; currFrame.i < currFrame.j; currFrame.i++) {
+                                arrayV[arrayI[currFrame.k + currFrame.i]] = currFrame.k + currFrame.j - 1;
+                            }
+                            if (currFrame.j == 1) {
+                                arrayI[currFrame.k] = -1;
+                            }
+                        }
+
+                        stmLabel = STM_EXIT;
+                        continue;
                     }
 
-                    if (arrayV[arrayI[k + i] + h] == x) {
-                        tmp = arrayI[k + j];
-                        arrayI[k + j] = arrayI[k + i];
-                        arrayI[k + i] = tmp;
-                        j++;
+                    currFrame.x = arrayV[arrayI[currFrame.start + currFrame.len / 2] + currFrame.h];
+                    currFrame.jj = 0;
+                    currFrame.kk = 0;
+                    for (currFrame.i = currFrame.start; currFrame.i < currFrame.start + currFrame.len; currFrame.i++) {
+                        if (arrayV[arrayI[currFrame.i] + currFrame.h] < currFrame.x) {
+                            currFrame.jj++;
+                        }
+                        if (arrayV[arrayI[currFrame.i] + currFrame.h] == currFrame.x) {
+                            currFrame.kk++;
+                        }
                     }
 
+                    currFrame.jj += currFrame.start;
+                    currFrame.kk += currFrame.jj;
+
+                    currFrame.i = currFrame.start;
+                    currFrame.j = 0;
+                    currFrame.k = 0;
+                    while (currFrame.i < currFrame.jj) {
+                        if (arrayV[arrayI[currFrame.i] + currFrame.h] < currFrame.x) {
+                            currFrame.i++;
+                        } else if (arrayV[arrayI[currFrame.i] + currFrame.h] == currFrame.x) {
+                            int tmp = arrayI[currFrame.i];
+                            arrayI[currFrame.i] = arrayI[currFrame.jj + currFrame.j];
+                            arrayI[currFrame.jj + currFrame.j] = tmp;
+                            currFrame.j++;
+                        } else {
+                            int tmp = arrayI[currFrame.i];
+                            arrayI[currFrame.i] = arrayI[currFrame.kk + currFrame.k];
+                            arrayI[currFrame.kk + currFrame.k] = tmp;
+                            currFrame.k++;
+                        }
+
+                    }
+
+                    while (currFrame.jj + currFrame.j < currFrame.kk) {
+                        if (arrayV[arrayI[currFrame.jj + currFrame.j] + currFrame.h] == currFrame.x) {
+                            currFrame.j++;
+                        } else {
+                            int tmp = arrayI[currFrame.jj + currFrame.j];
+                            arrayI[currFrame.jj + currFrame.j] = arrayI[currFrame.kk + currFrame.k];
+                            arrayI[currFrame.kk + currFrame.k] = tmp;
+                            currFrame.k++;
+                        }
+
+                    }
+
+                    stmLabel = STM_RECURSIVE_CALLSITE1_NEXT;
+                    if (currFrame.jj > currFrame.start) {
+                        // split(arrayI, arrayV, start, jj - currFrame.start, h);
+                        emuStack.push(new EmuStackFrame(stmLabel, currFrame.start, currFrame.jj - currFrame.start, currFrame.h));
+                        stmLabel = STM_ENTER;
+                        continue;
+                    }
+                    break;
                 }
+                case STM_RECURSIVE_CALLSITE1_NEXT: {
+                    for (currFrame.i = 0; currFrame.i < currFrame.kk - currFrame.jj; currFrame.i++) {
+                        arrayV[arrayI[currFrame.jj + currFrame.i]] = currFrame.kk - 1;
+                    }
 
-                for (i = 0; i < j; i++) {
-                    arrayV[arrayI[k + i]] = k + j - 1;
+                    if (currFrame.jj == currFrame.kk - 1) {
+                        arrayI[currFrame.jj] = -1;
+                    }
+
+                    stmLabel = STM_EXIT;
+                    if (currFrame.start + currFrame.len > currFrame.kk) {
+                        // split(arrayI, arrayV, kk, start + len - kk, h);
+                        emuStack.push(new EmuStackFrame(stmLabel, currFrame.kk, currFrame.start + currFrame.len - currFrame.kk, currFrame.h));
+                        stmLabel = STM_ENTER;
+                        continue;
+                    }
+                    break;
                 }
-                if (j == 1) {
-                    arrayI[k] = -1;
+                case STM_EXIT:
+                default: {
+                    stmLabel = currFrame.stmRetLabel;
+                    emuStack.pop();
+                    break;
                 }
             }
-
-            return;
         }
-
-        x = arrayV[arrayI[start + len / 2] + h];
-        jj = 0;
-        kk = 0;
-        for (i = start; i < start + len; i++) {
-            if (arrayV[arrayI[i] + h] < x) {
-                jj++;
-            }
-            if (arrayV[arrayI[i] + h] == x) {
-                kk++;
-            }
-        }
-
-        jj += start;
-        kk += jj;
-
-        i = start;
-        j = 0;
-        k = 0;
-        while (i < jj) {
-            if (arrayV[arrayI[i] + h] < x) {
-                i++;
-            } else if (arrayV[arrayI[i] + h] == x) {
-                tmp = arrayI[i];
-                arrayI[i] = arrayI[jj + j];
-                arrayI[jj + j] = tmp;
-                j++;
-            } else {
-                tmp = arrayI[i];
-                arrayI[i] = arrayI[kk + k];
-                arrayI[kk + k] = tmp;
-                k++;
-            }
-
-        }
-
-        while (jj + j < kk) {
-            if (arrayV[arrayI[jj + j] + h] == x) {
-                j++;
-            } else {
-                tmp = arrayI[jj + j];
-                arrayI[jj + j] = arrayI[kk + k];
-                arrayI[kk + k] = tmp;
-                k++;
-            }
-
-        }
-
-        if (jj > start) {
-            split(arrayI, arrayV, start, jj - start, h);
-        }
-
-        for (i = 0; i < kk - jj; i++) {
-            arrayV[arrayI[jj + i]] = kk - 1;
-        }
-
-        if (jj == kk - 1) {
-            arrayI[jj] = -1;
-        }
-
-        if (start + len > kk) {
-            split(arrayI, arrayV, kk, start + len - kk, h);
-        }
-
     }
+
+    // private static void old_split(int[] arrayI, int[] arrayV, int start, int len, int h) {
+    //
+    //     int i, j, k, x, tmp, jj, kk;
+    //
+    //     if (len < 16) {
+    //         for (k = start; k < start + len; k += j) {
+    //             j = 1;
+    //             x = arrayV[arrayI[k] + h];
+    //             for (i = 1; k + i < start + len; i++) {
+    //                 if (arrayV[arrayI[k + i] + h] < x) {
+    //                     x = arrayV[arrayI[k + i] + h];
+    //                     j = 0;
+    //                 }
+    //
+    //                 if (arrayV[arrayI[k + i] + h] == x) {
+    //                     tmp = arrayI[k + j];
+    //                     arrayI[k + j] = arrayI[k + i];
+    //                     arrayI[k + i] = tmp;
+    //                     j++;
+    //                 }
+    //
+    //             }
+    //
+    //             for (i = 0; i < j; i++) {
+    //                 arrayV[arrayI[k + i]] = k + j - 1;
+    //             }
+    //             if (j == 1) {
+    //                 arrayI[k] = -1;
+    //             }
+    //         }
+    //
+    //         return;
+    //     }
+    //
+    //     x = arrayV[arrayI[start + len / 2] + h];
+    //     jj = 0;
+    //     kk = 0;
+    //     for (i = start; i < start + len; i++) {
+    //         if (arrayV[arrayI[i] + h] < x) {
+    //             jj++;
+    //         }
+    //         if (arrayV[arrayI[i] + h] == x) {
+    //             kk++;
+    //         }
+    //     }
+    //
+    //     jj += start;
+    //     kk += jj;
+    //
+    //     i = start;
+    //     j = 0;
+    //     k = 0;
+    //     while (i < jj) {
+    //         if (arrayV[arrayI[i] + h] < x) {
+    //             i++;
+    //         } else if (arrayV[arrayI[i] + h] == x) {
+    //             tmp = arrayI[i];
+    //             arrayI[i] = arrayI[jj + j];
+    //             arrayI[jj + j] = tmp;
+    //             j++;
+    //         } else {
+    //             tmp = arrayI[i];
+    //             arrayI[i] = arrayI[kk + k];
+    //             arrayI[kk + k] = tmp;
+    //             k++;
+    //         }
+    //
+    //     }
+    //
+    //     while (jj + j < kk) {
+    //         if (arrayV[arrayI[jj + j] + h] == x) {
+    //             j++;
+    //         } else {
+    //             tmp = arrayI[jj + j];
+    //             arrayI[jj + j] = arrayI[kk + k];
+    //             arrayI[kk + k] = tmp;
+    //             k++;
+    //         }
+    //
+    //     }
+    //
+    //     if (jj > start) {
+    //         old_split(arrayI, arrayV, start, jj - start, h);
+    //     }
+    //
+    //     for (i = 0; i < kk - jj; i++) {
+    //         arrayV[arrayI[jj + i]] = kk - 1;
+    //     }
+    //
+    //     if (jj == kk - 1) {
+    //         arrayI[jj] = -1;
+    //     }
+    //
+    //     if (start + len > kk) {
+    //         old_split(arrayI, arrayV, kk, start + len - kk, h);
+    //     }
+    //
+    // }
 
     /**
      * Fast suffix sporting. Larsson and Sadakane's qsufsort algorithm. See
@@ -543,6 +691,13 @@ public class BSDiff {
     //        bsdiff(oldFile, newFile, diffFile);
     //
     //    }
+
+    public static void main(String[] args) throws IOException {
+        final File oldFile = new File("/Users/tomystang/bsdiff-test/old/classes.dex");
+        final File newFile = new File("/Users/tomystang/bsdiff-test/new/classes.dex");
+        final File diffFile = new File("/Users/tomystang/bsdiff-test/test_bsdiff.diff");
+        bsdiff(oldFile, newFile, diffFile);
+    }
 
     private static class IntByRef {
         private int value;
