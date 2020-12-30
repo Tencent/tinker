@@ -1,0 +1,43 @@
+apply plugin: 'groovy'
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+//    implementation project(':tinker-build:tinker-patch-lib')
+    implementation 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
+    implementation 'com.android.tools.build:gradle:3.2.1'
+
+//    api project(':tinker-commons')
+    implementation group: 'com.tencent.mm', name: 'apk-parser-lib', version: '1.2.3'
+    implementation group: 'com.google.guava', name: 'guava', version: '14.0.1'
+    implementation group: 'org.ow2.asm', name: 'asm', version: '6.0'
+    implementation (group: 'org.smali', name: 'dexlib2', version: '2.3.1') {
+        exclude group: 'com.google.guava'
+    }
+    implementation group: 'dom4j', name: 'dom4j', version: '1.6.1'
+
+//    implementation project(':third-party:aosp-dexutils')
+//    implementation project(':third-party:bsdiff-util')
+//    implementation project(':third-party:tinker-ziputils')
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    google()
+    jcenter()
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/groovy'
+        }
+
+        resources {
+            srcDir 'src/main/resources'
+        }
+    }
+}
+

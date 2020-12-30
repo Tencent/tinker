@@ -26,35 +26,35 @@ import com.tencent.tinker.android.utils.SparseIntArray;
  */
 
 public class SparseIndexMap extends AbstractIndexMap {
-    private final SparseIntArray stringIdsMap = new SparseIntArray();
-    private final SparseIntArray typeIdsMap = new SparseIntArray();
-    private final SparseIntArray protoIdsMap = new SparseIntArray();
-    private final SparseIntArray fieldIdsMap = new SparseIntArray();
-    private final SparseIntArray methodIdsMap = new SparseIntArray();
-    private final SparseIntArray typeListOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationSetOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationSetRefListOffsetsMap = new SparseIntArray();
-    private final SparseIntArray annotationsDirectoryOffsetsMap = new SparseIntArray();
-    private final SparseIntArray staticValuesOffsetsMap = new SparseIntArray();
-    private final SparseIntArray classDataOffsetsMap = new SparseIntArray();
-    private final SparseIntArray debugInfoItemOffsetsMap = new SparseIntArray();
-    private final SparseIntArray codeOffsetsMap = new SparseIntArray();
+    public final SparseIntArray stringIdsMap = new SparseIntArray();
+    public final SparseIntArray typeIdsMap = new SparseIntArray();
+    public final SparseIntArray protoIdsMap = new SparseIntArray();
+    public final SparseIntArray fieldIdsMap = new SparseIntArray();
+    public final SparseIntArray methodIdsMap = new SparseIntArray();
+    public final SparseIntArray typeListOffsetsMap = new SparseIntArray();
+    public final SparseIntArray annotationOffsetsMap = new SparseIntArray();
+    public final SparseIntArray annotationSetOffsetsMap = new SparseIntArray();
+    public final SparseIntArray annotationSetRefListOffsetsMap = new SparseIntArray();
+    public final SparseIntArray annotationsDirectoryOffsetsMap = new SparseIntArray();
+    public final SparseIntArray staticValuesOffsetsMap = new SparseIntArray();
+    public final SparseIntArray classDataOffsetsMap = new SparseIntArray();
+    public final SparseIntArray debugInfoItemOffsetsMap = new SparseIntArray();
+    public final SparseIntArray codeOffsetsMap = new SparseIntArray();
 
-    private final SparseBoolArray deletedStringIds = new SparseBoolArray();
-    private final SparseBoolArray deletedTypeIds = new SparseBoolArray();
-    private final SparseBoolArray deletedProtoIds = new SparseBoolArray();
-    private final SparseBoolArray deletedFieldIds = new SparseBoolArray();
-    private final SparseBoolArray deletedMethodIds = new SparseBoolArray();
-    private final SparseBoolArray deletedTypeListOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedAnnotationOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedAnnotationSetOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedAnnotationSetRefListOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedAnnotationsDirectoryOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedStaticValuesOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedClassDataOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedDebugInfoItemOffsets = new SparseBoolArray();
-    private final SparseBoolArray deletedCodeOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedStringIds = new SparseBoolArray();
+    public final SparseBoolArray deletedTypeIds = new SparseBoolArray();
+    public final SparseBoolArray deletedProtoIds = new SparseBoolArray();
+    public final SparseBoolArray deletedFieldIds = new SparseBoolArray();
+    public final SparseBoolArray deletedMethodIds = new SparseBoolArray();
+    public final SparseBoolArray deletedTypeListOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedAnnotationOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedAnnotationSetOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedAnnotationSetRefListOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedAnnotationsDirectoryOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedStaticValuesOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedClassDataOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedDebugInfoItemOffsets = new SparseBoolArray();
+    public final SparseBoolArray deletedCodeOffsets = new SparseBoolArray();
 
     public void mapStringIds(int oldIndex, int newIndex) {
         stringIdsMap.put(oldIndex, newIndex);

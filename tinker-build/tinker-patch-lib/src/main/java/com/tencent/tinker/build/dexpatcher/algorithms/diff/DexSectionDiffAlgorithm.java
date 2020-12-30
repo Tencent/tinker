@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.build.dexpatcher.algorithms.diff;
 
+import com.tencent.tinker.android.dex.ClassData;
+import com.tencent.tinker.android.dex.Code;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.TableOfContents;
@@ -52,12 +54,12 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
      * SparseIndexMap for mapping items between old dex and patched dex.
      * e.g. item.oldIndex => item.patchedIndex
      */
-    private final SparseIndexMap oldToPatchedIndexMap;
+    public final SparseIndexMap oldToPatchedIndexMap;
     /**
      * SparseIndexMap for mapping items between new dex and patched dex.
      * e.g. item.newIndex => item.newIndexInPatchedDex
      */
-    private final SparseIndexMap newToPatchedIndexMap;
+    public final SparseIndexMap newToPatchedIndexMap;
     /**
      * SparseIndexMap for mapping items in new dex when skip items.
      */
@@ -115,6 +117,8 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
     private AbstractMap.SimpleEntry<Integer, T>[] adjustedOldIndexedItemsWithOrigOrder = null;
     private int oldItemCount = 0;
     private int newItemCount = 0;
+
+    public AbstractMap.SimpleEntry<Integer, T>[] newDexItems;
 
     public DexSectionDiffAlgorithm(
             Dex oldDex,
@@ -254,6 +258,17 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
         return result.toArray(new AbstractMap.SimpleEntry[0]);
     }
 
+    public void calPatchListMethodName() {
+        for (PatchOperation operation : patchOperationList) {
+            if (!(operation.newItem instanceof Code)) {
+                continue;
+            }
+            int offset = ((Code) operation.newItem).off;
+            int patchOffset = newToPatchedIndexMap.codeOffsetsMap.get(offset);
+
+        }
+    }
+
     public void execute() {
         this.patchOperationList.clear();
 
@@ -265,6 +280,7 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
         Arrays.sort(adjustedOldIndexedItems, this.comparatorForItemDiff);
 
         AbstractMap.SimpleEntry<Integer, T>[] adjustedNewIndexedItems = collectSectionItems(this.newDex, false);
+        this.newDexItems = adjustedNewIndexedItems;
         this.newItemCount = adjustedNewIndexedItems.length;
         Arrays.sort(adjustedNewIndexedItems, this.comparatorForItemDiff);
 

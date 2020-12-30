@@ -62,6 +62,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -503,12 +504,39 @@ public class DexPatchGenerator {
         }
         int patchedMapListSize = newDex.getTableOfContents().mapList.byteCount;
 
+        calPatchListMethodName();
+
         this.patchedDexSize
                 = this.patchedMapListOffset
                 + patchedMapListSize;
 
         // Finally, write results to patch file.
         writeResultToStream(out);
+    }
+
+    public void calPatchListMethodName() {
+        for (PatchOperation operation : codeSectionDiffAlg.getPatchOperationList()) {
+            if (!(operation.newItem instanceof Code)) {
+                continue;
+            }
+            int offset = ((Code) operation.newItem).off;
+            int patchOffset = codeSectionDiffAlg.newToPatchedIndexMap.codeOffsetsMap.get(offset);
+            for (AbstractMap.SimpleEntry<Integer, ClassData> item : classDataSectionDiffAlg.newDexItems) {
+                getMethodName(item.getValue().directMethods, patchOffset);
+                getMethodName(item.getValue().virtualMethods, patchOffset);
+            }
+        }
+    }
+
+    private void getMethodName(ClassData.Method[] methods, int patchOffset) {
+        for (ClassData.Method method : methods) {
+            if (method.codeOffset == patchOffset) {
+                int methodIndex = method.methodIndex;
+                MethodId methodId = methodIdSectionDiffAlg.newDexItems[methodIndex].getValue();
+                String stringItem = stringDataSectionDiffAlg.newDexItems[methodId.nameIndex].getValue().value;
+                System.out.println(stringItem);
+            }
+        }
     }
 
     private void writeResultToStream(OutputStream os) throws IOException {
