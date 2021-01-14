@@ -189,8 +189,9 @@ public class DexDiffDecoder extends BaseDecoder {
         }
 
         if (config.mIsProtectedApp) {
+            // if isProtectedApp is true
+            // just collect current old dex file and corresponding new dex file for further processing.
             hasDexChanged = true;
-            // collect current old dex file and corresponding new dex file for further processing.
             oldAndNewDexFilePairList.add(new AbstractMap.SimpleEntry<>(oldFile, newFile));
             if (oldFile != null && oldFile.exists() && oldFile.length() > 0) {
                 oldDexFiles.add(oldFile);
