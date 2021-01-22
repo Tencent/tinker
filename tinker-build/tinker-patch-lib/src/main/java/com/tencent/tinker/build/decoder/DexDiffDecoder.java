@@ -188,8 +188,8 @@ public class DexDiffDecoder extends BaseDecoder {
             e.printStackTrace();
         }
         
-        // If is protechted app mode
-        // just collect current old dex file and corresponding new dex file for further processing.
+        // If is protechted app mode.
+        // Just collect current old dex file and corresponding new dex file for further processing.
         if (config.mIsProtectedApp) {
             hasDexChanged = true;
             oldAndNewDexFilePairList.add(new AbstractMap.SimpleEntry<>(oldFile, newFile));
