@@ -82,7 +82,7 @@ public class ShareTinkerLog {
     static {
         synchronized (tinkerLogInlineFenceRef) {
             try {
-                final Class<?> clazz = Class.forName("com.tencent.tinker.lib.util.TinkerLogInlineFence");
+                final Class<?> clazz = Class.forName("com.tencent.tinker.loader.shareutil.TinkerLogInlineFence");
                 final Constructor<?> ctor = clazz.getDeclaredConstructor();
                 ctor.setAccessible(true);
                 tinkerLogInlineFenceRef[0] = (Handler) ctor.newInstance();

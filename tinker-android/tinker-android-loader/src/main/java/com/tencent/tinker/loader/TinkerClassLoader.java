@@ -7,22 +7,26 @@ import com.tencent.tinker.anno.Keep;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import dalvik.system.BaseDexClassLoader;
+import dalvik.system.PathClassLoader;
 
 /**
  * Created by tangyinsheng on 2020-01-09.
  */
 @Keep
 @SuppressLint("NewApi")
-public final class TinkerClassLoader extends BaseDexClassLoader {
+public final class TinkerClassLoader extends PathClassLoader {
     private final ClassLoader mOriginAppClassLoader;
 
     TinkerClassLoader(String dexPath, File optimizedDir, String libraryPath, ClassLoader originAppClassLoader) {
-        super(dexPath, optimizedDir, libraryPath, ClassLoader.getSystemClassLoader());
+        super("", libraryPath, ClassLoader.getSystemClassLoader());
         mOriginAppClassLoader = originAppClassLoader;
+        injectDexPath(this, dexPath, optimizedDir);
     }
 
     @Override
@@ -65,6 +69,23 @@ public final class TinkerClassLoader extends BaseDexClassLoader {
                 mOriginAppClassLoader.getResources(name)
         };
         return new CompoundEnumeration<>(resources);
+    }
+
+    private static void injectDexPath(ClassLoader cl, String dexPath, File optimizedDir) {
+        try {
+            final List<File> dexFiles = new ArrayList<>(16);
+            for (String oneDexPath : dexPath.split(":")) {
+                if (oneDexPath.isEmpty()) {
+                    continue;
+                }
+                dexFiles.add(new File(oneDexPath));
+            }
+            if (!dexFiles.isEmpty()) {
+                SystemClassLoaderAdder.injectDexesInternal(cl, dexFiles, optimizedDir);
+            }
+        } catch (Throwable thr) {
+            throw new TinkerRuntimeException("Fail to create TinkerClassLoader.", thr);
+        }
     }
 
     @Keep

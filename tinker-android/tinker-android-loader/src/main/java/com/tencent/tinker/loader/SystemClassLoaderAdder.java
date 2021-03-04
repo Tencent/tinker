@@ -61,17 +61,7 @@ public class SystemClassLoaderAdder {
             if (Build.VERSION.SDK_INT >= 24 && !isProtectedApp) {
                 classLoader = NewClassLoaderInjector.inject(application, loader, dexOptDir, useDLC, files);
             } else {
-                //because in dalvik, if inner class is not the same classloader with it wrapper class.
-                //it won't fail at dex2opt
-                if (Build.VERSION.SDK_INT >= 23) {
-                    V23.install(classLoader, files, dexOptDir);
-                } else if (Build.VERSION.SDK_INT >= 19) {
-                    V19.install(classLoader, files, dexOptDir);
-                } else if (Build.VERSION.SDK_INT >= 14) {
-                    V14.install(classLoader, files, dexOptDir);
-                } else {
-                    V4.install(classLoader, files, dexOptDir);
-                }
+                injectDexesInternal(classLoader, files, dexOptDir);
             }
             //install done
             sPatchDexCount = files.size();
@@ -82,6 +72,18 @@ public class SystemClassLoaderAdder {
                 SystemClassLoaderAdder.uninstallPatchDex(classLoader);
                 throw new TinkerRuntimeException(ShareConstants.CHECK_DEX_INSTALL_FAIL);
             }
+        }
+    }
+
+    static void injectDexesInternal(ClassLoader cl, List<File> dexFiles, File optimizeDir) throws Throwable {
+        if (Build.VERSION.SDK_INT >= 23) {
+            V23.install(cl, dexFiles, optimizeDir);
+        } else if (Build.VERSION.SDK_INT >= 19) {
+            V19.install(cl, dexFiles, optimizeDir);
+        } else if (Build.VERSION.SDK_INT >= 14) {
+            V14.install(cl, dexFiles, optimizeDir);
+        } else {
+            V4.install(cl, dexFiles, optimizeDir);
         }
     }
 
