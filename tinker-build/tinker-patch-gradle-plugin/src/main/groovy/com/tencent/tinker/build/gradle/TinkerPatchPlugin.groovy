@@ -16,6 +16,7 @@
 
 package com.tencent.tinker.build.gradle
 
+import com.android.build.gradle.api.ApkVariant
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
@@ -128,7 +129,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
             mProject.logger.error("if resources.arsc has changed, you should use applyResource mode to build the new apk!")
             mProject.logger.error("-----------------------------------------------------------------")
 
-            android.applicationVariants.all { variant ->
+            android.applicationVariants.all { ApkVariant variant ->
                 def variantName = variant.name.capitalize()
 
                 def instantRunTask = getInstantRunTask(variantName)
@@ -193,7 +194,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.applicationId = variantData.getApplicationId()
+                applyResourceTask.applicationId = variant.getApplicationId()
                 applyResourceTask.variantName = variant.name
                 applyResourceTask.resDir = resDir
 
