@@ -28,9 +28,9 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.jetbrains.annotations.NotNull
+import sun.misc.Unsafe
 
 import java.lang.reflect.Field
-import java.lang.reflect.Modifier
 
 /**
  * Registers the plugin's tasks.
@@ -450,11 +450,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
     void replaceKotlinFinalField(String className, String filedName, Object instance, Object fieldValue) {
         Field field = Class.forName(className).getDeclaredField(filedName)
-        Field modifiersField = Field.class.getDeclaredField("modifiers")
-        modifiersField.setAccessible(true)
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
-        field.setAccessible(true)
-        field.set(instance, fieldValue)
+        final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe")
+        unsafeField.setAccessible(true)
+        final Unsafe unsafe = (Unsafe) unsafeField.get(null)
+        final long fieldOffset = unsafe.objectFieldOffset(field)
+        unsafe.putObject(instance, fieldOffset, fieldValue)
     }
 
     File getManifestMultiDexKeepProguard(def applicationVariant) {

@@ -28,9 +28,9 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GFileUtils
+import sun.misc.Unsafe
 
 import java.lang.reflect.Field
-import java.lang.reflect.Modifier
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -150,7 +150,7 @@ public class TinkerResourceIdTask extends DefaultTask {
     private static void replaceFinalField(String className, String fieldName, Object instance, Object fieldValue) {
         final Class targetClazz = Class.forName(className)
         Class currClazz = targetClazz
-        Field field = null
+        Field field
         while (true) {
             try {
                 field = currClazz.getDeclaredField(fieldName)
@@ -163,11 +163,11 @@ public class TinkerResourceIdTask extends DefaultTask {
                 }
             }
         }
-        Field modifiersField = Field.class.getDeclaredField("modifiers")
-        modifiersField.setAccessible(true)
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
-        field.setAccessible(true)
-        field.set(instance, fieldValue)
+        final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe")
+        unsafeField.setAccessible(true)
+        final Unsafe unsafe = (Unsafe) unsafeField.get(null)
+        final long fieldOffset = unsafe.objectFieldOffset(field)
+        unsafe.putObject(instance, fieldOffset, fieldValue)
     }
 
     /**
