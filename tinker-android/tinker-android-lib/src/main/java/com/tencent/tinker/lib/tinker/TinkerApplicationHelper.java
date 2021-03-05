@@ -242,22 +242,7 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-        final File tinkerDir = SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
-        if (!tinkerDir.exists()) {
-            ShareTinkerLog.w(TAG, "try to clean patch while there're not any applied patches.");
-            return;
-        }
-        final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(tinkerDir.getAbsolutePath());
-        if (!patchInfoFile.exists()) {
-            ShareTinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
-            return;
-        }
-        final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());
-        final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
-        if (patchInfo != null) {
-            patchInfo.isRemoveNewVersion = true;
-            SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-        }
+        ShareTinkerInternals.cleanPatch(applicationLike.getApplication());
     }
 
     /**
