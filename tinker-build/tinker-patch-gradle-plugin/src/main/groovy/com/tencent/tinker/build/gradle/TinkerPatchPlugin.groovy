@@ -148,32 +148,33 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 tinkerPatchBuildTask.signConfig = variant.signingConfig
 
                 Set<Task> tinkerManifestTaskSet = new HashSet<>()
-                Map<String, File> outputNameToManifestMap = new HashMap<>()
                 variant.outputs.each { variantOutput ->
                     setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
                     setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)
 
-                    def tinkerManifestOutputPathSeg = "${variant.name}/${variantOutput.dirName}".toString()
-                    if (outputNameToManifestMap.containsKey(tinkerManifestOutputPathSeg)) {
-                        throw new GradleException("Duplicate tinker manifest output path segment: '${tinkerManifestOutputPathSeg}'")
-                    }
+
                     def agpProcessManifestTask = Compatibilities.getProcessManifestTask(project, variant, variantOutput)
-                    def manifestPath = Compatibilities.getOutputManifestPath(project, agpProcessManifestTask, variantOutput)
-                    outputNameToManifestMap.put(tinkerManifestOutputPathSeg, manifestPath)
 
                     // Create a task to add a build TINKER_ID to AndroidManifest.xml
                     // This task must be called after "process${variantName}Manifest", since it
                     // requires that an AndroidManifest.xml exists in `build/intermediates`.
                     def tinkerManifestTaskName = "tinkerProcess${capitalizedVariantName}Manifest"
-                    if (mProject.tasks.findByName(tinkerManifestTaskName) == null) {
-                        TinkerManifestTask tinkerManifestTask = mProject.tasks.create(tinkerManifestTaskName, TinkerManifestTask)
-                        tinkerManifestTask.outputNameToManifestMap.putAll(outputNameToManifestMap)
+                    def tinkerManifestTask = mProject.tasks.findByName(tinkerManifestTaskName)
+                    if (tinkerManifestTask == null) {
+                        tinkerManifestTask = mProject.tasks.create(tinkerManifestTaskName, TinkerManifestTask)
                         tinkerManifestTask.mustRunAfter agpProcessManifestTask
                         tinkerManifestTaskSet.add(tinkerManifestTask)
                     }
-                }
-                def tinkerManifestTasks = tinkerManifestTaskSet.toArray()
 
+                    def tinkerManifestOutputPathSeg = "${variant.name}/${variantOutput.dirName}".toString()
+                    if (tinkerManifestTask.outputNameToManifestMap.containsKey(tinkerManifestOutputPathSeg)) {
+                        throw new GradleException("Duplicate tinker manifest output path segment: '${tinkerManifestOutputPathSeg}'")
+                    }
+                    def manifestPath = Compatibilities.getOutputManifestPath(project, agpProcessManifestTask, variantOutput)
+                    tinkerManifestTask.outputNameToManifestMap.put(tinkerManifestOutputPathSeg, manifestPath)
+                }
+
+                def tinkerManifestTasks = tinkerManifestTaskSet.toArray()
                 def agpProcessResourcesTask = project.tasks.findByName("process${capitalizedVariantName}Resources")
                 agpProcessResourcesTask.dependsOn tinkerManifestTasks
 
