@@ -147,24 +147,16 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 TinkerPatchSchemaTask tinkerPatchBuildTask = mProject.tasks.create("tinkerPatch${capitalizedVariantName}", TinkerPatchSchemaTask)
                 tinkerPatchBuildTask.signConfig = variant.signingConfig
 
-                Set<Task> tinkerManifestTaskSet = new HashSet<>()
+                // Create a task to add a build TINKER_ID to AndroidManifest.xml
+                // This task must be called after "process${variantName}Manifest", since it
+                // requires that an AndroidManifest.xml exists in `build/intermediates`.
+                def agpProcessManifestTask = Compatibilities.getProcessManifestTask(project, variant)
+                def tinkerManifestTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}Manifest", TinkerManifestTask)
+                tinkerManifestTask.mustRunAfter agpProcessManifestTask
+
                 variant.outputs.each { variantOutput ->
                     setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
                     setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)
-
-
-                    def agpProcessManifestTask = Compatibilities.getProcessManifestTask(project, variant, variantOutput)
-
-                    // Create a task to add a build TINKER_ID to AndroidManifest.xml
-                    // This task must be called after "process${variantName}Manifest", since it
-                    // requires that an AndroidManifest.xml exists in `build/intermediates`.
-                    def tinkerManifestTaskName = "tinkerProcess${capitalizedVariantName}Manifest"
-                    def tinkerManifestTask = mProject.tasks.findByName(tinkerManifestTaskName)
-                    if (tinkerManifestTask == null) {
-                        tinkerManifestTask = mProject.tasks.create(tinkerManifestTaskName, TinkerManifestTask)
-                        tinkerManifestTask.mustRunAfter agpProcessManifestTask
-                        tinkerManifestTaskSet.add(tinkerManifestTask)
-                    }
 
                     def tinkerManifestOutputPathSeg = "${variant.name}/${variantOutput.dirName}".toString()
                     if (tinkerManifestTask.outputNameToManifestMap.containsKey(tinkerManifestOutputPathSeg)) {
@@ -174,9 +166,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     tinkerManifestTask.outputNameToManifestMap.put(tinkerManifestOutputPathSeg, manifestPath)
                 }
 
-                def tinkerManifestTasks = tinkerManifestTaskSet.toArray()
                 def agpProcessResourcesTask = project.tasks.findByName("process${capitalizedVariantName}Resources")
-                agpProcessResourcesTask.dependsOn tinkerManifestTasks
+                agpProcessResourcesTask.dependsOn tinkerManifestTask
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}ResourceId", TinkerResourceIdTask)
@@ -185,7 +176,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 applyResourceTask.resDir = Compatibilities.getInputResourcesDirectory(project, agpProcessResourcesTask)
 
                 //let applyResourceTask run after manifestTask
-                applyResourceTask.mustRunAfter tinkerManifestTasks
+                applyResourceTask.mustRunAfter tinkerManifestTask
                 agpProcessResourcesTask.dependsOn applyResourceTask
 
                 // Fix issue-866.
@@ -194,11 +185,9 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 def agpMergeResourcesTask = mProject.tasks.findByName("merge${capitalizedVariantName}Resources")
                 applyResourceTask.dependsOn agpMergeResourcesTask
 
-                tinkerManifestTasks.each { tinkerManifestTask ->
-                    if (tinkerManifestTask.outputNameToManifestMap == null
+                if (tinkerManifestTask.outputNameToManifestMap == null
                         || tinkerManifestTask.outputNameToManifestMap.isEmpty()) {
-                        throw new GradleException("tinkerManifestTask.manifestPath is null, task: ${tinkerManifestTask.name}")
-                    }
+                    throw new GradleException("tinkerManifestTask.manifestPath is null.")
                 }
 
                 if (applyResourceTask.resDir == null) {
@@ -211,7 +200,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 if (proguardEnable) {
                     TinkerProguardConfigTask proguardConfigTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}Proguard", TinkerProguardConfigTask)
                     proguardConfigTask.applicationVariant = variant
-                    proguardConfigTask.mustRunAfter tinkerManifestTasks
+                    proguardConfigTask.mustRunAfter tinkerManifestTask
 
                     def obfuscateTask = getObfuscateTask(variantName)
                     obfuscateTask.dependsOn proguardConfigTask
@@ -224,7 +213,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     TinkerMultidexConfigTask multidexConfigTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
                     multidexConfigTask.multiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
-                    multidexConfigTask.mustRunAfter tinkerManifestTasks
+                    multidexConfigTask.mustRunAfter tinkerManifestTask
 
                     // for java.io.FileNotFoundException: app/build/intermediates/multi-dex/release/manifest_keep.txt
                     // for gradle 3.x gen manifest_keep move to processResources task

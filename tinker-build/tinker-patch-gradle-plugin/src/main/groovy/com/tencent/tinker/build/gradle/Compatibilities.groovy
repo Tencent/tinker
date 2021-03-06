@@ -59,13 +59,8 @@ class Compatibilities {
         return resourcesTask.resDir
     }
 
-    static def getProcessManifestTask(project, variant, variantOutput) {
-        try {
-            return variantOutput.processManifestProvider.get()
-        } catch (Throwable ignored) {
-            // Ignored.
-        }
-        return variantOutput.processManifest
+    static def getProcessManifestTask(project, variant) {
+        return project.tasks.findByName("process${variant.name.capitalize()}Manifest")
     }
 
     static def getAssembleTask(project, variant) {
