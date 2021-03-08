@@ -91,8 +91,6 @@ public final class AppInfoChangedBlocker {
         }
 
         private boolean hackMessage(Message msg) {
-            ShareTinkerLog.i(TAG, "hackmsg: " + msg.what);
-
             if (msg.what == APPLICATION_INFO_CHANGED) {
                 // We are generally in the background this moment(signal trigger is
                 // in front of user), and the signal was going to relaunch all our

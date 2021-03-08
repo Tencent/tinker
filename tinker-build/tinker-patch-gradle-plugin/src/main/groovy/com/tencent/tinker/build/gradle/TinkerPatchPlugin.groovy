@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.gradle
 
-
+import com.android.build.gradle.api.ApkVariant
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
@@ -28,9 +28,9 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.jetbrains.annotations.NotNull
+import sun.misc.Unsafe
 
 import java.lang.reflect.Field
-import java.lang.reflect.Modifier
 
 /**
  * Registers the plugin's tasks.
@@ -39,7 +39,6 @@ import java.lang.reflect.Modifier
  */
 
 class TinkerPatchPlugin implements Plugin<Project> {
-    public static final String TINKER_INTERMEDIATES = "build/intermediates/tinker_intermediates/"
     public static final String ISSUE_URL = "https://github.com/Tencent/tinker/issues"
 
     private Project mProject = null
@@ -103,7 +102,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
             mProject.logger.error("disable archive dex mode so far for keeping dex apply.")
             mProject.logger.error("")
             mProject.logger.error("tinker will change your build configs:")
-            mProject.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file build/intermediates/manifests/full/*")
+            mProject.logger.error("we will add TINKER_ID=${configuration.buildConfig.tinkerId} in your build output manifest file ${project.buildDir}/intermediates/manifests/full/*")
             mProject.logger.error("")
             mProject.logger.error("if minifyEnabled is true")
 
@@ -113,11 +112,11 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 mProject.logger.error("we will build ${mProject.getName()} apk with apply mapping file ${tempMappingPath}")
             }
 
-            mProject.logger.error("you will find the gen proguard rule file at ${TinkerProguardConfigTask.PROGUARD_CONFIG_PATH}")
+            mProject.logger.error("you will find the gen proguard rule file at ${TinkerBuildPath.getProguardConfigPath(project)}")
             mProject.logger.error("and we will help you to put it in the proguardFiles.")
             mProject.logger.error("")
             mProject.logger.error("if multiDexEnabled is true")
-            mProject.logger.error("you will find the gen multiDexKeepProguard file at ${TinkerMultidexConfigTask.MULTIDEX_CONFIG_PATH}")
+            mProject.logger.error("you will find the gen multiDexKeepProguard file at ${TinkerBuildPath.getMultidexConfigPath(project)}")
             mProject.logger.error("and we will help you to put it in the MultiDexKeepProguardFile.")
             mProject.logger.error("")
             mProject.logger.error("if applyResourceMapping file is exist")
@@ -130,74 +129,51 @@ class TinkerPatchPlugin implements Plugin<Project> {
             mProject.logger.error("if resources.arsc has changed, you should use applyResource mode to build the new apk!")
             mProject.logger.error("-----------------------------------------------------------------")
 
-            android.applicationVariants.all { variant ->
-                def variantName = variant.name.capitalize()
+            TinkerResourceIdTask.injectStableIdsFileOnDemand(mProject)
+
+            android.applicationVariants.all { ApkVariant variant ->
+                def variantName = variant.name
+                def capitalizedVariantName = variantName.capitalize()
 
                 def instantRunTask = getInstantRunTask(variantName)
                 if (instantRunTask != null) {
                     throw new GradleException(
                             "Tinker does not support instant run mode, please trigger build"
-                                    + " by assemble${variantName} or disable instant run"
+                                    + " by assemble${capitalizedVariantName} or disable instant run"
                                     + " in 'File->Settings...'."
                     )
                 }
 
-                TinkerPatchSchemaTask tinkerPatchBuildTask = mProject.tasks.create("tinkerPatch${variantName}", TinkerPatchSchemaTask)
-
+                TinkerPatchSchemaTask tinkerPatchBuildTask = mProject.tasks.create("tinkerPatch${capitalizedVariantName}", TinkerPatchSchemaTask)
                 tinkerPatchBuildTask.signConfig = variant.signingConfig
-
-                def agpProcessManifestTask = project.tasks.findByName("process${variantName}Manifest")
-                File manifestOutputBaseDir
-                try {
-                    manifestOutputBaseDir = agpProcessManifestTask.manifestOutputDirectory.asFile.get()
-                } catch (Throwable ignored) {
-                    manifestOutputBaseDir = agpProcessManifestTask.manifestOutputDirectory
-                }
-
-                Map<String, File> outputNameToManifestMap = new HashMap<>()
-                variant.outputs.each { variantOutput ->
-                    setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
-                    setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)
-
-                    def outputName = variantOutput.apkData.dirName
-                    if (outputName.endsWith(File.separator)) {
-                        outputName = outputName.substring(0, outputName.length() - 1)
-                    }
-
-                    if (outputNameToManifestMap.containsKey(outputName)) {
-                        throw new GradleException("Duplicate output: '${outputName}'")
-                    }
-
-                    def manifestDir = new File(manifestOutputBaseDir, outputName)
-                    outputNameToManifestMap.put(outputName, new File(manifestDir, 'AndroidManifest.xml'))
-                }
 
                 // Create a task to add a build TINKER_ID to AndroidManifest.xml
                 // This task must be called after "process${variantName}Manifest", since it
                 // requires that an AndroidManifest.xml exists in `build/intermediates`.
-                TinkerManifestTask tinkerManifestTask = mProject.tasks.create("tinkerProcess${variantName}Manifest", TinkerManifestTask)
-                tinkerManifestTask.outputNameToManifestMap.putAll(outputNameToManifestMap)
+                def agpProcessManifestTask = Compatibilities.getProcessManifestTask(project, variant)
+                def tinkerManifestTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}Manifest", TinkerManifestTask)
                 tinkerManifestTask.mustRunAfter agpProcessManifestTask
 
-                def agpProcessResourcesTask = project.tasks.findByName("process${variantName}Resources")
-                agpProcessResourcesTask.dependsOn tinkerManifestTask
+                variant.outputs.each { variantOutput ->
+                    setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
+                    setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)
 
-                String resDir = null
-                try {
-                    resDir = agpProcessResourcesTask.inputResourcesDir.getAsFile().get()
-                } catch (Throwable ignored) {
-                    try {
-                        resDir = agpProcessResourcesTask.inputResourcesDir.getFiles().first()
-                    } catch (Throwable ignored2) {
-                        resDir = agpProcessResourcesTask.resDir
+                    def tinkerManifestOutputPathSeg = "${variant.name}/${variantOutput.dirName}".toString()
+                    if (tinkerManifestTask.outputNameToManifestMap.containsKey(tinkerManifestOutputPathSeg)) {
+                        throw new GradleException("Duplicate tinker manifest output path segment: '${tinkerManifestOutputPathSeg}'")
                     }
+                    def manifestPath = Compatibilities.getOutputManifestPath(project, agpProcessManifestTask, variantOutput)
+                    tinkerManifestTask.outputNameToManifestMap.put(tinkerManifestOutputPathSeg, manifestPath)
                 }
 
+                def agpProcessResourcesTask = project.tasks.findByName("process${capitalizedVariantName}Resources")
+                agpProcessResourcesTask.dependsOn tinkerManifestTask
+
                 //resource id
-                TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${variantName}ResourceId", TinkerResourceIdTask)
-                applyResourceTask.applicationId = variantData.getApplicationId()
+                TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}ResourceId", TinkerResourceIdTask)
+                applyResourceTask.applicationId = Compatibilities.getApplicationId(project, variant)
                 applyResourceTask.variantName = variant.name
-                applyResourceTask.resDir = resDir
+                applyResourceTask.resDir = Compatibilities.getInputResourcesDirectory(project, agpProcessResourcesTask)
 
                 //let applyResourceTask run after manifestTask
                 applyResourceTask.mustRunAfter tinkerManifestTask
@@ -206,20 +182,23 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 // Fix issue-866.
                 // We found some case that applyResourceTask run after mergeResourcesTask, it caused 'applyResourceMapping' config not work.
                 // The task need merged resources to calculate ids.xml, it must depends on merge resources task.
-                def agpMergeResourcesTask = mProject.tasks.findByName("merge${variantName.capitalize()}Resources")
+                def agpMergeResourcesTask = mProject.tasks.findByName("merge${capitalizedVariantName}Resources")
                 applyResourceTask.dependsOn agpMergeResourcesTask
 
                 if (tinkerManifestTask.outputNameToManifestMap == null
-                        || tinkerManifestTask.outputNameToManifestMap.isEmpty()
-                        || applyResourceTask.resDir == null) {
-                    throw new RuntimeException("manifestTask.manifestPath or applyResourceTask.resDir is null.")
+                        || tinkerManifestTask.outputNameToManifestMap.isEmpty()) {
+                    throw new GradleException("tinkerManifestTask.manifestPath is null.")
+                }
+
+                if (applyResourceTask.resDir == null) {
+                    throw new GradleException("applyResourceTask.resDir is null.")
                 }
 
                 // Add this proguard settings file to the list
                 boolean proguardEnable = variant.getBuildType().buildType.minifyEnabled
 
                 if (proguardEnable) {
-                    TinkerProguardConfigTask proguardConfigTask = mProject.tasks.create("tinkerProcess${variantName}Proguard", TinkerProguardConfigTask)
+                    TinkerProguardConfigTask proguardConfigTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}Proguard", TinkerProguardConfigTask)
                     proguardConfigTask.applicationVariant = variant
                     proguardConfigTask.mustRunAfter tinkerManifestTask
 
@@ -231,7 +210,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 boolean multiDexEnabled = variant.mergedFlavor.multiDexEnabled
 
                 if (multiDexEnabled) {
-                    TinkerMultidexConfigTask multidexConfigTask = mProject.tasks.create("tinkerProcess${variantName}MultidexKeep", TinkerMultidexConfigTask)
+                    TinkerMultidexConfigTask multidexConfigTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
                     multidexConfigTask.multiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
                     multidexConfigTask.mustRunAfter tinkerManifestTask
@@ -292,24 +271,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
      * @param tinkerPatchBuildTask the task that tinker patch uses
      */
     void setPatchOutputFolder(configuration, output, variant, tinkerPatchBuildTask) {
-        File parentFile = null
-
-        if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
-            def packageAndroidArtifact = variant.packageApplicationProvider.get()
-            if (packageAndroidArtifact != null) {
-                try {
-                    parentFile = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), output.apkData.outputFileName)
-                } catch (Exception e) {
-                    parentFile = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
-                }
-            } else {
-                parentFile = output.mainOutputFile.outputFile
-            }
-        } else {
-            parentFile = output.outputFile
-        }
-
-
+        File parentFile = output.outputFile
         String outputFolder = "${configuration.outputFolder}";
         if (!Utils.isNullOrNil(outputFolder)) {
             outputFolder = "${outputFolder}/${TypedValue.PATH_DEFAULT_OUTPUT}/${variant.dirName}"
@@ -357,33 +319,14 @@ class TinkerPatchPlugin implements Plugin<Project> {
             }
         }
 
-        if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
-            def packageAndroidArtifact = variant.packageApplicationProvider.get()
-            if (packageAndroidArtifact != null) {
-                try {
-                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), output.apkData.outputFileName)
-                } catch (Exception e) {
-                    tinkerPatchBuildTask.buildApkPath = new File(packageAndroidArtifact.outputDirectory, output.apkData.outputFileName)
-                }
-            } else {
-                tinkerPatchBuildTask.buildApkPath = output.mainOutputFile.outputFile
-            }
-        } else {
-            tinkerPatchBuildTask.buildApkPath = output.outputFile
-        }
+        tinkerPatchBuildTask.buildApkPath = output.outputFile
 
-        if (variant.metaClass.hasProperty(variant, 'assembleProvider')) {
-            tinkerPatchBuildTask.dependsOn variant.assembleProvider.get()
-        } else {
-            tinkerPatchBuildTask.dependsOn variant.assemble
-        }
-
-
+        tinkerPatchBuildTask.dependsOn Compatibilities.getAssembleTask(mProject, variant)
     }
 
     Task getMultiDexTask(String variantName) {
-        String multiDexTaskName = "multiDexList${variantName}"
-        String multiDexTaskTransformName = "transformClassesWithMultidexlistFor${variantName}"
+        String multiDexTaskName = "multiDexList${variantName.capitalize()}"
+        String multiDexTaskTransformName = "transformClassesWithMultidexlistFor${variantName.capitalize()}"
 
         def multiDexTask = mProject.tasks.findByName(multiDexTaskName)
         if (multiDexTask == null) {
@@ -394,7 +337,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
     }
 
     Task getR8Task(String variantName) {
-        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName.capitalize()}"
         def r8TransformTask = mProject.tasks.findByName(r8TransformTaskName)
         if (r8TransformTask != null) {
             return r8TransformTask
@@ -410,13 +353,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
     @NotNull
     Task getObfuscateTask(String variantName) {
-        String proguardTransformTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
+        String proguardTransformTaskName = "transformClassesAndResourcesWithProguardFor${variantName.capitalize()}"
         def proguardTransformTask = mProject.tasks.findByName(proguardTransformTaskName)
         if (proguardTransformTask != null) {
             return proguardTransformTask
         }
 
-        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName.capitalize()}"
         def r8TransformTask = mProject.tasks.findByName(r8TransformTaskName)
         if (r8TransformTask != null) {
             return r8TransformTask
@@ -440,22 +383,22 @@ class TinkerPatchPlugin implements Plugin<Project> {
     }
 
     Task getInstantRunTask(String variantName) {
-        String instantRunTask = "transformClassesWithInstantRunFor${variantName}"
+        String instantRunTask = "transformClassesWithInstantRunFor${variantName.capitalize()}"
         return mProject.tasks.findByName(instantRunTask)
     }
 
     Task getCollectMultiDexComponentsTask(String variantName) {
-        String collectMultiDexComponents = "collect${variantName}MultiDexComponents"
+        String collectMultiDexComponents = "collect${variantName.capitalize()}MultiDexComponents"
         return mProject.tasks.findByName(collectMultiDexComponents)
     }
 
     void replaceKotlinFinalField(String className, String filedName, Object instance, Object fieldValue) {
         Field field = Class.forName(className).getDeclaredField(filedName)
-        Field modifiersField = Field.class.getDeclaredField("modifiers")
-        modifiersField.setAccessible(true)
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
-        field.setAccessible(true)
-        field.set(instance, fieldValue)
+        final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe")
+        unsafeField.setAccessible(true)
+        final Unsafe unsafe = (Unsafe) unsafeField.get(null)
+        final long fieldOffset = unsafe.objectFieldOffset(field)
+        unsafe.putObject(instance, fieldOffset, fieldValue)
     }
 
     File getManifestMultiDexKeepProguard(def applicationVariant) {

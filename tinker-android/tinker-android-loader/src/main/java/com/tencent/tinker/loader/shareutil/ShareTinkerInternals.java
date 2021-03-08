@@ -17,11 +17,14 @@
 package com.tencent.tinker.loader.shareutil;
 
 import android.app.ActivityManager;
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+
+import com.tencent.tinker.loader.TinkerRuntimeException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -664,4 +667,25 @@ public class ShareTinkerInternals {
         }
     }
 
+    public static void cleanPatch(Application app) {
+        if (app == null) {
+            throw new TinkerRuntimeException("app is null");
+        }
+        final File tinkerDir = SharePatchFileUtil.getPatchDirectory(app);
+        if (!tinkerDir.exists()) {
+            ShareTinkerLog.w(TAG, "try to clean patch while there're not any applied patches.");
+            return;
+        }
+        final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(tinkerDir.getAbsolutePath());
+        if (!patchInfoFile.exists()) {
+            ShareTinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
+            return;
+        }
+        final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());
+        final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+        if (patchInfo != null) {
+            patchInfo.isRemoveNewVersion = true;
+            SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+        }
+    }
 }

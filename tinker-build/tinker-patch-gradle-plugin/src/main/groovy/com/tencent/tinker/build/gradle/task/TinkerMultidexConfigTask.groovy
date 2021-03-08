@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.gradle.task
 
-import com.tencent.tinker.build.gradle.TinkerPatchPlugin
+import com.tencent.tinker.build.gradle.TinkerBuildPath
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 
@@ -26,7 +26,6 @@ import org.gradle.api.tasks.TaskAction
  * @author zhangshaowen
  */
 public class TinkerMultidexConfigTask extends DefaultTask {
-    static final String MULTIDEX_CONFIG_PATH = TinkerPatchPlugin.TINKER_INTERMEDIATES + "tinker_multidexkeep.pro"
     static final String MULTIDEX_CONFIG_SETTINGS =
             "-keep public class * implements com.tencent.tinker.entry.ApplicationLifeCycle {\n" +
                     "    <init>(...);\n" +
@@ -66,7 +65,7 @@ public class TinkerMultidexConfigTask extends DefaultTask {
 
     @TaskAction
     def updateTinkerProguardConfig() {
-        File file = project.file(MULTIDEX_CONFIG_PATH)
+        File file = project.file(TinkerBuildPath.getMultidexConfigPath(project))
         project.logger.error("try update tinker multidex keep proguard file with ${file}")
 
         // Create the directory if it doesn't exist already
