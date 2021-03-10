@@ -405,8 +405,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
         File multiDexKeepProguard = null
 
         try {
-            //for kotlin
-            def file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
+            def file = applicationVariant.variantData.artifacts.get(
                     Class.forName('com.android.build.gradle.internal.scope.InternalArtifactType$LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES')
                             .getDeclaredField("INSTANCE")
                             .get(null)
@@ -415,6 +414,23 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 multiDexKeepProguard = file
             }
         } catch (Throwable ignore) {
+            // Ignored.
+        }
+
+        if (multiDexKeepProguard == null) {
+            try {
+                //for kotlin
+                def file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
+                        Class.forName('com.android.build.gradle.internal.scope.InternalArtifactType$LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES')
+                                .getDeclaredField("INSTANCE")
+                                .get(null)
+                ).getOrNull()?.getAsFile()
+                if (file != null && file.getName() != '__EMPTY_DIR__') {
+                    multiDexKeepProguard = file
+                }
+            } catch (Throwable ignore) {
+                // Ignored.
+            }
         }
 
         if (multiDexKeepProguard == null) {
@@ -428,9 +444,9 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     multiDexKeepProguard = file
                 }
             } catch (Throwable ignore) {
+                // Ignored.
             }
         }
-
 
         if (multiDexKeepProguard == null) {
             try {
@@ -466,7 +482,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
         if (multiDexKeepProguard == null) {
             mProject.logger.error("can't get multiDexKeepProguard file")
         }
+
         return multiDexKeepProguard
     }
-
 }
