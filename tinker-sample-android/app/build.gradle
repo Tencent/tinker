@@ -12,6 +12,7 @@ dependencies {
 
         annotationProcessor("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
         compileOnly("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+        compileOnly("com.tencent.tinker:tinker-android-anno-support:${TINKER_VERSION}") { changing = true }
 
         implementation "androidx.multidex:multidex:2.0.1"
         //use to test multiDex
@@ -23,6 +24,7 @@ dependencies {
         compile "androidx.appcompat:appcompat:1.1.0"
         compile("com.tencent.tinker:tinker-android-lib:${TINKER_VERSION}") { changing = true }
         provided("com.tencent.tinker:tinker-android-anno:${TINKER_VERSION}") { changing = true }
+        provided("com.tencent.tinker:tinker-android-anno-support:${TINKER_VERSION}") { changing = true }
 
         compile "androidx.multidex:multidex:2.0.1"
 
