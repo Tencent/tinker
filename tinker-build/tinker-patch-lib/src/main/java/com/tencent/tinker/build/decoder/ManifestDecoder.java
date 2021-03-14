@@ -44,6 +44,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import tinker.net.dongliu.apk.parser.bean.ApkMeta;
+import tinker.net.dongliu.apk.parser.bean.GlEsVersion;
+import tinker.net.dongliu.apk.parser.bean.Permission;
+import tinker.net.dongliu.apk.parser.bean.UseFeature;
+
 /**
  * Created by zhangshaowen on 16/4/6.
  */
@@ -95,6 +100,8 @@ public class ManifestDecoder extends BaseDecoder {
                 Logger.d("\nManifest has no changes, skip rest decode works.");
                 return false;
             }
+
+            ensureApkMetaUnchanged(oldAndroidManifest.apkMeta, newAndroidManifest.apkMeta);
 
             // check whether there is any new Android Component and get their names.
             // so far only Activity increment can pass checking.
@@ -196,6 +203,230 @@ public class ManifestDecoder extends BaseDecoder {
         }
 
         return false;
+    }
+
+    private void ensureApkMetaUnchanged(ApkMeta oldMeta, ApkMeta newMeta) {
+        if (oldMeta == null && newMeta == null) {
+            // Impossible situation, for edge case protection only.
+            return;
+        }
+        if (oldMeta != null && newMeta != null) {
+            if (!nullSafeEquals(oldMeta.getPackageName(), newMeta.getPackageName(), null)) {
+                announceWarningOrException("Package name changed, old: " + oldMeta.getPackageName()
+                        + ", new: " + newMeta.getPackageName());
+            }
+            if (!nullSafeEquals(oldMeta.getLabel(), newMeta.getLabel(), null)) {
+                announceWarningOrException("App label changed, old: " + oldMeta.getLabel()
+                        + ", new: " + newMeta.getLabel());
+            }
+            if (!nullSafeEquals(oldMeta.getIcon(), newMeta.getIcon(), null)) {
+                announceWarningOrException("App icon res ref changed, old: " + oldMeta.getIcon()
+                        + ", new: " + newMeta.getIcon());
+            }
+            if (!nullSafeEquals(oldMeta.getVersionName(), newMeta.getVersionName(), null)) {
+                Logger.e("Note: Version name changed, old: " + oldMeta.getVersionName()
+                        + ", new: " + newMeta.getVersionName());
+            }
+            final Long oldVersionCode = oldMeta.getVersionCode();
+            final Long newVersionCode = newMeta.getVersionCode();
+            if (oldVersionCode != null && newVersionCode != null) {
+                if (newVersionCode < oldVersionCode) {
+                    announceWarningOrException("Version code downgrade, old: " + oldVersionCode
+                            + ", new: " + newVersionCode);
+                }
+            } else if (!(oldVersionCode == null && newVersionCode == null)) {
+                announceWarningOrException("Version code of old or new apk is missing, old: " + oldVersionCode
+                        + ", new: " + newVersionCode);
+            }
+            if (!nullSafeEquals(oldMeta.getInstallLocation(), newMeta.getInstallLocation(), null)) {
+                announceWarningOrException("Install location changed, old: " + oldMeta.getInstallLocation()
+                        + ", new: " + newMeta.getInstallLocation());
+            }
+            if (!nullSafeEquals(oldMeta.getMinSdkVersion(), newMeta.getMinSdkVersion(), null)) {
+                announceWarningOrException("MinSdkVersion changed, old: " + oldMeta.getMinSdkVersion()
+                        + ", new: " + newMeta.getMinSdkVersion());
+            }
+            if (!nullSafeEquals(oldMeta.getTargetSdkVersion(), newMeta.getTargetSdkVersion(), null)) {
+                announceWarningOrException("TargetSdkVersion changed, old: " + oldMeta.getTargetSdkVersion()
+                        + ", new: " + newMeta.getTargetSdkVersion());
+            }
+            if (!nullSafeEquals(oldMeta.getMaxSdkVersion(), newMeta.getMaxSdkVersion(), null)) {
+                announceWarningOrException("MaxSdkVersion changed, old: " + oldMeta.getMaxSdkVersion()
+                        + ", new: " + newMeta.getMaxSdkVersion());
+            }
+            if (!nullSafeEquals(oldMeta.getGlEsVersion(), newMeta.getGlEsVersion(), GLES_VERSION_EQUALS)) {
+                announceWarningOrException("GLEsVersion changed, old: "
+                        + GLES_VERSION_DESCRIBER.describe(oldMeta.getGlEsVersion())
+                        + ", new: " + GLES_VERSION_DESCRIBER.describe(newMeta.getGlEsVersion()));
+            }
+            if (!nullSafeEquals(oldMeta.isAnyDensity(), newMeta.isAnyDensity(), null)) {
+                announceWarningOrException("Value of isAnyDensity changed, old: " + oldMeta.isAnyDensity()
+                        + ", new: " + newMeta.isAnyDensity());
+            }
+            if (!nullSafeEquals(oldMeta.isSmallScreens(), newMeta.isSmallScreens(), null)) {
+                announceWarningOrException("Value of isSmallScreens changed, old: " + oldMeta.isSmallScreens()
+                        + ", new: " + newMeta.isSmallScreens());
+            }
+            if (!nullSafeEquals(oldMeta.isNormalScreens(), newMeta.isNormalScreens(), null)) {
+                announceWarningOrException("Value of isNormalScreens changed, old: " + oldMeta.isNormalScreens()
+                        + ", new: " + newMeta.isNormalScreens());
+            }
+            if (!nullSafeEquals(oldMeta.isLargeScreens(), newMeta.isLargeScreens(), null)) {
+                announceWarningOrException("Value of isLargeScreens changed, old: " + oldMeta.isLargeScreens()
+                        + ", new: " + newMeta.isLargeScreens());
+            }
+            if (!nullSafeEqualsIgnoreOrder(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions(), null)) {
+                announceWarningOrException("Uses permissions changed, related uses-permissions: "
+                        + describeChanges(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions()));
+            }
+            if (!nullSafeEqualsIgnoreOrder(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_DESCRIBER)) {
+                announceWarningOrException("Uses features changed, related uses-features: "
+                        + describeChanges(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_DESCRIBER));
+            }
+            if (!nullSafeEqualsIgnoreOrder(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_DESCRIBER)) {
+                announceWarningOrException("Uses features changed, related permissions: "
+                        + describeChanges(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_DESCRIBER));
+            }
+        } else {
+            announceWarningOrException("One of apk meta is null, are we processing invalid manifest ?");
+        }
+    }
+
+    private interface EqualsChecker<T> {
+        boolean isEquals(T lhs, T rhs);
+    }
+
+    private static final EqualsChecker<GlEsVersion> GLES_VERSION_EQUALS = new EqualsChecker<GlEsVersion>() {
+        @Override
+        public boolean isEquals(GlEsVersion lhs, GlEsVersion rhs) {
+            if (lhs.getMajor() != rhs.getMajor()) {
+                return false;
+            }
+            if (lhs.getMinor() != rhs.getMinor()) {
+                return false;
+            }
+            return lhs.isRequired() == rhs.isRequired();
+        }
+    };
+
+    private static <T> boolean nullSafeEquals(T lhs, T rhs, EqualsChecker<T> equalsChecker) {
+        if (lhs == null && rhs == null) {
+            return true;
+        }
+        if (lhs != null && rhs != null) {
+            return (equalsChecker != null ? equalsChecker.isEquals(lhs, rhs) : lhs.equals(rhs));
+        }
+        return false;
+    }
+
+    private static <T> boolean nullSafeEqualsIgnoreOrder(List<T> lhs, List<T> rhs, ObjectDescriber<T> describer) {
+        if (lhs == null && rhs == null) {
+            return true;
+        }
+        if (lhs != null && rhs != null) {
+            final Set<String> lhsDescs = new HashSet<>();
+            int lhsNotNullElemCount = 0;
+            int rhsNotNullElemCount = 0;
+            for (int i = 0; i < lhs.size(); ++i) {
+                final T lhsElem = lhs.get(i);
+                if (lhsElem == null) {
+                    continue;
+                }
+                lhsDescs.add(describer != null ? describer.describe(lhsElem) : lhsElem.toString());
+                ++lhsNotNullElemCount;
+            }
+            boolean hasAddedElemDesc = false;
+            for (int i = 0; i < rhs.size(); ++i) {
+                final T rhsElem = rhs.get(i);
+                if (rhsElem == null) {
+                    continue;
+                }
+                final String rhsElemDesc = describer != null ? describer.describe(rhsElem) : rhsElem.toString();
+                if (!lhsDescs.remove(rhsElemDesc)) {
+                    hasAddedElemDesc = true;
+                    break;
+                }
+                ++rhsNotNullElemCount;
+            }
+            if (hasAddedElemDesc) {
+                return false;
+            }
+            if (lhsDescs.size() > 0) {
+                // Has removed items.
+                return false;
+            }
+            return lhsNotNullElemCount == rhsNotNullElemCount;
+        }
+        return false;
+    }
+
+    private interface ObjectDescriber<T> {
+        String describe(T obj);
+    }
+
+    private static final ObjectDescriber<GlEsVersion> GLES_VERSION_DESCRIBER = new ObjectDescriber<GlEsVersion>() {
+        @Override
+        public String describe(GlEsVersion obj) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("{")
+              .append("majar:").append(obj.getMajor())
+              .append("minor:").append(obj.getMinor())
+              .append(",required:").append(obj.isRequired())
+              .append("}");
+            return sb.toString();
+        }
+    };
+
+    private static final ObjectDescriber<UseFeature> USE_FEATURE_DESCRIBER = new ObjectDescriber<UseFeature>() {
+        @Override
+        public String describe(UseFeature obj) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("{")
+              .append("name:").append(obj.getName())
+              .append(",required:").append(obj.isRequired())
+              .append("}");
+            return sb.toString();
+        }
+    };
+
+    private static final ObjectDescriber<Permission> PERMISSION_DESCRIBER = new ObjectDescriber<Permission>() {
+        @Override
+        public String describe(Permission obj) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("{")
+              .append("name:").append(obj.getName())
+              .append(",label:").append(obj.getLabel())
+              .append(",icon:").append(obj.getIcon())
+              .append(",description:").append(obj.getDescription())
+              .append(",group:").append(obj.getGroup())
+              .append(",protectionLevel:").append(obj.getProtectionLevel())
+              .append("}");
+            return sb.toString();
+        }
+    };
+
+    private static <T> String describeChanges(Collection<T> oldObjs, Collection<T> newObjs) {
+        return describeChanges(oldObjs, newObjs, null);
+    }
+
+    private static <T> String describeChanges(Collection<T> oldObjs, Collection<T> newObjs, ObjectDescriber<T> describer) {
+        final Set<String> oldDescs = new HashSet<>();
+        final List<String> addedDescs = new ArrayList<>();
+        for (T oldObj : oldObjs) {
+            oldDescs.add(describer != null ? describer.describe(oldObj) : oldObj.toString());
+        }
+        for (T newObj : newObjs) {
+            final String newDesc = describer != null ? describer.describe(newObj) : newObj.toString();
+            if (!oldDescs.remove(newDesc)) {
+                addedDescs.add(newDesc);
+            }
+        }
+        final List<String> removedDescs = new ArrayList<>(oldDescs);
+        final StringBuilder sb = new StringBuilder();
+        sb.append("{added:").append(addedDescs)
+          .append(",removed:").append(removedDescs)
+          .append("}");
+        return sb.toString();
     }
 
     private Set<String> getIncrementActivities(Collection<String> oldActivities, Collection<String> newActivities) {

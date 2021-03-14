@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.gradle.task
 
-import com.tencent.tinker.build.gradle.TinkerPatchPlugin
+import com.tencent.tinker.build.gradle.TinkerBuildPath
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.commons.util.IOHelper
 import groovy.xml.Namespace
@@ -66,7 +66,7 @@ public class TinkerManifestTask extends DefaultTask {
             File manifestFile = new File(manifestPath)
             if (manifestFile.exists()) {
                 def manifestRelPath = agpIntermediatesDir.toPath().relativize(manifestFile.toPath()).toString()
-                def manifestDestPath = new File(project.file(TinkerPatchPlugin.TINKER_INTERMEDIATES), manifestRelPath)
+                def manifestDestPath = new File(project.file(TinkerBuildPath.getTinkerIntermediates(project)), manifestRelPath)
                 FileOperation.copyFileUsingStream(manifestFile, manifestDestPath)
                 project.logger.error("tinker gen AndroidManifest.xml in ${manifestDestPath}")
             }

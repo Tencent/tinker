@@ -67,32 +67,44 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
         def buildApkFile = new File(buildApkPath)
         def oldApkFile = new File(configuration.oldApk)
-        def newApkList = []
-        def oldApkList = []
+        def newApks = [] as TreeSet<File>
+        def oldApks = [] as TreeSet<File>
+        def oldApkNames = [] as HashSet<String>
+        def newApkNames = [] as HashSet<String>
         if (buildApkFile.isDirectory() && oldApkFile.isDirectory()) {
             // Directory mode
+            oldApkFile.eachFile {
+                if (it.name.endsWith('.apk')) {
+                    oldApks << it
+                    oldApkNames << it.getName()
+                }
+            }
             buildApkFile.eachFile {
                 if (it.name.endsWith('.apk')) {
-                    def oldFile = new File(oldApkFile, it.name)
-                    if (oldFile.isFile()) {
-                        newApkList << it
-                        oldApkList << oldFile
-                    } else {
-                        throw new GradleException("Corresponding old apk: ${oldFile.getAbsolutePath()} does not exist.")
-                    }
+                    newApks << it
+                    newApkNames << it.getName()
                 }
+            }
+
+            def unmatchedOldApkNames = new HashSet<>(oldApkNames)
+            unmatchedOldApkNames.removeAll(newApkNames)
+
+            def unmatchedNewApkNames = new HashSet<>(newApkNames)
+            unmatchedNewApkNames.removeAll(oldApkNames)
+
+            if (!unmatchedOldApkNames.isEmpty() || !unmatchedNewApkNames.isEmpty()) {
+                throw new GradleException("Both oldApk and newApk args are directories"
+                        + " but apks inside them are not matched.\n"
+                        + " unmatched old apks: ${unmatchedOldApkNames}\n"
+                        + " unmatched new apks: ${unmatchedNewApkNames}."
+                )
             }
         } else if (buildApkFile.isFile() && oldApkFile.isFile()) {
             // File mode
-            newApkList << buildApkFile
-            oldApkList << oldApkFile
+            newApks << buildApkFile
+            oldApks << oldApkFile
         } else {
             throw new GradleException("oldApk [${oldApkFile.getAbsolutePath()}] and newApk [${buildApkFile.getAbsolutePath()}] must be both files or directories.")
-        }
-
-        if (oldApkList.size() != newApkList.size()) {
-            throw new GradleException('Both oldApk and newApk is specified with directory and'
-                    + ' file count of these two directories are not equal.')
         }
 
         def tmpDir = new File("${project.buildDir}/tmp/tinkerPatch")
@@ -100,9 +112,9 @@ public class TinkerPatchSchemaTask extends DefaultTask {
         def outputDir = new File(outputFolder)
         outputDir.mkdirs()
 
-        for (def i = 0; i < newApkList.size(); ++i) {
-            def oldApk = oldApkList[i] as File
-            def newApk = newApkList[i] as File
+        for (def i = 0; i < newApks.size(); ++i) {
+            def oldApk = oldApks[i] as File
+            def newApk = newApks[i] as File
 
             def packageConfigFields = new HashMap<String, String>(configuration.packageConfig.getFields())
             packageConfigFields.putAll(configuration.packageConfig.getApkSpecFields(newApk.getName()))
