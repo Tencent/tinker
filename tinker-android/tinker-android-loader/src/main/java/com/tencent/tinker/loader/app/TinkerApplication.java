@@ -84,6 +84,11 @@ public abstract class TinkerApplication extends Application {
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
+                                String loaderClassName, boolean tinkerLoadVerifyFlag) {
+        this(tinkerFlags, delegateClassName, loaderClassName, tinkerLoadVerifyFlag, true);
+    }
+
+    protected TinkerApplication(int tinkerFlags, String delegateClassName,
                                 String loaderClassName, boolean tinkerLoadVerifyFlag,
                                 boolean useDelegateLastClassLoader) {
         synchronized (SELF_HOLDER) {
