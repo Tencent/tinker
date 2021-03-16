@@ -158,12 +158,15 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
                     setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)
 
-                    def tinkerManifestOutputPathSeg = "${variant.name}/${variantOutput.dirName}".toString()
-                    if (tinkerManifestTask.outputNameToManifestMap.containsKey(tinkerManifestOutputPathSeg)) {
-                        throw new GradleException("Duplicate tinker manifest output path segment: '${tinkerManifestOutputPathSeg}'")
+                    def outputName = variantOutput.dirName
+                    if (outputName.endsWith("/")) {
+                        outputName = outputName.substring(0, outputName.length() - 1)
+                    }
+                    if (tinkerManifestTask.outputNameToManifestMap.containsKey(outputName)) {
+                        throw new GradleException("Duplicate tinker manifest output name: '${outputName}'")
                     }
                     def manifestPath = Compatibilities.getOutputManifestPath(project, agpProcessManifestTask, variantOutput)
-                    tinkerManifestTask.outputNameToManifestMap.put(tinkerManifestOutputPathSeg, manifestPath)
+                    tinkerManifestTask.outputNameToManifestMap.put(outputName, manifestPath)
                 }
 
                 def agpProcessResourcesTask = project.tasks.findByName("process${capitalizedVariantName}Resources")
