@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
 
 /**
  * Created by zhangshaowen on 16/3/15.
@@ -222,7 +223,7 @@ public class ApkDecoder extends BaseDecoder {
         }
 
         private String getAbiFromPath(String path) {
-            path = path.replaceAll(File.separator, "/");
+            path = path.replaceAll(Matcher.quoteReplacement(File.separator), "/");
             final int prefixPos = path.indexOf("/lib/");
             if (prefixPos < 0) {
                 return null;
