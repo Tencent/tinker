@@ -20,6 +20,7 @@ import com.tencent.tinker.build.aapt.AaptResourceCollector
 import com.tencent.tinker.build.aapt.AaptUtil
 import com.tencent.tinker.build.aapt.PatchUtil
 import com.tencent.tinker.build.aapt.RDotTxtEntry
+import com.tencent.tinker.build.gradle.Compatibilities
 import com.tencent.tinker.build.gradle.TinkerBuildPath
 import com.tencent.tinker.build.util.FileOperation
 import groovy.io.FileType
@@ -28,9 +29,13 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GFileUtils
+import sun.misc.Unsafe
 
+import java.lang.reflect.Field
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+
+import static com.tencent.tinker.build.gradle.Compatibilities.*
 
 /**
  * The configuration properties.
@@ -38,8 +43,8 @@ import java.util.regex.Pattern
  * @author zhangshaowen
  */
 public class TinkerResourceIdTask extends DefaultTask {
+    def variant
     String resDir
-    String variantName
     String applicationId
 
     //if you need add public flag, set tinker.aapt2.public = true in gradle.properties
@@ -71,6 +76,72 @@ public class TinkerResourceIdTask extends DefaultTask {
         additionalParams.add('--stable-ids')
         additionalParams.add(stableIdsFile.getAbsolutePath())
         project.logger.error("AApt2 is enabled, inject ${stableIdsFile.getAbsolutePath()} into aapt options.")
+    }
+
+    void ensureStableIdsArgsWasInjected(agpProcessResourcesTask) {
+        if (!isAapt2EnabledCompat(project)) {
+            return
+        }
+        def aaptOptions
+        try {
+            aaptOptions = agpProcessResourcesTask.aaptOptions
+        } catch (Throwable ignored) {
+            aaptOptions = null
+        }
+        if (aaptOptions == null) {
+            def currClazz = agpProcessResourcesTask.getClass().getSuperclass()
+            while (true) {
+                try {
+                    def field = currClazz.getDeclaredField('aaptOptions')
+                    field.setAccessible(true)
+                    aaptOptions = field.get(agpProcessResourcesTask)
+                    break
+                } catch (NoSuchFieldException ignored) {
+                    if (!currClazz.equals(Object.class)) {
+                        currClazz = currClazz.getSuperclass()
+                    } else {
+                        break
+                    }
+                }
+            }
+        }
+        // It's wired that only AGP 3.5.x needs this ensurance logic. In newer version of AGP, aaptOptions field
+        // is gone, which let us skip the rest logic.
+        if (aaptOptions != null) {
+            def additionalParameters = aaptOptions.additionalParameters
+            if (additionalParameters == null) {
+                additionalParameters = new ArrayList<String>()
+                replaceFinalField(aaptOptions.getClass(), 'additionalParameters', aaptOptions, additionalParameters)
+            }
+            if (!additionalParameters.contains('--stable-ids')) {
+                additionalParameters.add('--stable-ids')
+                def stableIdsFile = project.file(TinkerBuildPath.getResourcePublicTxt(project))
+                additionalParameters.add(stableIdsFile.getAbsolutePath())
+                project.logger.error("AApt2 is enabled, and tinker ensures that ${stableIdsFile.getAbsolutePath()} is injected into aapt options.")
+            }
+        }
+    }
+
+    static void replaceFinalField(Class<?> clazz, String fieldName, Object instance, Object fieldValue) {
+        Class currClazz = clazz
+        Field field
+        while (true) {
+            try {
+                field = currClazz.getDeclaredField(fieldName)
+                break
+            } catch (NoSuchFieldException e) {
+                if (currClazz.equals(Object.class)) {
+                    throw e
+                } else {
+                    currClazz = currClazz.getSuperclass()
+                }
+            }
+        }
+        final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe")
+        unsafeField.setAccessible(true)
+        final Unsafe unsafe = (Unsafe) unsafeField.get(null)
+        final long fieldOffset = unsafe.objectFieldOffset(field)
+        unsafe.putObject(instance, fieldOffset, fieldValue)
     }
 
     /**
@@ -147,7 +218,7 @@ public class TinkerResourceIdTask extends DefaultTask {
      */
     Map<String, String> getRealNameMap() {
         Map<String, String> realNameMap = new HashMap<>()
-        def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
+        def mergeResourcesTask = Compatibilities.getMergeResourcesTask(project, variant)
         List<File> resDirCandidateList = new ArrayList<>()
         try {
             def output = mergeResourcesTask.outputDir
@@ -261,18 +332,7 @@ public class TinkerResourceIdTask extends DefaultTask {
             return
         }
 
-        def foundVariant = null
-        project.android.applicationVariants.all { def variant ->
-            if (variant.getName() == variantName) {
-                foundVariant = variant
-            }
-        }
-
-        if (foundVariant == null) {
-            throw new GradleException("variant ${variantName} not found")
-        }
-
-        def variantData = foundVariant.getMetaClass().getProperty(foundVariant, 'variantData')
+        def variantData = variant.getMetaClass().getProperty(variant, 'variantData')
         def variantScope = variantData.getScope()
         def globalScope = variantScope.getGlobalScope()
         def androidBuilder = globalScope.getAndroidBuilder()
@@ -296,7 +356,7 @@ public class TinkerResourceIdTask extends DefaultTask {
         }
 
         project.logger.error("tinker get aapt2 path ${aapt2Path}")
-        def mergeResourcesTask = project.tasks.findByName("merge${variantName.capitalize()}Resources")
+        def mergeResourcesTask = Compatibilities.getMergeResourcesTask(project, variant)
         if (xmlFile.exists()) {
             project.exec { def execSpec ->
                 execSpec.executable "${aapt2Path}"
@@ -354,8 +414,10 @@ public class TinkerResourceIdTask extends DefaultTask {
                 stableIdsFile.append("${it}\n")
             }
 
-            def processResourcesTask = project.tasks.findByName("process${variantName.capitalize()}Resources")
+            def processResourcesTask = Compatibilities.getProcessResourcesTask(project, variant)
             processResourcesTask.doFirst {
+                ensureStableIdsArgsWasInjected(processResourcesTask)
+
                 if (project.hasProperty("tinker.aapt2.public")) {
                     addPublicFlagForAapt2 = project.ext["tinker.aapt2.public"]?.toString()?.toBoolean()
                 }

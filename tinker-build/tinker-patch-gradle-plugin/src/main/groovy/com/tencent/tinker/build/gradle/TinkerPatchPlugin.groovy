@@ -169,13 +169,13 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     tinkerManifestTask.outputNameToManifestMap.put(outputName, manifestPath)
                 }
 
-                def agpProcessResourcesTask = project.tasks.findByName("process${capitalizedVariantName}Resources")
+                def agpProcessResourcesTask = Compatibilities.getProcessResourcesTask(project, variant)
                 agpProcessResourcesTask.dependsOn tinkerManifestTask
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}ResourceId", TinkerResourceIdTask)
+                applyResourceTask.variant = variant
                 applyResourceTask.applicationId = Compatibilities.getApplicationId(project, variant)
-                applyResourceTask.variantName = variant.name
                 applyResourceTask.resDir = Compatibilities.getInputResourcesDirectory(project, agpProcessResourcesTask)
 
                 //let applyResourceTask run after manifestTask
@@ -185,7 +185,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 // Fix issue-866.
                 // We found some case that applyResourceTask run after mergeResourcesTask, it caused 'applyResourceMapping' config not work.
                 // The task need merged resources to calculate ids.xml, it must depends on merge resources task.
-                def agpMergeResourcesTask = mProject.tasks.findByName("merge${capitalizedVariantName}Resources")
+                def agpMergeResourcesTask = Compatibilities.getMergeResourcesTask(project, variant)
                 applyResourceTask.dependsOn agpMergeResourcesTask
 
                 if (tinkerManifestTask.outputNameToManifestMap == null
