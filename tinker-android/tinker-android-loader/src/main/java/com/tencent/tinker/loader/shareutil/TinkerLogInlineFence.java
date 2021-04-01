@@ -27,7 +27,7 @@ final class TinkerLogInlineFence extends Handler {
     private static final String TAG = "Tinker.TinkerLogInlineFence";
 
     private static final Handler mainThreadHandler = new Handler(Looper.getMainLooper());
-    private static final List<Object[]> pendingLogs = Collections.synchronizedList(new ArrayList<Object[]>());
+    private static final List<Object[]> pendingLogs = new ArrayList<>();
 
     @Override
     public void handleMessage(Message msg) {
@@ -52,7 +52,9 @@ final class TinkerLogInlineFence extends Handler {
                     logImp.v((String) args[2], (String) args[3], (Object[]) args[4]);
                 }
                 if (logImp == null || logImp == defaultLogImp) {
-                    pendingLogs.add(args);
+                    synchronized (pendingLogs) {
+                        pendingLogs.add(args);
+                    }
                 }
                 break;
             }
@@ -62,7 +64,9 @@ final class TinkerLogInlineFence extends Handler {
                     logImp.d((String) args[2], (String) args[3], (Object[]) args[4]);
                 }
                 if (logImp == null || logImp == defaultLogImp) {
-                    pendingLogs.add(args);
+                    synchronized (pendingLogs) {
+                        pendingLogs.add(args);
+                    }
                 }
                 break;
             }
@@ -72,7 +76,9 @@ final class TinkerLogInlineFence extends Handler {
                     logImp.i((String) args[2], (String) args[3], (Object[]) args[4]);
                 }
                 if (logImp == null || logImp == defaultLogImp) {
-                    pendingLogs.add(args);
+                    synchronized (pendingLogs) {
+                        pendingLogs.add(args);
+                    }
                 }
                 break;
             }
@@ -82,7 +88,9 @@ final class TinkerLogInlineFence extends Handler {
                     logImp.w((String) args[2], (String) args[3], (Object[]) args[4]);
                 }
                 if (logImp == null || logImp == defaultLogImp) {
-                    pendingLogs.add(args);
+                    synchronized (pendingLogs) {
+                        pendingLogs.add(args);
+                    }
                 }
                 break;
             }
@@ -92,7 +100,9 @@ final class TinkerLogInlineFence extends Handler {
                     logImp.e((String) args[2], (String) args[3], (Object[]) args[4]);
                 }
                 if (logImp == null || logImp == defaultLogImp) {
-                    pendingLogs.add(args);
+                    synchronized (pendingLogs) {
+                        pendingLogs.add(args);
+                    }
                 }
                 break;
             }
@@ -102,7 +112,9 @@ final class TinkerLogInlineFence extends Handler {
                     logImp.printErrStackTrace((String) args[2], (Throwable) args[3], (String) args[4], (Object[]) args[5]);
                 }
                 if (logImp == null || logImp == defaultLogImp) {
-                    pendingLogs.add(args);
+                    synchronized (pendingLogs) {
+                        pendingLogs.add(args);
+                    }
                 }
                 break;
             }
@@ -118,54 +130,58 @@ final class TinkerLogInlineFence extends Handler {
     }
 
     private static void printPendingLogs(final ShareTinkerLog.TinkerLogImp logImp) {
-        if (logImp == null || pendingLogs.isEmpty()) {
-            return;
+        synchronized (pendingLogs) {
+            if (logImp == null || pendingLogs.isEmpty()) {
+                return;
+            }
         }
         new Thread(new Runnable() {
             @Override
             public void run() {
                 final SimpleDateFormat timestampFmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ENGLISH);
-                for (Object[] args : pendingLogs) {
-                    final Object[] argsRef = args;
-                    mainThreadHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            final String timestamp = timestampFmt.format(new Date((long) argsRef[1]));
-                            final String prefix = "[PendingLog @ " + timestamp + "] ";
-                            switch ((int) argsRef[0]) {
-                                case Log.VERBOSE: {
-                                    logImp.v((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
-                                    break;
-                                }
-                                case Log.DEBUG: {
-                                    logImp.d((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
-                                    break;
-                                }
-                                case Log.INFO: {
-                                    logImp.i((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
-                                    break;
-                                }
-                                case Log.WARN: {
-                                    logImp.w((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
-                                    break;
-                                }
-                                case Log.ERROR: {
-                                    logImp.e((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
-                                    break;
-                                }
-                                case ShareTinkerLog.FN_LOG_PRINT_STACKTRACE: {
-                                    logImp.printErrStackTrace((String) argsRef[2], (Throwable) argsRef[3], prefix + (String) argsRef[4], (Object[]) argsRef[5]);
-                                    break;
-                                }
-                                default: {
-                                    // Ignored.
-                                    break;
+                synchronized (pendingLogs) {
+                    for (Object[] args : pendingLogs) {
+                        final Object[] argsRef = args;
+                        mainThreadHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                final String timestamp = timestampFmt.format(new Date((long) argsRef[1]));
+                                final String prefix = "[PendingLog @ " + timestamp + "] ";
+                                switch ((int) argsRef[0]) {
+                                    case Log.VERBOSE: {
+                                        logImp.v((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
+                                        break;
+                                    }
+                                    case Log.DEBUG: {
+                                        logImp.d((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
+                                        break;
+                                    }
+                                    case Log.INFO: {
+                                        logImp.i((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
+                                        break;
+                                    }
+                                    case Log.WARN: {
+                                        logImp.w((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
+                                        break;
+                                    }
+                                    case Log.ERROR: {
+                                        logImp.e((String) argsRef[2], prefix + (String) argsRef[3], (Object[]) argsRef[4]);
+                                        break;
+                                    }
+                                    case ShareTinkerLog.FN_LOG_PRINT_STACKTRACE: {
+                                        logImp.printErrStackTrace((String) argsRef[2], (Throwable) argsRef[3], prefix + (String) argsRef[4], (Object[]) argsRef[5]);
+                                        break;
+                                    }
+                                    default: {
+                                        // Ignored.
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
+                    pendingLogs.clear();
                 }
-                pendingLogs.clear();
             }
         }, "tinker_log_printer").start();
     }
