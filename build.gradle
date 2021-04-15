@@ -9,7 +9,6 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.2.1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
-        classpath "com.github.dcendents:android-maven-gradle-plugin:2.1"
         classpath "com.github.jengelman.gradle.plugins:shadow:4.0.4"
     }
 }
@@ -37,25 +36,18 @@ ext {
     javaVersion = JavaVersion.VERSION_1_7
 
     GROUP = 'com.tencent.tinker'
-    VERSION_NAME = "${VERSION_NAME_PREFIX}${VERSION_NAME_SUFFIX}"
+    VERSION_NAME = '1.9.14.15'
 
-    POM_PACKAGING = "pom"
-    POM_DESCRIPTION= "tinker"
+    POM_DESCRIPTION = 'Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.'
+    POM_URL = 'https://github.com/Tencent/tinker'
+    POM_SCM_URL = 'https://github.com/Tencent/tinker.git'
 
-    POM_URL = "https://github.com/Tencent/tinker"
-    POM_SCM_URL = "https://github.com/Tencent/tinker.git"
-    POM_ISSUE_URL = 'https://github.com/Tencent/tinker/issues'
+    POM_LICENCE_NAME = 'BSD License'
+    POM_LICENCE_URL = 'https://opensource.org/licenses/BSD-3-Clause'
+    POM_LICENCE_DIST = 'repo'
 
-    POM_LICENCE_NAME = "BSD License"
-    POM_LICENCE_URL = "https://opensource.org/licenses/BSD-3-Clause"
-    POM_LICENCE_DIST = "repo"
-
-    POM_DEVELOPER_ID="Tencent Wechat"
-    POM_DEVELOPER_NAME="Tencent Wechat, Inc."
-
-    BINTRAY_LICENCE= ['BSD 3-Clause']
-    BINTRAY_ORGANIZATION = "tinker"
-
+    POM_DEVELOPER_ID = 'Tencent Wechat'
+    POM_DEVELOPER_NAME = 'Tencent Wechat, Inc.'
 }
 
 apply from: rootProject.file('gradle/check.gradle')

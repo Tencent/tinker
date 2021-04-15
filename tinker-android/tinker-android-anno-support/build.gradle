@@ -9,5 +9,4 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
 
-apply from: rootProject.file('gradle/java-artifacts.gradle')
-apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
+apply from: rootProject.file('gradle/PublishArtifact.gradle')

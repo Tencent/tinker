@@ -1,6 +1,5 @@
 apply plugin: 'com.android.library'
 
-
 version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
 
@@ -43,5 +42,4 @@ task buildTinkerSdk(type: Copy, dependsOn: [build]) {
     }
 }
 
-apply from: rootProject.file('gradle/android-artifacts.gradle')
-apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
+apply from: rootProject.file('gradle/PublishArtifact.gradle')

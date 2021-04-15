@@ -5,7 +5,6 @@ group rootProject.ext.GROUP
 
 [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
 
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     api project(':tinker-commons')
@@ -30,5 +29,4 @@ sourceSets {
     }
 }
 
-apply from: rootProject.file('gradle/java-artifacts.gradle')
-apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
+apply from: rootProject.file('gradle/PublishArtifact.gradle')
