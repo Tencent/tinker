@@ -77,6 +77,7 @@ class WeChatPublishExtension {
         mountAdditionalLogic(project)
 
         emitPublicationDSL(project)
+        emitSigningDSL(project)
         emitRepositoryDSL(project)
     }
 
@@ -179,6 +180,15 @@ class WeChatPublishExtension {
     protected void mountAdditionalLogic(project) {}
 
     protected void emitPublicationDSL(Project project) {}
+
+    private void emitSigningDSL(Project project) {
+        project.signing {
+            def signingKeyId = findProperty("signingKeyId")
+            def signingKey = findProperty("signingKey")
+            def signingPassword = findProperty("signingPassword")
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+        }
+    }
 
     private void emitRepositoryDSL(Project project) {
         mavenPublishClosures.each { cl ->
