@@ -1,4 +1,4 @@
-apply from: rootProject.file('gradle/WechatPublish.gradle')
+apply from: rootProject.file('gradle/WeChatPublish.gradle')
 
 def checkAndGetOption(name) {
     if (!project.hasProperty(name)) {
