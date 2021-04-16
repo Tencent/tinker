@@ -64,10 +64,14 @@ class WeChatPublishExtension {
         // Verify configuration values
         verifyPublishConfiguration()
 
-        // Emit Maven and/or bintray DSL
+        // Emit Maven DSL
         // Apply plugins if not done already
         if (!project.plugins.hasPlugin('maven-publish')) {
             project.plugins.apply('maven-publish')
+        }
+
+        if (!project.plugins.hasPlugin('signing')) {
+            project.plugins.apply('signing')
         }
 
         mountAdditionalLogic(project)
