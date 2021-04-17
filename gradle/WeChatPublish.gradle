@@ -182,11 +182,11 @@ class WeChatPublishExtension {
     protected void emitPublicationDSL(Project project) {}
 
     private void emitSigningConfig(Project project) {
-        project.ext['signing.keyId'] = project.findProperty('signingKeyId')
-        project.ext['signing.key'] = project.findProperty('signingKey')
-        project.ext['signing.password'] = project.findProperty('signingPassword')
-
+        project.ext['signing.keyId'] = project.findProperty("signingKeyId")
         project.signing {
+            def signingKey = project.findProperty("signingKey")
+            def signingPassword = project.findProperty("signingPassword")
+            useInMemoryPgpKeys(signingKey, signingPassword)
             project.publishing.publications.all { publication ->
                 sign publication
             }
