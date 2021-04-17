@@ -70,14 +70,17 @@ class WeChatPublishExtension {
             project.plugins.apply('maven-publish')
         }
 
-        if (!project.plugins.hasPlugin('signing')) {
-            project.plugins.apply('signing')
-        }
-
         mountAdditionalLogic(project)
 
         emitPublicationDSL(project)
-        emitSigningConfig(project)
+
+        if (project.hasProperty('signingKeyId') || project.hasProperty('signing.keyId')) {
+            if (!project.plugins.hasPlugin('signing')) {
+                project.plugins.apply('signing')
+            }
+            emitSigningConfig(project)
+        }
+
         emitRepositoryDSL(project)
     }
 
