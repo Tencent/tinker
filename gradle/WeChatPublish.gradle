@@ -185,6 +185,12 @@ class WeChatPublishExtension {
         project.ext['signing.keyId'] = project.findProperty('signingKeyId')
         project.ext['signing.key'] = project.findProperty('signingKey')
         project.ext['signing.password'] = project.findProperty('signingPassword')
+
+        project.signing {
+            project.publishing.publications.all { publication ->
+                sign publication
+            }
+        }
     }
 
     private void emitRepositoryDSL(Project project) {
