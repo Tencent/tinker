@@ -173,9 +173,9 @@ public final class TinkerDexOptimizer {
         }
 
         private static void triggerPMDexOptOnDemand(Context context, String dexPath, String oatPath) {
-            if (Build.VERSION.SDK_INT != 29) {
-                // Only do this trick on Android Q devices.
-                ShareTinkerLog.w(TAG, "[+] Not API 29 device, skip fixing.");
+            if (Build.VERSION.SDK_INT < 29) {
+                // Only do this trick on Android Q or newer devices.
+                ShareTinkerLog.w(TAG, "[+] Not API 29 or newer device, skip fixing.");
                 return;
             }
 
