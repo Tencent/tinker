@@ -29,6 +29,7 @@ public class InputParam {
      */
     public final String  oldApk;
     public final String  newApk;
+    public final String  tmpFolder;
     public final String  outFolder;
     public final File    signFile;
     public final String  keypass;
@@ -91,6 +92,7 @@ public class InputParam {
     private InputParam(
             String oldApk,
             String newApk,
+            String tmpFolder,
             String outFolder,
             File signFile,
             String keypass,
@@ -116,12 +118,13 @@ public class InputParam {
             boolean useApplyResource,
             HashMap<String, String> configFields,
 
-        String sevenZipPath,
-        String arkHotPatchPath,
-        String arkHotPatchName
+            String sevenZipPath,
+            String arkHotPatchPath,
+            String arkHotPatchName
     ) {
         this.oldApk = oldApk;
         this.newApk = newApk;
+        this.tmpFolder = tmpFolder;
         this.outFolder = outFolder;
         this.signFile = signFile;
         this.keypass = keypass;
@@ -159,6 +162,7 @@ public class InputParam {
          */
         private String  oldApk;
         private String  newApk;
+        private String  tmpFolder;
         private String  outFolder;
         private File    signFile;
         private String  keypass;
@@ -267,6 +271,11 @@ public class InputParam {
             return this;
         }
 
+        public Builder setTmpBuilder(String tmpFolder) {
+            this.tmpFolder = tmpFolder;
+            return this;
+        }
+
         public Builder setOutBuilder(String outFolder) {
             this.outFolder = outFolder;
             return this;
@@ -361,6 +370,7 @@ public class InputParam {
             return new InputParam(
                     oldApk,
                     newApk,
+                    tmpFolder,
                     outFolder,
                     signFile,
                     keypass,

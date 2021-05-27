@@ -29,7 +29,7 @@ public class Logger {
     private static InfoWriter logWriter;
 
     public static void initLogger(Configuration config) throws IOException {
-        String logPath = config.mOutFolder + File.separator + TypedValue.FILE_LOG;
+        String logPath = config.mTmpFolder + File.separator + TypedValue.FILE_LOG;
         logWriter = new InfoWriter(config, logPath);
     }
 

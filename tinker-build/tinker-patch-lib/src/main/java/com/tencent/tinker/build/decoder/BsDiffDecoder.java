@@ -45,7 +45,7 @@ public class BsDiffDecoder extends BaseDecoder {
         }
 
         if (logPath != null) {
-            logWriter = new InfoWriter(config, config.mOutFolder + File.separator + logPath);
+            logWriter = new InfoWriter(config, config.mTmpFolder + File.separator + logPath);
         } else {
             logWriter = null;
         }

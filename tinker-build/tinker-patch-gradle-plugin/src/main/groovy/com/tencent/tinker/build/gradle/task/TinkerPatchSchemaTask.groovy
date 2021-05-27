@@ -19,7 +19,6 @@ package com.tencent.tinker.build.gradle.task
 import com.tencent.tinker.build.gradle.extension.TinkerPatchExtension
 import com.tencent.tinker.build.patch.InputParam
 import com.tencent.tinker.build.patch.Runner
-import groovy.io.FileType
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.TaskAction
@@ -121,7 +120,8 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
             builder.setOldApk(oldApk.getAbsolutePath())
                     .setNewApk(newApk.getAbsolutePath())
-                    .setOutBuilder(tmpDir.getAbsolutePath())
+                    .setOutBuilder(outputDir.getAbsolutePath())
+                    .setTmpBuilder(tmpDir.getAbsolutePath())
                     .setIgnoreWarning(configuration.ignoreWarning)
                     .setAllowLoaderInAnyDex(configuration.allowLoaderInAnyDex)
                     .setRemoveLoaderForAllDex(configuration.removeLoaderForAllDex)
@@ -145,15 +145,6 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
             InputParam inputParam = builder.create()
             Runner.gradleRun(inputParam)
-
-            def prefix = newApk.name.take(newApk.name.lastIndexOf('.'))
-            tmpDir.eachFile(FileType.FILES) {
-                if (!it.name.endsWith(".apk")) {
-                    return
-                }
-                final File dest = new File(outputDir, "${prefix}-${it.name}")
-                it.renameTo(dest)
-            }
         }
     }
 }

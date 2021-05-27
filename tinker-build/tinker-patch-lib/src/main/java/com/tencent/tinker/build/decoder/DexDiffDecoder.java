@@ -111,7 +111,7 @@ public class DexDiffDecoder extends BaseDecoder {
         }
 
         if (logPath != null) {
-            logWriter = new InfoWriter(config, config.mOutFolder + File.separator + logPath);
+            logWriter = new InfoWriter(config, config.mTmpFolder + File.separator + logPath);
         } else {
             logWriter = null;
         }
@@ -614,7 +614,7 @@ public class DexDiffDecoder extends BaseDecoder {
     }
 
     private void diffDexPairAndFillRelatedInfo(File oldDexFile, File newDexFile, RelatedInfo relatedInfo) {
-        File tempFullPatchDexPath = new File(config.mOutFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR);
+        File tempFullPatchDexPath = new File(config.mTmpFolder + File.separator + TypedValue.DEX_TEMP_PATCH_DIR);
         final String dexName = getRelativeDexName(oldDexFile, newDexFile);
 
         File dexDiffOut = getOutputPath(newDexFile).toFile();

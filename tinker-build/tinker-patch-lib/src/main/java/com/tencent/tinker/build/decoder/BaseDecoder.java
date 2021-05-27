@@ -36,7 +36,7 @@ public abstract class BaseDecoder {
 
     public BaseDecoder(Configuration config) throws IOException {
         this.config = config;
-        this.outDir = new File(config.mOutFolder);
+        this.outDir = new File(config.mTmpFolder);
 
         this.resultDir = config.mTempResultDir;
 

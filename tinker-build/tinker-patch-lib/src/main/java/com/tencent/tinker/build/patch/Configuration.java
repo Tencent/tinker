@@ -90,6 +90,7 @@ public class Configuration {
      */
     public String  mOldApkPath;
     public String  mNewApkPath;
+    public String  mTmpFolder;
     public String  mOutFolder;
     public File    mOldApkFile;
     public File    mNewApkFile;
@@ -172,7 +173,8 @@ public class Configuration {
         mResIgnoreChangeWarningPattern = new HashSet<>();
 
         mPackageFields = new HashMap<>();
-        mOutFolder = outputFile.getAbsolutePath();
+        mTmpFolder = outputFile.getAbsolutePath();
+        mOutFolder = mTmpFolder;
         FileOperation.cleanDir(outputFile);
 
         mOldApkFile = oldApkFile;
@@ -241,6 +243,7 @@ public class Configuration {
         mNewApkPath = param.newApk;
         mNewApkFile = new File(mNewApkPath);
 
+        mTmpFolder = param.tmpFolder;
         mOutFolder = param.outFolder;
 
         mIgnoreWarning = param.ignoreWarning;
@@ -259,7 +262,7 @@ public class Configuration {
         mUseSignAPk = param.useSign;
         setSignData(param.signFile, param.keypass, param.storealias, param.storepass);
 
-        FileOperation.cleanDir(new File(mOutFolder));
+        FileOperation.cleanDir(new File(mTmpFolder));
 
         createTempDirectory();
         checkInputPatternParameter();
@@ -274,7 +277,7 @@ public class Configuration {
         sb.append("configuration: \n");
         sb.append("oldApk:" + mOldApkPath + "\n");
         sb.append("newApk:" + mNewApkPath + "\n");
-        sb.append("outputFolder:" + mOutFolder + "\n");
+        sb.append("outputFolder:" + mTmpFolder + "\n");
         sb.append("isIgnoreWarning:" + mIgnoreWarning + "\n");
         sb.append("isAllowLoaderClassInAnyDex:" + mAllowLoaderInAnyDex + "\n");
         sb.append("isRemoveLoaderForAllDex:" + mRemoveLoaderForAllDex + "\n");
@@ -326,7 +329,7 @@ public class Configuration {
     }
 
     private void createTempDirectory() throws TinkerPatchException {
-        mTempResultDir = new File(mOutFolder + File.separator + TypedValue.PATH_PATCH_FILES);
+        mTempResultDir = new File(mTmpFolder + File.separator + TypedValue.PATH_PATCH_FILES);
         FileOperation.deleteDir(mTempResultDir);
         if (!mTempResultDir.exists()) {
             mTempResultDir.mkdir();
@@ -357,8 +360,8 @@ public class Configuration {
             tempNewName += "-new";
         }
 
-        mTempUnzipOldDir = new File(mOutFolder, tempOldName);
-        mTempUnzipNewDir = new File(mOutFolder, tempNewName);
+        mTempUnzipOldDir = new File(mTmpFolder, tempOldName);
+        mTempUnzipNewDir = new File(mTmpFolder, tempNewName);
     }
 
     public void setSignData(File signatureFile, String keypass, String storealias, String storepass) throws IOException {
