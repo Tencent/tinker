@@ -61,6 +61,11 @@ public final class TinkerApplicationInlineFence extends Handler {
         }
     }
 
+    @Override
+    public void dispatchMessage(Message msg) {
+        // Any requests come from dispatchMessage are unexpected. Ignore them should be ok.
+    }
+
     private void handleMessageImpl(Message msg) {
         switch (msg.what) {
             case ACTION_ON_BASE_CONTEXT_ATTACHED: {

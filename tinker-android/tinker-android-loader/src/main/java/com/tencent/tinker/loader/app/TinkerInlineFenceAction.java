@@ -41,68 +41,128 @@ public final class TinkerInlineFenceAction {
     public static final int ACTION_MZ_NIGHTMODE_USE_OF = 12;
 
     static void callOnBaseContextAttached(Handler inlineFence, Context context) {
-        final Message msg = Message.obtain(inlineFence, ACTION_ON_BASE_CONTEXT_ATTACHED, context);
-        inlineFence.handleMessage(msg);
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_ON_BASE_CONTEXT_ATTACHED, context);
+            inlineFence.handleMessage(msg);
+        } finally {
+            msg.recycle();
+        }
     }
 
     static void callOnCreate(Handler inlineFence) {
-        final Message msg = Message.obtain(inlineFence, ACTION_ON_CREATE);
-        inlineFence.handleMessage(msg);
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_ON_CREATE);
+            inlineFence.handleMessage(msg);
+        } finally {
+            msg.recycle();
+        }
     }
 
     static void callOnConfigurationChanged(Handler inlineFence, Configuration newConfig) {
-        final Message msg = Message.obtain(inlineFence, ACTION_ON_CONFIGURATION_CHANGED, newConfig);
-        inlineFence.handleMessage(msg);
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_ON_CONFIGURATION_CHANGED, newConfig);
+            inlineFence.handleMessage(msg);
+        } finally {
+            msg.recycle();
+        }
     }
 
     static void callOnTrimMemory(Handler inlineFence, int level) {
-        final Message msg = Message.obtain(inlineFence, ACTION_ON_TRIM_MEMORY, level);
-        inlineFence.handleMessage(msg);
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_ON_TRIM_MEMORY, level);
+            inlineFence.handleMessage(msg);
+        } finally {
+            msg.recycle();
+        }
     }
 
     static void callOnLowMemory(Handler inlineFence) {
-        final Message msg = Message.obtain(inlineFence, ACTION_ON_LOW_MEMORY);
-        inlineFence.handleMessage(msg);
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_ON_LOW_MEMORY);
+            inlineFence.handleMessage(msg);
+        } finally {
+            msg.recycle();
+        }
     }
 
     static void callOnTerminate(Handler inlineFence) {
-        final Message msg = Message.obtain(inlineFence, ACTION_ON_TERMINATE);
-        inlineFence.handleMessage(msg);
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_ON_TERMINATE);
+            inlineFence.handleMessage(msg);
+        } finally {
+            msg.recycle();
+        }
     }
 
     static ClassLoader callGetClassLoader(Handler inlineFence, ClassLoader cl) {
-        final Message msg = Message.obtain(inlineFence, ACTION_GET_CLASSLOADER, cl);
-        inlineFence.handleMessage(msg);
-        return (ClassLoader) msg.obj;
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_GET_CLASSLOADER, cl);
+            inlineFence.handleMessage(msg);
+            return (ClassLoader) msg.obj;
+        } finally {
+            msg.recycle();
+        }
     }
 
     static Context callGetBaseContext(Handler inlineFence, Context base) {
-        final Message msg = Message.obtain(inlineFence, ACTION_GET_BASE_CONTEXT, base);
-        inlineFence.handleMessage(msg);
-        return (Context) msg.obj;
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_GET_BASE_CONTEXT, base);
+            inlineFence.handleMessage(msg);
+            return (Context) msg.obj;
+        } finally {
+            msg.recycle();
+        }
     }
 
     static AssetManager callGetAssets(Handler inlineFence, AssetManager assets) {
-        final Message msg = Message.obtain(inlineFence, ACTION_GET_ASSETS, assets);
-        inlineFence.handleMessage(msg);
-        return (AssetManager) msg.obj;
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_GET_ASSETS, assets);
+            inlineFence.handleMessage(msg);
+            return (AssetManager) msg.obj;
+        } finally {
+            msg.recycle();
+        }
     }
 
     static Resources callGetResources(Handler inlineFence, Resources res) {
-        final Message msg = Message.obtain(inlineFence, ACTION_GET_RESOURCES, res);
-        inlineFence.handleMessage(msg);
-        return (Resources) msg.obj;
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_GET_RESOURCES, res);
+            inlineFence.handleMessage(msg);
+            return (Resources) msg.obj;
+        } finally {
+            msg.recycle();
+        }
     }
 
     static Object callGetSystemService(Handler inlineFence, String name, Object service) {
-        final Message msg = Message.obtain(inlineFence, ACTION_GET_SYSTEM_SERVICE, new Object[] {name, service});
-        inlineFence.handleMessage(msg);
-        return msg.obj;
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_GET_SYSTEM_SERVICE, new Object[]{name, service});
+            inlineFence.handleMessage(msg);
+            return msg.obj;
+        } finally {
+            msg.recycle();
+        }
     }
 
     static int callMZNightModeUseOf(Handler inlineFence) {
-        final Message msg = Message.obtain(inlineFence, ACTION_MZ_NIGHTMODE_USE_OF);
-        inlineFence.handleMessage(msg);
-        return (int) msg.obj;
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_MZ_NIGHTMODE_USE_OF);
+            inlineFence.handleMessage(msg);
+            return (int) msg.obj;
+        } finally {
+            msg.recycle();
+        }
     }
 }
