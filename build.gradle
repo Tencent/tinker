@@ -36,7 +36,7 @@ ext {
     javaVersion = JavaVersion.VERSION_1_7
 
     GROUP = 'com.tencent.tinker'
-    VERSION_NAME = '1.9.14.16'
+    VERSION_NAME = '1.9.14.17'
 
     POM_DESCRIPTION = 'Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.'
     POM_URL = 'https://github.com/Tencent/tinker'
