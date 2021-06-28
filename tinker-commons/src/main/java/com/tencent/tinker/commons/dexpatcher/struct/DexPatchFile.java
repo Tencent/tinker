@@ -31,10 +31,17 @@ import java.util.Arrays;
  * Created by tangyinsheng on 2016/7/1.
  */
 public final class DexPatchFile {
+    // First available version.
+    public static final short VERSION_02 = 0x0002;
+    // Add support for dex newer than version 035.
+    public static final short VERSION_03 = 0x0003;
+
     public static final byte[] MAGIC = {0x44, 0x58, 0x44, 0x49, 0x46, 0x46}; // DXDIFF
-    public static final short CURRENT_VERSION = 0x0002;
+    public static final short CURRENT_VERSION = VERSION_03;
     private final DexDataBuffer buffer;
     private short version;
+    private int oldDexAPI;
+    private int patchedDexAPI;
     private int patchedDexSize;
     private int firstChunkOffset;
     private int patchedStringIdSectionOffset;
@@ -42,6 +49,8 @@ public final class DexPatchFile {
     private int patchedProtoIdSectionOffset;
     private int patchedFieldIdSectionOffset;
     private int patchedMethodIdSectionOffset;
+    private int patchedCallSiteIdSectionOffset;
+    private int patchedMethodHandlesSectionOffset;
     private int patchedClassDefSectionOffset;
     private int patchedMapListSectionOffset;
     private int patchedTypeListSectionOffset;
@@ -73,10 +82,14 @@ public final class DexPatchFile {
         }
 
         this.version = this.buffer.readShort();
-        if (CompareUtils.uCompare(this.version, CURRENT_VERSION) != 0) {
-            throw new IllegalStateException("bad dex patch file version: " + this.version + ", expected: " + CURRENT_VERSION);
+        if (this.version != VERSION_02 && this.version != VERSION_03) {
+            throw new IllegalStateException("bad dex patch file version: " + this.version);
         }
 
+        if (this.version > VERSION_02) {
+            this.oldDexAPI = this.buffer.readInt();
+            this.patchedDexAPI = this.buffer.readInt();
+        }
         this.patchedDexSize = this.buffer.readInt();
         this.firstChunkOffset = this.buffer.readInt();
         this.patchedStringIdSectionOffset = this.buffer.readInt();
@@ -84,6 +97,10 @@ public final class DexPatchFile {
         this.patchedProtoIdSectionOffset = this.buffer.readInt();
         this.patchedFieldIdSectionOffset = this.buffer.readInt();
         this.patchedMethodIdSectionOffset = this.buffer.readInt();
+        if (this.version > DexPatchFile.VERSION_02) {
+            this.patchedCallSiteIdSectionOffset = this.buffer.readInt();
+            this.patchedMethodHandlesSectionOffset = this.buffer.readInt();
+        }
         this.patchedClassDefSectionOffset = this.buffer.readInt();
         this.patchedMapListSectionOffset = this.buffer.readInt();
         this.patchedTypeListSectionOffset = this.buffer.readInt();
@@ -109,6 +126,14 @@ public final class DexPatchFile {
         return this.oldDexSignature;
     }
 
+    public int getOldDexAPI() {
+        return oldDexAPI;
+    }
+
+    public int getPatchedDexAPI() {
+        return patchedDexAPI;
+    }
+
     public int getPatchedDexSize() {
         return patchedDexSize;
     }
@@ -131,6 +156,14 @@ public final class DexPatchFile {
 
     public int getPatchedMethodIdSectionOffset() {
         return patchedMethodIdSectionOffset;
+    }
+
+    public int getPatchedCallSiteIdSectionOffset() {
+        return patchedCallSiteIdSectionOffset;
+    }
+
+    public int getPatchedMethodHandlesSectionOffset() {
+        return patchedMethodHandlesSectionOffset;
     }
 
     public int getPatchedClassDefSectionOffset() {

@@ -73,6 +73,17 @@ public final class SizeOf {
      */
     public static final int MEMBER_ID_ITEM = USHORT + USHORT + UINT;
     /**
+     * offset uint
+     */
+    public static final int CALLSITE_ID_ITEM = UINT;
+    /**
+     * method_handle_type ushort
+     * unused ushort
+     * field_or_method_id ushort
+     * unused ushort
+     */
+    public static final int METHOD_HANDLE_ITEM = USHORT + USHORT + USHORT + USHORT;
+    /**
      * class_idx uint
      * access_flags uint
      * superclass_idx uint

@@ -20,6 +20,7 @@ import com.tencent.tinker.android.dex.Annotation;
 import com.tencent.tinker.android.dex.AnnotationSet;
 import com.tencent.tinker.android.dex.AnnotationSetRefList;
 import com.tencent.tinker.android.dex.AnnotationsDirectory;
+import com.tencent.tinker.android.dex.CallSiteId;
 import com.tencent.tinker.android.dex.ClassData;
 import com.tencent.tinker.android.dex.ClassData.Field;
 import com.tencent.tinker.android.dex.ClassData.Method;
@@ -30,6 +31,7 @@ import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.EncodedValue;
 import com.tencent.tinker.android.dex.EncodedValueReader;
 import com.tencent.tinker.android.dex.FieldId;
+import com.tencent.tinker.android.dex.MethodHandle;
 import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.TableOfContents;
@@ -771,6 +773,33 @@ public final class DexClassesComparator {
         return oldName.equals(newName);
     }
 
+    private boolean isSameCallSiteId(Dex oldDex, Dex newDex, int oldCallSiteIdIdx, int newCallSiteIdIdx) {
+        CallSiteId oldCallSiteId = oldDex.callsiteIds().get(oldCallSiteIdIdx);
+        CallSiteId newCallSiteId = newDex.callsiteIds().get(newCallSiteIdIdx);
+        return isSameStaticValue(oldDex, newDex, oldCallSiteId.offset, newCallSiteId.offset);
+    }
+
+    private boolean isSameMethodHandle(Dex oldDex, Dex newDex, int oldMethodHandleIdx, int newMethodHandleIdx) {
+        MethodHandle oldMethodHandle = oldDex.methodHandles().get(oldMethodHandleIdx);
+        MethodHandle newMethodHandle = newDex.methodHandles().get(newMethodHandleIdx);
+        if (oldMethodHandle.methodHandleType != newMethodHandle.methodHandleType) {
+            return false;
+        }
+        if (oldMethodHandle.methodHandleType.isField()) {
+            if (!isSameFieldId(oldDex, newDex, oldMethodHandle.fieldOrMethodId, newMethodHandle.fieldOrMethodId)) {
+                return false;
+            }
+        } else {
+            if (!isSameMethodId(oldDex, newDex, oldMethodHandle.fieldOrMethodId, newMethodHandle.fieldOrMethodId)) {
+                return false;
+            }
+        }
+        if (oldMethodHandle.unused1 != newMethodHandle.unused1) {
+            return false;
+        }
+        return oldMethodHandle.unused2 == newMethodHandle.unused2;
+    }
+
     private boolean isSameProtoId(Dex oldDex, Dex newDex, int oldProtoIdIdx, int newProtoIdIdx) {
         ProtoId oldProtoId = oldDex.protoIds().get(oldProtoIdIdx);
         ProtoId newProtoId = newDex.protoIds().get(newProtoIdIdx);
@@ -1184,6 +1213,21 @@ public final class DexClassesComparator {
             @Override
             protected boolean compareMethod(int methodIndex1, int methodIndex2) {
                 return isSameMethodId(oldDex, newDex, methodIndex1, methodIndex2);
+            }
+
+            @Override
+            protected boolean compareCallSite(int callsiteIndex1, int callsiteIndex2) {
+                return isSameCallSiteId(oldDex, newDex, callsiteIndex1, callsiteIndex2);
+            }
+
+            @Override
+            protected boolean compareMethodHandle(int methodHandleIndex1, int methodHandleIndex2) {
+                return isSameMethodHandle(oldDex, newDex, methodHandleIndex1, methodHandleIndex2);
+            }
+
+            @Override
+            protected boolean compareProto(int protoIndex1, int protoIndex2) {
+                return isSameProtoId(oldDex, newDex, protoIndex1, protoIndex2);
             }
         };
 

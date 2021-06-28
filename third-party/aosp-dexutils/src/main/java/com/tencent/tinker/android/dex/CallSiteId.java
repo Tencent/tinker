@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-package com.tencent.tinker.android.dx.instruction;
+package com.tencent.tinker.android.dex;
 
-import java.io.EOFException;
+import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.android.dex.util.CompareUtils;
 
-/**
- * *** This file is NOT a part of AOSP. ***
- *
- * Created by tangyinsheng on 2016/5/26.
- */
-public final class InstructionReader {
-    private final ShortArrayCodeInput codeIn;
+public class CallSiteId extends Item<CallSiteId> {
+    public int offset;
 
-    public InstructionReader(ShortArrayCodeInput in) {
-        this.codeIn = in;
+    public CallSiteId(int off, int offset) {
+        super(off);
+        this.offset = offset;
     }
 
-    public void accept(InstructionVisitor iv) throws EOFException {
-        InstructionCodec.decode(codeIn, iv);
+    public void writeTo(Dex.Section out) {
+        out.writeInt(offset);
+    }
+
+    @Override
+    public int byteCountInDex() {
+        return SizeOf.UINT;
+    }
+
+    @Override
+    public int compareTo(CallSiteId o) {
+        return CompareUtils.uCompare(offset, o.offset);
     }
 }

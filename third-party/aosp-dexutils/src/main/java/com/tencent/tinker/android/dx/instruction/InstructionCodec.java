@@ -16,26 +16,62 @@
 
 package com.tencent.tinker.android.dx.instruction;
 
+import static com.tencent.tinker.android.dx.instruction.Opcodes.extractOpcodeFromUnit;
+
 import com.tencent.tinker.android.dex.DexException;
 import com.tencent.tinker.android.dx.util.Hex;
+
+import java.io.EOFException;
+import java.util.Arrays;
 
 /**
  * Encode/Decode instruction opcode.
  */
 public final class InstructionCodec {
-    /** "Unknown." Used for undefined opcodes. */
+    /**
+     * "Unknown." Used for undefined opcodes.
+     */
     public static final int INDEX_TYPE_UNKNOWN = 0;
-    /** no index used */
+    /**
+     * no index used
+     */
     public static final int INDEX_TYPE_NONE = 1;
-    /** type reference index */
+    /**
+     * type reference index
+     */
     public static final int INDEX_TYPE_TYPE_REF = 2;
-    /** string reference index */
+    /**
+     * string reference index
+     */
     public static final int INDEX_TYPE_STRING_REF = 3;
-    /** method reference index */
+    /**
+     * method reference index
+     */
     public static final int INDEX_TYPE_METHOD_REF = 4;
-    /** field reference index */
+    /**
+     * field reference index
+     */
     public static final int INDEX_TYPE_FIELD_REF = 5;
-    /** "Unknown." Used for undefined opcodes. */
+    /**
+     * method index and a proto index
+     */
+    public static final int INDEX_TYPE_METHOD_AND_PROTO_REF = 6;
+    /**
+     * call site reference index
+     */
+    public static final int INDEX_TYPE_CALL_SITE_REF = 7;
+    /**
+     * method handle reference index (for loading constant method handles)
+     */
+    public static final int INDEX_TYPE_METHOD_HANDLE_REF = 8;
+    /**
+     * proto reference index (for loading constant proto ref)
+     */
+    public static final int INDEX_TYPE_PROTO_REF = 9;
+
+    /**
+     * "Unknown." Used for undefined opcodes.
+     */
     public static final int INSN_FORMAT_UNKNOWN = 0;
     public static final int INSN_FORMAT_00X = 1;
     public static final int INSN_FORMAT_10T = 2;
@@ -62,11 +98,542 @@ public final class InstructionCodec {
     public static final int INSN_FORMAT_35C = 23;
     public static final int INSN_FORMAT_3RC = 24;
     public static final int INSN_FORMAT_51L = 25;
-    public static final int INSN_FORMAT_FILL_ARRAY_DATA_PAYLOAD = 26;
-    public static final int INSN_FORMAT_PACKED_SWITCH_PAYLOAD = 27;
-    public static final int INSN_FORMAT_SPARSE_SWITCH_PAYLOAD = 28;
+    public static final int INSN_FORMAT_45CC = 26;
+    public static final int INSN_FORMAT_4RCC = 27;
+    public static final int INSN_FORMAT_PACKED_SWITCH_PAYLOAD = 28;
+    public static final int INSN_FORMAT_SPARSE_SWITCH_PAYLOAD = 29;
+    public static final int INSN_FORMAT_FILL_ARRAY_DATA_PAYLOAD = 30;
+
     private InstructionCodec() {
         throw new UnsupportedOperationException();
+    }
+
+    public static void decode(ShortArrayCodeInput in, InstructionVisitor iv) throws EOFException {
+        in.reset();
+        while (in.hasMore()) {
+            final int currentAddress = in.cursor();
+            final int opcodeUnit = in.read();
+            final int opcode = extractOpcodeFromUnit(opcodeUnit);
+            final int insnFormat = getInstructionFormat(opcode);
+            switch (insnFormat) {
+                case INSN_FORMAT_00X: {
+                    iv.visitZeroRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, 0L);
+                    break;
+                }
+                case INSN_FORMAT_10X: {
+                    final int literal = byte1(opcodeUnit);
+                    iv.visitZeroRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal);
+                    break;
+                }
+                case INSN_FORMAT_12X: {
+                    final int a = nibble2(opcodeUnit);
+                    final int b = nibble3(opcodeUnit);
+                    iv.visitTwoRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, 0L, a, b);
+                    break;
+                }
+                case INSN_FORMAT_11N: {
+                    final int a = nibble2(opcodeUnit);
+                    final int literal = (nibble3(opcodeUnit) << 28) >> 28; // sign-extend
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a);
+                    break;
+                }
+                case INSN_FORMAT_11X: {
+                    final int a = byte1(opcodeUnit);
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, 0L, a);
+                    break;
+                }
+                case INSN_FORMAT_10T: {
+                    final int target = currentAddress +  (byte) byte1(opcodeUnit); // sign-extend
+                    iv.visitZeroRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, target, 0L);
+                    break;
+                }
+                case INSN_FORMAT_20T: {
+                    final int literal = byte1(opcodeUnit); // should be zero
+                    final int target = currentAddress + (short) in.read(); // sign-extend
+                    iv.visitZeroRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, target, literal);
+                    break;
+                }
+                case INSN_FORMAT_22X: {
+                    final int a = byte1(opcodeUnit);
+                    final int b = in.read();
+                    iv.visitTwoRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, 0L, a, b);
+                    break;
+                }
+                case INSN_FORMAT_21T: {
+                    final int a = byte1(opcodeUnit);
+                    final int target = currentAddress + (short) in.read(); // sign-extend
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, target, 0L, a);
+                    break;
+                }
+                case INSN_FORMAT_21S: {
+                    final int a = byte1(opcodeUnit);
+                    final int literal = (short) in.read(); // sign-extend
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a);
+                    break;
+                }
+                case INSN_FORMAT_21H: {
+                    final int a = byte1(opcodeUnit);
+                    long literal = (short) in.read(); // sign-extend
+
+                    /*
+                     * Format 21h decodes differently depending on the opcode,
+                     * because the "signed hat" might represent either a 32-
+                     * or 64- bit value.
+                     */
+                    literal <<= (opcode == Opcodes.CONST_HIGH16) ? 16 : 48;
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a);
+                    break;
+                }
+                case INSN_FORMAT_21C: {
+                    final int a = byte1(opcodeUnit);
+                    final int index = in.read();
+                    final int indexType = getInstructionIndexType(opcode);
+                    iv.visitOneRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a);
+                    break;
+                }
+                case INSN_FORMAT_23X: {
+                    final int a = byte1(opcodeUnit);
+                    final int bc = in.read();
+                    final int b = byte0(bc);
+                    final int c = byte1(bc);
+                    iv.visitThreeRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, 0L, a, b, c);
+                    break;
+                }
+                case INSN_FORMAT_22B: {
+                    final int a = byte1(opcodeUnit);
+                    final int bc = in.read();
+                    final int b = byte0(bc);
+                    final int literal = (byte) byte1(bc); // sign-extend
+                    iv.visitTwoRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a, b);
+                    break;
+                }
+                case INSN_FORMAT_22T: {
+                    final int a = nibble2(opcodeUnit);
+                    final int b = nibble3(opcodeUnit);
+                    final int target = currentAddress + (short) in.read(); // sign-extend
+                    iv.visitTwoRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, target, 0L, a, b);
+                    break;
+                }
+                case INSN_FORMAT_22S: {
+                    final int a = nibble2(opcodeUnit);
+                    final int b = nibble3(opcodeUnit);
+                    final int literal = (short) in.read(); // sign-extend
+                    iv.visitTwoRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a, b);
+                    break;
+                }
+                case INSN_FORMAT_22C: {
+                    final int a = nibble2(opcodeUnit);
+                    final int b = nibble3(opcodeUnit);
+                    final int index = in.read();
+                    final int indexType = getInstructionIndexType(opcode);
+                    iv.visitTwoRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a, b);
+                    break;
+                }
+                case INSN_FORMAT_30T: {
+                    final int literal = byte1(opcodeUnit); // should be zero
+                    final int target = currentAddress + in.readInt();
+                    iv.visitZeroRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, target, literal);
+                    break;
+                }
+                case INSN_FORMAT_32X: {
+                    final int literal = byte1(opcodeUnit); // should be zero
+                    final int a = in.read();
+                    final int b = in.read();
+                    iv.visitTwoRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a, b);
+                    break;
+                }
+                case INSN_FORMAT_31I: {
+                    final int a = byte1(opcodeUnit);
+                    final int literal = in.readInt();
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a);
+                    break;
+                }
+                case INSN_FORMAT_31T: {
+                    int a = InstructionCodec.byte1(opcodeUnit);
+                    int target = currentAddress + in.readInt();
+                    /*
+                     * Switch instructions need to "forward" their addresses to their
+                     * payload target instructions.
+                     */
+                    switch (opcode) {
+                        case Opcodes.PACKED_SWITCH:
+                        case Opcodes.SPARSE_SWITCH: {
+                            // plus 1 means when we actually lookup the currentAddress
+                            // by (payload insn address + 1),
+                            in.setBaseAddress(target + 1, currentAddress);
+                            break;
+                        }
+                        default: {
+                            break;
+                        }
+                    }
+
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, InstructionCodec.INDEX_TYPE_NONE, target, 0L, a);
+                    break;
+                }
+                case INSN_FORMAT_31C: {
+                    final int a = byte1(opcodeUnit);
+                    final int index = in.readInt();
+                    final int indexType = getInstructionIndexType(opcode);
+                    iv.visitOneRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a);
+                    break;
+                }
+                case INSN_FORMAT_35C: {
+                    final int e = nibble2(opcodeUnit);
+                    final int registerCount = nibble3(opcodeUnit);
+                    final int index = in.read();
+                    final int abcd = in.read();
+                    final int a = nibble0(abcd);
+                    final int b = nibble1(abcd);
+                    final int c = nibble2(abcd);
+                    final int d = nibble3(abcd);
+                    final int indexType = getInstructionIndexType(opcode);
+
+                    switch (registerCount) {
+                        case 0:
+                            iv.visitZeroRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L);
+                            break;
+                        case 1:
+                            iv.visitOneRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a);
+                            break;
+                        case 2:
+                            iv.visitTwoRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a, b);
+                            break;
+                        case 3:
+                            iv.visitThreeRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a, b, c);
+                            break;
+                        case 4:
+                            iv.visitFourRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a, b, c, d);
+                            break;
+                        case 5:
+                            iv.visitFiveRegisterInsn(currentAddress, opcode, index, indexType, 0, 0L, a, b, c, d, e);
+                            break;
+                        default:
+                            throw new DexException("bogus registerCount: " + Hex.uNibble(registerCount));
+                            // FIXME debug here.
+                    }
+
+                    break;
+                }
+                case INSN_FORMAT_3RC: {
+                    final int registerCount = byte1(opcodeUnit);
+                    final int index = in.read();
+                    final int a = in.read();
+                    final int indexType = getInstructionIndexType(opcode);
+                    iv.visitRegisterRangeInsn(currentAddress, opcode, index, indexType, 0, 0L, a, registerCount);
+                    break;
+                }
+                case INSN_FORMAT_51L: {
+                    final int a = byte1(opcodeUnit);
+                    final long literal = in.readLong();
+                    iv.visitOneRegisterInsn(currentAddress, opcode, 0, INDEX_TYPE_NONE, 0, literal, a);
+                    break;
+                }
+                case INSN_FORMAT_45CC: {
+                    if (opcode != Opcodes.INVOKE_POLYMORPHIC) {
+                        // 45cc isn't currently used for anything other than invoke-polymorphic.
+                        // If that changes, add a more general DecodedInstruction for this format.
+                        // TODO keep track on aosp dx project if such changes happen.
+                        throw new UnsupportedOperationException(String.valueOf(opcode));
+                    }
+                    final int g = nibble2(opcodeUnit);
+                    final int registerCount = nibble3(opcodeUnit);
+                    final int methodIndex = in.read();
+                    final int cdef = in.read();
+                    final int c = nibble0(cdef);
+                    final int d = nibble1(cdef);
+                    final int e = nibble2(cdef);
+                    final int f = nibble3(cdef);
+                    final int protoIndex = in.read();
+                    final int indexType = getInstructionIndexType(opcode);
+
+                    if (registerCount < 1 || registerCount > 5) {
+                        throw new DexException("bogus registerCount: " + Hex.uNibble(registerCount));
+                    }
+
+                    final int[] registers = Arrays.copyOfRange(new int[] {c, d, e, f, g}, 0, registerCount);
+
+                    iv.visitInvokePolymorphicInstruction(currentAddress, opcode, methodIndex, indexType, protoIndex, registers);
+                    break;
+                }
+                case INSN_FORMAT_4RCC: {
+                    if (opcode != Opcodes.INVOKE_POLYMORPHIC_RANGE) {
+                        // 4rcc isn't currently used for anything other than invoke-polymorphic.
+                        // If that changes, add a more general DecodedInstruction for this format.
+                        // TODO keep track on aosp dx project if such changes happen.
+                        throw new UnsupportedOperationException(String.valueOf(opcode));
+                    }
+                    final int registerCount = byte1(opcodeUnit);
+                    final int methodIndex = in.read();
+                    final int c = in.read();
+                    final int protoIndex = in.read();
+                    final int indexType = getInstructionIndexType(opcode);
+                    iv.visitInvokePolymorphicRangeInstruction(currentAddress, opcode, methodIndex, indexType, c, registerCount, protoIndex);
+                    break;
+                }
+                case INSN_FORMAT_PACKED_SWITCH_PAYLOAD: {
+                    final int baseAddress = in.baseAddressForCursor();
+                    final int size = in.read();
+                    final int firstKey = in.readInt();
+                    final int[] targets = new int[size];
+
+                    for (int i = 0; i < size; i++) {
+                        targets[i] = baseAddress + in.readInt();
+                    }
+                    iv.visitPackedSwitchPayloadInsn(currentAddress, opcodeUnit, firstKey, targets);
+                    break;
+                }
+                case INSN_FORMAT_SPARSE_SWITCH_PAYLOAD: {
+                    final int baseAddress = in.baseAddressForCursor();
+                    final int size = in.read();
+                    final int[] keys = new int[size];
+                    final int[] targets = new int[size];
+
+                    for (int i = 0; i < size; i++) {
+                        keys[i] = in.readInt();
+                    }
+
+                    for (int i = 0; i < size; i++) {
+                        targets[i] = baseAddress + in.readInt();
+                    }
+
+                    iv.visitSparseSwitchPayloadInsn(currentAddress, opcodeUnit, keys, targets);
+                    break;
+                }
+                case INSN_FORMAT_FILL_ARRAY_DATA_PAYLOAD: {
+                    final int elementWidth = in.read();
+                    final int size = in.readInt();
+                    switch (elementWidth) {
+                        case 1: {
+                            byte[] array = new byte[size];
+                            boolean even = true;
+                            for (int i = 0, value = 0; i < size; ++i, even = !even) {
+                                if (even) {
+                                    value = in.read();
+                                }
+                                array[i] = (byte) (value & 0xff);
+                                value >>= 8;
+                            }
+                            iv.visitFillArrayDataPayloadInsn(currentAddress, opcodeUnit, array, array.length, 1);
+                            break;
+                        }
+                        case 2: {
+                            short[] array = new short[size];
+                            for (int i = 0; i < size; i++) {
+                                array[i] = (short) in.read();
+                            }
+                            iv.visitFillArrayDataPayloadInsn(currentAddress, opcodeUnit, array, array.length, 2);
+                            break;
+                        }
+                        case 4: {
+                            int[] array = new int[size];
+                            for (int i = 0; i < size; i++) {
+                                array[i] = in.readInt();
+                            }
+                            iv.visitFillArrayDataPayloadInsn(currentAddress, opcodeUnit, array, array.length, 4);
+                            break;
+                        }
+                        case 8: {
+                            long[] array = new long[size];
+                            for (int i = 0; i < size; i++) {
+                                array[i] = in.readLong();
+                            }
+                            iv.visitFillArrayDataPayloadInsn(currentAddress, opcodeUnit, array, array.length, 8);
+                            break;
+                        }
+                        default: {
+                            throw new DexException("bogus element_width: " + Hex.u2(elementWidth));
+                        }
+                    }
+                    break;
+                }
+                default:
+                    throw new DexException("Unknown instruction format: " + insnFormat);
+            }
+        }
+    }
+
+    public static void encode(ShortArrayCodeOutput out, InstructionWriter iw) {
+        final int opcode = iw.currOpcode;
+        final int insnFormat = getInstructionFormat(opcode);
+        switch (insnFormat) {
+            case INSN_FORMAT_00X:
+            case INSN_FORMAT_10X: {
+                out.write((short) opcode);
+                break;
+            }
+            case INSN_FORMAT_12X: {
+                out.write(codeUnit(opcode, makeByte(iw.currRegA, iw.currRegB)));
+                break;
+            }
+            case INSN_FORMAT_11N: {
+                out.write(codeUnit(opcode, makeByte(iw.currRegA, getLiteralNibble(iw.currLiteral))));
+                break;
+            }
+            case INSN_FORMAT_11X: {
+                out.write(codeUnit(opcode, iw.currRegA));
+                break;
+            }
+            case INSN_FORMAT_10T: {
+                final int relativeTarget = getTargetByte(iw.currTarget, out.cursor());
+                out.write(codeUnit(opcode, relativeTarget));
+                break;
+            }
+            case INSN_FORMAT_20T: {
+                final short relativeTarget = getTargetUnit(iw.currTarget, out.cursor());
+                out.write((short) opcode, relativeTarget);
+                break;
+            }
+            case INSN_FORMAT_22X: {
+                out.write(codeUnit(opcode, iw.currRegA), getBUnit(iw.currRegB));
+                break;
+            }
+            case INSN_FORMAT_21T: {
+                final short relativeTarget = getTargetUnit(iw.currTarget, out.cursor());
+                out.write(codeUnit(opcode, iw.currRegA), relativeTarget);
+                break;
+            }
+            case INSN_FORMAT_21S: {
+                out.write(codeUnit(opcode, iw.currRegA), getLiteralUnit(iw.currLiteral));
+                break;
+            }
+            case INSN_FORMAT_21H: {
+                final int shift = (opcode == Opcodes.CONST_HIGH16) ? 16 : 48;
+                final short literal = (short) (iw.currLiteral >> shift);
+                out.write(codeUnit(opcode, iw.currRegA), literal);
+                break;
+            }
+            case INSN_FORMAT_21C: {
+                out.write(codeUnit(opcode, iw.currRegA), (short) iw.currIndex);
+                break;
+            }
+            case INSN_FORMAT_23X: {
+                out.write(codeUnit(opcode, iw.currRegA), codeUnit(iw.currRegB, iw.currRegC));
+                break;
+            }
+            case INSN_FORMAT_22B: {
+                out.write(codeUnit(opcode, iw.currRegA), codeUnit(iw.currRegB, getLiteralByte(iw.currLiteral)));
+                break;
+            }
+            case INSN_FORMAT_22T: {
+                final short relativeTarget = getTargetUnit(iw.currTarget, out.cursor());
+                out.write(codeUnit(opcode, makeByte(iw.currRegA, iw.currRegB)), relativeTarget);
+                break;
+            }
+            case INSN_FORMAT_22S: {
+                out.write(codeUnit(opcode, makeByte(iw.currRegA, iw.currRegB)), getLiteralUnit(iw.currLiteral));
+                break;
+            }
+            case INSN_FORMAT_22C: {
+                out.write(codeUnit(opcode, makeByte(iw.currRegA, iw.currRegB)), (short) iw.currIndex);
+                break;
+            }
+            case INSN_FORMAT_30T: {
+                final int relativeTarget = getTarget(iw.currTarget, out.cursor());
+                out.write((short) opcode, unit0(relativeTarget), unit1(relativeTarget));
+                break;
+            }
+            case INSN_FORMAT_32X: {
+                out.write((short) opcode, getAUnit(iw.currRegA), getBUnit(iw.currRegB));
+                break;
+            }
+            case INSN_FORMAT_31I: {
+                final int literal = getLiteralInt(iw.currLiteral);
+                out.write(codeUnit(opcode, iw.currRegA), unit0(literal), unit1(literal));
+                break;
+            }
+            case INSN_FORMAT_31T: {
+                /*
+                 * Switch instructions need to "forward" their addresses to their
+                 * payload target instructions.
+                 */
+                switch (opcode) {
+                    case Opcodes.PACKED_SWITCH:
+                    case Opcodes.SPARSE_SWITCH: {
+                        out.setBaseAddress(iw.currTarget, out.cursor());
+                        break;
+                    }
+                    default: // fall out
+                }
+                final int relativeTarget = getTarget(iw.currTarget, out.cursor());
+                out.write(codeUnit(opcode, iw.currRegA), unit0(relativeTarget), unit1(relativeTarget));
+                break;
+            }
+            case INSN_FORMAT_31C: {
+                final int index = iw.currIndex;
+                out.write(codeUnit(opcode, iw.currRegA), unit0(index), unit1(index));
+                break;
+            }
+            case INSN_FORMAT_35C: {
+                out.write(codeUnit(opcode, makeByte(iw.currRegE, iw.currRegisterCount)),
+                        (short) iw.currIndex, codeUnit(iw.currRegA, iw.currRegB, iw.currRegC, iw.currRegD));
+                break;
+            }
+            case INSN_FORMAT_3RC: {
+                out.write(codeUnit(opcode, iw.currRegisterCount), (short) iw.currIndex, getAUnit(iw.currRegA));
+                break;
+            }
+            case INSN_FORMAT_51L: {
+                final long literal = iw.currLiteral;
+                out.write(codeUnit(opcode, iw.currRegA),
+                        unit0(literal), unit1(literal), unit2(literal), unit3(literal));
+                break;
+            }
+            case INSN_FORMAT_45CC: {
+                out.write(codeUnit(opcode, makeByte(iw.currRegG, iw.currRegisterCount)), (short) iw.currIndex,
+                        codeUnit(iw.currRegC, iw.currRegD, iw.currRegE, iw.currRegF), (short) iw.currProtoIndex);
+                break;
+            }
+            case INSN_FORMAT_4RCC: {
+                out.write(codeUnit(opcode, iw.currRegisterCount), (short) iw.currIndex,
+                        getCUnit(iw.currRegC), (short) iw.currProtoIndex);
+                break;
+            }
+            case INSN_FORMAT_PACKED_SWITCH_PAYLOAD: {
+                final int[] targets = iw.currTargets;
+                final int baseAddress = out.baseAddressForCursor();
+                out.write((short) opcode);
+                out.write(asUnsignedUnit(targets.length));
+                out.writeInt(iw.currFirstKey);
+                for (int target : targets) {
+                    out.writeInt(target - baseAddress);
+                }
+                break;
+            }
+            case INSN_FORMAT_SPARSE_SWITCH_PAYLOAD: {
+                final int[] keys = iw.currKeys;
+                final int[] targets = iw.currTargets;
+                final int baseAddress = out.baseAddressForCursor();
+                out.write((short) opcode);
+                out.write(asUnsignedUnit(targets.length));
+                for (int key : keys) {
+                    out.writeInt(key);
+                }
+                for (int target : targets) {
+                    out.writeInt(target - baseAddress);
+                }
+                break;
+            }
+            case INSN_FORMAT_FILL_ARRAY_DATA_PAYLOAD: {
+                final short elementWidth = (short) iw.currElementWidth;
+                out.write((short) opcode);
+                out.write(elementWidth);
+                out.writeInt(iw.currSize);
+                final Object data = iw.currData;
+                switch (elementWidth) {
+                    case 1: out.write((byte[]) data);  break;
+                    case 2: out.write((short[]) data); break;
+                    case 4: out.write((int[]) data);   break;
+                    case 8: out.write((long[]) data);  break;
+                    default: {
+                        throw new DexException("bogus element_width: " + Hex.u2(elementWidth));
+                    }
+                }
+                break;
+            }
+            default:
+                throw new DexException("Unknown instruction format: " + insnFormat);
+        }
     }
 
     public static short codeUnit(int lowByte, int highByte) {
@@ -147,27 +714,27 @@ public final class InstructionCodec {
         return (short) (value >> 48);
     }
 
-    public static int byte0(int value) {
+    private static int byte0(int value) {
         return value & 0xff;
     }
 
-    public static int byte1(int value) {
+    private static int byte1(int value) {
         return (value >> 8) & 0xff;
     }
 
-    public static int nibble0(int value) {
+    private static int nibble0(int value) {
         return value & 0xf;
     }
 
-    public static int nibble1(int value) {
+    private static int nibble1(int value) {
         return (value >> 4) & 0xf;
     }
 
-    public static int nibble2(int value) {
+    private static int nibble2(int value) {
         return (value >> 8) & 0xf;
     }
 
-    public static int nibble3(int value) {
+    private static int nibble3(int value) {
         return (value >> 12) & 0xf;
     }
 
@@ -259,11 +826,29 @@ public final class InstructionCodec {
         return (short) b;
     }
 
+    /**
+     * Gets the C register number, as a code unit. This will throw if the
+     * value is out of the range of an unsigned code unit.
+     */
+    public static short getCUnit(int c) {
+        if ((c & ~0xffff) != 0) {
+            throw new DexException("Register C out of range: " + Hex.u8(c));
+        }
+
+        return (short) c;
+    }
+
     public static int getInstructionIndexType(int opcode) {
         switch (opcode) {
             case Opcodes.CONST_STRING:
             case Opcodes.CONST_STRING_JUMBO: {
                 return INDEX_TYPE_STRING_REF;
+            }
+            case Opcodes.CONST_METHOD_HANDLE: {
+                return INDEX_TYPE_METHOD_HANDLE_REF;
+            }
+            case Opcodes.CONST_METHOD_TYPE: {
+                return INDEX_TYPE_PROTO_REF;
             }
             case Opcodes.CONST_CLASS:
             case Opcodes.CHECK_CAST:
@@ -315,6 +900,14 @@ public final class InstructionCodec {
             case Opcodes.INVOKE_STATIC_RANGE:
             case Opcodes.INVOKE_INTERFACE_RANGE: {
                 return INDEX_TYPE_METHOD_REF;
+            }
+            case Opcodes.INVOKE_POLYMORPHIC:
+            case Opcodes.INVOKE_POLYMORPHIC_RANGE: {
+                return INDEX_TYPE_METHOD_AND_PROTO_REF;
+            }
+            case Opcodes.INVOKE_CUSTOM:
+            case Opcodes.INVOKE_CUSTOM_RANGE: {
+                return INDEX_TYPE_CALL_SITE_REF;
             }
             case Opcodes.SPECIAL_FORMAT:
             case Opcodes.PACKED_SWITCH_PAYLOAD:
@@ -504,27 +1097,9 @@ public final class InstructionCodec {
             case Opcodes.SPECIAL_FORMAT: {
                 return INSN_FORMAT_00X;
             }
-            case Opcodes.GOTO: {
-                return INSN_FORMAT_10T;
-            }
             case Opcodes.NOP:
             case Opcodes.RETURN_VOID: {
                 return INSN_FORMAT_10X;
-            }
-            case Opcodes.CONST_4: {
-                return INSN_FORMAT_11N;
-            }
-            case Opcodes.MOVE_RESULT:
-            case Opcodes.MOVE_RESULT_WIDE:
-            case Opcodes.MOVE_RESULT_OBJECT:
-            case Opcodes.MOVE_EXCEPTION:
-            case Opcodes.RETURN:
-            case Opcodes.RETURN_WIDE:
-            case Opcodes.RETURN_OBJECT:
-            case Opcodes.MONITOR_ENTER:
-            case Opcodes.MONITOR_EXIT:
-            case Opcodes.THROW: {
-                return INSN_FORMAT_11X;
             }
             case Opcodes.MOVE:
             case Opcodes.MOVE_WIDE:
@@ -585,8 +1160,45 @@ public final class InstructionCodec {
             case Opcodes.REM_DOUBLE_2ADDR: {
                 return INSN_FORMAT_12X;
             }
-            case Opcodes.GOTO_16: {
-                return INSN_FORMAT_20T;
+            case Opcodes.MOVE_FROM16:
+            case Opcodes.MOVE_WIDE_FROM16:
+            case Opcodes.MOVE_OBJECT_FROM16: {
+                return INSN_FORMAT_22X;
+            }
+            case Opcodes.MOVE_16:
+            case Opcodes.MOVE_WIDE_16:
+            case Opcodes.MOVE_OBJECT_16: {
+                return INSN_FORMAT_32X;
+            }
+            case Opcodes.MOVE_RESULT:
+            case Opcodes.MOVE_RESULT_WIDE:
+            case Opcodes.MOVE_RESULT_OBJECT:
+            case Opcodes.MOVE_EXCEPTION:
+            case Opcodes.RETURN:
+            case Opcodes.RETURN_WIDE:
+            case Opcodes.RETURN_OBJECT:
+            case Opcodes.MONITOR_ENTER:
+            case Opcodes.MONITOR_EXIT:
+            case Opcodes.THROW: {
+                return INSN_FORMAT_11X;
+            }
+            case Opcodes.CONST_4: {
+                return INSN_FORMAT_11N;
+            }
+            case Opcodes.CONST_16:
+            case Opcodes.CONST_WIDE_16: {
+                return INSN_FORMAT_21S;
+            }
+            case Opcodes.CONST:
+            case Opcodes.CONST_WIDE_32: {
+                return INSN_FORMAT_31I;
+            }
+            case Opcodes.CONST_HIGH16:
+            case Opcodes.CONST_WIDE_HIGH16: {
+                return INSN_FORMAT_21H;
+            }
+            case Opcodes.CONST_WIDE: {
+                return INSN_FORMAT_51L;
             }
             case Opcodes.CONST_STRING:
             case Opcodes.CONST_CLASS:
@@ -605,37 +1217,13 @@ public final class InstructionCodec {
             case Opcodes.SPUT_BOOLEAN:
             case Opcodes.SPUT_BYTE:
             case Opcodes.SPUT_CHAR:
-            case Opcodes.SPUT_SHORT: {
+            case Opcodes.SPUT_SHORT:
+            case Opcodes.CONST_METHOD_HANDLE:
+            case Opcodes.CONST_METHOD_TYPE: {
                 return INSN_FORMAT_21C;
             }
-            case Opcodes.CONST_HIGH16:
-            case Opcodes.CONST_WIDE_HIGH16: {
-                return INSN_FORMAT_21H;
-            }
-            case Opcodes.CONST_16:
-            case Opcodes.CONST_WIDE_16: {
-                return INSN_FORMAT_21S;
-            }
-            case Opcodes.IF_EQZ:
-            case Opcodes.IF_NEZ:
-            case Opcodes.IF_LTZ:
-            case Opcodes.IF_GEZ:
-            case Opcodes.IF_GTZ:
-            case Opcodes.IF_LEZ: {
-                return INSN_FORMAT_21T;
-            }
-            case Opcodes.ADD_INT_LIT8:
-            case Opcodes.RSUB_INT_LIT8:
-            case Opcodes.MUL_INT_LIT8:
-            case Opcodes.DIV_INT_LIT8:
-            case Opcodes.REM_INT_LIT8:
-            case Opcodes.AND_INT_LIT8:
-            case Opcodes.OR_INT_LIT8:
-            case Opcodes.XOR_INT_LIT8:
-            case Opcodes.SHL_INT_LIT8:
-            case Opcodes.SHR_INT_LIT8:
-            case Opcodes.USHR_INT_LIT8: {
-                return INSN_FORMAT_22B;
+            case Opcodes.CONST_STRING_JUMBO: {
+                return INSN_FORMAT_31C;
             }
             case Opcodes.INSTANCE_OF:
             case Opcodes.NEW_ARRAY:
@@ -655,28 +1243,37 @@ public final class InstructionCodec {
             case Opcodes.IPUT_SHORT: {
                 return INSN_FORMAT_22C;
             }
-            case Opcodes.ADD_INT_LIT16:
-            case Opcodes.RSUB_INT:
-            case Opcodes.MUL_INT_LIT16:
-            case Opcodes.DIV_INT_LIT16:
-            case Opcodes.REM_INT_LIT16:
-            case Opcodes.AND_INT_LIT16:
-            case Opcodes.OR_INT_LIT16:
-            case Opcodes.XOR_INT_LIT16: {
-                return INSN_FORMAT_22S;
+            case Opcodes.FILLED_NEW_ARRAY:
+            case Opcodes.INVOKE_VIRTUAL:
+            case Opcodes.INVOKE_SUPER:
+            case Opcodes.INVOKE_DIRECT:
+            case Opcodes.INVOKE_STATIC:
+            case Opcodes.INVOKE_INTERFACE:
+            case Opcodes.INVOKE_CUSTOM: {
+                return INSN_FORMAT_35C;
             }
-            case Opcodes.IF_EQ:
-            case Opcodes.IF_NE:
-            case Opcodes.IF_LT:
-            case Opcodes.IF_GE:
-            case Opcodes.IF_GT:
-            case Opcodes.IF_LE: {
-                return INSN_FORMAT_22T;
+            case Opcodes.FILLED_NEW_ARRAY_RANGE:
+            case Opcodes.INVOKE_VIRTUAL_RANGE:
+            case Opcodes.INVOKE_SUPER_RANGE:
+            case Opcodes.INVOKE_DIRECT_RANGE:
+            case Opcodes.INVOKE_STATIC_RANGE:
+            case Opcodes.INVOKE_INTERFACE_RANGE:
+            case Opcodes.INVOKE_CUSTOM_RANGE: {
+                return INSN_FORMAT_3RC;
             }
-            case Opcodes.MOVE_FROM16:
-            case Opcodes.MOVE_WIDE_FROM16:
-            case Opcodes.MOVE_OBJECT_FROM16: {
-                return INSN_FORMAT_22X;
+            case Opcodes.FILL_ARRAY_DATA:
+            case Opcodes.PACKED_SWITCH:
+            case Opcodes.SPARSE_SWITCH: {
+                return INSN_FORMAT_31T;
+            }
+            case Opcodes.GOTO: {
+                return INSN_FORMAT_10T;
+            }
+            case Opcodes.GOTO_16: {
+                return INSN_FORMAT_20T;
+            }
+            case Opcodes.GOTO_32: {
+                return INSN_FORMAT_30T;
             }
             case Opcodes.CMPL_FLOAT:
             case Opcodes.CMPG_FLOAT:
@@ -731,44 +1328,50 @@ public final class InstructionCodec {
             case Opcodes.REM_DOUBLE: {
                 return INSN_FORMAT_23X;
             }
-            case Opcodes.GOTO_32: {
-                return INSN_FORMAT_30T;
+            case Opcodes.IF_EQ:
+            case Opcodes.IF_NE:
+            case Opcodes.IF_LT:
+            case Opcodes.IF_GE:
+            case Opcodes.IF_GT:
+            case Opcodes.IF_LE: {
+                return INSN_FORMAT_22T;
             }
-            case Opcodes.CONST_STRING_JUMBO: {
-                return INSN_FORMAT_31C;
+            case Opcodes.IF_EQZ:
+            case Opcodes.IF_NEZ:
+            case Opcodes.IF_LTZ:
+            case Opcodes.IF_GEZ:
+            case Opcodes.IF_GTZ:
+            case Opcodes.IF_LEZ: {
+                return INSN_FORMAT_21T;
             }
-            case Opcodes.CONST:
-            case Opcodes.CONST_WIDE_32: {
-                return INSN_FORMAT_31I;
+            case Opcodes.ADD_INT_LIT16:
+            case Opcodes.RSUB_INT:
+            case Opcodes.MUL_INT_LIT16:
+            case Opcodes.DIV_INT_LIT16:
+            case Opcodes.REM_INT_LIT16:
+            case Opcodes.AND_INT_LIT16:
+            case Opcodes.OR_INT_LIT16:
+            case Opcodes.XOR_INT_LIT16: {
+                return INSN_FORMAT_22S;
             }
-            case Opcodes.FILL_ARRAY_DATA:
-            case Opcodes.PACKED_SWITCH:
-            case Opcodes.SPARSE_SWITCH: {
-                return INSN_FORMAT_31T;
+            case Opcodes.ADD_INT_LIT8:
+            case Opcodes.RSUB_INT_LIT8:
+            case Opcodes.MUL_INT_LIT8:
+            case Opcodes.DIV_INT_LIT8:
+            case Opcodes.REM_INT_LIT8:
+            case Opcodes.AND_INT_LIT8:
+            case Opcodes.OR_INT_LIT8:
+            case Opcodes.XOR_INT_LIT8:
+            case Opcodes.SHL_INT_LIT8:
+            case Opcodes.SHR_INT_LIT8:
+            case Opcodes.USHR_INT_LIT8: {
+                return INSN_FORMAT_22B;
             }
-            case Opcodes.MOVE_16:
-            case Opcodes.MOVE_WIDE_16:
-            case Opcodes.MOVE_OBJECT_16: {
-                return INSN_FORMAT_32X;
+            case Opcodes.INVOKE_POLYMORPHIC: {
+                return INSN_FORMAT_45CC;
             }
-            case Opcodes.FILLED_NEW_ARRAY:
-            case Opcodes.INVOKE_VIRTUAL:
-            case Opcodes.INVOKE_SUPER:
-            case Opcodes.INVOKE_DIRECT:
-            case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
-                return INSN_FORMAT_35C;
-            }
-            case Opcodes.FILLED_NEW_ARRAY_RANGE:
-            case Opcodes.INVOKE_VIRTUAL_RANGE:
-            case Opcodes.INVOKE_SUPER_RANGE:
-            case Opcodes.INVOKE_DIRECT_RANGE:
-            case Opcodes.INVOKE_STATIC_RANGE:
-            case Opcodes.INVOKE_INTERFACE_RANGE: {
-                return INSN_FORMAT_3RC;
-            }
-            case Opcodes.CONST_WIDE: {
-                return INSN_FORMAT_51L;
+            case Opcodes.INVOKE_POLYMORPHIC_RANGE: {
+                return INSN_FORMAT_4RCC;
             }
             case Opcodes.PACKED_SWITCH_PAYLOAD: {
                 return INSN_FORMAT_PACKED_SWITCH_PAYLOAD;

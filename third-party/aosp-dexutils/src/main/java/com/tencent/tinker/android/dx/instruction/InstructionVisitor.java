@@ -70,6 +70,18 @@ public class InstructionVisitor {
         }
     }
 
+    public void visitInvokePolymorphicInstruction(int currentAddress, int opcode, int methodIndex, int indexType, int protoIndex, int[] registers) {
+        if (prevIv != null) {
+            prevIv.visitInvokePolymorphicInstruction(currentAddress, opcode, methodIndex, indexType, protoIndex, registers);
+        }
+    }
+
+    public void visitInvokePolymorphicRangeInstruction(int currentAddress, int opcode, int methodIndex, int indexType, int c, int registerCount, int protoIndex) {
+        if (prevIv != null) {
+            prevIv.visitInvokePolymorphicRangeInstruction(currentAddress, opcode, methodIndex, indexType, c, registerCount, protoIndex);
+        }
+    }
+
     public void visitSparseSwitchPayloadInsn(int currentAddress, int opcode, int[] keys, int[] targets) {
         if (prevIv != null) {
             prevIv.visitSparseSwitchPayloadInsn(currentAddress, opcode, keys, targets);

@@ -31,6 +31,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     private final SparseIntArray protoIdsMap = new SparseIntArray();
     private final SparseIntArray fieldIdsMap = new SparseIntArray();
     private final SparseIntArray methodIdsMap = new SparseIntArray();
+    private final SparseIntArray callSiteIdsMap = new SparseIntArray();
+    public final SparseIntArray methodHandleIdsMap = new SparseIntArray();
     private final SparseIntArray typeListOffsetsMap = new SparseIntArray();
     private final SparseIntArray annotationOffsetsMap = new SparseIntArray();
     private final SparseIntArray annotationSetOffsetsMap = new SparseIntArray();
@@ -46,6 +48,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     private final SparseBoolArray deletedProtoIds = new SparseBoolArray();
     private final SparseBoolArray deletedFieldIds = new SparseBoolArray();
     private final SparseBoolArray deletedMethodIds = new SparseBoolArray();
+    private final SparseBoolArray deletedCallSiteIds = new SparseBoolArray();
+    private final SparseBoolArray deletedMethodHandleIds = new SparseBoolArray();
     private final SparseBoolArray deletedTypeListOffsets = new SparseBoolArray();
     private final SparseBoolArray deletedAnnotationOffsets = new SparseBoolArray();
     private final SparseBoolArray deletedAnnotationSetOffsets = new SparseBoolArray();
@@ -99,6 +103,24 @@ public class SparseIndexMap extends AbstractIndexMap {
     public void markMethodIdDeleted(int index) {
         if (index < 0) return;
         deletedMethodIds.put(index, true);
+    }
+
+    public void mapCallsiteIds(int oldIndex, int newIndex) {
+        callSiteIdsMap.put(oldIndex, newIndex);
+    }
+
+    public void markCallsiteDeleted(int index) {
+        if (index < 0) return;
+        deletedCallSiteIds.put(index, true);
+    }
+
+    public void mapMethodHandleIds(int oldIndex, int newIndex) {
+        methodHandleIdsMap.put(oldIndex, newIndex);
+    }
+
+    public void markMethodHandleDeleted(int index) {
+        if (index < 0) return;
+        deletedMethodHandleIds.put(index, true);
     }
 
     public void mapTypeListOffset(int oldOffset, int newOffset) {
@@ -229,6 +251,26 @@ public class SparseIndexMap extends AbstractIndexMap {
             return (methodIndex >= 0 && deletedMethodIds.containsKey(methodIndex) ? -1 : methodIndex);
         } else {
             return methodIdsMap.valueAt(index);
+        }
+    }
+
+    @Override
+    public int adjustCallSiteIdIndex(int callsiteIdIndex) {
+        int index = callSiteIdsMap.indexOfKey(callsiteIdIndex);
+        if (index < 0) {
+            return (callsiteIdIndex >= 0 && deletedCallSiteIds.containsKey(callsiteIdIndex) ? -1 : callsiteIdIndex);
+        } else {
+            return callSiteIdsMap.valueAt(index);
+        }
+    }
+
+    @Override
+    public int adjustMethodHandleIndex(int methodHandleIndex) {
+        int index = methodHandleIdsMap.indexOfKey(methodHandleIndex);
+        if (index < 0) {
+            return (methodHandleIndex >= 0 && deletedMethodHandleIds.containsKey(methodHandleIndex) ? -1 : methodHandleIndex);
+        } else {
+            return methodHandleIdsMap.valueAt(index);
         }
     }
 

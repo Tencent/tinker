@@ -20,6 +20,7 @@ import com.tencent.tinker.android.dex.Annotation;
 import com.tencent.tinker.android.dex.AnnotationSet;
 import com.tencent.tinker.android.dex.AnnotationSetRefList;
 import com.tencent.tinker.android.dex.AnnotationsDirectory;
+import com.tencent.tinker.android.dex.CallSiteId;
 import com.tencent.tinker.android.dex.ClassData;
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Code;
@@ -29,6 +30,8 @@ import com.tencent.tinker.android.dex.EncodedValue;
 import com.tencent.tinker.android.dex.EncodedValueReader;
 import com.tencent.tinker.android.dex.FieldId;
 import com.tencent.tinker.android.dex.Leb128;
+import com.tencent.tinker.android.dex.MethodHandle;
+import com.tencent.tinker.android.dex.MethodHandle.MethodHandleType;
 import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.Mutf8;
 import com.tencent.tinker.android.dex.ProtoId;
@@ -208,6 +211,21 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         int returnTypeIndex = readInt();
         int parametersOffset = readInt();
         return new ProtoId(off, shortyIndex, returnTypeIndex, parametersOffset);
+    }
+
+    public CallSiteId readCallSiteId() {
+        int off = data.position();
+        int callsiteOffset = readInt();
+        return new CallSiteId(off, callsiteOffset);
+    }
+
+    public MethodHandle readMethodHandle() {
+        int off = data.position();
+        MethodHandleType methodHandleType = MethodHandleType.fromValue(readUnsignedShort());
+        int unused1 = readUnsignedShort();
+        int fieldOrMethodId = readUnsignedShort();
+        int unused2 = readUnsignedShort();
+        return new MethodHandle(off, methodHandleType, unused1, fieldOrMethodId, unused2);
     }
 
     public ClassDef readClassDef() {
@@ -676,6 +694,31 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         writeInt(protoId.shortyIndex);
         writeInt(protoId.returnTypeIndex);
         writeInt(protoId.parametersOffset);
+        return off;
+    }
+
+    /**
+     * Write CallSiteId item into current section.
+     *
+     * @return real offset of item we've just written in this section.
+     */
+    public int writeCallSiteId(CallSiteId callSiteId) {
+        int off = data.position();
+        writeInt(callSiteId.offset);
+        return off;
+    }
+
+    /**
+     * Write MethodHandle item into current section.
+     *
+     * @return real offset of item we've just written in this section.
+     */
+    public int writeMethodHandle(MethodHandle methodHandle) {
+        int off = data.position();
+        writeUnsignedShort(methodHandle.methodHandleType.value);
+        writeUnsignedShort(methodHandle.unused1);
+        writeUnsignedShort(methodHandle.fieldOrMethodId);
+        writeUnsignedShort(methodHandle.unused2);
         return off;
     }
 

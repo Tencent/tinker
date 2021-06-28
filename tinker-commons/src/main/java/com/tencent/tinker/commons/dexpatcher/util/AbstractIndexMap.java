@@ -20,6 +20,7 @@ import com.tencent.tinker.android.dex.Annotation;
 import com.tencent.tinker.android.dex.AnnotationSet;
 import com.tencent.tinker.android.dex.AnnotationSetRefList;
 import com.tencent.tinker.android.dex.AnnotationsDirectory;
+import com.tencent.tinker.android.dex.CallSiteId;
 import com.tencent.tinker.android.dex.ClassData;
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Code;
@@ -30,6 +31,7 @@ import com.tencent.tinker.android.dex.EncodedValueCodec;
 import com.tencent.tinker.android.dex.EncodedValueReader;
 import com.tencent.tinker.android.dex.FieldId;
 import com.tencent.tinker.android.dex.Leb128;
+import com.tencent.tinker.android.dex.MethodHandle;
 import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.TypeList;
@@ -38,6 +40,9 @@ import com.tencent.tinker.android.dex.util.ByteOutput;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+
+import static com.tencent.tinker.android.dex.EncodedValueReader.ENCODED_METHOD_HANDLE;
+import static com.tencent.tinker.android.dex.EncodedValueReader.ENCODED_METHOD_TYPE;
 
 /**
  * Created by tangyinsheng on 2016/6/29.
@@ -56,6 +61,10 @@ public abstract class AbstractIndexMap {
     public abstract int adjustFieldIdIndex(int fieldIndex);
 
     public abstract int adjustMethodIdIndex(int methodIndex);
+
+    public abstract int adjustCallSiteIdIndex(int callsiteIdIndex);
+
+    public abstract int adjustMethodHandleIndex(int methodHandleIndex);
 
     public abstract int adjustTypeListOffset(int typeListOffset);
 
@@ -111,6 +120,23 @@ public abstract class AbstractIndexMap {
         return new ProtoId(
                 protoId.off, adjustedShortyIndex, adjustedReturnTypeIndex, adjustedParametersOffset
         );
+    }
+
+    public CallSiteId adjust(CallSiteId callSiteId) {
+        int adjustedCallSiteIdOffset = adjustStaticValuesOffset(callSiteId.offset);
+        return new CallSiteId(callSiteId.off, adjustedCallSiteIdOffset);
+    }
+
+    public MethodHandle adjust(MethodHandle methodHandle) {
+        int adjustedFieldOrMethodId = methodHandle.methodHandleType.isField()
+                ? adjustFieldIdIndex(methodHandle.fieldOrMethodId)
+                : adjustMethodIdIndex(methodHandle.fieldOrMethodId);
+        return new MethodHandle(
+                methodHandle.off,
+                methodHandle.methodHandleType,
+                methodHandle.unused1,
+                adjustedFieldOrMethodId,
+                methodHandle.unused2);
     }
 
     public ClassDef adjust(ClassDef classDef) {
@@ -419,6 +445,16 @@ public abstract class AbstractIndexMap {
                 case EncodedValueReader.ENCODED_DOUBLE:
                     EncodedValueCodec.writeRightZeroExtendedValue(
                             out, EncodedValueReader.ENCODED_DOUBLE, Double.doubleToLongBits(reader.readDouble()));
+                    break;
+                case ENCODED_METHOD_TYPE:
+                    EncodedValueCodec.writeUnsignedIntegralValue(
+                            out, ENCODED_METHOD_TYPE, adjustProtoIdIndex(reader.readMethodType()));
+                    break;
+                case ENCODED_METHOD_HANDLE:
+                    EncodedValueCodec.writeUnsignedIntegralValue(
+                            out,
+                            ENCODED_METHOD_HANDLE,
+                            adjustMethodHandleIndex(reader.readMethodHandle()));
                     break;
                 case EncodedValueReader.ENCODED_STRING:
                     EncodedValueCodec.writeUnsignedIntegralValue(
