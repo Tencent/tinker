@@ -127,7 +127,7 @@ public class SystemClassLoaderAdder {
         Class<?> clazz = Class.forName(CHECK_DEX_CLASS, true, classLoader);
         Field filed = ShareReflectUtil.findField(clazz, CHECK_DEX_FIELD);
         boolean isPatch = (boolean) filed.get(null);
-        ShareTinkerLog.w(TAG, "checkDexInstall result:" + isPatch);
+        ShareTinkerLog.i(TAG, "checkDexInstall result: %s, checker_classloader: %s", isPatch, clazz.getClassLoader());
         return isPatch;
     }
 
