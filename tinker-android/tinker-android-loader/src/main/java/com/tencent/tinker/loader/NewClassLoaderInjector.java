@@ -39,20 +39,21 @@ final class NewClassLoaderInjector {
             patchedDexPaths[i] = patchedDexes.get(i).getAbsolutePath();
         }
         final ClassLoader newClassLoader = createNewClassLoader(oldClassLoader,
-              dexOptDir, useDLC, patchedDexPaths);
+              dexOptDir, useDLC, true, patchedDexPaths);
         doInject(app, newClassLoader);
         return newClassLoader;
     }
 
     public static void triggerDex2Oat(Context context, File dexOptDir, boolean useDLC,
                                       String... dexPaths) throws Throwable {
-        final ClassLoader triggerClassLoader = createNewClassLoader(context.getClassLoader(), dexOptDir, useDLC, dexPaths);
+        final ClassLoader triggerClassLoader = createNewClassLoader(context.getClassLoader(), dexOptDir, useDLC, false, dexPaths);
     }
 
     @SuppressWarnings("unchecked")
     private static ClassLoader createNewClassLoader(ClassLoader oldClassLoader,
                                                     File dexOptDir,
                                                     boolean useDLC,
+                                                    boolean forActualLoading,
                                                     String... patchDexPaths) throws Throwable {
         final Field pathListField = findField(
                 Class.forName("dalvik.system.BaseDexClassLoader", false, oldClassLoader),
@@ -108,7 +109,7 @@ final class NewClassLoaderInjector {
 
         // 'EnsureSameClassLoader' mechanism which is first introduced in Android O
         // may cause exception if we replace definingContext of old classloader.
-        if (Build.VERSION.SDK_INT < 26) {
+        if (forActualLoading && Build.VERSION.SDK_INT < 26) {
             findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
         }
 
