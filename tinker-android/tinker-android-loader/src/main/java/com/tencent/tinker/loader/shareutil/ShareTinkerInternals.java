@@ -673,12 +673,12 @@ public class ShareTinkerInternals {
         }
         final File tinkerDir = SharePatchFileUtil.getPatchDirectory(app);
         if (!tinkerDir.exists()) {
-            ShareTinkerLog.w(TAG, "try to clean patch while there're not any applied patches.");
+            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(),"try to clean patch while there're not any applied patches.");
             return;
         }
         final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(tinkerDir.getAbsolutePath());
         if (!patchInfoFile.exists()) {
-            ShareTinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
+            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "try to clean patch while patch info file does not exist.");
             return;
         }
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());

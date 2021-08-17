@@ -261,7 +261,7 @@ public class Tinker {
         }
         final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
         if (!patchInfoFile.exists()) {
-            ShareTinkerLog.w(TAG, "try to clean patch while patch info file does not exist.");
+            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "try to clean patch while patch info file does not exist.");
             return;
         }
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());

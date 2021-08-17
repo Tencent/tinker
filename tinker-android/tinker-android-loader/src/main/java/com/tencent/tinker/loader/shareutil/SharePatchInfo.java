@@ -197,6 +197,7 @@ public class SharePatchInfo {
             + info.oatDir
             + ", isRemoveInterpretOATDir:"
             + (info.isRemoveInterpretOATDir ? 1 : 0)
+            + ", stack: " + android.util.Log.getStackTraceString(new Throwable())
         );
 
         boolean isWritePatchSuccessful = false;
