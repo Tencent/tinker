@@ -218,7 +218,7 @@ public final class TinkerDexOptimizer {
                 final File oatFile = new File(oatPath);
                 final int transactionCode = queryPerformDexOptSecondaryTransactionCode();
                 final String packageName = context.getPackageName();
-                final String targetCompilerFilter = "quicken";
+                final String targetCompilerFilter = "speed";
                 final boolean force = false;
 
                 final Class<?> serviceManagerClazz = Class.forName("android.os.ServiceManager");
