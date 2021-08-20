@@ -16,6 +16,9 @@
 
 package com.tencent.tinker.lib.service;
 
+import static com.tencent.tinker.lib.util.TinkerServiceInternals.getTinkerPatchServiceName;
+
+import android.app.ActivityManager;
 import android.app.IntentService;
 import android.app.Notification;
 import android.app.Service;
@@ -29,12 +32,15 @@ import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.loader.app.TinkerApplication;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -105,6 +111,80 @@ public class TinkerPatchService extends IntentService {
         notificationId = id;
     }
 
+    private static final String RUNNING_MARKER_FILE_RELPATH_PREFIX = "patch_service_status/running_";
+
+    /**
+     * Check if TinkerPatchService is running.
+     * @param context
+     */
+    public static boolean isRunning(Context context) {
+        try {
+            final String serviceName = getTinkerPatchServiceName(context);
+            if (serviceName == null) {
+                return false;
+            }
+            final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) {
+                return false;
+            }
+            final List<ActivityManager.RunningAppProcessInfo> runningProcInfos = am.getRunningAppProcesses();
+            if (runningProcInfos == null || runningProcInfos.size() == 0) {
+                return false;
+            }
+            int targetPid = 0;
+            for (ActivityManager.RunningAppProcessInfo procInfo : runningProcInfos) {
+                if (procInfo.processName.equals(serviceName)) {
+                    targetPid = procInfo.pid;
+                    break;
+                }
+            }
+            if (targetPid == 0) {
+                return false;
+            }
+            final File tinkerBaseDir = SharePatchFileUtil.getPatchDirectory(context);
+            final File runningMarkerFile = new File(tinkerBaseDir, RUNNING_MARKER_FILE_RELPATH_PREFIX + targetPid);
+            return runningMarkerFile.exists();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    static void markRunning(Context context) {
+        final File tinkerBaseDir = SharePatchFileUtil.getPatchDirectory(context);
+        final File runningMarkerFile = new File(tinkerBaseDir,
+                RUNNING_MARKER_FILE_RELPATH_PREFIX + android.os.Process.myPid());
+        if (runningMarkerFile.exists()) {
+            return;
+        }
+        final File runningMarkerDir = runningMarkerFile.getParentFile();
+        if (runningMarkerDir.exists()) {
+            final File[] markerFiles = runningMarkerDir.listFiles();
+            if (markerFiles != null) {
+                for (File markerFile : markerFiles) {
+                    markerFile.delete();
+                }
+            }
+        } else {
+            runningMarkerDir.mkdirs();
+        }
+        try {
+            if (!runningMarkerFile.createNewFile()) {
+                throw new IllegalStateException();
+            }
+        } catch (Throwable thr) {
+            ShareTinkerLog.printErrStackTrace(TAG, thr, "Fail to create running marker file.");
+        }
+    }
+
+    static void unmarkRunning(Context context) {
+        final File tinkerBaseDir = SharePatchFileUtil.getPatchDirectory(context);
+        final File runningMarkerFile = new File(tinkerBaseDir,
+                RUNNING_MARKER_FILE_RELPATH_PREFIX + android.os.Process.myPid());
+        if (runningMarkerFile.exists()) {
+            runningMarkerFile.delete();
+        }
+    }
+
     private static AtomicBoolean sIsPatchApplying = new AtomicBoolean(false);
 
     private static void doApplyPatch(Context context, Intent intent) {
@@ -115,49 +195,56 @@ public class TinkerPatchService extends IntentService {
             return;
         }
 
-        Tinker tinker = Tinker.with(context);
-        tinker.getPatchReporter().onPatchServiceStart(intent);
-
-        if (intent == null) {
-            ShareTinkerLog.e(TAG, "TinkerPatchService received a null intent, ignoring.");
-            return;
-        }
-        String path = getPatchPathExtra(intent);
-        if (path == null) {
-            ShareTinkerLog.e(TAG, "TinkerPatchService can't get the path extra, ignoring.");
-            return;
-        }
-        File patchFile = new File(path);
-
-        long begin = SystemClock.elapsedRealtime();
-        boolean result;
-        long cost;
-        Throwable e = null;
-
-        PatchResult patchResult = new PatchResult();
         try {
-            if (upgradePatchProcessor == null) {
-                throw new TinkerRuntimeException("upgradePatchProcessor is null.");
+            markRunning(context);
+
+            Tinker tinker = Tinker.with(context);
+            tinker.getPatchReporter().onPatchServiceStart(intent);
+
+            if (intent == null) {
+                ShareTinkerLog.e(TAG, "TinkerPatchService received a null intent, ignoring.");
+                return;
             }
-            result = upgradePatchProcessor.tryPatch(context, path, patchResult);
-        } catch (Throwable throwable) {
-            e = throwable;
-            result = false;
-            tinker.getPatchReporter().onPatchException(patchFile, e);
+            String path = getPatchPathExtra(intent);
+            if (path == null) {
+                ShareTinkerLog.e(TAG, "TinkerPatchService can't get the path extra, ignoring.");
+                return;
+            }
+            File patchFile = new File(path);
+
+            long begin = SystemClock.elapsedRealtime();
+            boolean result;
+            long cost;
+            Throwable e = null;
+
+            PatchResult patchResult = new PatchResult();
+            try {
+                if (upgradePatchProcessor == null) {
+                    throw new TinkerRuntimeException("upgradePatchProcessor is null.");
+                }
+                result = upgradePatchProcessor.tryPatch(context, path, patchResult);
+            } catch (Throwable throwable) {
+                e = throwable;
+                result = false;
+                tinker.getPatchReporter().onPatchException(patchFile, e);
+            }
+
+            cost = SystemClock.elapsedRealtime() - begin;
+            tinker.getPatchReporter()
+                    .onPatchResult(patchFile, result, cost);
+
+            patchResult.isSuccess = result;
+            patchResult.rawPatchFilePath = path;
+            patchResult.costTime = cost;
+            patchResult.e = e;
+
+            unmarkRunning(context);
+            sIsPatchApplying.set(false);
+
+            AbstractResultService.runResultService(context, patchResult, getPatchResultExtra(intent));
+        } finally {
+            unmarkRunning(context);
         }
-
-        cost = SystemClock.elapsedRealtime() - begin;
-        tinker.getPatchReporter()
-                .onPatchResult(patchFile, result, cost);
-
-        patchResult.isSuccess = result;
-        patchResult.rawPatchFilePath = path;
-        patchResult.costTime = cost;
-        patchResult.e = e;
-
-        AbstractResultService.runResultService(context, patchResult, getPatchResultExtra(intent));
-
-        sIsPatchApplying.set(false);
     }
 
     private void increasingPriority() {
