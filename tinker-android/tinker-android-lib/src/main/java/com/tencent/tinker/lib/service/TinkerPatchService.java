@@ -30,14 +30,11 @@ import android.os.SystemClock;
 
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
-import com.tencent.tinker.loader.app.TinkerApplication;
-import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
-import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
+import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 import java.util.List;
@@ -58,6 +55,7 @@ public class TinkerPatchService extends IntentService {
 
     public TinkerPatchService() {
         super("TinkerPatchService");
+        setIntentRedelivery(true);
     }
 
     public static void runPatchService(final Context context, final String path) {
