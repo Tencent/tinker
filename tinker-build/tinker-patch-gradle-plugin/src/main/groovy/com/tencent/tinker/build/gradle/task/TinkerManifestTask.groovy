@@ -22,6 +22,7 @@ import com.tencent.tinker.commons.util.IOHelper
 import groovy.xml.Namespace
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -33,6 +34,7 @@ public class TinkerManifestTask extends DefaultTask {
     static final String TINKER_ID = "TINKER_ID"
     static final String TINKER_ID_PREFIX = "tinker_id_"
 
+    @Internal
     final Map<String, File> outputNameToManifestMap = new HashMap<>()
 
     TinkerManifestTask() {
