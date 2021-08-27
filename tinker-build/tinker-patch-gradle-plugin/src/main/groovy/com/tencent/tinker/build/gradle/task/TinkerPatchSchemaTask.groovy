@@ -22,6 +22,10 @@ import com.tencent.tinker.build.patch.Runner
 import groovy.io.FileType
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -30,13 +34,22 @@ import org.gradle.api.tasks.TaskAction
  * @author zhangshaowen
  */
 public class TinkerPatchSchemaTask extends DefaultTask {
+    @Internal
     TinkerPatchExtension configuration
-    def android
+
+    @Internal
     String buildApkPath
-    String outputFolder
+
+    @Internal
     def signConfig
 
-    public TinkerPatchSchemaTask() {
+    @Internal
+    String outputFolder
+
+    @Internal
+    def android
+
+    TinkerPatchSchemaTask() {
         description = 'Assemble Tinker Patch'
         group = 'tinker'
         outputs.upToDateWhen { false }

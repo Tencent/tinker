@@ -48,7 +48,7 @@ public class TinkerResourceIdTask extends DefaultTask {
     @Internal
     def variant
 
-    @Input
+    @Internal
     String resDir
 
     @Input
