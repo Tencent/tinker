@@ -79,8 +79,8 @@ public class TinkerManifestTask extends DefaultTask {
         def pw = null
         try {
             isr = new InputStreamReader(new FileInputStream(manifestPath), "utf-8")
-            def xml = new XmlParser().parse(isr)
-            def application = xml.application[0]
+            def xml = new XmlParser().parse(isr) as Node
+            def application = xml.application[0] as Node
             if (application) {
                 def metaDataTags = application['meta-data']
 
@@ -92,7 +92,7 @@ public class TinkerManifestTask extends DefaultTask {
                 }
 
                 // Add the new TINKER_ID element
-                application.appendNode('meta-data', [(ns.name): name, (ns.value): value])
+                application.appendNode('meta-data', [(ns.prefix + ':name'): name, (ns.prefix + ':value'): value])
 
                 // Write the manifest file
                 pw = new PrintWriter(manifestPath, "utf-8")

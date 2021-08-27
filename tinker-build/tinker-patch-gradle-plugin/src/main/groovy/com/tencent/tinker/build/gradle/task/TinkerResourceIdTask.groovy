@@ -27,6 +27,8 @@ import groovy.io.FileType
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GFileUtils
 import sun.misc.Unsafe
@@ -43,11 +45,17 @@ import static com.tencent.tinker.build.gradle.Compatibilities.*
  * @author zhangshaowen
  */
 public class TinkerResourceIdTask extends DefaultTask {
+    @Internal
     def variant
+
+    @Input
     String resDir
+
+    @Input
     String applicationId
 
     //if you need add public flag, set tinker.aapt2.public = true in gradle.properties
+    @Input
     boolean addPublicFlagForAapt2 = false
 
     TinkerResourceIdTask() {
@@ -222,7 +230,7 @@ public class TinkerResourceIdTask extends DefaultTask {
     /**
      * get real name for all resources in R.txt by values files
      */
-    Map<String, String> getRealNameMap() {
+    private Map<String, String> getRealNameMap() {
         Map<String, String> realNameMap = new HashMap<>()
         def mergeResourcesTask = Compatibilities.getMergeResourcesTask(project, variant)
         List<File> resDirCandidateList = new ArrayList<>()
@@ -265,7 +273,7 @@ public class TinkerResourceIdTask extends DefaultTask {
     /**
      * get the sorted stable id lines
      */
-    ArrayList<String> getSortedStableIds(Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap) {
+    private ArrayList<String> getSortedStableIds(Map<RDotTxtEntry.RType, Set<RDotTxtEntry>> rTypeResourceMap) {
         List<String> sortedLines = new ArrayList<>()
         Map<String, String> realNameMap = getRealNameMap()
         rTypeResourceMap?.each { key, entries ->
