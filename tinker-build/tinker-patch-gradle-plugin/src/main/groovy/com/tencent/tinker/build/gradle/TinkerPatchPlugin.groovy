@@ -129,8 +129,6 @@ class TinkerPatchPlugin implements Plugin<Project> {
             mProject.logger.error("if resources.arsc has changed, you should use applyResource mode to build the new apk!")
             mProject.logger.error("-----------------------------------------------------------------")
 
-            TinkerResourceIdTask.injectStableIdsFileOnDemand(mProject)
-
             android.applicationVariants.all { ApkVariant variant ->
                 def variantName = variant.name
                 def capitalizedVariantName = variantName.capitalize()

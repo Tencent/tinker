@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.build.gradle.task
 
+import com.android.builder.internal.aapt.AaptOptions
+import com.google.common.collect.ImmutableList
 import com.tencent.tinker.build.aapt.AaptResourceCollector
 import com.tencent.tinker.build.aapt.AaptUtil
 import com.tencent.tinker.build.aapt.PatchUtil
@@ -27,6 +29,7 @@ import groovy.io.FileType
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
@@ -36,8 +39,6 @@ import sun.misc.Unsafe
 import java.lang.reflect.Field
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-
-import static com.tencent.tinker.build.gradle.Compatibilities.*
 
 /**
  * The configuration properties.
@@ -62,78 +63,68 @@ public class TinkerResourceIdTask extends DefaultTask {
         group = 'tinker'
     }
 
-    static void injectStableIdsFileOnDemand(project) {
-        if (!isAapt2EnabledCompat(project)) {
-            project.logger.error('AApt2 is not enabled, skip stable ids inject.')
-            return
-        }
-        def stableIdsFile = project.file(TinkerBuildPath.getResourcePublicTxt(project))
-        if (!stableIdsFile.exists()) {
-            stableIdsFile.getParentFile().mkdirs()
-            // Create an empty file here to make aapt2 happy before stableIdsFile is generated.
-            stableIdsFile.createNewFile()
+    protected void addStableIdsFileToAdditionalParameters(def processResourcesTask) {
+        def stableIdsFilePath = project.file(TinkerBuildPath.getResourcePublicTxt(project)).getAbsolutePath()
+
+        def hookSuccess = false
+        try {
+            // AGP: 3.5.0 ~ 4.0.2
+            addStableIdsFileForAGP350(processResourcesTask, stableIdsFilePath)
+            hookSuccess = true
+        } catch (Exception e) {
+            println("tinker add additionalParameters fail! exception=${e}")
         }
 
-        def modifiedAdditionalParams = []
-        def additionalParams = project.android.aaptOptions.additionalParameters
-        if (additionalParams != null) {
-            modifiedAdditionalParams.addAll(additionalParams)
+        if (!hookSuccess) {
+            try {
+                // AGP: 4.1.0 ~
+                addStableIdsFileForAGP410(processResourcesTask, stableIdsFilePath)
+                hookSuccess = true
+            } catch (Exception e) {
+                println("tinker add additionalParameters fail! exception=${e}")
+            }
         }
-        if (modifiedAdditionalParams.contains('--stable-ids')) {
-            project.logger.error('** [NOTICE] ** Manually specified stable-ids file was detected, '
-                    + 'Tinker will give up injecting generated stable-ids file. Please ensure your stable-ids file '
-                    + 'keep ids of all resources in base apk.')
-            return
+
+        if (!hookSuccess) {
+            throw new GradleException("rfix add additionalParameters fail! current AGP not support?")
+        } else {
+            println("rfix add additionalParameters: --stable-ids=${stableIdsFilePath}")
         }
-        modifiedAdditionalParams.add('--stable-ids')
-        modifiedAdditionalParams.add(stableIdsFile.getAbsolutePath())
-        project.android.aaptOptions.additionalParameters(modifiedAdditionalParams.toArray(new String[0]))
-        project.logger.error("AApt2 is enabled, inject ${stableIdsFile.getAbsolutePath()} into aapt options.")
     }
 
-    void ensureStableIdsArgsWasInjected(agpProcessResourcesTask) {
-        if (!isAapt2EnabledCompat(project)) {
-            return
+    protected void addStableIdsFileForAGP350(Task processResourcesTask, String stableIdsFilePath) throws Exception {
+        def taskClass = Class.forName('com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask')
+        def aaptOptions = taskClass.metaClass.getProperty(processResourcesTask, 'aaptOptions') as AaptOptions
+
+        def parameters = aaptOptions.additionalParameters
+        if (parameters == null) {
+            parameters = new ArrayList<String>()
+            replaceFinalField(AaptOptions.class, 'additionalParameters', aaptOptions, parameters)
         }
-        def aaptOptions
-        try {
-            aaptOptions = agpProcessResourcesTask.aaptOptions
-        } catch (Throwable ignored) {
-            aaptOptions = null
+
+        if (parameters != null) {
+            parameters.add("--stable-ids")
+            parameters.add(stableIdsFilePath)
         }
-        if (aaptOptions == null) {
-            def currClazz = agpProcessResourcesTask.getClass().getSuperclass()
-            while (true) {
-                try {
-                    def field = currClazz.getDeclaredField('aaptOptions')
-                    field.setAccessible(true)
-                    aaptOptions = field.get(agpProcessResourcesTask)
-                    break
-                } catch (NoSuchFieldException ignored) {
-                    if (!currClazz.equals(Object.class)) {
-                        currClazz = currClazz.getSuperclass()
-                    } else {
-                        break
-                    }
-                }
-            }
-        }
-        // It's wired that only AGP 3.5.x needs this ensurance logic. In newer version of AGP, aaptOptions field
-        // is gone, which let us skip the rest logic.
-        if (aaptOptions != null) {
-            def modifiedAdditionalParams = []
-            def additionalParameters = aaptOptions.additionalParameters
-            if (additionalParameters != null) {
-                modifiedAdditionalParams.addAll(additionalParameters)
-            }
-            if (!modifiedAdditionalParams.contains('--stable-ids')) {
-                modifiedAdditionalParams.add('--stable-ids')
-                def stableIdsFile = project.file(TinkerBuildPath.getResourcePublicTxt(project))
-                modifiedAdditionalParams.add(stableIdsFile.getAbsolutePath())
-                replaceFinalField(aaptOptions.getClass(), 'additionalParameters', aaptOptions, modifiedAdditionalParams)
-                project.logger.error("AApt2 is enabled, and tinker ensures that ${stableIdsFile.getAbsolutePath()} is injected into aapt options.")
-            }
-        }
+    }
+
+    protected void addStableIdsFileForAGP410(Task processResourcesTask, String stableIdsFilePath) throws Exception {
+        def taskClass = Class.forName('com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask')
+        def aaptAdditionalParameters = taskClass.metaClass.getProperty(processResourcesTask, 'aaptAdditionalParameters')
+
+        def abstractPropertyClass = Class.forName('org.gradle.api.internal.provider.AbstractProperty')
+        def listPropertyValue = abstractPropertyClass.metaClass.getProperty(aaptAdditionalParameters, 'value')
+
+        def fixedSupplierClass = Class.forName('org.gradle.api.internal.provider.AbstractCollectionProperty$FixedSupplier')
+        def supplierValue = fixedSupplierClass.metaClass.getProperty(listPropertyValue, 'value')
+
+        def builder = new ImmutableList.Builder<String>()
+        builder.addAll(supplierValue.iterator())
+        builder.add("--stable-ids")
+        builder.add(stableIdsFilePath)
+
+        def newSupplierValue = builder.build()
+        replaceFinalField(fixedSupplierClass, 'value', listPropertyValue, newSupplierValue)
     }
 
     static void replaceFinalField(Class<?> clazz, String fieldName, Object instance, Object fieldValue) {
@@ -430,7 +421,7 @@ public class TinkerResourceIdTask extends DefaultTask {
 
             def processResourcesTask = Compatibilities.getProcessResourcesTask(project, variant)
             processResourcesTask.doFirst {
-                ensureStableIdsArgsWasInjected(processResourcesTask)
+                addStableIdsFileToAdditionalParameters(processResourcesTask)
 
                 if (project.hasProperty("tinker.aapt2.public")) {
                     addPublicFlagForAapt2 = project.ext["tinker.aapt2.public"]?.toString()?.toBoolean()
