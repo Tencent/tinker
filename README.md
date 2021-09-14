@@ -1,8 +1,8 @@
 ## Tinker
 [![license](http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat)](https://github.com/Tencent/tinker/blob/master/LICENSE)
-[![Release Version](https://img.shields.io/badge/release-1.9.14.17-red.svg)](https://github.com/Tencent/tinker/releases)
+[![Release Version](https://img.shields.io/badge/release-1.9.14.18-red.svg)](https://github.com/Tencent/tinker/releases)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Tencent/tinker/pulls)
-[![WeChat Approved](https://img.shields.io/badge/Wechat_Approved-1.9.14.17-red.svg)](https://github.com/Tencent/tinker/wiki)
+[![WeChat Approved](https://img.shields.io/badge/Wechat_Approved-1.9.14.18-red.svg)](https://github.com/Tencent/tinker/wiki)
 
 Tinker is a hot-fix solution library for Android, it supports dex, library and resources update without reinstalling apk.
 
