@@ -40,7 +40,7 @@ public class Logger {
     }
 
     public static void d(final String msg) {
-        Logger.d(msg, new Object[]{});
+        Logger.d("%s", msg);
     }
 
     public static void d(final String format, final Object... obj) {
@@ -49,15 +49,14 @@ public class Logger {
         if (log == null) {
             log = "";
         }
-        //add \n
-        System.out.printf(log + "\n");
+        System.out.println(log);
         System.out.flush();
 
         logWriter.writeLineToInfoFile(log);
     }
 
     public static void e(final String msg) {
-        Logger.e(msg, new Object[]{});
+        Logger.e("%", msg);
     }
 
     public static void e(final String format, final Object... obj) {
@@ -65,8 +64,7 @@ public class Logger {
         if (log == null) {
             log = "";
         }
-        //add \n
-        System.err.printf(log + "\n");
+        System.err.println(log);
         System.err.flush();
 
         logWriter.writeLineToInfoFile(log);
