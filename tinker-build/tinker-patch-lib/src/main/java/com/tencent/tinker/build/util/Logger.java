@@ -56,7 +56,7 @@ public class Logger {
     }
 
     public static void e(final String msg) {
-        Logger.e("%", msg);
+        Logger.e("%s", msg);
     }
 
     public static void e(final String format, final Object... obj) {
