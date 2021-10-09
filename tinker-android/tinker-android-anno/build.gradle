@@ -22,6 +22,9 @@ sourceSets {
     }
 }
 
+sourceCompatibility = rootProject.ext.javaVersion
+targetCompatibility = rootProject.ext.javaVersion
+
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {
     group = "tinker"
     from('build/libs') {

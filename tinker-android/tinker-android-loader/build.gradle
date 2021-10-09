@@ -21,6 +21,11 @@ android {
     lintOptions {
         disable 'LongLogTag'
     }
+
+    compileOptions {
+        sourceCompatibility rootProject.ext.javaVersion
+        targetCompatibility rootProject.ext.javaVersion
+    }
 }
 
 dependencies {

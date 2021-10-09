@@ -33,7 +33,7 @@ ext {
     targetSdkVersion = 23
     buildToolsVersion = '28.0.3'
     androidXAnnotationVersion = '1.1.0'
-    javaVersion = JavaVersion.VERSION_1_7
+    javaVersion = JavaVersion.VERSION_1_8
 
     GROUP = 'com.tencent.tinker'
     VERSION_NAME = '1.9.14.18'

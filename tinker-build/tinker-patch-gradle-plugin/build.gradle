@@ -3,6 +3,9 @@ apply plugin: 'groovy'
 version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
 
+sourceCompatibility = rootProject.ext.javaVersion
+targetCompatibility = rootProject.ext.javaVersion
+
 dependencies {
     implementation gradleApi()
     implementation localGroovy()
