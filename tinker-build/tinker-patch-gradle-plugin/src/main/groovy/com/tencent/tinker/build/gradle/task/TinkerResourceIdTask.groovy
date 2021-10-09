@@ -72,7 +72,8 @@ public class TinkerResourceIdTask extends DefaultTask {
             addStableIdsFileForAGP350(processResourcesTask, stableIdsFilePath)
             hookSuccess = true
         } catch (Exception e) {
-            println("tinker add additionalParameters fail! exception=${e}")
+            println("tinker add additionalParameters fail with AGP 3.5.0 ~ 4.0.2 method! exception=${e}")
+            hookSuccess = false
         }
 
         if (!hookSuccess) {
@@ -81,14 +82,15 @@ public class TinkerResourceIdTask extends DefaultTask {
                 addStableIdsFileForAGP410(processResourcesTask, stableIdsFilePath)
                 hookSuccess = true
             } catch (Exception e) {
-                println("tinker add additionalParameters fail! exception=${e}")
+                println("tinker add additionalParameters fail with AGP 4.1.0+ method! exception=${e}")
+                hookSuccess = false
             }
         }
 
         if (!hookSuccess) {
             throw new GradleException("rfix add additionalParameters fail! current AGP not support?")
         } else {
-            println("rfix add additionalParameters: --stable-ids=${stableIdsFilePath}")
+            println("rfix add additionalParameters done: --stable-ids=${stableIdsFilePath}")
         }
     }
 
