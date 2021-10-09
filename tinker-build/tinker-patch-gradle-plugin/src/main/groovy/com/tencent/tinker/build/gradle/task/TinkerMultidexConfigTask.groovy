@@ -18,6 +18,9 @@ package com.tencent.tinker.build.gradle.task
 
 import com.tencent.tinker.build.gradle.TinkerBuildPath
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -55,8 +58,11 @@ public class TinkerMultidexConfigTask extends DefaultTask {
                     "     void attachBaseContext(android.content.Context);\n" +
                     "}\n"
 
-
+    @Internal
     def applicationVariant
+
+    @Input
+    @Optional
     def multiDexKeepProguard
 
     public TinkerMultidexConfigTask() {
