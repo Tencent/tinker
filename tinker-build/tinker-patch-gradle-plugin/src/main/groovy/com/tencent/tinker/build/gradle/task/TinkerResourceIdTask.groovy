@@ -66,37 +66,37 @@ public class TinkerResourceIdTask extends DefaultTask {
     protected void addStableIdsFileToAdditionalParameters(def processResourcesTask) {
         def stableIdsFilePath = project.file(TinkerBuildPath.getResourcePublicTxt(project)).getAbsolutePath()
 
-        def hookSuccess = false
+        def injectSuccess = false
         try {
-            // AGP: 3.5.0 ~ 4.0.2
-            addStableIdsFileForAGP350(processResourcesTask, stableIdsFilePath)
-            hookSuccess = true
+            // AGP: 4.1.0 ~
+            addStableIdsFileForAGP410(processResourcesTask, stableIdsFilePath)
+            injectSuccess = true
         } catch (Exception e) {
-            println("tinker add additionalParameters fail with AGP 3.5.0 ~ 4.0.2 method! exception=${e}")
-            hookSuccess = false
+            println("tinker add additionalParameters fail with AGP 4.1.0+ method! exception=${e}")
+            injectSuccess = false
         }
 
-        if (!hookSuccess) {
+        if (!injectSuccess) {
             try {
-                // AGP: 4.1.0 ~
-                addStableIdsFileForAGP410(processResourcesTask, stableIdsFilePath)
-                hookSuccess = true
+                // AGP: 3.2.1 ~ 4.0.2
+                addStableIdsFileForAGP321(processResourcesTask, stableIdsFilePath)
+                injectSuccess = true
             } catch (Exception e) {
-                println("tinker add additionalParameters fail with AGP 4.1.0+ method! exception=${e}")
-                hookSuccess = false
+                println("tinker add additionalParameters fail with AGP 3.2.1 ~ 4.0.2 method! exception=${e}")
+                injectSuccess = false
             }
         }
 
-        if (!hookSuccess) {
+        if (!injectSuccess) {
             throw new GradleException("rfix add additionalParameters fail! current AGP not support?")
         } else {
             println("rfix add additionalParameters done: --stable-ids=${stableIdsFilePath}")
         }
     }
 
-    protected void addStableIdsFileForAGP350(Task processResourcesTask, String stableIdsFilePath) throws Exception {
+    private static void addStableIdsFileForAGP321(Task processResourcesTask, String stableIdsFilePath) throws Exception {
         def taskClass = Class.forName('com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask')
-        def aaptOptions = taskClass.metaClass.getProperty(processResourcesTask, 'aaptOptions') as AaptOptions
+        def aaptOptions = taskClass.metaClass.getProperty(processResourcesTask, 'aaptOptions')
 
         def parameters = aaptOptions.additionalParameters
         if (parameters == null) {
@@ -110,7 +110,7 @@ public class TinkerResourceIdTask extends DefaultTask {
         }
     }
 
-    protected void addStableIdsFileForAGP410(Task processResourcesTask, String stableIdsFilePath) throws Exception {
+    private static void addStableIdsFileForAGP410(Task processResourcesTask, String stableIdsFilePath) throws Exception {
         def taskClass = Class.forName('com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask')
         def aaptAdditionalParameters = taskClass.metaClass.getProperty(processResourcesTask, 'aaptAdditionalParameters')
 
