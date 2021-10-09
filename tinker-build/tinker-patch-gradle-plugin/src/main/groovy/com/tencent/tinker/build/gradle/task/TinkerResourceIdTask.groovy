@@ -236,7 +236,12 @@ public class TinkerResourceIdTask extends DefaultTask {
 
         }
 
-        resDirCandidateList.add(new File(mergeResourcesTask.getIncrementalFolder(), "merged.dir"))
+        def incFolder = mergeResourcesTask.getIncrementalFolder()
+        if (incFolder instanceof File) {
+            resDirCandidateList.add(new File(incFolder, "merged.dir"))
+        } else {
+            resDirCandidateList.add(new File(incFolder.getAsFile().get(), "merged.dir"))
+        }
         resDirCandidateList.each {
             it.eachFileRecurse(FileType.FILES) {
                 if (it.getParentFile().getName().startsWith("values") && it.getName().startsWith("values") && it.getName().endsWith(".xml")) {
