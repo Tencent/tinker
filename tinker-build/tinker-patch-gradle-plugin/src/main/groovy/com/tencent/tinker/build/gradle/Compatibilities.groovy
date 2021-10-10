@@ -15,6 +15,13 @@
  */
 
 package com.tencent.tinker.build.gradle
+
+import org.gradle.api.GradleException
+import org.gradle.api.Task
+import org.jetbrains.annotations.NotNull
+
+import java.lang.reflect.Field
+
 /**
  * For AGP Compatibilities
  *
@@ -73,5 +80,88 @@ class Compatibilities {
 
     static def getAssembleTask(project, variant) {
         return project.tasks.findByName("assemble${variant.name.capitalize()}")
+    }
+
+    static def getMultiDexTask(project, variant) {
+        def capitalizedVariantName = variant.name.capitalize()
+        def multiDexTask = project.tasks.findByName("multiDexList${capitalizedVariantName}")
+        if (multiDexTask != null) {
+            return multiDexTask
+        }
+        return project.tasks.findByName("transformClassesWithMultidexlistFor${capitalizedVariantName}")
+    }
+
+    static def getR8Task(project, variant) {
+        def capitalizedVariantName = variant.name.capitalize()
+        def r8TransformTask = project.tasks.findByName("transformClassesAndResourcesWithR8For${capitalizedVariantName}")
+        if (r8TransformTask != null) {
+            return r8TransformTask
+        }
+        return project.tasks.findByName("minify${capitalizedVariantName}WithR8")
+    }
+
+    static def getObfuscateTask(project, variant) {
+        def capitalizedVariantName = variant.name.capitalize()
+        def proguardTransformTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${capitalizedVariantName}")
+        if (proguardTransformTask != null) {
+            return proguardTransformTask
+        }
+
+        def r8TransformTask = project.tasks.findByName("transformClassesAndResourcesWithR8For${capitalizedVariantName}")
+        if (r8TransformTask != null) {
+            return r8TransformTask
+        }
+
+        def r8Task = project.tasks.findByName("minify${capitalizedVariantName}WithR8")
+        if (r8Task != null) {
+            return r8Task
+        }
+
+        def proguardTask = project.tasks.findByName("minify${capitalizedVariantName}WithProguard")
+        if (proguardTask != null) {
+            return proguardTask
+        }
+
+        // in case that Google changes the task name in later versions
+        throw new GradleException(String.format("The minifyEnabled is enabled for '%s', but " +
+                "tinker cannot find the task. Please submit issue to us: %s", variant.name, TinkerPatchPlugin.ISSUE_URL))
+    }
+
+    static def getInstantRunTask(project, variant) {
+        return project.tasks.findByName("transformClassesWithInstantRunFor${variant.name.capitalize()}")
+    }
+
+    static def getCollectMultiDexComponentsTask(project, variant) {
+        return project.tasks.findByName("collect${variant.name.capitalize()}MultiDexComponents")
+    }
+
+    static def getValueOfFieldRecursively(owner, name) {
+        def field = getFieldRecursively(owner.getClass(), name)
+        return field.get(owner)
+    }
+
+    static def getValueOfStaticFieldRecursively(ownerClazz, name) {
+        def field = getFieldRecursively(ownerClazz, name)
+        return field.get(null)
+    }
+
+    private static def getFieldRecursively(ownerClazz, name) {
+        def currClazz = ownerClazz as Class<?>
+        while (true) {
+            try {
+                def field = currClazz.getDeclaredField(name)
+                if (!field.isAccessible()) {
+                    field.setAccessible(true)
+                }
+                return field
+            } catch (NoSuchFieldException e) {
+                if (currClazz != Object.class) {
+                    currClazz = currClazz.getSuperclass()
+                } else {
+                    throw new NoSuchFieldException("Cannot find field ${name} in ${ownerClazz.getName()} and its super classes.")
+                }
+            }
+        }
+        // Should not be here.
     }
 }

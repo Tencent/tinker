@@ -16,9 +16,11 @@
 
 package com.tencent.tinker.build.gradle.task
 
+import com.tencent.tinker.build.gradle.Compatibilities
 import com.tencent.tinker.build.gradle.TinkerBuildPath
 import com.tencent.tinker.build.util.FileOperation
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 
@@ -58,8 +60,7 @@ public class TinkerProguardConfigTask extends DefaultTask {
     def applicationVariant
 
     @Internal
-    boolean shouldApplyMapping = true;
-
+    boolean shouldApplyMapping = true
 
     public TinkerProguardConfigTask() {
         group = 'tinker'
@@ -100,10 +101,44 @@ public class TinkerProguardConfigTask extends DefaultTask {
             fr.write("\n")
         }
         fr.close()
-        // Add this proguard settings file to the list
-        applicationVariant.getBuildType().buildType.proguardFiles(file)
-        def files = applicationVariant.getBuildType().buildType.getProguardFiles()
 
-        project.logger.error("now proguard files is ${files}")
+        // Add this proguard settings file to the list
+        injectTinkerProguardRuleFile(file)
+    }
+
+    private void injectTinkerProguardRuleFile(file) {
+        def agpObfuscateTask = Compatibilities.getObfuscateTask(project, applicationVariant)
+        def agpConfigFiles = null
+        try {
+            agpConfigFiles = agpObfuscateTask.configurationFiles
+        } catch (Throwable ignored) {
+            agpConfigFiles = null
+        }
+        if (agpConfigFiles == null) {
+            try {
+                agpConfigFiles = agpObfuscateTask.transform.configurationFiles
+            } catch (Throwable ignored) {
+                agpConfigFiles = null
+            }
+        }
+        if (agpConfigFiles == null) {
+            try {
+                agpConfigFiles = Compatibilities.getValueOfFieldRecursively(agpObfuscateTask, 'configurationFiles')
+            } catch (Throwable ignored) {
+                agpConfigFiles = null
+            }
+        }
+        if (agpConfigFiles == null) {
+            try {
+                agpConfigFiles = Compatibilities.getValueOfFieldRecursively(agpObfuscateTask.transform, 'configurationFiles')
+            } catch (Throwable ignored) {
+                agpConfigFiles = null
+            }
+        }
+        if (agpConfigFiles == null) {
+            throw new GradleException('Fail to inject tinker proguard rules file. Some compatibility works need to be done.')
+        }
+        agpConfigFiles.from(project.files(file))
+        println "Now proguard rule files are: ${agpConfigFiles.files}"
     }
 }
