@@ -428,7 +428,14 @@ public class TinkerResourceIdTask extends DefaultTask {
 
             def processResourcesTask = Compatibilities.getProcessResourcesTask(project, variant)
             processResourcesTask.doFirst {
-                addStableIdsFileToAdditionalParameters(processResourcesTask)
+                def aaptParams = project.android.aaptOptions.additionalParameters
+                if (!aaptParams.contains('--stable-ids')) {
+                    addStableIdsFileToAdditionalParameters(processResourcesTask)
+                } else {
+                    project.logger.error('** [NOTICE] ** Manually specified stable-ids file was detected, '
+                            + 'Tinker will give up injecting generated stable-ids file. Please ensure your stable-ids file '
+                            + 'keep ids of all resources in base apk.')
+                }
 
                 if (project.hasProperty("tinker.aapt2.public")) {
                     addPublicFlagForAapt2 = project.ext["tinker.aapt2.public"]?.toString()?.toBoolean()
