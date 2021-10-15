@@ -102,23 +102,30 @@ class Compatibilities {
 
     static def getObfuscateTask(project, variant) {
         def capitalizedVariantName = variant.name.capitalize()
+
+        // For WeChat internal build tools.
+        def customProguardTransformTask = project.tasks.findByName("transformClassesWithCustomProguardFor${capitalizedVariantName}")
+        if (customProguardTransformTask != null && customProguardTransformTask.enabled) {
+            return customProguardTransformTask
+        }
+
         def proguardTransformTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${capitalizedVariantName}")
-        if (proguardTransformTask != null) {
+        if (proguardTransformTask != null && proguardTransformTask.enabled) {
             return proguardTransformTask
         }
 
         def r8TransformTask = project.tasks.findByName("transformClassesAndResourcesWithR8For${capitalizedVariantName}")
-        if (r8TransformTask != null) {
+        if (r8TransformTask != null && r8TransformTask.enabled) {
             return r8TransformTask
         }
 
         def r8Task = project.tasks.findByName("minify${capitalizedVariantName}WithR8")
-        if (r8Task != null) {
+        if (r8Task != null && r8Task.enabled) {
             return r8Task
         }
 
         def proguardTask = project.tasks.findByName("minify${capitalizedVariantName}WithProguard")
-        if (proguardTask != null) {
+        if (proguardTask != null && proguardTask.enabled) {
             return proguardTask
         }
 
