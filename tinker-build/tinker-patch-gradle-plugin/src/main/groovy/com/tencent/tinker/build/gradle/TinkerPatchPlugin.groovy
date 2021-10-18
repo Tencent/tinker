@@ -25,7 +25,9 @@ import com.tencent.tinker.build.util.Utils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
+import org.jetbrains.annotations.NotNull
 import sun.misc.Unsafe
 
 import java.lang.reflect.Field
@@ -131,7 +133,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 def variantName = variant.name
                 def capitalizedVariantName = variantName.capitalize()
 
-                def instantRunTask = Compatibilities.getInstantRunTask(project, variant)
+                def instantRunTask = getInstantRunTask(variantName)
                 if (instantRunTask != null) {
                     throw new GradleException(
                             "Tinker does not support instant run mode, please trigger build"
@@ -200,7 +202,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     TinkerProguardConfigTask proguardConfigTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}Proguard", TinkerProguardConfigTask)
                     proguardConfigTask.applicationVariant = variant
                     proguardConfigTask.mustRunAfter tinkerManifestTask
-                    def obfuscateTask = Compatibilities.getObfuscateTask(project, variant)
+
+                    def obfuscateTask = getObfuscateTask(variantName)
                     obfuscateTask.dependsOn proguardConfigTask
                 }
 
@@ -217,8 +220,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     // for gradle 3.x gen manifest_keep move to processResources task
                     multidexConfigTask.mustRunAfter agpProcessResourcesTask
 
-                    def agpMultidexTask = Compatibilities.getMultiDexTask(project, variant)
-                    def agpR8Task = Compatibilities.getR8Task(project, variant)
+                    def agpMultidexTask = getMultiDexTask(variantName)
+                    def agpR8Task = getR8Task(variantName)
                     if (agpMultidexTask != null) {
                         agpMultidexTask.dependsOn multidexConfigTask
                     } else if (agpMultidexTask == null && agpR8Task != null) {
@@ -246,7 +249,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                             //Maybe it's not a transform task after agp 3.6.0 so try catch it.
                         }
                     }
-                    def collectMultiDexComponentsTask = Compatibilities.getCollectMultiDexComponentsTask(project, variant)
+                    def collectMultiDexComponentsTask = getCollectMultiDexComponentsTask(variantName)
                     if (collectMultiDexComponentsTask != null) {
                         multidexConfigTask.mustRunAfter collectMultiDexComponentsTask
                     }
@@ -320,6 +323,74 @@ class TinkerPatchPlugin implements Plugin<Project> {
         tinkerPatchBuildTask.buildApkPath = output.outputFile
 
         tinkerPatchBuildTask.dependsOn Compatibilities.getAssembleTask(mProject, variant)
+    }
+
+    Task getMultiDexTask(String variantName) {
+        String multiDexTaskName = "multiDexList${variantName.capitalize()}"
+        String multiDexTaskTransformName = "transformClassesWithMultidexlistFor${variantName.capitalize()}"
+
+        def multiDexTask = mProject.tasks.findByName(multiDexTaskName)
+        if (multiDexTask == null) {
+            multiDexTask = mProject.tasks.findByName(multiDexTaskTransformName)
+        }
+
+        return multiDexTask
+    }
+
+    Task getR8Task(String variantName) {
+        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName.capitalize()}"
+        def r8TransformTask = mProject.tasks.findByName(r8TransformTaskName)
+        if (r8TransformTask != null) {
+            return r8TransformTask
+        }
+
+        String r8TaskName = "minify${variantName.capitalize()}WithR8"
+        def r8Task = mProject.tasks.findByName(r8TaskName)
+        if (r8Task != null) {
+            return r8Task
+        }
+    }
+
+
+    @NotNull
+    Task getObfuscateTask(String variantName) {
+        String proguardTransformTaskName = "transformClassesAndResourcesWithProguardFor${variantName.capitalize()}"
+        def proguardTransformTask = mProject.tasks.findByName(proguardTransformTaskName)
+        if (proguardTransformTask != null) {
+            return proguardTransformTask
+        }
+
+        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName.capitalize()}"
+        def r8TransformTask = mProject.tasks.findByName(r8TransformTaskName)
+        if (r8TransformTask != null) {
+            return r8TransformTask
+        }
+
+        String r8TaskName = "minify${variantName.capitalize()}WithR8"
+        def r8Task = mProject.tasks.findByName(r8TaskName)
+        if (r8Task != null) {
+            return r8Task
+        }
+
+        String proguardTaskName = "minify${variantName.capitalize()}WithProguard"
+        def proguardTask = mProject.tasks.findByName(proguardTaskName)
+        if (proguardTask != null) {
+            return proguardTask
+        }
+
+        // in case that Google changes the task name in later versions
+        throw new GradleException(String.format("The minifyEnabled is enabled for '%s', but " +
+                "tinker cannot find the task. Please submit issue to us: %s", variantName, ISSUE_URL))
+    }
+
+    Task getInstantRunTask(String variantName) {
+        String instantRunTask = "transformClassesWithInstantRunFor${variantName.capitalize()}"
+        return mProject.tasks.findByName(instantRunTask)
+    }
+
+    Task getCollectMultiDexComponentsTask(String variantName) {
+        String collectMultiDexComponents = "collect${variantName.capitalize()}MultiDexComponents"
+        return mProject.tasks.findByName(collectMultiDexComponents)
     }
 
     void replaceKotlinFinalField(String className, String filedName, Object instance, Object fieldValue) {
