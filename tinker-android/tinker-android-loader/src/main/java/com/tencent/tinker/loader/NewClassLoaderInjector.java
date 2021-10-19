@@ -44,9 +44,9 @@ final class NewClassLoaderInjector {
         return newClassLoader;
     }
 
-    public static void triggerDex2Oat(Context context, File dexOptDir, boolean useDLC,
+    public static ClassLoader triggerDex2Oat(Context context, File dexOptDir, boolean useDLC,
                                       String... dexPaths) throws Throwable {
-        final ClassLoader triggerClassLoader = createNewClassLoader(context.getClassLoader(), dexOptDir, useDLC, false, dexPaths);
+        return createNewClassLoader(context.getClassLoader(), dexOptDir, useDLC, false, dexPaths);
     }
 
     @SuppressWarnings("unchecked")
