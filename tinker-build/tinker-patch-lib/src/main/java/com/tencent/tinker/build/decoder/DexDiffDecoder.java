@@ -38,6 +38,7 @@ import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
 
+import org.jf.dexlib2.AccessFlags;
 import org.jf.dexlib2.DexFileFactory;
 import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.ReferenceType;
@@ -98,6 +99,7 @@ public class DexDiffDecoder extends BaseDecoder {
     private final Set<Pattern> loaderClassPatterns;
 
     private final Set<String> descOfClassesInApk;
+    private final Set<String> descOfSyntheticClassesInApk;
 
     private final List<File> oldDexFiles;
 
@@ -139,6 +141,7 @@ public class DexDiffDecoder extends BaseDecoder {
         }
 
         descOfClassesInApk = new HashSet<>();
+        descOfSyntheticClassesInApk = new HashSet<>();
 
         oldDexFiles = new ArrayList<>();
     }
@@ -146,6 +149,7 @@ public class DexDiffDecoder extends BaseDecoder {
     @Override
     public void onAllPatchesStart() throws IOException, TinkerPatchException {
         descOfClassesInApk.clear();
+        descOfSyntheticClassesInApk.clear();
         oldDexFiles.clear();
     }
 
@@ -162,6 +166,9 @@ public class DexDiffDecoder extends BaseDecoder {
         final DexFile dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(29));
         for (org.jf.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
             descOfClassesInApk.add(classDef.getType());
+            if (AccessFlags.SYNTHETIC.isSet(classDef.getAccessFlags())) {
+                descOfSyntheticClassesInApk.add(classDef.getType());
+            }
         }
     }
 
@@ -255,6 +262,9 @@ public class DexDiffDecoder extends BaseDecoder {
             return true;
         }
         if (Utils.isStringMatchesPatterns(refereeTypeDesc, loaderClassPatterns)) {
+            return true;
+        }
+        if (descOfSyntheticClassesInApk.contains(refereeTypeDesc)) {
             return true;
         }
         return false;
