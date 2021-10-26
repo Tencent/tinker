@@ -203,7 +203,8 @@ public class ShareTinkerInternals {
             return ShareConstants.ERROR_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND;
         }
         if (!oldTinkerId.equals(patchTinkerId)) {
-            ShareTinkerLog.e(TAG, "tinkerId is not equal, base is " + oldTinkerId + ", but patch is " + patchTinkerId);
+            ShareTinkerLog.e(TAG, "tinkerId in patch is not matched with the one in base pack, base: %s, patch: %s.",
+                    oldTinkerId, patchTinkerId);
             return ShareConstants.ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL;
         }
         return ShareConstants.ERROR_PACKAGE_CHECK_OK;
