@@ -20,9 +20,10 @@ import static com.tencent.tinker.loader.shareutil.ShareConstants.ODEX_SUFFIX;
 import static com.tencent.tinker.loader.shareutil.ShareConstants.VDEX_SUFFIX;
 
 import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -40,8 +41,10 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -148,7 +151,7 @@ public final class TinkerDexOptimizer {
                 String optimizedPath = SharePatchFileUtil.optimizedPathFor(this.dexFile, this.optimizedDir);
                 if (!ShareTinkerInternals.isArkHotRuning()) {
                     if (useInterpretMode) {
-                        interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
+                        interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath, targetISA);
                     } else if (Build.VERSION.SDK_INT >= 26
                             || (Build.VERSION.SDK_INT >= 25 && Build.VERSION.PREVIEW_SDK_INT != 0)) {
                         patchClassLoaderStrongRef = NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir,
@@ -178,181 +181,286 @@ public final class TinkerDexOptimizer {
             }
             return true;
         }
+    }
 
-        private void triggerPMDexOptOnDemand(Context context, String dexPath, String oatPath) {
-            if (Build.VERSION.SDK_INT < 29) {
-                // Only do this trick on Android Q, R devices.
-                ShareTinkerLog.w(TAG, "[+] Not API 29, 30 device, skip fixing.");
+    private static void triggerPMDexOptOnDemand(Context context, String dexPath, String oatPath) {
+        if (Build.VERSION.SDK_INT < 29) {
+            // Only do this trick on Android Q, R and newer devices.
+            ShareTinkerLog.w(TAG, "[+] Not API 29, 30 and newer device, skip triggering dexopt.");
+            return;
+        }
+
+        ShareTinkerLog.i(TAG, "[+] Hit target device, do dexopt logic now.");
+
+        try {
+            final File oatFile = new File(oatPath);
+            if (oatFile.exists()) {
+                ShareTinkerLog.i(TAG, "[+] Odex file exists, skip bg-dexopt triggering.");
                 return;
             }
-
-            ShareTinkerLog.i(TAG, "[+] Hit target device, do fix logic now.");
-
             try {
-                final File oatFile = new File(oatPath);
+                reconcileSecondaryDexFiles(context);
+            } catch (Throwable thr) {
+                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call reconcileSecondaryDexFiles.");
+            }
+            try {
+                registerDexModule(context, dexPath);
                 if (oatFile.exists()) {
-                    ShareTinkerLog.i(TAG, "[+] Odex file exists, skip bg-dexopt triggering.");
+                    ShareTinkerLog.i(TAG, "[+] Dexopt was triggered successfully.");
                     return;
                 }
-                try {
-                    performDexOptSecondary(context);
-                } catch (Throwable thr) {
-                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call performDexOptSecondary.");
-                }
-                int waitTimes = 0;
-                while (true) {
-                    if (oatFile.exists()) {
-                        ShareTinkerLog.i(TAG, "[+] Bg-dexopt was triggered successfully.");
-                        break;
-                    } else {
-                        if (waitTimes >= 3) {
-                            throw new IllegalStateException("Bg-dexopt was triggered, but no odex file was generated.");
-                        }
-                        // Take a rest. And hope any asynchronous mechanism may generate odex/vdex we need.
-                        ShareTinkerLog.w(TAG, "[!] No odex file was generated, wait for retry.");
-                        ++waitTimes;
-                        SystemClock.sleep(5000);
-                    }
-                }
             } catch (Throwable thr) {
-                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call triggerPMDexOptAsyncOnDemand.");
+                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call registerDexModule.");
             }
-        }
-
-        private static final int SHELL_COMMAND_TRANSACTION = ('_' << 24) | ('C' << 16) | ('M' << 8) | 'D';
-        private static final Handler sHandler = new Handler(Looper.getMainLooper());
-        private IBinder mPMSBinderProxy = null;
-
-        /**
-         * Clever way to avoid hacking an unstable binder transaction code of PMS.
-         * Credit: https://mp.weixin.qq.com/s/5kwU-84TbsO3Tk5QDzNKwA
-         */
-        public void performDexOptSecondary(Context context) throws IllegalStateException {
-            if (mPMSBinderProxy == null || !mPMSBinderProxy.isBinderAlive()) {
-                try {
-                    final Class<?> smClazz = Class.forName("android.os.ServiceManager");
-                    final Method getServiceMethod = ShareReflectUtil.findMethod(smClazz, "getService", String.class);
-                    mPMSBinderProxy = (IBinder) getServiceMethod.invoke(null, "package");
-                } catch (Throwable thr) {
-                    if (thr instanceof InvocationTargetException) {
-                        throw new IllegalStateException(((InvocationTargetException) thr).getTargetException());
-                    } else {
-                        throw new IllegalStateException(thr);
-                    }
-                }
-            }
-            /*
-             * Use 'speed-profile' as compile filter can take advantage bring by profiling jit and '.art' cache.
-             * Meanwhile dex2oat can still be done in almost the same time as using 'quicken'.
-             * Thanks to Chen MinSheng for his advice.
-             */
-            final String[] args = {
-                    "compile",
-                    "-f",
-                    "--secondary-dex",
-                    "-m", "speed-profile",
-                    context.getPackageName()
-            };
-            Parcel data = null;
-            Parcel reply = null;
-            long lastIdentity = Binder.clearCallingIdentity();
+            boolean doWaitingLoop = true;
             try {
-                ShareTinkerLog.i(TAG, "[+] Start trigger secondary dexopt.");
-                data = Parcel.obtain();
-                reply = Parcel.obtain();
-                data.writeFileDescriptor(FileDescriptor.in);
-                data.writeFileDescriptor(FileDescriptor.out);
-                data.writeFileDescriptor(FileDescriptor.err);
-                data.writeStringArray(args);
-                data.writeStrongBinder(null /* ShellCallback */);
-                new ResultReceiver(sHandler) {
-                    @Override
-                    protected void onReceiveResult(int resultCode, Bundle resultData) {
-                        // Ignored.
-                    }
-                }.writeToParcel(data, 0);
-                mPMSBinderProxy.transact(SHELL_COMMAND_TRANSACTION, data, reply, 0);
-                reply.readException();
-                ShareTinkerLog.i(TAG, "[+] Secondary dexopt done.");
+                performDexOptSecondary(context);
             } catch (Throwable thr) {
-                throw new IllegalStateException("Failure on triggering secondary dexopt", thr);
-            } finally {
-                if (reply != null) {
-                    reply.recycle();
-                }
-                if (data != null) {
-                    data.recycle();
-                }
-                Binder.restoreCallingIdentity(lastIdentity);
+                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call performDexOptSecondary.");
+                doWaitingLoop = false;
             }
-        }
-
-        private void waitUntilVdexGeneratedOrTimeout(Context context, String vdexPath) {
-            final File vdexFile = new File(vdexPath);
-            final long[] delaySeq = {1000, 2000, 4000, 8000, 16000, 32000};
-            int delaySeqIdx = 0;
-            while (!vdexFile.exists() && delaySeqIdx < delaySeq.length) {
-                SystemClock.sleep(delaySeq[delaySeqIdx++]);
-                ShareTinkerLog.w(TAG, "[!] Vdex %s does not exist after waiting %s time(s), wait again.", vdexPath, delaySeqIdx);
-            }
-            if (vdexFile.exists()) {
-                ShareTinkerLog.i(TAG, "[+] Vdex %s was found.", vdexPath);
-            } else {
-                ShareTinkerLog.e(TAG, "[-] Vdex %s does not exist after waiting for %s times.", vdexPath, delaySeq.length);
-            }
-        }
-
-        private void interpretDex2Oat(String dexFilePath, String oatFilePath) throws IOException {
-            // add process lock for interpret mode
-            final File oatFile = new File(oatFilePath);
-            if (!oatFile.exists()) {
-                oatFile.getParentFile().mkdirs();
-            }
-
-            File lockFile = new File(oatFile.getParentFile(), INTERPRET_LOCK_FILE_NAME);
-            ShareFileLockHelper fileLock = null;
-            try {
-                fileLock = ShareFileLockHelper.getFileLock(lockFile);
-
-                final List<String> commandAndParams = new ArrayList<>();
-                commandAndParams.add("dex2oat");
-                // for 7.1.1, duplicate class fix
-                if (Build.VERSION.SDK_INT >= 24) {
-                    commandAndParams.add("--runtime-arg");
-                    commandAndParams.add("-classpath");
-                    commandAndParams.add("--runtime-arg");
-                    commandAndParams.add("&");
-                }
-                commandAndParams.add("--dex-file=" + dexFilePath);
-                commandAndParams.add("--oat-file=" + oatFilePath);
-                commandAndParams.add("--instruction-set=" + targetISA);
-                if (Build.VERSION.SDK_INT > 25) {
-                    commandAndParams.add("--compiler-filter=quicken");
+            int waitTimes = 0;
+            while (doWaitingLoop) {
+                if (oatFile.exists()) {
+                    ShareTinkerLog.i(TAG, "[+] Dexopt was triggered successfully.");
+                    doWaitingLoop = false;
                 } else {
-                    commandAndParams.add("--compiler-filter=interpret-only");
+                    if (waitTimes >= 3) {
+                        throw new IllegalStateException("Dexopt was triggered, but no odex file was generated.");
+                    }
+                    // Take a rest. And hope any asynchronous mechanism may generate odex/vdex we need.
+                    ShareTinkerLog.w(TAG, "[!] No odex file was generated, wait for retry.");
+                    ++waitTimes;
+                    SystemClock.sleep(5000);
                 }
+            }
+        } catch (Throwable thr) {
+            ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call triggerPMDexOptAsyncOnDemand.");
+        }
+    }
 
-                final ProcessBuilder pb = new ProcessBuilder(commandAndParams);
-                pb.redirectErrorStream(true);
-                final Process dex2oatProcess = pb.start();
-                StreamConsumer.consumeInputStream(dex2oatProcess.getInputStream());
-                StreamConsumer.consumeInputStream(dex2oatProcess.getErrorStream());
-                try {
-                    final int ret = dex2oatProcess.waitFor();
-                    if (ret != 0) {
-                        throw new IOException("dex2oat works unsuccessfully, exit code: " + ret);
-                    }
-                } catch (InterruptedException e) {
-                    throw new IOException("dex2oat is interrupted, msg: " + e.getMessage(), e);
+    private static void registerDexModule(Context context, String dexPath) throws IllegalStateException {
+        final PackageManager synchronizedPM = getSynchronizedPackageManager(context);
+        try {
+            final Class<?> dexModuleRegisterCallbackClazz = Class
+                    .forName("android.content.pm.PackageManager$DexModuleRegisterCallback");
+            ShareReflectUtil
+                    .findMethod(synchronizedPM, "registerDexModule", String.class, dexModuleRegisterCallbackClazz)
+                    .invoke(synchronizedPM, dexPath, null);
+        } catch (InvocationTargetException e) {
+            throw new IllegalStateException(e.getTargetException());
+        } catch (Throwable thr) {
+            if (thr instanceof IllegalStateException) {
+                throw (IllegalStateException) thr;
+            } else {
+                throw new IllegalStateException(thr);
+            }
+        }
+    }
+
+    private static void reconcileSecondaryDexFiles(Context context) throws IllegalStateException {
+        final String[] args = {
+                "reconcile-secondary-dex-files",
+                context.getPackageName()
+        };
+        executePMSShellCommand(context, args);
+    }
+
+    private static void performDexOptSecondary(Context context) throws IllegalStateException {
+        /*
+         * Use 'speed-profile' as compile filter can take advantage bring by profiling jit and '.art' cache.
+         * Meanwhile dex2oat can still be done in almost the same time as using 'quicken'.
+         * Thanks to Chen MinSheng for his advice.
+         */
+        final String[] args = {
+                "compile",
+                "-f",
+                "--secondary-dex",
+                "-m", "speed-profile",
+                context.getPackageName()
+        };
+        executePMSShellCommand(context, args);
+    }
+
+    private static final IBinder[] sPMSBinderProxy = { null };
+
+    private static IBinder getPMSBinderProxy(Context context) throws IllegalStateException {
+        synchronized (sPMSBinderProxy) {
+            final IBinder cachedPMSBinderProxy = sPMSBinderProxy[0];
+            if (cachedPMSBinderProxy != null && cachedPMSBinderProxy.isBinderAlive()) {
+                return cachedPMSBinderProxy;
+            }
+            try {
+                final Class<?> smClazz = Class.forName("android.os.ServiceManager");
+                final Method getServiceMethod = ShareReflectUtil.findMethod(smClazz, "getService", String.class);
+                sPMSBinderProxy[0] = (IBinder) getServiceMethod.invoke(null, "package");
+                return sPMSBinderProxy[0];
+            } catch (Throwable thr) {
+                if (thr instanceof InvocationTargetException) {
+                    throw new IllegalStateException(((InvocationTargetException) thr).getTargetException());
+                } else {
+                    throw new IllegalStateException(thr);
                 }
-            } finally {
-                try {
-                    if (fileLock != null) {
-                        fileLock.close();
+            }
+        }
+    }
+
+    private static final PackageManager[] sSynchronizedPMCache = { null };
+
+    private static final PackageManager getSynchronizedPackageManager(Context context) throws IllegalStateException {
+        synchronized (sSynchronizedPMCache) {
+            try {
+                if (sSynchronizedPMCache[0] != null) {
+                    synchronized (sPMSBinderProxy) {
+                        if (sPMSBinderProxy[0] != null && sPMSBinderProxy[0].isBinderAlive()) {
+                            return sSynchronizedPMCache[0];
+                        }
                     }
-                } catch (IOException e) {
-                    ShareTinkerLog.w(TAG, "release interpret Lock error", e);
                 }
+                final IBinder pmsBinderProxy = getPMSBinderProxy(context);
+                final IBinder syncPMSBinderProxy = (IBinder) Proxy.newProxyInstance(
+                        context.getClassLoader(),
+                        pmsBinderProxy.getClass().getInterfaces(),
+                        new InvocationHandler() {
+                            @Override
+                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                                if ("transact".equals(method.getName())) {
+                                    // FLAG_ONEWAY => NONE.
+                                    args[3] = 0;
+                                }
+                                return method.invoke(pmsBinderProxy, args);
+                            }
+                        }
+                );
+                final Class<?> pmsStubClazz = Class.forName("android.content.pm.IPackageManager$Stub");
+                final Object pmsStubProxy = ShareReflectUtil
+                        .findMethod(pmsStubClazz, "asInterface", IBinder.class)
+                        .invoke(null, syncPMSBinderProxy);
+                final Class<?> appPMClazz = Class.forName("android.app.ApplicationPackageManager");
+                final Object contextImpl = (context instanceof ContextWrapper)
+                        ? ((ContextWrapper) context).getBaseContext() : context;
+                final Class<?> pmsItfClazz = Class.forName("android.content.pm.IPackageManager");
+                final PackageManager appPM = (PackageManager) ShareReflectUtil
+                        .findConstructor(appPMClazz, contextImpl.getClass(), pmsItfClazz)
+                        .newInstance(contextImpl, pmsStubProxy);
+                sSynchronizedPMCache[0] = appPM;
+                return appPM;
+            } catch (InvocationTargetException e) {
+                throw new IllegalStateException(e.getTargetException());
+            } catch (Throwable thr) {
+                if (thr instanceof IllegalStateException) {
+                    throw (IllegalStateException) thr;
+                } else {
+                    throw new IllegalStateException(thr);
+                }
+            }
+        }
+    }
+
+    private static final int SHELL_COMMAND_TRANSACTION = ('_' << 24) | ('C' << 16) | ('M' << 8) | 'D';
+    private static final Handler sHandler = new Handler(Looper.getMainLooper());
+    private static final ResultReceiver sEmptyResultReceiver = new ResultReceiver(sHandler);
+
+    /**
+     * Clever way to avoid hacking an unstable binder transaction code of PMS.
+     * Credit: https://mp.weixin.qq.com/s/5kwU-84TbsO3Tk5QDzNKwA
+     */
+    private static void executePMSShellCommand(Context context, String[] args) throws IllegalStateException {
+        final IBinder pmsBinderProxy = getPMSBinderProxy(context);
+        Parcel data = null;
+        Parcel reply = null;
+        long lastIdentity = Binder.clearCallingIdentity();
+        try {
+            ShareTinkerLog.i(TAG, "[+] Start trigger secondary dexopt.");
+            data = Parcel.obtain();
+            reply = Parcel.obtain();
+            data.writeFileDescriptor(FileDescriptor.in);
+            data.writeFileDescriptor(FileDescriptor.out);
+            data.writeFileDescriptor(FileDescriptor.err);
+            data.writeStringArray(args);
+            data.writeStrongBinder(null /* ShellCallback */);
+            sEmptyResultReceiver.writeToParcel(data, 0);
+            pmsBinderProxy.transact(SHELL_COMMAND_TRANSACTION, data, reply, 0);
+            reply.readException();
+            ShareTinkerLog.i(TAG, "[+] Secondary dexopt done.");
+        } catch (Throwable thr) {
+            throw new IllegalStateException("Failure on triggering secondary dexopt", thr);
+        } finally {
+            if (reply != null) {
+                reply.recycle();
+            }
+            if (data != null) {
+                data.recycle();
+            }
+            Binder.restoreCallingIdentity(lastIdentity);
+        }
+    }
+
+    private static void waitUntilVdexGeneratedOrTimeout(Context context, String vdexPath) {
+        final File vdexFile = new File(vdexPath);
+        final long[] delaySeq = {1000, 2000, 4000, 8000, 16000, 32000};
+        int delaySeqIdx = 0;
+        while (!vdexFile.exists() && delaySeqIdx < delaySeq.length) {
+            SystemClock.sleep(delaySeq[delaySeqIdx++]);
+            ShareTinkerLog.w(TAG, "[!] Vdex %s does not exist after waiting %s time(s), wait again.", vdexPath, delaySeqIdx);
+        }
+        if (vdexFile.exists()) {
+            ShareTinkerLog.i(TAG, "[+] Vdex %s was found.", vdexPath);
+        } else {
+            ShareTinkerLog.e(TAG, "[-] Vdex %s does not exist after waiting for %s times.", vdexPath, delaySeq.length);
+        }
+    }
+
+    private static void interpretDex2Oat(String dexFilePath, String oatFilePath, String targetISA) throws IOException {
+        // add process lock for interpret mode
+        final File oatFile = new File(oatFilePath);
+        if (!oatFile.exists()) {
+            oatFile.getParentFile().mkdirs();
+        }
+
+        File lockFile = new File(oatFile.getParentFile(), INTERPRET_LOCK_FILE_NAME);
+        ShareFileLockHelper fileLock = null;
+        try {
+            fileLock = ShareFileLockHelper.getFileLock(lockFile);
+
+            final List<String> commandAndParams = new ArrayList<>();
+            commandAndParams.add("dex2oat");
+            // for 7.1.1, duplicate class fix
+            if (Build.VERSION.SDK_INT >= 24) {
+                commandAndParams.add("--runtime-arg");
+                commandAndParams.add("-classpath");
+                commandAndParams.add("--runtime-arg");
+                commandAndParams.add("&");
+            }
+            commandAndParams.add("--dex-file=" + dexFilePath);
+            commandAndParams.add("--oat-file=" + oatFilePath);
+            commandAndParams.add("--instruction-set=" + targetISA);
+            if (Build.VERSION.SDK_INT > 25) {
+                commandAndParams.add("--compiler-filter=quicken");
+            } else {
+                commandAndParams.add("--compiler-filter=interpret-only");
+            }
+
+            final ProcessBuilder pb = new ProcessBuilder(commandAndParams);
+            pb.redirectErrorStream(true);
+            final Process dex2oatProcess = pb.start();
+            StreamConsumer.consumeInputStream(dex2oatProcess.getInputStream());
+            StreamConsumer.consumeInputStream(dex2oatProcess.getErrorStream());
+            try {
+                final int ret = dex2oatProcess.waitFor();
+                if (ret != 0) {
+                    throw new IOException("dex2oat works unsuccessfully, exit code: " + ret);
+                }
+            } catch (InterruptedException e) {
+                throw new IOException("dex2oat is interrupted, msg: " + e.getMessage(), e);
+            }
+        } finally {
+            try {
+                if (fileLock != null) {
+                    fileLock.close();
+                }
+            } catch (IOException e) {
+                ShareTinkerLog.w(TAG, "release interpret Lock error", e);
             }
         }
     }

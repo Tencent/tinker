@@ -147,9 +147,22 @@ public class ShareReflectUtil {
      */
     public static Constructor<?> findConstructor(Object instance, Class<?>... parameterTypes)
             throws NoSuchMethodException {
-        for (Class<?> clazz = instance.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+        return findConstructor(instance.getClass(), parameterTypes);
+    }
+
+    /**
+     * Locates a given constructor anywhere in the class inheritance hierarchy.
+     *
+     * @param clazz          an class to search the constructor into.
+     * @param parameterTypes constructor parameter types
+     * @return a constructor object
+     * @throws NoSuchMethodException if the constructor cannot be located
+     */
+    public static Constructor<?> findConstructor(Class<?> clazz, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        for (Class<?> currClazz = clazz; currClazz != null; currClazz = currClazz.getSuperclass()) {
             try {
-                Constructor<?> ctor = clazz.getDeclaredConstructor(parameterTypes);
+                Constructor<?> ctor = currClazz.getDeclaredConstructor(parameterTypes);
 
                 if (!ctor.isAccessible()) {
                     ctor.setAccessible(true);
@@ -164,7 +177,7 @@ public class ShareReflectUtil {
         throw new NoSuchMethodException("Constructor"
                 + " with parameters "
                 + Arrays.asList(parameterTypes)
-                + " not found in " + instance.getClass());
+                + " not found in " + clazz);
     }
 
     /**
