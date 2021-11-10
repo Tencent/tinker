@@ -31,7 +31,9 @@ import android.os.Parcel;
 import android.os.ResultReceiver;
 import android.os.SystemClock;
 
+import com.tencent.tinker.loader.shareutil.ShareElfFile;
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
+import com.tencent.tinker.loader.shareutil.ShareOatUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -194,45 +196,52 @@ public final class TinkerDexOptimizer {
 
         try {
             final File oatFile = new File(oatPath);
-            if (oatFile.exists()) {
+            if (oatFile.exists() && oatFile.length() > 4) {
                 ShareTinkerLog.i(TAG, "[+] Odex file exists, skip bg-dexopt triggering.");
                 return;
-            }
-            try {
-                reconcileSecondaryDexFiles(context);
-            } catch (Throwable thr) {
-                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call reconcileSecondaryDexFiles.");
-            }
-            try {
-                registerDexModule(context, dexPath);
-                if (oatFile.exists()) {
-                    ShareTinkerLog.i(TAG, "[+] Dexopt was triggered successfully.");
-                    return;
+            } else {
+                try {
+                    final File oatDir = oatFile.getParentFile();
+                    if (!oatDir.exists()) {
+                        oatDir.mkdirs();
+                    }
+                    oatFile.createNewFile();
+                } catch (Throwable thr) {
+                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to pre-create oat file.");
                 }
-            } catch (Throwable thr) {
-                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call registerDexModule.");
-            }
-            boolean doWaitingLoop = true;
-            try {
-                performDexOptSecondary(context);
-            } catch (Throwable thr) {
-                ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call performDexOptSecondary.");
-                doWaitingLoop = false;
             }
             int waitTimes = 0;
-            while (doWaitingLoop) {
-                if (oatFile.exists()) {
-                    ShareTinkerLog.i(TAG, "[+] Dexopt was triggered successfully.");
-                    doWaitingLoop = false;
-                } else {
-                    if (waitTimes >= 3) {
-                        throw new IllegalStateException("Dexopt was triggered, but no odex file was generated.");
-                    }
-                    // Take a rest. And hope any asynchronous mechanism may generate odex/vdex we need.
-                    ShareTinkerLog.w(TAG, "[!] No odex file was generated, wait for retry.");
-                    ++waitTimes;
-                    SystemClock.sleep(5000);
+            while (true) {
+                try {
+                    reconcileSecondaryDexFiles(context);
+                } catch (Throwable thr) {
+                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call reconcileSecondaryDexFiles.");
                 }
+                try {
+                    registerDexModule(context, dexPath);
+                } catch (Throwable thr) {
+                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call registerDexModule.");
+                }
+                if (oatFile.exists()) {
+                    ShareTinkerLog.i(TAG, "[+] Dexopt was triggered by registerDexModule successfully.");
+                    return;
+                }
+                try {
+                    performDexOptSecondary(context);
+                } catch (Throwable thr) {
+                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call performDexOptSecondary.");
+                }
+                if (oatFile.exists()) {
+                    ShareTinkerLog.i(TAG, "[+] Dexopt was triggered by performDexOptSecondary successfully.");
+                    return;
+                }
+                if (waitTimes >= 3) {
+                    throw new IllegalStateException("Dexopt was triggered, but no odex file was generated.");
+                }
+                // Take a rest. And hope any asynchronous mechanism may generate odex/vdex we need.
+                ShareTinkerLog.w(TAG, "[!] No odex file was generated, wait for retry.");
+                ++waitTimes;
+                SystemClock.sleep(5000);
             }
         } catch (Throwable thr) {
             ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call triggerPMDexOptAsyncOnDemand.");
