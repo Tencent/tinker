@@ -99,7 +99,7 @@ public class TinkerResourceIdTask extends DefaultTask {
         def aaptOptions = taskClass.metaClass.getProperty(processResourcesTask, 'aaptOptions')
 
         def parameters = aaptOptions.additionalParameters
-        if (parameters == null) {
+        if (parameters == null || parameters instanceof AbstractList) {
             parameters = new ArrayList<String>()
             replaceFinalField(AaptOptions.class, 'additionalParameters', aaptOptions, parameters)
         }
