@@ -40,7 +40,7 @@ public class TinkerSevenZipExtension {
      */
     String path
 
-    private Project project;
+    private Project project
 
     public TinkerSevenZipExtension(Project project) {
         zipArtifact = null

@@ -32,8 +32,8 @@ public class TinkerPackageConfigExtension {
      * we can gen package config file while configField method
      */
     private Map<String, Map<String, String>> fields
-    private Project project;
-    private AndroidParser androidManifest;
+    private Project project
+    private AndroidParser androidManifest
 
 
     public TinkerPackageConfigExtension(project) {

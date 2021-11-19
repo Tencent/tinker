@@ -13,12 +13,12 @@
 package com.tencent.tinker.build.gradle.extension
 
 public class TinkerArkHotExtension {
-    String path;
-    String name;
+    String path
+    String name
 
     public TinkerArkHotExtension() {
-        path = "arkHot";
-        name = "patch.apk";
+        path = "arkHot"
+        name = "patch.apk"
     }
 
     @Override
