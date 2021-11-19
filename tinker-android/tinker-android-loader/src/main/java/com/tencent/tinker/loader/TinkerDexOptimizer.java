@@ -217,14 +217,19 @@ public final class TinkerDexOptimizer {
                 } catch (Throwable thr) {
                     ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call reconcileSecondaryDexFiles.");
                 }
-                try {
-                    registerDexModule(context, dexPath);
-                } catch (Throwable thr) {
-                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call registerDexModule.");
-                }
-                if (oatFile.exists()) {
-                    ShareTinkerLog.i(TAG, "[+] Dexopt was triggered by registerDexModule successfully.");
-                    return;
+                if (ShareTinkerInternals.isNewerOrEqualThanVersion(31 /* Android S */, true)) {
+                    // registerDexModule will force classloader context change into VariableClassLoaderContext,
+                    // which makes ART skip caching class verification info on Android Q and R. The running
+                    // performance of patched app will have no improvement.
+                    try {
+                        registerDexModule(context, dexPath);
+                    } catch (Throwable thr) {
+                        ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call registerDexModule.");
+                    }
+                    if (oatFile.exists()) {
+                        ShareTinkerLog.i(TAG, "[+] Dexopt was triggered by registerDexModule successfully.");
+                        return;
+                    }
                 }
                 try {
                     performDexOptSecondary(context);
@@ -285,7 +290,8 @@ public final class TinkerDexOptimizer {
                 "compile",
                 "-f",
                 "--secondary-dex",
-                "-m", "speed-profile",
+                "-m", ShareTinkerInternals.isNewerOrEqualThanVersion(31 /* Android S */, true)
+                        ? "verify" : "speed-profile",
                 context.getPackageName()
         };
         executePMSShellCommand(context, args);

@@ -620,6 +620,15 @@ public class ShareTinkerInternals {
         return false;
     }
 
+    public static boolean isNewerOrEqualThanVersion(int apiLevel, boolean includePreviewVer) {
+        if (includePreviewVer && Build.VERSION.SDK_INT >= 23) {
+            return Build.VERSION.SDK_INT >= apiLevel
+                    || ((Build.VERSION.SDK_INT == apiLevel - 1) && Build.VERSION.PREVIEW_SDK_INT > 0);
+        } else {
+            return Build.VERSION.SDK_INT >= apiLevel;
+        }
+    }
+
     public static String getExceptionCauseString(final Throwable ex) {
         if (ex == null) return "";
 
