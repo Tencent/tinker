@@ -48,6 +48,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -386,7 +387,7 @@ public final class TinkerDexOptimizer {
         Parcel reply = null;
         long lastIdentity = Binder.clearCallingIdentity();
         try {
-            ShareTinkerLog.i(TAG, "[+] Start trigger secondary dexopt.");
+            ShareTinkerLog.i(TAG, "[+] Execute shell cmd, args: %s", Arrays.toString(args));
             data = Parcel.obtain();
             reply = Parcel.obtain();
             data.writeFileDescriptor(FileDescriptor.in);
@@ -397,9 +398,9 @@ public final class TinkerDexOptimizer {
             sEmptyResultReceiver.writeToParcel(data, 0);
             pmsBinderProxy.transact(SHELL_COMMAND_TRANSACTION, data, reply, 0);
             reply.readException();
-            ShareTinkerLog.i(TAG, "[+] Secondary dexopt done.");
+            ShareTinkerLog.i(TAG, "[+] Execute shell cmd done.");
         } catch (Throwable thr) {
-            throw new IllegalStateException("Failure on triggering secondary dexopt", thr);
+            throw new IllegalStateException("Failure on executing shell cmd.", thr);
         } finally {
             if (reply != null) {
                 reply.recycle();
