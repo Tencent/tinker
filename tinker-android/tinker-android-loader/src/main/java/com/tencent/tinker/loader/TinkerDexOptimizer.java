@@ -196,9 +196,9 @@ public final class TinkerDexOptimizer {
 
         try {
             final File oatFile = new File(oatPath);
-            if (oatFile.exists() && oatFile.length() > 4) {
-                ShareTinkerLog.i(TAG, "[+] Odex file exists, skip bg-dexopt triggering.");
-                return;
+            if (oatFile.exists()) {
+                ShareTinkerLog.i(TAG, "[+] Remove existed oat file: %s", oatPath);
+                oatFile.delete();
             } else {
                 try {
                     final File oatDir = oatFile.getParentFile();
