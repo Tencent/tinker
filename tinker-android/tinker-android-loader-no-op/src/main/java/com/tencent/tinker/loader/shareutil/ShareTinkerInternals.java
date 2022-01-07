@@ -467,7 +467,7 @@ public class ShareTinkerInternals {
      * @return
      */
     public static String getProcessName(final Context context) {
-        if (processName != null) {
+        if (!TextUtils.isEmpty(processName)) {
             return processName;
         }
         //will not null
@@ -477,66 +477,7 @@ public class ShareTinkerInternals {
 
 
     private static String getProcessNameInternal(final Context context) {
-        int myPid = android.os.Process.myPid();
-
-        if (context == null || myPid <= 0) {
-            return "";
-        }
-
-        ActivityManager.RunningAppProcessInfo myProcess = null;
-        ActivityManager activityManager =
-            (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-
-        if (activityManager != null) {
-            try {
-                List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
-                    .getRunningAppProcesses();
-
-                if (appProcessList != null) {
-                    for (ActivityManager.RunningAppProcessInfo process : appProcessList) {
-                        if (process.pid == myPid) {
-                            myProcess = process;
-                            break;
-                        }
-                    }
-
-                    if (myProcess != null) {
-                        return myProcess.processName;
-                    }
-                }
-            } catch (Exception e) {
-                ShareTinkerLog.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-            }
-        }
-
-        byte[] b = new byte[128];
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream("/proc/" + myPid + "/cmdline");
-            int len = in.read(b);
-            if (len > 0) {
-                for (int i = 0; i < len; i++) { // lots of '0' in tail , remove them
-                    if ((((int) b[i]) & 0xFF) > 128 || b[i] <= 0) {
-                        len = i;
-                        break;
-                    }
-                }
-                return new String(b, 0, len);
-            }
-
-        } catch (Exception e) {
-            ShareTinkerLog.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (Exception e) {
-                // Ignored.
-            }
-        }
-
-        return "";
+        return ShareTinkerProcessor.getCurrentProcessName(context);
     }
 
     /**

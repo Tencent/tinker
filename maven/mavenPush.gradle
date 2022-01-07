@@ -1,0 +1,66 @@
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+println "nightq mavenPush.gradle = " + project.name
+//加载属性文件
+Properties properties = new Properties()
+File localPropertiesFile = project.rootProject.file("maven/maven.properties")
+if (localPropertiesFile.exists()) {
+    properties.load(localPropertiesFile.newDataInputStream())
+}
+
+Properties projectLibProperties = new Properties()
+File projectLibProperty = project.file("gradle.properties")
+if (projectLibProperty.exists()) {
+    projectLibProperties.load(projectLibProperty.newDataInputStream())
+}
+
+// maven
+def projectGroupId = properties.getProperty("GROUP_ID")
+def userName = properties.getProperty("NAME")
+def userPassword = properties.getProperty("PASSWORD")
+def nexusReleaseUrl = properties.getProperty("RELEASE_URL")
+
+// 子模块的平台名字
+def subModuleName = projectLibProperties.getProperty("POM_ARTIFACT_ID")
+def subModuleVersion = project.version
+
+// 默认使用项目名当作库名
+def projectArtifactId = subModuleName
+def projectVersionName = subModuleVersion
+
+configurations {
+    deployerJars
+}
+
+repositories {
+    mavenCentral()
+}
+
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment {
+                MavenDeployment deployment -> signing.signPom(deployment)
+            }
+            pom.version = projectVersionName
+            pom.artifactId = projectArtifactId
+            println "nightq = " + projectArtifactId
+            pom.groupId = projectGroupId
+
+            def url = nexusReleaseUrl
+            repository(url: url) {
+                authentication(userName: userName, password: userPassword) // maven授权信息
+            }
+        }
+    }
+}
+
+// 进行数字签名
+signing {
+    // 当 发布版本 & 存在"uploadArchives"任务时，才执行
+    required { gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
+}

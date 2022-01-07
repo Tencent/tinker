@@ -40,4 +40,4 @@ proguard/
 
 /buildSdk
 
-
+/maven/maven.properties

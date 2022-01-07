@@ -32,4 +32,4 @@ sourceSets {
     }
 }
 
-apply from: rootProject.file('gradle/PublishArtifact.gradle')
+apply from: '../../maven/mavenPush.gradle'

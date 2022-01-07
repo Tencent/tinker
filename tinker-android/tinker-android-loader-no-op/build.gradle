@@ -46,4 +46,4 @@ task buildTinkerSdk(type: Copy, dependsOn: [build]) {
     }
 }
 
-apply from: rootProject.file('gradle/PublishArtifact.gradle')
+apply from: '../../maven/mavenPush.gradle'
