@@ -224,7 +224,7 @@ public class ApkDecoder extends BaseDecoder {
 
         private String getAbiFromPath(String path) {
             path = path.replaceAll(Matcher.quoteReplacement(File.separator), "/");
-            final int prefixPos = path.indexOf("/lib/");
+            final int prefixPos = path.lastIndexOf("/lib/");
             if (prefixPos < 0) {
                 return null;
             }
