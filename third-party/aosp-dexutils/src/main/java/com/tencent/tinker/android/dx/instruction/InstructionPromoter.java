@@ -162,7 +162,9 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.SPUT_BOOLEAN:
             case Opcodes.SPUT_BYTE:
             case Opcodes.SPUT_CHAR:
-            case Opcodes.SPUT_SHORT: {
+            case Opcodes.SPUT_SHORT:
+            case Opcodes.CONST_METHOD_HANDLE:
+            case Opcodes.CONST_METHOD_TYPE: {
                 this.currentPromotedAddress += 2;
                 break;
             }
@@ -423,7 +425,8 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.INVOKE_SUPER:
             case Opcodes.INVOKE_DIRECT:
             case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
+            case Opcodes.INVOKE_INTERFACE:
+            case Opcodes.INVOKE_CUSTOM: {
                 this.currentPromotedAddress += 3;
                 break;
             }
@@ -442,13 +445,30 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.INVOKE_SUPER_RANGE:
             case Opcodes.INVOKE_DIRECT_RANGE:
             case Opcodes.INVOKE_STATIC_RANGE:
-            case Opcodes.INVOKE_INTERFACE_RANGE: {
+            case Opcodes.INVOKE_INTERFACE_RANGE:
+            case Opcodes.INVOKE_CUSTOM_RANGE: {
                 this.currentPromotedAddress += 3;
                 break;
             }
             default: {
                 throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
             }
+        }
+    }
+
+    public void visitInvokePolymorphicInstruction(int currentAddress, int opcode, int methodIndex, int indexType, int protoIndex, int[] registers) {
+        if (opcode == Opcodes.INVOKE_POLYMORPHIC) {
+            this.currentPromotedAddress += 4;
+        } else {
+            throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+        }
+    }
+
+    public void visitInvokePolymorphicRangeInstruction(int currentAddress, int opcode, int methodIndex, int indexType, int c, int registerCount, int protoIndex) {
+        if (opcode == Opcodes.INVOKE_POLYMORPHIC_RANGE) {
+            this.currentPromotedAddress += 4;
+        } else {
+            throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
         }
     }
 

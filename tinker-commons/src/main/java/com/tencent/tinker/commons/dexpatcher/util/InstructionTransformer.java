@@ -128,15 +128,21 @@ public final class InstructionTransformer {
                 case InstructionCodec.INDEX_TYPE_FIELD_REF: {
                     return indexMap.adjustFieldIdIndex(index);
                 }
+                case InstructionCodec.INDEX_TYPE_PROTO_REF: {
+                    return indexMap.adjustProtoIdIndex(index);
+                }
                 case InstructionCodec.INDEX_TYPE_METHOD_REF: {
                     return indexMap.adjustMethodIdIndex(index);
+                }
+                case InstructionCodec.INDEX_TYPE_METHOD_HANDLE_REF: {
+                    return indexMap.adjustMethodHandleIndex(index);
+                }
+                case InstructionCodec.INDEX_TYPE_CALL_SITE_REF: {
+                    return indexMap.adjustCallSiteIdIndex(index);
                 }
                 case InstructionCodec.INDEX_TYPE_METHOD_AND_PROTO_REF: {
                     throw new IllegalArgumentException(
                             "METHOD_AND_PROTO_REF should not use this method to do transform.");
-                }
-                case InstructionCodec.INDEX_TYPE_CALL_SITE_REF: {
-                    return indexMap.adjustCallSiteIdIndex(index);
                 }
                 default: {
                     return index;
