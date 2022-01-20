@@ -31,9 +31,7 @@ import android.os.Parcel;
 import android.os.ResultReceiver;
 import android.os.SystemClock;
 
-import com.tencent.tinker.loader.shareutil.ShareElfFile;
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
-import com.tencent.tinker.loader.shareutil.ShareOatUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -164,9 +162,14 @@ public final class TinkerDexOptimizer {
                             // trigger background dexopt to generate executable odex here.
                             triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);
                         } else {
+                            // Wait for their bg-dexopt with quicken filter finishing so that we can delete odex
+                            // generated with quicken filter soon.
+                            if ("oppo".equalsIgnoreCase(Build.MANUFACTURER) || "vivo".equalsIgnoreCase(Build.MANUFACTURER)) {
+                                waitUntilFileGeneratedOrTimeout(context, optimizedPath);
+                            }
                             triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);
                             final String vdexPath = optimizedPath.substring(0, optimizedPath.lastIndexOf(ODEX_SUFFIX)) + VDEX_SUFFIX;
-                            waitUntilVdexGeneratedOrTimeout(context, vdexPath);
+                            waitUntilFileGeneratedOrTimeout(context, vdexPath);
                         }
                     } else {
                         DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
@@ -202,12 +205,15 @@ public final class TinkerDexOptimizer {
                 if (oatFinishedMarkerFile.exists()) {
                     // oat file does not exist, remove corresponding marker file.
                     oatFinishedMarkerFile.delete();
+                    ShareTinkerLog.w(TAG, "[+] Oat marker file exists while oat file %s was lost, remove marker file.", oatPath);
                 }
             } else {
                 if (!oatFinishedMarkerFile.exists()) {
                     // Although oat file exists, but marker file is not found. Remove the oat file
                     // and trigger dex2oat again.
                     oatFile.delete();
+                    new File(oatPath.substring(0, oatPath.lastIndexOf(ODEX_SUFFIX)) + VDEX_SUFFIX).delete();
+                    ShareTinkerLog.w(TAG, "[+] Unexpected existed oat file %s, remove it first.", oatPath);
                 } else {
                     ShareTinkerLog.i(TAG, "[+] Oat file %s should be valid, skip triggering dexopt.", oatPath);
                     return;
@@ -235,31 +241,31 @@ public final class TinkerDexOptimizer {
                     // performance of patched app will have no improvement.
                     try {
                         registerDexModule(context, dexPath);
+                        if (checkAndMarkIfOatExistsAndNotEmpty(oatFile, oatFinishedMarkerFile, "registerDexModule")) {
+                            return;
+                        }
                     } catch (Throwable thr) {
                         ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call registerDexModule.");
-                    }
-                    if (checkAndMarkIfOatExists(oatFile, oatFinishedMarkerFile, "registerDexModule")) {
-                        return;
                     }
                 }
                 try {
                     performDexOptSecondary(context);
+                    if (checkAndMarkIfOatExistsAndNotEmpty(oatFile, oatFinishedMarkerFile, "performDexOptSecondary")) {
+                        return;
+                    }
                 } catch (Throwable thr) {
                     ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call performDexOptSecondary.");
-                }
-                if (checkAndMarkIfOatExists(oatFile, oatFinishedMarkerFile, "performDexOptSecondary")) {
-                    return;
                 }
                 if ("huawei".equalsIgnoreCase(Build.MANUFACTURER) || "honor".equalsIgnoreCase(Build.MANUFACTURER)) {
                     // Some HW devices still need to call registerDexModule to generate odex for patched
                     // dex.
                     try {
                         registerDexModule(context, dexPath);
+                        if (checkAndMarkIfOatExistsAndNotEmpty(oatFile, oatFinishedMarkerFile, "registerDexModule for hw dev")) {
+                            return;
+                        }
                     } catch (Throwable thr) {
                         ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call registerDexModule.");
-                    }
-                    if (checkAndMarkIfOatExists(oatFile, oatFinishedMarkerFile, "registerDexModule for hw dev")) {
-                        return;
                     }
                 }
                 if (waitTimes >= 3) {
@@ -279,8 +285,8 @@ public final class TinkerDexOptimizer {
         return new File(dexPath + ".oat_fine");
     }
 
-    private static boolean checkAndMarkIfOatExists(File oatFile, File markerFile, String stageForLog) {
-        if (oatFile.exists()) {
+    private static boolean checkAndMarkIfOatExistsAndNotEmpty(File oatFile, File markerFile, String stageForLog) {
+        if (oatFile.exists() && oatFile.length() > 0) {
             ShareTinkerLog.i(TAG, "[+] Oat file %s is found after %s", oatFile.getPath(), stageForLog);
             try {
                 markerFile.createNewFile();
@@ -453,18 +459,18 @@ public final class TinkerDexOptimizer {
         }
     }
 
-    private static void waitUntilVdexGeneratedOrTimeout(Context context, String vdexPath) {
-        final File vdexFile = new File(vdexPath);
+    private static void waitUntilFileGeneratedOrTimeout(Context context, String filePath) {
+        final File file = new File(filePath);
         final long[] delaySeq = {1000, 2000, 4000, 8000, 16000, 32000};
         int delaySeqIdx = 0;
-        while (!vdexFile.exists() && delaySeqIdx < delaySeq.length) {
+        while (!file.exists() && delaySeqIdx < delaySeq.length) {
             SystemClock.sleep(delaySeq[delaySeqIdx++]);
-            ShareTinkerLog.w(TAG, "[!] Vdex %s does not exist after waiting %s time(s), wait again.", vdexPath, delaySeqIdx);
+            ShareTinkerLog.w(TAG, "[!] File %s does not exist after waiting %s time(s), wait again.", filePath, delaySeqIdx);
         }
-        if (vdexFile.exists()) {
-            ShareTinkerLog.i(TAG, "[+] Vdex %s was found.", vdexPath);
+        if (file.exists()) {
+            ShareTinkerLog.i(TAG, "[+] File %s was found.", filePath);
         } else {
-            ShareTinkerLog.e(TAG, "[-] Vdex %s does not exist after waiting for %s times.", vdexPath, delaySeq.length);
+            ShareTinkerLog.e(TAG, "[-] File %s does not exist after waiting for %s times.", filePath, delaySeq.length);
         }
     }
 
