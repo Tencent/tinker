@@ -222,11 +222,6 @@ public final class TinkerDexOptimizer {
             int waitTimes = 0;
             while (true) {
                 try {
-                    reconcileSecondaryDexFiles(context);
-                } catch (Throwable thr) {
-                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Fail to call reconcileSecondaryDexFiles.");
-                }
-                try {
                     final File oatDir = oatFile.getParentFile();
                     if (!oatDir.exists()) {
                         oatDir.mkdirs();
