@@ -100,9 +100,11 @@ final class NewClassLoaderInjector {
         ClassLoader result = null;
         if (useDLC && Build.VERSION.SDK_INT >= 27) {
             result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, ClassLoader.getSystemClassLoader());
-            final Field parentField = ClassLoader.class.getDeclaredField("parent");
-            parentField.setAccessible(true);
-            parentField.set(result, oldClassLoader);
+            if (forActualLoading) {
+                final Field parentField = ClassLoader.class.getDeclaredField("parent");
+                parentField.setAccessible(true);
+                parentField.set(result, oldClassLoader);
+            }
         } else {
             result = new TinkerClassLoader(combinedDexPath, dexOptDir, combinedLibraryPath, oldClassLoader);
         }
