@@ -16,10 +16,13 @@
 
 package com.tencent.tinker.loader;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
+
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -49,6 +52,7 @@ final class NewClassLoaderInjector {
         return createNewClassLoader(context.getClassLoader(), dexOptDir, useDLC, false, dexPaths);
     }
 
+    @SuppressLint("NewApi")
     @SuppressWarnings("unchecked")
     private static ClassLoader createNewClassLoader(ClassLoader oldClassLoader,
                                                     File dexOptDir,
@@ -98,9 +102,11 @@ final class NewClassLoaderInjector {
         final String combinedLibraryPath = libraryPathBuilder.toString();
 
         ClassLoader result = null;
-        if (useDLC && Build.VERSION.SDK_INT >= 27) {
-            result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, ClassLoader.getSystemClassLoader());
-            if (forActualLoading) {
+        if (useDLC && ShareTinkerInternals.isNewerOrEqualThanVersion(27, true)) {
+            if (ShareTinkerInternals.isNewerOrEqualThanVersion(31, true)) {
+                result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, oldClassLoader);
+            } else {
+                result = new DelegateLastClassLoader(combinedDexPath, combinedLibraryPath, ClassLoader.getSystemClassLoader());
                 final Field parentField = ClassLoader.class.getDeclaredField("parent");
                 parentField.setAccessible(true);
                 parentField.set(result, oldClassLoader);
@@ -111,7 +117,7 @@ final class NewClassLoaderInjector {
 
         // 'EnsureSameClassLoader' mechanism which is first introduced in Android O
         // may cause exception if we replace definingContext of old classloader.
-        if (forActualLoading && Build.VERSION.SDK_INT < 26) {
+        if (forActualLoading && !ShareTinkerInternals.isNewerOrEqualThanVersion(26, true)) {
             findField(oldPathList.getClass(), "definingContext").set(oldPathList, result);
         }
 
