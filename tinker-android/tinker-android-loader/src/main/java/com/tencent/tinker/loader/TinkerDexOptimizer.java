@@ -20,6 +20,8 @@ import static com.tencent.tinker.loader.shareutil.ShareConstants.ODEX_SUFFIX;
 import static com.tencent.tinker.loader.shareutil.ShareConstants.VDEX_SUFFIX;
 
 import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -42,8 +44,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -160,12 +164,13 @@ public final class TinkerDexOptimizer {
                                     useDLC, dexFile.getAbsolutePath());
                             try {
                                 triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);
-                                final String vdexPath = optimizedPath.substring(0,
-                                        optimizedPath.lastIndexOf(ODEX_SUFFIX)) + VDEX_SUFFIX;
-                                waitUntilFileGeneratedOrTimeout(context, vdexPath);
                             } catch (Throwable thr) {
                                 ShareTinkerLog.printErrStackTrace(TAG, thr,
                                         "Fail to call triggerPMDexOptAsyncOnDemand.");
+                            } finally {
+                                final String vdexPath = optimizedPath.substring(0,
+                                        optimizedPath.lastIndexOf(ODEX_SUFFIX)) + VDEX_SUFFIX;
+                                waitUntilFileGeneratedOrTimeout(context, vdexPath);
                             }
                         } else {
                             patchClassLoaderStrongRef = NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir,
@@ -264,6 +269,19 @@ public final class TinkerDexOptimizer {
                 ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Error.");
             }
             SystemClock.sleep(3000);
+            if (!ShareTinkerInternals.isNewerOrEqualThanVersion(31, true)
+                    && ("huawei".equalsIgnoreCase(Build.MANUFACTURER)
+                        || "honor".equalsIgnoreCase(Build.MANUFACTURER))
+            ) {
+                try {
+                    registerDexModule(context, dexPath);
+                    if (SharePatchFileUtil.isLegalFile(oatFile)) {
+                        break;
+                    }
+                } catch (Throwable thr) {
+                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Error.");
+                }
+            }
         }
         if (!SharePatchFileUtil.isLegalFile(oatFile)) {
             throw new IllegalStateException("No odex file was generated after calling performDexOptSecondary");
@@ -418,6 +436,77 @@ public final class TinkerDexOptimizer {
                 data.recycle();
             }
             Binder.restoreCallingIdentity(lastIdentity);
+        }
+    }
+
+    private static void registerDexModule(Context context, String dexPath) throws IllegalStateException {
+        final PackageManager synchronizedPM = getSynchronizedPackageManager(context);
+        try {
+            final Class<?> dexModuleRegisterCallbackClazz = Class
+                    .forName("android.content.pm.PackageManager$DexModuleRegisterCallback");
+            ShareReflectUtil
+                    .findMethod(synchronizedPM, "registerDexModule", String.class, dexModuleRegisterCallbackClazz)
+                    .invoke(synchronizedPM, dexPath, null);
+        } catch (InvocationTargetException e) {
+            throw new IllegalStateException(e.getTargetException());
+        } catch (Throwable thr) {
+            if (thr instanceof IllegalStateException) {
+                throw (IllegalStateException) thr;
+            } else {
+                throw new IllegalStateException(thr);
+            }
+        }
+    }
+
+    private static final PackageManager[] sSynchronizedPMCache = { null };
+
+    private static final PackageManager getSynchronizedPackageManager(Context context) throws IllegalStateException {
+        synchronized (sSynchronizedPMCache) {
+            try {
+                if (sSynchronizedPMCache[0] != null) {
+                    synchronized (sPMSBinderProxy) {
+                        if (sPMSBinderProxy[0] != null && sPMSBinderProxy[0].isBinderAlive()) {
+                            return sSynchronizedPMCache[0];
+                        }
+                    }
+                }
+                final IBinder pmsBinderProxy = getPMSBinderProxy(context);
+                final IBinder syncPMSBinderProxy = (IBinder) Proxy.newProxyInstance(
+                        context.getClassLoader(),
+                        pmsBinderProxy.getClass().getInterfaces(),
+                        new InvocationHandler() {
+                            @Override
+                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                                if ("transact".equals(method.getName())) {
+                                    // FLAG_ONEWAY => NONE.
+                                    args[3] = 0;
+                                }
+                                return method.invoke(pmsBinderProxy, args);
+                            }
+                        }
+                );
+                final Class<?> pmsStubClazz = Class.forName("android.content.pm.IPackageManager$Stub");
+                final Object pmsStubProxy = ShareReflectUtil
+                        .findMethod(pmsStubClazz, "asInterface", IBinder.class)
+                        .invoke(null, syncPMSBinderProxy);
+                final Class<?> appPMClazz = Class.forName("android.app.ApplicationPackageManager");
+                final Object contextImpl = (context instanceof ContextWrapper)
+                        ? ((ContextWrapper) context).getBaseContext() : context;
+                final Class<?> pmsItfClazz = Class.forName("android.content.pm.IPackageManager");
+                final PackageManager appPM = (PackageManager) ShareReflectUtil
+                        .findConstructor(appPMClazz, contextImpl.getClass(), pmsItfClazz)
+                        .newInstance(contextImpl, pmsStubProxy);
+                sSynchronizedPMCache[0] = appPM;
+                return appPM;
+            } catch (InvocationTargetException e) {
+                throw new IllegalStateException(e.getTargetException());
+            } catch (Throwable thr) {
+                if (thr instanceof IllegalStateException) {
+                    throw (IllegalStateException) thr;
+                } else {
+                    throw new IllegalStateException(thr);
+                }
+            }
         }
     }
 
