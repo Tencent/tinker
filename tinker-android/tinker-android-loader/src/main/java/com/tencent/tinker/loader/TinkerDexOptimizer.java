@@ -269,10 +269,7 @@ public final class TinkerDexOptimizer {
                 ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Error.");
             }
             SystemClock.sleep(3000);
-            if (!ShareTinkerInternals.isNewerOrEqualThanVersion(31, true)
-                    && ("huawei".equalsIgnoreCase(Build.MANUFACTURER)
-                        || "honor".equalsIgnoreCase(Build.MANUFACTURER))
-            ) {
+            if ("huawei".equalsIgnoreCase(Build.MANUFACTURER) || "honor".equalsIgnoreCase(Build.MANUFACTURER)) {
                 try {
                     registerDexModule(context, dexPath);
                     if (SharePatchFileUtil.isLegalFile(oatFile)) {
