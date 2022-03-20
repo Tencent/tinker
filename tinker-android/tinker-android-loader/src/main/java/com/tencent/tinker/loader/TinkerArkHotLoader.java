@@ -39,10 +39,10 @@ import dalvik.system.PathClassLoader;
  * check the complete of the dex files
  * pre-load patch dex files
  */
-public class TinkerArkHotLoader {
+public class TinkerArkHotLoader extends SecurityCheck {
     private static final String TAG = "Tinker.TinkerArkHotLoader";
 
-    private static final String ARK_MEAT_FILE = ShareConstants.ARKHOT_META_FILE;
+    private static final String ARK_META_FILE = ShareConstants.ARKHOT_META_FILE;
     private static final String ARKHOT_PATH = ShareConstants.ARKHOTFIX_PATH;
 
     // private static File testOptDexFile;
@@ -107,14 +107,12 @@ public class TinkerArkHotLoader {
      * @return boolean
      */
     public static boolean checkComplete(String directory, ShareSecurityCheck securityCheck, Intent intentResult) {
-        String meta = securityCheck.getMetaContentMap().get(ARK_MEAT_FILE);
-        if (meta == null) {
+        if(super.securityCheck(securityCheck, ARK_META_FILE))
             return true;
-        }
         arkHotApkInfo.clear();
 
         ArrayList<ShareArkHotDiffPatchInfo> allDexInfo = new ArrayList<>();
-        ShareArkHotDiffPatchInfo.parseDiffPatchInfo(meta, allDexInfo);
+        ShareArkHotDiffPatchInfo.parseDiffPatchInfo(super.getMeta(), allDexInfo);
 
         if (allDexInfo.isEmpty()) {
             return true;

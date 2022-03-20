@@ -216,13 +216,10 @@ public class TinkerDexLoader {
 
         ArrayList<ShareDexDiffPatchInfo> allDexInfo = new ArrayList<>();
         ShareDexDiffPatchInfo.parseDexDiffPatchInfo(meta, allDexInfo);
-
         if (allDexInfo.isEmpty()) {
             return true;
         }
-
         HashMap<String, String> dexes = new HashMap<>();
-
         ShareDexDiffPatchInfo testInfo = null;
 
         for (ShareDexDiffPatchInfo info : allDexInfo) {
@@ -266,22 +263,18 @@ public class TinkerDexLoader {
 
         //fast check whether there is any dex files missing
         for (String name : dexes.keySet()) {
-            File dexFile = new File(dexDirectory + name);
 
-            if (!SharePatchFileUtil.isLegalFile(dexFile)) {
-                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexFile.getAbsolutePath());
-                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
-                return false;
+            File dexFile = new File(dexDirectory + name);
+            if(!SharePatchFileUtil.isLegalFile(dexFile))
+            {
+                return dexFileMissing(dexFile,intentResult,errorMsg);
             }
             //check dex opt whether complete also
             File dexOptFile = new File(SharePatchFileUtil.optimizedPathFor(dexFile, optimizeDexDirectoryFile));
-            if (!SharePatchFileUtil.isLegalFile(dexOptFile)) {
-                if (SharePatchFileUtil.shouldAcceptEvenIfIllegal(dexOptFile)) {
+            if(!SharePatchFileUtil.isLegalFile(dexOptFile)){
+                if (SharePatchFileUtil.shouldAcceptEvenIfIllegal(dexOptFile)) 
                     continue;
-                }
-                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, dexOptFile.getAbsolutePath());
-                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
-                return false;
+                return dexFileMissing(dexOptFile,intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_OPT_FILE_NOT_EXIST);
             }
             // // find test dex
             // if (dexOptFile.getName().startsWith(ShareConstants.TEST_DEX_NAME)) {
@@ -292,6 +285,13 @@ public class TinkerDexLoader {
         //if is ok, add to result intent
         intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_DEXES_PATH, dexes);
         return true;
+    }
+
+    public boolean dexFileMissing(File file,Intent intentResult, String errorMsg)
+    {
+            intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, file.getAbsolutePath());
+            ShareIntentUtil.setIntentReturnCode(intentResult, errorMsg);
+            return false;
     }
 
     private static String getInfoMd5(ShareDexDiffPatchInfo info) {

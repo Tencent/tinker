@@ -32,7 +32,7 @@ import java.io.File;
 /**
  * Created by liangwenxiang on 2016/4/14.
  */
-public class TinkerResourceLoader {
+public class TinkerResourceLoader extends SecurityCheck{
     protected static final String RESOURCE_META_FILE = ShareConstants.RES_META_FILE;
     protected static final String RESOURCE_FILE      = ShareConstants.RES_NAME;
     protected static final String RESOURCE_PATH      = ShareConstants.RES_PATH;
@@ -79,6 +79,8 @@ public class TinkerResourceLoader {
         return true;
     }
 
+    
+
     /**
      * resource file exist?
      * fast check, only check whether exist
@@ -87,13 +89,10 @@ public class TinkerResourceLoader {
      * @return boolean
      */
     public static boolean checkComplete(Context context, String directory, ShareSecurityCheck securityCheck, Intent intentResult) {
-        String meta = securityCheck.getMetaContentMap().get(RESOURCE_META_FILE);
-        //not found resource
-        if (meta == null) {
+        if(SecurityCheck.securityCheck(securityCheck, RESOURCE_META_FILE))
             return true;
-        }
         //only parse first line for faster
-        ShareResPatchInfo.parseResPatchInfoFirstLine(meta, resPatchInfo);
+        ShareResPatchInfo.parseResPatchInfoFirstLine(SecurityCheck.meta, resPatchInfo);
 
         if (resPatchInfo.resArscMd5 == null) {
             return true;

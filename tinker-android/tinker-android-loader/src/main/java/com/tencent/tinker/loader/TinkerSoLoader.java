@@ -38,7 +38,7 @@ import java.util.HashMap;
  * pre-load patch dex files
  * we won't load patch library directly!
  */
-public class TinkerSoLoader {
+public class TinkerSoLoader extends SecurityCheck{
     protected static final String SO_MEAT_FILE = ShareConstants.SO_META_FILE;
     protected static final String SO_PATH      = ShareConstants.SO_PATH;
     private static final   String TAG          = "Tinker.TinkerSoLoader";
@@ -51,13 +51,10 @@ public class TinkerSoLoader {
      * @return boolean
      */
     public static boolean checkComplete(String directory, ShareSecurityCheck securityCheck, Intent intentResult) {
-        String meta = securityCheck.getMetaContentMap().get(SO_MEAT_FILE);
-        //not found lib
-        if (meta == null) {
-            return true;
-        }
+        if(super.securityCheck(securityCheck, SO_MEAT_FILE))
+        return true;
         ArrayList<ShareBsDiffPatchInfo> libraryList = new ArrayList<>();
-        ShareBsDiffPatchInfo.parseDiffPatchInfo(meta, libraryList);
+        ShareBsDiffPatchInfo.parseDiffPatchInfo(super.getMeta(), libraryList);
 
         if (libraryList.isEmpty()) {
             return true;
