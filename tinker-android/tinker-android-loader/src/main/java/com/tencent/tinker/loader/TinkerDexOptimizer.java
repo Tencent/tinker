@@ -242,6 +242,16 @@ public final class TinkerDexOptimizer {
             return;
         }
         for (int i = 0; i < 3; ++i) {
+            if (ShareTinkerInternals.isNewerOrEqualThanVersion(31, true)) {
+                try {
+                    registerDexModule(context, dexPath);
+                    if (SharePatchFileUtil.isLegalFile(oatFile)) {
+                        break;
+                    }
+                } catch (Throwable thr) {
+                    ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Error.");
+                }
+            }
             try {
                 performDexOptSecondary(context);
                 if (SharePatchFileUtil.isLegalFile(oatFile)) {
@@ -268,7 +278,7 @@ public final class TinkerDexOptimizer {
             } catch (Throwable thr) {
                 ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Error.");
             }
-            SystemClock.sleep(3000);
+            SystemClock.sleep(1000);
             if ("huawei".equalsIgnoreCase(Build.MANUFACTURER) || "honor".equalsIgnoreCase(Build.MANUFACTURER)) {
                 try {
                     registerDexModule(context, dexPath);
@@ -279,6 +289,7 @@ public final class TinkerDexOptimizer {
                     ShareTinkerLog.printErrStackTrace(TAG, thr, "[-] Error.");
                 }
             }
+            SystemClock.sleep(3000);
         }
         if (!SharePatchFileUtil.isLegalFile(oatFile)) {
             throw new IllegalStateException("No odex file was generated after calling performDexOptSecondary");
