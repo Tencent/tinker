@@ -241,7 +241,7 @@ public final class TinkerDexOptimizer {
             ShareTinkerLog.i(TAG, "[+] Oat file %s should be valid, skip triggering dexopt.", oatPath);
             return;
         }
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 5; ++i) {
             if (ShareTinkerInternals.isNewerOrEqualThanVersion(31, true)) {
                 try {
                     registerDexModule(context, dexPath);
