@@ -8,6 +8,10 @@ group rootProject.ext.GROUP
 sourceCompatibility = rootProject.ext.javaVersion
 targetCompatibility = rootProject.ext.javaVersion
 
+evaluationDependsOn(':get-android-jar')
+def androidJarPath = project(':get-android-jar').androidJarPath
+compileJava.options.bootstrapClasspath = files(androidJarPath)
+
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {
     group = "tinker"
     from('build/libs') {
