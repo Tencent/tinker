@@ -127,15 +127,12 @@ public class TinkerManifestTask extends DefaultTask {
         def isr = null
         try {
             isr = new InputStreamReader(new FileInputStream(manifestPath), "utf-8")
-            def xml = new XmlParser().parse(isr)
-            def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
-
-            def application = xml.application[0]
-            if (application) {
-                return application.attributes()[ns.name]
-            } else {
-                return null
-            }
+            def result = new XmlSlurper().parse(isr)
+            def namespaceMap = new HashMap()
+            namespaceMap.put("android", "http://schemas.android.com/apk/res/android")
+            result.declareNamespace(namespaceMap)
+            def applicationName = result.application.@"android:name".text()
+            return applicationName.length() > 0 ? applicationName : null
         } finally {
             IOHelper.closeQuietly(isr)
         }
