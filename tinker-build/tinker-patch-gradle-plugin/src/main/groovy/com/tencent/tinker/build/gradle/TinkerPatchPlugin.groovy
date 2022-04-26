@@ -167,6 +167,10 @@ class TinkerPatchPlugin implements Plugin<Project> {
 
                 def agpProcessResourcesTask = Compatibilities.getProcessResourcesTask(project, variant)
                 agpProcessResourcesTask.dependsOn tinkerManifestTask
+                def agpProcessManifestPackageTask = Compatibilities.getProcessManifestForPackageTask(project, variant)
+                if (agpProcessManifestPackageTask != null) {
+                    agpProcessManifestPackageTask.dependsOn tinkerManifestTask
+                }
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}ResourceId", TinkerResourceIdTask)
