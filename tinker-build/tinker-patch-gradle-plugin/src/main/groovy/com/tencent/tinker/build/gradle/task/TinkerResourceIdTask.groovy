@@ -99,7 +99,7 @@ public class TinkerResourceIdTask extends DefaultTask {
         def aaptOptions = taskClass.metaClass.getProperty(processResourcesTask, 'aaptOptions')
 
         def parameters = aaptOptions.additionalParameters
-        if (parameters == null) {
+        if (parameters == null || parameters instanceof AbstractList) {
             parameters = new ArrayList<String>()
             replaceFinalField(AaptOptions.class, 'additionalParameters', aaptOptions, parameters)
         }
@@ -429,12 +429,14 @@ public class TinkerResourceIdTask extends DefaultTask {
             def processResourcesTask = Compatibilities.getProcessResourcesTask(project, variant)
             processResourcesTask.doFirst {
                 def aaptParams = project.android.aaptOptions.additionalParameters
-                if (!aaptParams.contains('--stable-ids')) {
-                    addStableIdsFileToAdditionalParameters(processResourcesTask)
-                } else {
-                    project.logger.error('** [NOTICE] ** Manually specified stable-ids file was detected, '
-                            + 'Tinker will give up injecting generated stable-ids file. Please ensure your stable-ids file '
-                            + 'keep ids of all resources in base apk.')
+                if (aaptParams != null) {
+                    if (!aaptParams.contains('--stable-ids')) {
+                        addStableIdsFileToAdditionalParameters(processResourcesTask)
+                    } else {
+                        project.logger.error('** [NOTICE] ** Manually specified stable-ids file was detected, '
+                                + 'Tinker will give up injecting generated stable-ids file. Please ensure your stable-ids file '
+                                + 'keep ids of all resources in base apk.')
+                    }
                 }
 
                 if (project.hasProperty("tinker.aapt2.public")) {
