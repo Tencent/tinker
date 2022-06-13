@@ -20,29 +20,34 @@ import com.tencent.tinker.build.gradle.TinkerBuildPath
 import com.tencent.tinker.build.util.FileOperation
 import com.tencent.tinker.commons.util.IOHelper
 import groovy.xml.Namespace
-import org.gradle.api.DefaultTask
+import org.gradle.api.Action
 import org.gradle.api.GradleException
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.Project
+import org.gradle.api.Task
 
 /**
  * The configuration properties.
  *
  * @author zhangshaowen
  */
-public class TinkerManifestTask extends DefaultTask {
+public class TinkerManifestAction implements Action<Task> {
     static final String TINKER_ID = "TINKER_ID"
     static final String TINKER_ID_PREFIX = "tinker_id_"
 
-    @Internal
+    private final Project project
+
     final Map<String, File> outputNameToManifestMap = new HashMap<>()
 
-    TinkerManifestTask() {
-        group = 'tinker'
+    TinkerManifestAction(Project project) {
+        this.project = project
     }
 
-    @TaskAction
-    def updateManifest() {
+    @Override
+    void execute(Task task) {
+        updateManifest()
+    }
+
+    private void updateManifest() {
         // Parse the AndroidManifest.xml
         String tinkerValue = project.extensions.tinkerPatch.buildConfig.tinkerId
         boolean appendOutputNameToTinkerId = project.extensions.tinkerPatch.buildConfig.appendOutputNameToTinkerId
@@ -75,7 +80,7 @@ public class TinkerManifestTask extends DefaultTask {
         }
     }
 
-    static void writeManifestMeta(String manifestPath, String name, String value) {
+    private static void writeManifestMeta(String manifestPath, String name, String value) {
         def ns = new Namespace("http://schemas.android.com/apk/res/android", "android")
         def isr = null
         def pw = null
@@ -108,7 +113,7 @@ public class TinkerManifestTask extends DefaultTask {
         }
     }
 
-    void addApplicationToLoaderPattern(String manifestPath) {
+    private void addApplicationToLoaderPattern(String manifestPath) {
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
         String applicationName = readManifestApplicationName(manifestPath)
 
@@ -123,7 +128,7 @@ public class TinkerManifestTask extends DefaultTask {
         }
     }
 
-    static String readManifestApplicationName(String manifestPath) {
+    private static String readManifestApplicationName(String manifestPath) {
         def isr = null
         try {
             isr = new InputStreamReader(new FileInputStream(manifestPath), "utf-8")

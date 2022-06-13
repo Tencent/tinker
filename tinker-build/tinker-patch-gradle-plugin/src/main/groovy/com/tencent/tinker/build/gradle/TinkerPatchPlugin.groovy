@@ -25,6 +25,7 @@ import com.tencent.tinker.build.util.Utils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import sun.misc.Unsafe
 
@@ -147,8 +148,8 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 // This task must be called after "process${variantName}Manifest", since it
                 // requires that an AndroidManifest.xml exists in `build/intermediates`.
                 def agpProcessManifestTask = Compatibilities.getProcessManifestTask(project, variant)
-                def tinkerManifestTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}Manifest", TinkerManifestTask)
-                tinkerManifestTask.mustRunAfter agpProcessManifestTask
+                def tinkerManifestAction = new TinkerManifestAction(project)
+                agpProcessManifestTask.doLast tinkerManifestAction
 
                 variant.outputs.each { variantOutput ->
                     setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
@@ -158,15 +159,14 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     if (outputName.endsWith("/")) {
                         outputName = outputName.substring(0, outputName.length() - 1)
                     }
-                    if (tinkerManifestTask.outputNameToManifestMap.containsKey(outputName)) {
+                    if (tinkerManifestAction.outputNameToManifestMap.containsKey(outputName)) {
                         throw new GradleException("Duplicate tinker manifest output name: '${outputName}'")
                     }
                     def manifestPath = Compatibilities.getOutputManifestPath(project, agpProcessManifestTask, variantOutput)
-                    tinkerManifestTask.outputNameToManifestMap.put(outputName, manifestPath)
+                    tinkerManifestAction.outputNameToManifestMap.put(outputName, manifestPath)
                 }
 
                 def agpProcessResourcesTask = Compatibilities.getProcessResourcesTask(project, variant)
-                agpProcessResourcesTask.dependsOn tinkerManifestTask
 
                 //resource id
                 TinkerResourceIdTask applyResourceTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}ResourceId", TinkerResourceIdTask)
@@ -174,8 +174,7 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 applyResourceTask.applicationId = Compatibilities.getApplicationId(project, variant)
                 applyResourceTask.resDir = Compatibilities.getInputResourcesDirectory(project, agpProcessResourcesTask)
 
-                //let applyResourceTask run after manifestTask
-                applyResourceTask.mustRunAfter tinkerManifestTask
+                applyResourceTask.mustRunAfter agpProcessManifestTask
                 agpProcessResourcesTask.dependsOn applyResourceTask
 
                 // Fix issue-866.
@@ -184,9 +183,9 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 def agpMergeResourcesTask = Compatibilities.getMergeResourcesTask(project, variant)
                 applyResourceTask.dependsOn agpMergeResourcesTask
 
-                if (tinkerManifestTask.outputNameToManifestMap == null
-                        || tinkerManifestTask.outputNameToManifestMap.isEmpty()) {
-                    throw new GradleException("tinkerManifestTask.manifestPath is null.")
+                if (tinkerManifestAction.outputNameToManifestMap == null
+                        || tinkerManifestAction.outputNameToManifestMap.isEmpty()) {
+                    throw new GradleException('No manifest output path was found.')
                 }
 
                 if (applyResourceTask.resDir == null) {
@@ -208,7 +207,6 @@ class TinkerPatchPlugin implements Plugin<Project> {
                     TinkerMultidexConfigTask multidexConfigTask = mProject.tasks.create("tinkerProcess${capitalizedVariantName}MultidexKeep", TinkerMultidexConfigTask)
                     multidexConfigTask.applicationVariant = variant
                     multidexConfigTask.multiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
-                    multidexConfigTask.mustRunAfter tinkerManifestTask
 
                     // for java.io.FileNotFoundException: app/build/intermediates/multi-dex/release/manifest_keep.txt
                     // for gradle 3.x gen manifest_keep move to processResources task
