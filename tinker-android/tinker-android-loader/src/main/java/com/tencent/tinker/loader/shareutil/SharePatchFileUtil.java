@@ -183,8 +183,7 @@ public class SharePatchFileUtil {
              || "meizu".equalsIgnoreCase(Build.MANUFACTURER);
 
         final boolean isSpecialOSVer =
-                (Build.VERSION.SDK_INT >= 29)
-             || (Build.VERSION.SDK_INT >= 28 && Build.VERSION.PREVIEW_SDK_INT != 0)
+                ShareTinkerInternals.isNewerOrEqualThanVersion(29, true)
              || (ShareTinkerInternals.isArkHotRuning());
 
         final boolean isFileIllegal = !file.exists() || file.length() == 0;

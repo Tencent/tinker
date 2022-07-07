@@ -181,8 +181,7 @@ public final class TinkerDexOptimizer {
                     }
                 }
                 final File odexFile = new File(optimizedPath);
-                if (SharePatchFileUtil.isLegalFile(odexFile)
-                        || ShareTinkerInternals.isNewerOrEqualThanVersion(29, true)) {
+                if (SharePatchFileUtil.isLegalFile(odexFile) || SharePatchFileUtil.shouldAcceptEvenIfIllegal(odexFile)) {
                     if (callback != null) {
                         callback.onSuccess(dexFile, optimizedDir, odexFile);
                     }
