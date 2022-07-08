@@ -91,7 +91,7 @@ public class ApkDecoder extends BaseDecoder {
     }
 
     private void writeToLogFile(File oldFile, File newFile) throws IOException {
-        String line1 = "old apk1131: " + oldFile.getName() + ", size=" + FileOperation.getFileSizes(oldFile) + ", md5=" + MD5.getMD5(oldFile);
+        String line1 = "old apk: " + oldFile.getName() + ", size=" + FileOperation.getFileSizes(oldFile) + ", md5=" + MD5.getMD5(oldFile);
         String line2 = "new apk: " + newFile.getName() + ", size=" + FileOperation.getFileSizes(newFile) + ", md5=" + MD5.getMD5(newFile);
         Logger.d("Analyze old and new apk files1:");
         Logger.d(line1);
