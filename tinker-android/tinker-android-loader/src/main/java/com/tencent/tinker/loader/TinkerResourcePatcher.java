@@ -22,7 +22,6 @@ import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findConstruct
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findField;
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findMethod;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
@@ -39,6 +38,7 @@ import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
+import java.io.File;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
@@ -64,7 +64,6 @@ class TinkerResourcePatcher {
 
     // method
     private static Constructor<?> newAssetManagerCtor = null;
-    private static Method isUpToDateMethod = null;
     private static Method addAssetPathMethod = null;
     private static Method addAssetPathAsSharedLibraryMethod = null;
     private static Method ensureStringBlocksMethod = null;
@@ -77,6 +76,8 @@ class TinkerResourcePatcher {
     private static Field resourcePackagesFiled = null;
     private static Field publicSourceDirField = null;
     private static Field stringBlocksField = null;
+
+    private static long storedPatchedResModifiedTime = 0L;
 
     @SuppressWarnings("unchecked")
     public static void isResourceCanPatch(Context context) throws Throwable {
@@ -122,12 +123,6 @@ class TinkerResourcePatcher {
         // Use class fetched from instance to avoid some ROMs that use customized AssetManager
         // class. (e.g. Baidu OS)
         newAssetManagerCtor = findConstructor(assets);
-
-        try {
-            isUpToDateMethod = findMethod(assets, "isUpToDate");
-        } catch (Throwable ignored) {
-            ShareTinkerLog.w(TAG, "Fail to find isUpToDate method, insurance logic will be disabled.");
-        }
 
         // Iterate over all known Resources objects
         if (SDK_INT >= KITKAT) {
@@ -190,17 +185,6 @@ class TinkerResourcePatcher {
             return;
         }
 
-        if (newAssetManager != null) {
-            try {
-                if ((boolean) isUpToDateMethod.invoke(newAssetManager)) {
-                    return;
-                }
-                ShareTinkerLog.w(TAG, "Patched resources was changed unexpectly, re-inject now.");
-            } catch (Throwable thr) {
-                ShareTinkerLog.w(TAG, "Fail to judge if patched resources is up-to-date, app may crash soon.");
-            }
-        }
-
         final ApplicationInfo appInfo = context.getApplicationInfo();
 
         final Field[] packagesFields;
@@ -230,6 +214,12 @@ class TinkerResourcePatcher {
         // Create a new AssetManager instance and point it to the resources installed under
         if (((Integer) addAssetPathMethod.invoke(newAssetManager, externalResourceFile)) == 0) {
             throw new IllegalStateException("Could not create new AssetManager");
+        }
+        try {
+            storedPatchedResModifiedTime = new File(externalResourceFile).lastModified();
+        } catch (Throwable thr) {
+            ShareTinkerLog.printErrStackTrace(TAG, thr, "Fail to store patched res modified time.");
+            storedPatchedResModifiedTime = 0L;
         }
 
         // Add SharedLibraries to AssetManager for resolve system resources not found issue
@@ -297,9 +287,6 @@ class TinkerResourcePatcher {
     }
 
     private static void installResourceInsuranceHacks(Context context, String patchedResApkPath) {
-        if (isUpToDateMethod == null) {
-            return;
-        }
         try {
             final Object activityThread = ShareReflectUtil.getActivityThread(context, null);
             final Field mHField = ShareReflectUtil.findField(activityThread, "mH");
@@ -371,40 +358,44 @@ class TinkerResourcePatcher {
         @SuppressWarnings("unchecked")
         private boolean hackMessage(Message msg) {
             boolean shouldReInjectPatchedResources = false;
-            if (msg.what == LAUNCH_ACTIVITY || msg.what == RELAUNCH_ACTIVITY) {
-                shouldReInjectPatchedResources = true;
-            } else if (msg.what == EXECUTE_TRANSACTION) {
-                do {
-                    if (mSkipInterceptExecuteTransaction) {
-                        break;
-                    }
-                    final Object transaction = msg.obj;
-                    if (transaction == null) {
-                        ShareTinkerLog.w(TAG, "transaction is null, skip rest insurance logic.");
-                        break;
-                    }
-                    if (mGetCallbacksMethod == null) {
+            if (!isPatchedResModifiedAfterLastLoad(mPatchResApkPath)) {
+                shouldReInjectPatchedResources = false;
+            } else {
+                if (msg.what == LAUNCH_ACTIVITY || msg.what == RELAUNCH_ACTIVITY) {
+                    shouldReInjectPatchedResources = true;
+                } else if (msg.what == EXECUTE_TRANSACTION) {
+                    do {
+                        if (mSkipInterceptExecuteTransaction) {
+                            break;
+                        }
+                        final Object transaction = msg.obj;
+                        if (transaction == null) {
+                            ShareTinkerLog.w(TAG, "transaction is null, skip rest insurance logic.");
+                            break;
+                        }
+                        if (mGetCallbacksMethod == null) {
+                            try {
+                                mGetCallbacksMethod = ShareReflectUtil.findMethod(transaction, "getCallbacks");
+                            } catch (Throwable ignored) {
+                                // Ignored.
+                            }
+                        }
+                        if (mGetCallbacksMethod == null) {
+                            ShareTinkerLog.e(TAG, "fail to find getLifecycleStateRequest method, skip rest insurance logic.");
+                            mSkipInterceptExecuteTransaction = true;
+                            break;
+                        }
                         try {
-                            mGetCallbacksMethod = ShareReflectUtil.findMethod(transaction, "getCallbacks");
+                            final List<Object> req = (List<Object>) mGetCallbacksMethod.invoke(transaction);
+                            if (req != null && req.size() > 0) {
+                                final Object cb = req.get(0);
+                                shouldReInjectPatchedResources = cb != null && cb.getClass().getName().equals(LAUNCH_ACTIVITY_LIFECYCLE_ITEM_CLASSNAME);
+                            }
                         } catch (Throwable ignored) {
-                            // Ignored.
+                            ShareTinkerLog.e(TAG, "fail to call getLifecycleStateRequest method, skip rest insurance logic.");
                         }
-                    }
-                    if (mGetCallbacksMethod == null) {
-                        ShareTinkerLog.e(TAG, "fail to find getLifecycleStateRequest method, skip rest insurance logic.");
-                        mSkipInterceptExecuteTransaction = true;
-                        break;
-                    }
-                    try {
-                        final List<Object> req = (List<Object>) mGetCallbacksMethod.invoke(transaction);
-                        if (req != null && req.size() > 0) {
-                            final Object cb = req.get(0);
-                            shouldReInjectPatchedResources = cb != null && cb.getClass().getName().equals(LAUNCH_ACTIVITY_LIFECYCLE_ITEM_CLASSNAME);
-                        }
-                    } catch (Throwable ignored) {
-                        ShareTinkerLog.e(TAG, "fail to call getLifecycleStateRequest method, skip rest insurance logic.");
-                    }
-                } while (false);
+                    } while (false);
+                }
             }
             if (shouldReInjectPatchedResources) {
                 try {
@@ -415,6 +406,23 @@ class TinkerResourcePatcher {
             }
             return false;
         }
+    }
+
+    private static boolean isPatchedResModifiedAfterLastLoad(String patchedResPath) {
+        long patchedResModifiedTime;
+        try {
+            patchedResModifiedTime = new File(patchedResPath).lastModified();
+        } catch (Throwable thr) {
+            ShareTinkerLog.printErrStackTrace(TAG, thr, "Fail to get patched res modified time.");
+            patchedResModifiedTime = 0L;
+        }
+        if (patchedResModifiedTime == 0) {
+            return false;
+        }
+        if (patchedResModifiedTime == storedPatchedResModifiedTime) {
+            return false;
+        }
+        return true;
     }
 
     /**
