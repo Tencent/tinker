@@ -128,7 +128,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         if (mainProcess) {
             if (!ShareTinkerInternals.isNullOrNil(versionToRemove)) {
-                if (versionToRemove.equals(newVersion)) {
+                if (newVersion.equals(versionToRemove)) {
                     ShareTinkerLog.w(TAG, "found new version clean patch mark and we are in main process, delete patch file now.");
                     final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
                     if (patchName != null) {
