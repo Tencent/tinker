@@ -30,7 +30,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.util.ArrayMap;
-import android.util.Log;
 
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -180,7 +179,7 @@ class TinkerResourcePatcher {
      * @param externalResourceFile
      * @throws Throwable
      */
-    public static void monkeyPatchExistingResources(Context context, String externalResourceFile) throws Throwable {
+    public static void monkeyPatchExistingResources(Context context, String externalResourceFile, boolean isReInject) throws Throwable {
         if (externalResourceFile == null) {
             return;
         }
@@ -209,18 +208,18 @@ class TinkerResourcePatcher {
             }
         }
 
-        newAssetManager = (AssetManager) newAssetManagerCtor.newInstance();
+        if (isReInject) {
+            ShareTinkerLog.i(TAG, "Re-injecting, skip rest logic.");
+            recordCurrentPatchedResModifiedTime(externalResourceFile);
+            return;
+        }
 
+        newAssetManager = (AssetManager) newAssetManagerCtor.newInstance();
         // Create a new AssetManager instance and point it to the resources installed under
         if (((Integer) addAssetPathMethod.invoke(newAssetManager, externalResourceFile)) == 0) {
             throw new IllegalStateException("Could not create new AssetManager");
         }
-        try {
-            storedPatchedResModifiedTime = new File(externalResourceFile).lastModified();
-        } catch (Throwable thr) {
-            ShareTinkerLog.printErrStackTrace(TAG, thr, "Fail to store patched res modified time.");
-            storedPatchedResModifiedTime = 0L;
-        }
+        recordCurrentPatchedResModifiedTime(externalResourceFile);
 
         // Add SharedLibraries to AssetManager for resolve system resources not found issue
         // This influence SharedLibrary Package ID
@@ -232,7 +231,7 @@ class TinkerResourcePatcher {
                 if (((Integer) addAssetPathAsSharedLibraryMethod.invoke(newAssetManager, sharedLibrary)) == 0) {
                     throw new IllegalStateException("AssetManager add SharedLibrary Fail");
                 }
-                Log.i(TAG, "addAssetPathAsSharedLibrary " + sharedLibrary);
+                ShareTinkerLog.i(TAG, "addAssetPathAsSharedLibrary " + sharedLibrary);
             }
         }
 
@@ -399,7 +398,7 @@ class TinkerResourcePatcher {
             }
             if (shouldReInjectPatchedResources) {
                 try {
-                    monkeyPatchExistingResources(mContext, mPatchResApkPath);
+                    monkeyPatchExistingResources(mContext, mPatchResApkPath, true);
                 } catch (Throwable thr) {
                     ShareTinkerLog.printErrStackTrace(TAG, thr, "fail to ensure patched resources available after it's modified.");
                 }
@@ -423,6 +422,15 @@ class TinkerResourcePatcher {
             return false;
         }
         return true;
+    }
+
+    private static void recordCurrentPatchedResModifiedTime(String patchedResPath) {
+        try {
+            storedPatchedResModifiedTime = new File(patchedResPath).lastModified();
+        } catch (Throwable thr) {
+            ShareTinkerLog.printErrStackTrace(TAG, thr, "Fail to store patched res modified time.");
+            storedPatchedResModifiedTime = 0L;
+        }
     }
 
     /**

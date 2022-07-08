@@ -62,7 +62,7 @@ public class TinkerResourceLoader {
             ShareTinkerLog.i(TAG, "verify resource file:" + resourceFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
         }
         try {
-            TinkerResourcePatcher.monkeyPatchExistingResources(application, resourceString);
+            TinkerResourcePatcher.monkeyPatchExistingResources(application, resourceString, false);
             ShareTinkerLog.i(TAG, "monkeyPatchExistingResources resource file:" + resourceString + ", use time: " + (System.currentTimeMillis() - start));
         } catch (Throwable e) {
             ShareTinkerLog.e(TAG, "install resources failed");
