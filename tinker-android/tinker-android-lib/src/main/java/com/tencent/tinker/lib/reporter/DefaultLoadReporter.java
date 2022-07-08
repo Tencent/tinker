@@ -22,13 +22,11 @@ import android.content.Context;
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
-import com.tencent.tinker.lib.tinker.TinkerLoadResult;
-import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
-import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 
@@ -304,28 +302,9 @@ public class DefaultLoadReporter implements LoadReporter {
         checkAndCleanPatch();
     }
 
-    /**
-     * other process may have installed old patch version,
-     * if we try to clean patch, we should kill other process first
-     */
     public void checkAndCleanPatch() {
         Tinker tinker = Tinker.with(context);
-        //only main process can load a new patch
-        if (tinker.isMainProcess()) {
-            TinkerLoadResult tinkerLoadResult = tinker.getTinkerLoadResultIfPresent();
-            //if versionChange and the old patch version is not ""
-            if (tinkerLoadResult.versionChanged) {
-                SharePatchInfo sharePatchInfo = tinkerLoadResult.patchInfo;
-                if (sharePatchInfo != null && !ShareTinkerInternals.isNullOrNil(sharePatchInfo.oldVersion)) {
-                    ShareTinkerLog.w(TAG, "checkAndCleanPatch, oldVersion %s is not null, try kill all other process",
-                        sharePatchInfo.oldVersion);
-
-                    ShareTinkerInternals.killAllOtherProcess(context);
-                }
-            }
-        }
         tinker.cleanPatch();
-
     }
 
     public boolean retryPatch() {
