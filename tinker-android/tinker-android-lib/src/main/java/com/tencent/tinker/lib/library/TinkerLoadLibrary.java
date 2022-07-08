@@ -219,6 +219,11 @@ public class TinkerLoadLibrary {
      * @return
      */
     public static boolean installNativeLibraryABIWithoutTinkerInstalled(ApplicationLike appLike, String currentABI) {
+        if (!TinkerApplicationHelper.isTinkerLoadSuccess(appLike)) {
+            ShareTinkerLog.e(TAG, "no loaded patch, skip installation.");
+            return false;
+        }
+
         final String currentVersion = TinkerApplicationHelper.getCurrentVersion(appLike);
         if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
             ShareTinkerLog.e(TAG, "failed to get current patch version.");
