@@ -124,36 +124,53 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
 
         boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
-        boolean isRemoveNewVersion = patchInfo.isRemoveNewVersion;
+        String versionToRemove = patchInfo.versionToRemove;
 
         if (mainProcess) {
-            final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
-            // So far new version is not loaded in main process and other processes.
-            // We can remove new version directory safely.
-            if (isRemoveNewVersion) {
-                ShareTinkerLog.w(TAG, "found clean patch mark and we are in main process, delete patch file now.");
-                if (patchName != null) {
-                    // oldVersion.equals(newVersion) means the new version has been loaded at least once
-                    // after it was applied.
-                    final boolean isNewVersionLoadedBefore = oldVersion.equals(newVersion);
-                    if (isNewVersionLoadedBefore) {
-                        // Set oldVersion and newVersion to empty string to clean patch
-                        // if current patch has been loaded before.
-                        oldVersion = "";
+            if (!ShareTinkerInternals.isNullOrNil(versionToRemove)) {
+                if (versionToRemove.equals(newVersion)) {
+                    ShareTinkerLog.w(TAG, "found new version clean patch mark and we are in main process, delete patch file now.");
+                    final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
+                    if (patchName != null) {
+                        // oldVersion.equals(newVersion) means the new version has been loaded at least once
+                        // after it was applied.
+                        final boolean isNewVersionLoadedBefore = oldVersion.equals(newVersion);
+                        if (isNewVersionLoadedBefore) {
+                            // Set oldVersion and newVersion to empty string to clean patch
+                            // if current patch has been loaded before.
+                            oldVersion = "";
+                        }
+                        newVersion = oldVersion;
+                        patchInfo.oldVersion = oldVersion;
+                        patchInfo.newVersion = newVersion;
+                        patchInfo.versionToRemove = "";
+                        SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+
+                        String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
+                        if (isNewVersionLoadedBefore) {
+                            ShareTinkerInternals.killProcessExceptMain(app);
+                            SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
+                            return;
+                        } else {
+                            // So far new version is not loaded in main process and other processes.
+                            // We can remove new version directory safely.
+                            SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                        }
                     }
-                    newVersion = oldVersion;
-                    patchInfo.oldVersion = oldVersion;
-                    patchInfo.newVersion = newVersion;
-                    patchInfo.isRemoveNewVersion = false;
-                    SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+                } else if (oldVersion.equals(versionToRemove)) {
+                    ShareTinkerLog.w(TAG, "found old version clean patch mark and we are in main process, delete patch file now.");
+                    final String patchName = SharePatchFileUtil.getPatchVersionDirectory(oldVersion);
+                    if (patchName != null) {
+                        oldVersion = newVersion;
+                        patchInfo.oldVersion = oldVersion;
+                        patchInfo.newVersion = newVersion;
+                        patchInfo.versionToRemove = "";
+                        SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
 
-                    String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
-                    SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
-
-                    if (isNewVersionLoadedBefore) {
+                        String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
                         ShareTinkerInternals.killProcessExceptMain(app);
-                        ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
-                        return;
+                        SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
                     }
                 }
             }
@@ -165,6 +182,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 patchInfo.isRemoveInterpretOATDir = false;
                 SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
                 ShareTinkerInternals.killProcessExceptMain(app);
+                final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
                 String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
                 SharePatchFileUtil.deleteDir(patchVersionDirFullPath + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
             }
@@ -302,7 +320,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 // Mark current patch as deleted so that other process will not load patch after reboot.
                 patchInfo.oldVersion = "";
                 patchInfo.newVersion = "";
-                patchInfo.isRemoveNewVersion = false;
+                patchInfo.versionToRemove = "";
                 SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
                 ShareTinkerInternals.killProcessExceptMain(app);
 
