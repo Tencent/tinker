@@ -134,13 +134,6 @@ public class DefaultPatchListener implements PatchListener {
                 && loadResult != null && loadResult.useInterpretMode;
 
         if (!repairOptNeeded) {
-            if (manager.isTinkerLoaded() && loadResult != null) {
-                String currentVersion = loadResult.currentVersion;
-                if (patchMd5.equals(currentVersion)) {
-                    return ShareConstants.ERROR_PATCH_ALREADY_APPLY;
-                }
-            }
-
             // Hit if we have already applied patch but main process did not restart.
             final String patchDirectory = manager.getPatchDirectory().getAbsolutePath();
             File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory);

@@ -172,6 +172,9 @@ public class TinkerLoader extends AbstractTinkerLoader {
                         ShareTinkerInternals.killProcessExceptMain(app);
                         SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
                     }
+                } else {
+                    patchInfo.versionToRemove = "";
+                    SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
                 }
             }
             if (patchInfo.isRemoveInterpretOATDir) {
