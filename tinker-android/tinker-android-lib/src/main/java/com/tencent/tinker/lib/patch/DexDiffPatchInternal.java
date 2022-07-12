@@ -198,7 +198,8 @@ public class DexDiffPatchInternal extends BasePatchInternal {
     }
 
     private static boolean checkClassNDexFiles(final String dexFilePath) {
-       if (patchList.isEmpty() || !isVmArt) {
+        classNDexInfo.clear();
+        if (patchList.isEmpty() || !isVmArt) {
             return false;
         }
         ShareDexDiffPatchInfo testInfo = null;

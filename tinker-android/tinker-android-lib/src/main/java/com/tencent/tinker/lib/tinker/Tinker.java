@@ -30,13 +30,12 @@ import com.tencent.tinker.lib.reporter.PatchReporter;
 import com.tencent.tinker.lib.service.AbstractResultService;
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.lib.service.TinkerPatchService;
-import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
-import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 
@@ -256,20 +255,7 @@ public class Tinker {
      * clean all patch files
      */
     public void cleanPatch() {
-        if (patchDirectory == null) {
-            return;
-        }
-        final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
-        if (!patchInfoFile.exists()) {
-            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "try to clean patch while patch info file does not exist.");
-            return;
-        }
-        final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
-        final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
-        if (patchInfo != null) {
-            patchInfo.isRemoveNewVersion = true;
-            SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-        }
+        ShareTinkerInternals.cleanPatch(getContext());
     }
 
     /**

@@ -261,8 +261,8 @@ public abstract class InstructionComparator {
     }
 
     public boolean isSameInstruction(int insnAddress1, int insnAddress2) {
-        InstructionHolder insnHolder1 = this.insnHolders1[insnAddress1];
-        InstructionHolder insnHolder2 = this.insnHolders2[insnAddress2];
+        InstructionHolder insnHolder1 = insnAddress1 < this.insnHolders1.length ? this.insnHolders1[insnAddress1] : null;
+        InstructionHolder insnHolder2 = insnAddress2 < this.insnHolders2.length ? this.insnHolders2[insnAddress2] : null;
         return isSameInstruction(insnHolder1, insnHolder2);
     }
 

@@ -1247,7 +1247,9 @@ public final class DexClassesComparator {
         int newLine = newDebugInfoItem.lineStart;
         int newAddress = 0;
 
-        while (oldDbgInfoBuffer.available() > 0 && newDbgInfoBuffer.available() > 0) {
+        boolean isEnd = false;
+
+        while (!isEnd && oldDbgInfoBuffer.available() > 0 && newDbgInfoBuffer.available() > 0) {
             int oldOpCode = oldDbgInfoBuffer.readUnsignedByte();
             int newOpCode = newDbgInfoBuffer.readUnsignedByte();
 
@@ -1261,6 +1263,7 @@ public final class DexClassesComparator {
 
             switch (currOpCode) {
                 case DebugInfoItem.DBG_END_SEQUENCE: {
+                    isEnd = true;
                     break;
                 }
                 case DebugInfoItem.DBG_ADVANCE_PC: {

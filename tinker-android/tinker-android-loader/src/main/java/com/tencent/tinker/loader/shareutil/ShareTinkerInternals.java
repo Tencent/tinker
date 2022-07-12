@@ -17,11 +17,9 @@
 package com.tencent.tinker.loader.shareutil;
 
 import android.app.ActivityManager;
-import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 
@@ -705,11 +703,11 @@ public class ShareTinkerInternals {
         }
     }
 
-    public static void cleanPatch(Application app) {
-        if (app == null) {
-            throw new TinkerRuntimeException("app is null");
+    public static void cleanPatch(Context context) {
+        if (context == null) {
+            throw new TinkerRuntimeException("context is null");
         }
-        final File tinkerDir = SharePatchFileUtil.getPatchDirectory(app);
+        final File tinkerDir = SharePatchFileUtil.getPatchDirectory(context);
         if (!tinkerDir.exists()) {
             ShareTinkerLog.printErrStackTrace(TAG, new Throwable(),"try to clean patch while there're not any applied patches.");
             return;
@@ -722,8 +720,18 @@ public class ShareTinkerInternals {
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());
         final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
         if (patchInfo != null) {
-            patchInfo.isRemoveNewVersion = true;
+            if (!patchInfo.newVersion.equals(patchInfo.oldVersion)) {
+                // newVersion hasn't been loaded yet, we can remove it directly now.
+                final String patchName = SharePatchFileUtil.getPatchVersionDirectory(patchInfo.newVersion);
+                SharePatchFileUtil.deleteDir(new File(tinkerDir, patchName));
+                patchInfo.newVersion = patchInfo.oldVersion;
+                patchInfo.versionToRemove = "";
+            } else {
+                patchInfo.versionToRemove = patchInfo.newVersion;
+            }
             SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
+        } else {
+            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "fail to get patchInfo.");
         }
     }
 }

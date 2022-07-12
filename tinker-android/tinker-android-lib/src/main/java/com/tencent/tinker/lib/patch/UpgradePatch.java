@@ -21,13 +21,13 @@ import android.os.Build;
 
 import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -112,7 +112,7 @@ public class UpgradePatch extends AbstractPatch {
 
             final boolean usingInterpret = oldInfo.oatDir.equals(ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
 
-            if (!usingInterpret && !ShareTinkerInternals.isNullOrNil(oldInfo.newVersion) && oldInfo.newVersion.equals(patchMd5) && !oldInfo.isRemoveNewVersion) {
+            if (!usingInterpret && !ShareTinkerInternals.isNullOrNil(oldInfo.newVersion) && oldInfo.newVersion.equals(patchMd5) && !oldInfo.newVersion.equals(oldInfo.versionToRemove)) {
                 ShareTinkerLog.e(TAG, "patch already applied, md5: %s", patchMd5);
 
                 // Reset patch apply retry count to let us be able to reapply without triggering
@@ -123,9 +123,22 @@ public class UpgradePatch extends AbstractPatch {
             }
             // if it is interpret now, use changing flag to wait main process
             final String finalOatDir = usingInterpret ? ShareConstants.CHANING_DEX_OPTIMIZE_PATH : oldInfo.oatDir;
-            newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, isProtectedApp, false, Build.FINGERPRINT, finalOatDir, false);
+            if (!patchMd5.equals(oldInfo.newVersion) && !oldInfo.newVersion.equals(oldInfo.oldVersion)) {
+                // Currently applied patch is not the same as last applied one and the last applied one is not loaded,
+                // so we can delete the last applied patch to avoid patch artifacts accumulating.
+                final String patchName = SharePatchFileUtil.getPatchVersionDirectory(oldInfo.newVersion);
+                SharePatchFileUtil.deleteDir(new File(patchDirectory, patchName));
+            }
+            final String versionToRemove;
+            if (patchMd5.equals(oldInfo.versionToRemove)) {
+                // If we re-applied a patch that marks to be removed, clear the marker.
+                versionToRemove = "";
+            } else {
+                versionToRemove = oldInfo.versionToRemove;
+            }
+            newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, isProtectedApp, versionToRemove, Build.FINGERPRINT, finalOatDir, false);
         } else {
-            newInfo = new SharePatchInfo("", patchMd5, isProtectedApp, false, Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH, false);
+            newInfo = new SharePatchInfo("", patchMd5, isProtectedApp, "", Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH, false);
         }
 
         // it is a new patch, we first delete if there is any files
