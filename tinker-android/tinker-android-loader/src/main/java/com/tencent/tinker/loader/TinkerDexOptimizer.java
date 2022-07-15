@@ -242,7 +242,8 @@ public final class TinkerDexOptimizer {
         }
         for (int i = 0; i < 5; ++i) {
             if (ShareTinkerInternals.isNewerOrEqualThanVersion(31, true)
-            && !"xiaomi".equalsIgnoreCase(Build.MANUFACTURER) && !"redmi".equalsIgnoreCase(Build.MANUFACTURER)) {
+            && !"xiaomi".equalsIgnoreCase(Build.MANUFACTURER) && !"redmi".equalsIgnoreCase(Build.MANUFACTURER)
+            && !"oppo".equalsIgnoreCase(Build.MANUFACTURER) && !"vivo".equalsIgnoreCase(Build.MANUFACTURER)) {
                 try {
                     registerDexModule(context, dexPath);
                     if (SharePatchFileUtil.isLegalFile(oatFile)) {
