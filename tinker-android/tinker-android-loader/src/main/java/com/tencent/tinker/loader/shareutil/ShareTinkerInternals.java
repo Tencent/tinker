@@ -16,15 +16,20 @@
 
 package com.tencent.tinker.loader.shareutil;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
+import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.text.TextUtils;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -36,6 +41,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -58,9 +64,9 @@ public class ShareTinkerInternals {
     /**
      * or you may just hardcode them in your app
      */
-    private static       String  processName           = null;
-    private static       String  tinkerID              = null;
-    private static       String  currentInstructionSet = null;
+    private static final String[]  processName           = {null};
+    private static       String    tinkerID              = null;
+    private static       String    currentInstructionSet = null;
 
     public static boolean isVmArt() {
         return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
@@ -531,77 +537,62 @@ public class ShareTinkerInternals {
      * @param context
      * @return
      */
-    public static String getProcessName(final Context context) {
-        if (processName != null) {
-            return processName;
+    public static String getProcessName(Context context) {
+        if (processName[0] == null) {
+            synchronized (processName) {
+                if (processName[0] == null) {
+                    processName[0] = getProcessNameInternal(context);
+                }
+            }
         }
-        //will not null
-        processName = getProcessNameInternal(context);
-        return processName;
+        return (processName[0] != null ? processName[0] : "");
     }
 
-
+    @SuppressLint("NewApi")
     private static String getProcessNameInternal(final Context context) {
-        int myPid = android.os.Process.myPid();
-
-        if (context == null || myPid <= 0) {
-            return "";
+        if (ShareTinkerInternals.isNewerOrEqualThanVersion(28, true)) {
+            final String result = Application.getProcessName();
+            if (!TextUtils.isEmpty(result)) {
+                return result;
+            }
         }
 
-        ActivityManager.RunningAppProcessInfo myProcess = null;
-        ActivityManager activityManager =
-            (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-
-        if (activityManager != null) {
+        if (context != null) {
             try {
-                List<ActivityManager.RunningAppProcessInfo> appProcessList = activityManager
-                    .getRunningAppProcesses();
-
-                if (appProcessList != null) {
-                    for (ActivityManager.RunningAppProcessInfo process : appProcessList) {
-                        if (process.pid == myPid) {
-                            myProcess = process;
-                            break;
+                final int myPid = android.os.Process.myPid();
+                final int myUid = android.os.Process.myUid();
+                final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+                if (am != null) {
+                    final List<RunningAppProcessInfo> procInfos = am.getRunningAppProcesses();
+                    if (procInfos != null) {
+                        for (RunningAppProcessInfo procInfo : procInfos) {
+                            if (procInfo.pid == myPid && procInfo.uid == myUid) {
+                                return procInfo.processName;
+                            }
                         }
                     }
-
-                    if (myProcess != null) {
-                        return myProcess.processName;
-                    }
                 }
-            } catch (Exception e) {
-                ShareTinkerLog.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-            }
-        }
-
-        byte[] b = new byte[128];
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream("/proc/" + myPid + "/cmdline");
-            int len = in.read(b);
-            if (len > 0) {
-                for (int i = 0; i < len; i++) { // lots of '0' in tail , remove them
-                    if ((((int) b[i]) & 0xFF) > 128 || b[i] <= 0) {
-                        len = i;
-                        break;
-                    }
-                }
-                return new String(b, 0, len);
-            }
-
-        } catch (Exception e) {
-            ShareTinkerLog.e(TAG, "getProcessNameInternal exception:" + e.getMessage());
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (Exception e) {
+            } catch (Throwable ignored) {
                 // Ignored.
             }
         }
 
-        return "";
+        final byte[] buf = new byte[2048];
+        InputStream in = null;
+        try {
+            in = new BufferedInputStream(new FileInputStream("/proc/self/cmdline"));
+            int len = in.read(buf);
+            while (len > 0 && (buf[len - 1] <= 0 || buf[len - 1] == 10 || buf[len - 1] == 13)) --len;
+            if (len > 0) {
+                return new String(buf, StandardCharsets.US_ASCII);
+            }
+        } catch (Throwable thr) {
+            ShareTinkerLog.e(TAG, "getProcessNameInternal parse cmdline exception:" + thr.getMessage());
+        } finally {
+            SharePatchFileUtil.closeQuietly(in);
+        }
+
+        return null;
     }
 
     /**
