@@ -125,10 +125,10 @@ public class ShareTinkerInternals {
         } catch (Throwable ignored) {
             switch (Build.CPU_ABI) {
                 case "armeabi":
-                case "armeabi_v7a":
+                case "armeabi-v7a":
                     currentInstructionSet = "arm";
                     break;
-                case "arm64_v8a":
+                case "arm64-v8a":
                     currentInstructionSet = "arm64";
                     break;
                 case "x86":

@@ -106,14 +106,41 @@ public class ShareTinkerInternals {
         return Build.VERSION.SDK_INT > 25;
     }
 
-    public static String getCurrentInstructionSet() throws Exception {
+    public static String getCurrentInstructionSet() {
         if (currentInstructionSet != null) {
             return currentInstructionSet;
         }
-        Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
-        Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
 
-        currentInstructionSet = (String) currentGet.invoke(null);
+        try {
+            Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
+            Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
+            currentGet.setAccessible(true);
+            currentInstructionSet = (String) currentGet.invoke(null);
+        } catch (Throwable ignored) {
+            switch (Build.CPU_ABI) {
+                case "armeabi":
+                case "armeabi-v7a":
+                    currentInstructionSet = "arm";
+                    break;
+                case "arm64-v8a":
+                    currentInstructionSet = "arm64";
+                    break;
+                case "x86":
+                    currentInstructionSet = "x86";
+                    break;
+                case "x86_64":
+                    currentInstructionSet = "x86_64";
+                    break;
+                case "mips":
+                    currentInstructionSet = "mips";
+                    break;
+                case "mips64":
+                    currentInstructionSet = "mips64";
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported abi: " + Build.CPU_ABI);
+            }
+        }
         ShareTinkerLog.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
         return currentInstructionSet;
     }
