@@ -148,6 +148,11 @@ public class ShareTinkerInternals {
         return currentInstructionSet;
     }
 
+    public static boolean is32BitEnv() {
+        final String currISA = getCurrentInstructionSet();
+        return "arm".equals(currISA) || "x86".equals(currISA) || "mips".equals(currISA);
+    }
+
     public static boolean isSystemOTA(String lastFingerPrint) {
         String currentFingerprint = Build.FINGERPRINT;
         if (lastFingerPrint == null
@@ -644,6 +649,23 @@ public class ShareTinkerInternals {
         } else {
             return Build.VERSION.SDK_INT >= apiLevel;
         }
+    }
+
+    public static boolean isOlderOrEqualThanVersion(int apiLevel, boolean includePreviewVer) {
+        if (includePreviewVer && Build.VERSION.SDK_INT >= 23) {
+            return Build.VERSION.SDK_INT <= apiLevel
+                    || ((Build.VERSION.SDK_INT == apiLevel - 1) && Build.VERSION.PREVIEW_SDK_INT > 0);
+        } else {
+            return Build.VERSION.SDK_INT <= apiLevel;
+        }
+    }
+
+    /**
+     * @return true if system version is in range [lowApiLevel, hiApiLevel].
+     */
+    public static boolean isVersionInRange(int lowApiLevel, int hiApiLevel, boolean includePreviewVer) {
+        return isNewerOrEqualThanVersion(lowApiLevel, includePreviewVer) &&
+                isOlderOrEqualThanVersion(hiApiLevel, includePreviewVer);
     }
 
     public static String getExceptionCauseString(final Throwable ex) {

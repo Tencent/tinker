@@ -41,4 +41,6 @@ public @interface DefaultLifeCycle {
     boolean loadVerifyFlag() default false;
 
     boolean useDelegateLastClassLoader() default false;
+
+    boolean useInterpretModeOnSupported32BitSystem() default false;
 }

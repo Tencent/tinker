@@ -24,6 +24,7 @@ import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Build.VERSION;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -32,6 +33,7 @@ import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.os.SystemClock;
 
+import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareFileLockHelper;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
@@ -157,6 +159,20 @@ public final class TinkerDexOptimizer {
                 if (!ShareTinkerInternals.isArkHotRuning()) {
                     if (useInterpretMode) {
                         interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath, targetISA);
+                    } else if (TinkerApplication.getInstance().isUseInterpretModeOnSupported32BitSystem() &&
+                            ShareTinkerInternals.isVersionInRange(21, 25, true) &&
+                            ShareTinkerInternals.is32BitEnv()
+                    ) {
+                        try {
+                            ShareTinkerLog.i(TAG, "dexopt with interpret mode on 32bit supported system was enabled.");
+                            interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath, targetISA);
+                        } catch (Throwable thr) {
+                            ShareTinkerLog.printErrStackTrace(TAG, thr, "exception occurred on dexopt triggering.");
+                        }
+                        if (!SharePatchFileUtil.isLegalFile(new File(optimizedPath))) {
+                            ShareTinkerLog.w(TAG, "interpret dexopt failure, compensate with system method.");
+                            DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
+                        }
                     } else if (ShareTinkerInternals.isNewerOrEqualThanVersion(26, true)) {
                         if (ShareTinkerInternals.isNewerOrEqualThanVersion(29, true)) {
                             createFakeODexPathStructureOnDemand(optimizedPath);

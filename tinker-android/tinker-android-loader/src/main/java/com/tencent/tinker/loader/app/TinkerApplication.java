@@ -73,24 +73,24 @@ public abstract class TinkerApplication extends Application {
     private Handler mInlineFence = null;
 
     private final boolean useDelegateLastClassLoader;
+    private final boolean useInterpretModeOnSupported32BitSystem;
 
     protected TinkerApplication(int tinkerFlags) {
-        this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike",
-                TinkerLoader.class.getName(), false, false);
+        this(tinkerFlags, "com.tencent.tinker.entry.DefaultApplicationLike");
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName) {
-        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false, false);
+        this(tinkerFlags, delegateClassName, TinkerLoader.class.getName(), false);
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
                                 String loaderClassName, boolean tinkerLoadVerifyFlag) {
-        this(tinkerFlags, delegateClassName, loaderClassName, tinkerLoadVerifyFlag, true);
+        this(tinkerFlags, delegateClassName, loaderClassName, tinkerLoadVerifyFlag, true, false);
     }
 
     protected TinkerApplication(int tinkerFlags, String delegateClassName,
                                 String loaderClassName, boolean tinkerLoadVerifyFlag,
-                                boolean useDelegateLastClassLoader) {
+                                boolean useDelegateLastClassLoader, boolean useInterpretModeOnSupported32BitSystem) {
         synchronized (SELF_HOLDER) {
             SELF_HOLDER[0] = this;
         }
@@ -99,6 +99,7 @@ public abstract class TinkerApplication extends Application {
         this.loaderClassName = loaderClassName;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
         this.useDelegateLastClassLoader = useDelegateLastClassLoader;
+        this.useInterpretModeOnSupported32BitSystem = useInterpretModeOnSupported32BitSystem;
     }
 
     public static TinkerApplication getInstance() {
@@ -294,5 +295,9 @@ public abstract class TinkerApplication extends Application {
 
     public boolean isUseDelegateLastClassLoader() {
         return useDelegateLastClassLoader;
+    }
+
+    public boolean isUseInterpretModeOnSupported32BitSystem() {
+        return useInterpretModeOnSupported32BitSystem;
     }
 }
