@@ -584,7 +584,7 @@ public class ShareTinkerInternals {
             int len = in.read(buf);
             if (len > 0) {
                 for (int i = 0; i < len; i++) { // lots of '0' in tail , remove them
-                    if ((((int) buf[i]) & 0xFF) > 128 || buf[i] <= 0) {
+                    if ((((int) buf[i]) & 0xFF) > 128 || buf[i] <= 0 || buf[i] == 10 /* lf */ || buf[i] == 13 /* cr */) {
                         len = i;
                         break;
                     }
