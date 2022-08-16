@@ -582,9 +582,14 @@ public class ShareTinkerInternals {
         try {
             in = new BufferedInputStream(new FileInputStream("/proc/self/cmdline"));
             int len = in.read(buf);
-            while (len > 0 && (buf[len - 1] <= 0 || buf[len - 1] == 10 || buf[len - 1] == 13)) --len;
             if (len > 0) {
-                return new String(buf, StandardCharsets.US_ASCII);
+                for (int i = 0; i < len; i++) { // lots of '0' in tail , remove them
+                    if ((((int) buf[i]) & 0xFF) > 128 || buf[i] <= 0) {
+                        len = i;
+                        break;
+                    }
+                }
+                return new String(buf, 0, len);
             }
         } catch (Throwable thr) {
             ShareTinkerLog.e(TAG, "getProcessNameInternal parse cmdline exception:" + thr.getMessage());
