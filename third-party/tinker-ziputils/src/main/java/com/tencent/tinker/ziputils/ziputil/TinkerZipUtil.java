@@ -26,7 +26,7 @@ import java.io.InputStream;
  * Created by zhangshaowen on 16/8/10.
  */
 public class TinkerZipUtil {
-    private static final int BUFFER_SIZE = 16384;
+    private static final int BUFFER_SIZE = 4096;
 
     public static void extractTinkerEntry(TinkerZipFile apk, TinkerZipEntry zipEntry, TinkerZipOutputStream outputStream) throws IOException {
         InputStream in = null;
@@ -76,7 +76,7 @@ public class TinkerZipUtil {
         }
         try {
             final String canonicalDestinationDir = destDir.getCanonicalPath();
-            final File destEntryFile = destDir.toPath().resolve(entryName).toFile();
+            final File destEntryFile = new File(destDir, entryName);
             return destEntryFile.getCanonicalPath().startsWith(canonicalDestinationDir + File.separator);
         } catch (Throwable ignored) {
             return false;
