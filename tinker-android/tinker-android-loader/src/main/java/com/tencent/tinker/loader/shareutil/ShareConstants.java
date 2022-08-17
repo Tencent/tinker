@@ -26,9 +26,9 @@ import java.util.regex.Pattern;
 public class ShareConstants {
     public static final String TINKER_VERSION = BuildConfig.TINKER_VERSION;
 
-    public static final int BUFFER_SIZE         = 16384;
+    public static final int BUFFER_SIZE         = 4096 * 1;
     public static final int MD5_LENGTH          = 32;
-    public static final int MD5_FILE_BUF_LENGTH = 1024 * 100;
+    public static final int MD5_FILE_BUF_LENGTH = 4096 * 1;
 
     public static final int MAX_EXTRACT_ATTEMPTS = 2;
 
