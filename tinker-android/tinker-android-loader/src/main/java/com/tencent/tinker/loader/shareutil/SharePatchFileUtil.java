@@ -241,7 +241,6 @@ public class SharePatchFileUtil {
             return false;
         }
         return deleteDir(new File(dir));
-
     }
 
     public static final boolean deleteDir(File file) {
@@ -260,6 +259,23 @@ public class SharePatchFileUtil {
             }
         }
         return true;
+    }
+
+    public static void deleteDirAsync(String path) {
+        deleteDirAsync(new File(path));
+    }
+
+    public static void deleteDirAsync(File file) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                SharePatchFileUtil.deleteDir(file);
+            }
+        }, "tinker-clean") {
+            {
+                setPriority(Thread.NORM_PRIORITY - 1);
+            }
+        }.start();
     }
 
 

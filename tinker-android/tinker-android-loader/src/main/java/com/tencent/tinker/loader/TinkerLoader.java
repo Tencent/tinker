@@ -149,13 +149,13 @@ public class TinkerLoader extends AbstractTinkerLoader {
                         String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
                         if (isNewVersionLoadedBefore) {
                             ShareTinkerInternals.killProcessExceptMain(app);
-                            SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                            SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath);
                             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
                             return;
                         } else {
                             // So far new version is not loaded in main process and other processes.
                             // We can remove new version directory safely.
-                            SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                            SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath);
                         }
                     }
                 } else if (oldVersion.equals(versionToRemove)) {
@@ -187,7 +187,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 ShareTinkerInternals.killProcessExceptMain(app);
                 final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
                 String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
-                SharePatchFileUtil.deleteDir(patchVersionDirFullPath + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
+                SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
             }
         }
 
@@ -329,7 +329,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
                 // Actually delete patch files.
                 String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
-                SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath);
 
                 resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, new TinkerRuntimeException("checkSafeModeCount fail"));
                 ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION);
