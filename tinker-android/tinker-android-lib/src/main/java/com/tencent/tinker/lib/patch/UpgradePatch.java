@@ -90,6 +90,8 @@ public class UpgradePatch extends AbstractPatch {
 
         final String isProtectedAppStr = pkgProps.get(ShareConstants.PKGMETA_KEY_IS_PROTECTED_APP);
         final boolean isProtectedApp = (isProtectedAppStr != null && !isProtectedAppStr.isEmpty() && !"0".equals(isProtectedAppStr));
+        final String useCustomPatchStr = pkgProps.get(ShareConstants.PKGMETA_KEY_USE_CUSTOM_FILE_PATCH);
+        final boolean useCustomPatch = (useCustomPatchStr != null && !useCustomPatchStr.isEmpty() && !"0".equals(useCustomPatchStr));
 
         SharePatchInfo oldInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
 
@@ -136,9 +138,9 @@ public class UpgradePatch extends AbstractPatch {
             } else {
                 versionToRemove = oldInfo.versionToRemove;
             }
-            newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, isProtectedApp, versionToRemove, Build.FINGERPRINT, finalOatDir, false);
+            newInfo = new SharePatchInfo(oldInfo.oldVersion, patchMd5, isProtectedApp, useCustomPatch, versionToRemove, Build.FINGERPRINT, finalOatDir, false);
         } else {
-            newInfo = new SharePatchInfo("", patchMd5, isProtectedApp, "", Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH, false);
+            newInfo = new SharePatchInfo("", patchMd5, isProtectedApp, useCustomPatch, "", Build.FINGERPRINT, ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH, false);
         }
 
         // it is a new patch, we first delete if there is any files
@@ -177,12 +179,14 @@ public class UpgradePatch extends AbstractPatch {
             return false;
         }
 
-        if (!BsDiffPatchInternal.tryRecoverLibraryFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile)) {
+        if (!SoDiffPatchInternal.tryRecoverLibraryFiles(manager, signatureCheck, context,
+                patchVersionDirectory, destPatchFile, useCustomPatch, patchResult)) {
             ShareTinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch library failed");
             return false;
         }
 
-        if (!ResDiffPatchInternal.tryRecoverResourceFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile)) {
+        if (!ResDiffPatchInternal.tryRecoverResourceFiles(manager, signatureCheck, context,
+                patchVersionDirectory, destPatchFile, useCustomPatch, patchResult)) {
             ShareTinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch resource failed");
             return false;
         }

@@ -44,9 +44,9 @@ public class ApkDecoder extends BaseDecoder {
 
     private final ManifestDecoder      manifestDecoder;
     private final UniqueDexDiffDecoder dexPatchDecoder;
-    private final BsDiffDecoder        soPatchDecoder;
+    private final SoDiffDecoder        soPatchDecoder;
     private final ResDiffDecoder       resPatchDecoder;
-    private final ArkHotDecoder arkHotDecoder;
+    private final ArkHotDecoder        arkHotDecoder;
 
     /**
      * if resource's file is also contain in dex or library pattern,
@@ -64,8 +64,9 @@ public class ApkDecoder extends BaseDecoder {
         //put meta files in assets
         String prePath = TypedValue.FILE_ASSETS + File.separator;
         dexPatchDecoder = new UniqueDexDiffDecoder(config, prePath + TypedValue.DEX_META_FILE, TypedValue.DEX_LOG_FILE);
-        soPatchDecoder = new BsDiffDecoder(config, prePath + TypedValue.SO_META_FILE, TypedValue.SO_LOG_FILE);
+        soPatchDecoder = new SoDiffDecoder(config, prePath + TypedValue.SO_META_FILE, TypedValue.SO_LOG_FILE);
         resPatchDecoder = new ResDiffDecoder(config, prePath + TypedValue.RES_META_TXT, TypedValue.RES_LOG_FILE);
+
         arkHotDecoder = new ArkHotDecoder(config, prePath + TypedValue.ARKHOT_META_TXT);
         Logger.d("config: " + config.mArkHotPatchPath + " " + config.mArkHotPatchName + prePath + TypedValue.ARKHOT_META_TXT);
         resDuplicateFiles = new ArrayList<>();

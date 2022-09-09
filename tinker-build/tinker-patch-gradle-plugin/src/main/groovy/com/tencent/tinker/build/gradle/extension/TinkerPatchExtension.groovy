@@ -96,6 +96,12 @@ public class TinkerPatchExtension {
      */
     boolean tinkerEnable
 
+    /**
+     * customDiffPath
+     * default: null
+     */
+    String customPath
+
     public TinkerPatchExtension() {
         oldApk = ""
         outputFolder = ""
@@ -105,6 +111,7 @@ public class TinkerPatchExtension {
         removeLoaderForAllDex = false
         useSign = true
         tinkerEnable = true
+        customPath = null
     }
 
     void checkParameter() {

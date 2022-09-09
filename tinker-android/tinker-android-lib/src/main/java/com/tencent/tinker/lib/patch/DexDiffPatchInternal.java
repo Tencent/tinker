@@ -86,6 +86,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         long begin = SystemClock.elapsedRealtime();
         boolean result = patchDexExtractViaDexDiff(context, patchVersionDirectory, dexMeta, patchFile, patchResult);
         long cost = SystemClock.elapsedRealtime() - begin;
+        patchResult.dexCostTime = cost;
         ShareTinkerLog.i(TAG, "recover dex result:%b, cost:%d", result, cost);
         return result;
     }
