@@ -404,19 +404,7 @@ public class ResDiffDecoder extends BaseDecoder {
     private void checkIfSpecificResWasAnimRes(Collection<String> specificFileNames) {
         final Set<String> changedAnimResNames = new HashSet<>();
         for (String resFileName : specificFileNames) {
-            String resName = resFileName;
-            int lastPathSepPos = resFileName.lastIndexOf('/');
-            if (lastPathSepPos < 0) {
-                lastPathSepPos = resFileName.lastIndexOf('\\');
-            }
-            if (lastPathSepPos >= 0) {
-                resName = resName.substring(lastPathSepPos + 1);
-            }
-            final int firstDotPos = resName.indexOf('.');
-            if (firstDotPos >= 0) {
-                resName = resName.substring(0, firstDotPos);
-            }
-            if (newApkAnimResNames.contains(resName)) {
+            if (newApkAnimResNames.contains(resFileName)) {
                 if (Utils.isStringMatchesPatterns(resFileName, config.mResIgnoreChangeWarningPattern)) {
                     Logger.d("\nAnimation resource: " + resFileName
                             + " was changed, but it's filtered by ignoreChangeWarning pattern, just ignore.\n");

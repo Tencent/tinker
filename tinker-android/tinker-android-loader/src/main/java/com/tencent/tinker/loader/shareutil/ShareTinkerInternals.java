@@ -25,11 +25,13 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Build.VERSION;
 import android.text.TextUtils;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -38,6 +40,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -122,10 +125,10 @@ public class ShareTinkerInternals {
         } catch (Throwable ignored) {
             switch (Build.CPU_ABI) {
                 case "armeabi":
-                case "armeabi_v7a":
+                case "armeabi-v7a":
                     currentInstructionSet = "arm";
                     break;
-                case "arm64_v8a":
+                case "arm64-v8a":
                     currentInstructionSet = "arm64";
                     break;
                 case "x86":
@@ -555,11 +558,42 @@ public class ShareTinkerInternals {
 
     @SuppressLint("NewApi")
     private static String getProcessNameInternal(final Context context) {
-        if (ShareTinkerInternals.isNewerOrEqualThanVersion(28, true)) {
+        if (isNewerOrEqualThanVersion(28, true)) {
             final String result = Application.getProcessName();
             if (!TextUtils.isEmpty(result)) {
                 return result;
             }
+        }
+
+        // The 'currentProcess' method only exists on api 18 and newer systems.
+        if (isNewerOrEqualThanVersion(18, true)) {
+            try {
+                final Class<?> activityThreadClazz = Class.forName("android.app.ActivityThread");
+                final Method currentProcessMethod = ShareReflectUtil.findMethod(activityThreadClazz, "currentProcessName");
+                currentProcessMethod.setAccessible(true);
+                final String result = (String) currentProcessMethod.invoke(null);
+                if (result != null && !result.isEmpty()) {
+                    return result;
+                }
+            } catch (Throwable thr) {
+                ShareTinkerLog.e(TAG, "getProcessNameInternal reflect activity thread exception:" + thr.getMessage());
+            }
+        }
+
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/self/cmdline"), StandardCharsets.US_ASCII));
+            String result = br.readLine();
+            if (result != null) {
+                result = result.trim();
+                if (!result.isEmpty()) {
+                    return result;
+                }
+            }
+        } catch (Throwable thr) {
+            ShareTinkerLog.e(TAG, "getProcessNameInternal parse cmdline exception:" + thr.getMessage());
+        } finally {
+            SharePatchFileUtil.closeQuietly(br);
         }
 
         if (context != null) {
@@ -577,24 +611,9 @@ public class ShareTinkerInternals {
                         }
                     }
                 }
-            } catch (Throwable ignored) {
-                // Ignored.
+            } catch (Throwable thr) {
+                ShareTinkerLog.e(TAG, "getProcessNameInternal getRunningAppProcesses exception:" + thr.getMessage());
             }
-        }
-
-        final byte[] buf = new byte[2048];
-        InputStream in = null;
-        try {
-            in = new BufferedInputStream(new FileInputStream("/proc/self/cmdline"));
-            int len = in.read(buf);
-            while (len > 0 && (buf[len - 1] <= 0 || buf[len - 1] == 10 || buf[len - 1] == 13)) --len;
-            if (len > 0) {
-                return new String(buf, StandardCharsets.US_ASCII);
-            }
-        } catch (Throwable thr) {
-            ShareTinkerLog.e(TAG, "getProcessNameInternal parse cmdline exception:" + thr.getMessage());
-        } finally {
-            SharePatchFileUtil.closeQuietly(in);
         }
 
         return null;
