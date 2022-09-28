@@ -69,6 +69,8 @@ public class Configuration {
     protected static final String ATTR_SUPPORT_HOTPLUG_COMPONENT = "supportHotplugComponent";
     protected static final String ATTR_USE_SIGN                  = "useSign";
     protected static final String ATTR_SEVEN_ZIP_PATH            = "sevenZipPath";
+    protected static final String ATTR_CUSTOM_DIFF_PATH          = "customPath";
+    protected static final String ATTR_CUSTOM_DIFF_PATH_ARGS     = "customPathArgs";
     protected static final String ATTR_DEX_MODE                  = "dexMode";
     protected static final String ATTR_PATTERN                   = "pattern";
     protected static final String ATTR_IGNORE_CHANGE             = "ignoreChange";
@@ -131,6 +133,14 @@ public class Configuration {
      * sevenZip path config
      */
     public String                  mSevenZipPath;
+    /**
+     * custom diff path config
+     */
+    public String mCustomDiffPath;
+    /**
+     * custom diff path config
+     */
+    public String mCustomDiffPathArgs;
     /**
      * sign data
      */
@@ -257,6 +267,7 @@ public class Configuration {
         mPackageFields = param.configFields;
 
         mUseSignAPk = param.useSign;
+        mCustomDiffPath = param.customDiffPath;
         setSignData(param.signFile, param.keypass, param.storealias, param.storepass);
 
         FileOperation.cleanDir(new File(mOutFolder));
@@ -456,10 +467,8 @@ public class Configuration {
                     Element check = (Element) child;
                     String tagName = check.getTagName();
                     String value = check.getAttribute(ATTR_VALUE);
-                    if (value.length() == 0) {
-                        throw new IOException(
-                            String.format("Invalid config file: Missing required attribute %s\n", ATTR_VALUE)
-                        );
+                    if (value == null) {
+                        value = "";
                     }
                     if (tagName.equals(ATTR_IGNORE_WARNING)) {
                         mIgnoreWarning = value.equals("true");
@@ -480,7 +489,12 @@ public class Configuration {
                         } else {
                             mSevenZipPath = "7za";
                         }
-                    } else {
+                    } else if (tagName.equals(ATTR_CUSTOM_DIFF_PATH)) {
+                        mCustomDiffPath = value;
+                    }  else if (tagName.equals(ATTR_CUSTOM_DIFF_PATH_ARGS)) {
+                        mCustomDiffPathArgs = value;
+                    }
+                    else {
                         System.err.println("unknown property tag " + tagName);
                     }
                 }
@@ -527,7 +541,7 @@ public class Configuration {
                     String value = check.getAttribute(ATTR_VALUE);
                     if (value.length() == 0) {
                         throw new IOException(
-                            String.format("Invalid config file: Missing required attribute %s\n", ATTR_VALUE)
+                            String.format("Invalid config file: Tag:%s Missing required attribute %s\n",tagName, ATTR_VALUE)
                         );
                     }
 

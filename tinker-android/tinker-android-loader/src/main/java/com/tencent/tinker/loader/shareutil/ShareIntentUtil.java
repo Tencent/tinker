@@ -31,6 +31,7 @@ public class ShareIntentUtil {
     public static final  String INTENT_PATCH_OLD_VERSION         = "intent_patch_old_version";
     public static final  String INTENT_PATCH_NEW_VERSION         = "intent_patch_new_version";
     public static final  String INTENT_IS_PROTECTED_APP          = "intent_is_protected_app";
+    public static final  String INTENT_USE_CUSTOM_PATCH          = "intent_use_custom_patch";
     public static final  String INTENT_PATCH_MISMATCH_DEX_PATH   = "intent_patch_mismatch_dex_path";
     public static final  String INTENT_PATCH_MISSING_DEX_PATH    = "intent_patch_missing_dex_path";
     public static final  String INTENT_PATCH_DEXES_PATH          = "intent_patch_dexes_path";

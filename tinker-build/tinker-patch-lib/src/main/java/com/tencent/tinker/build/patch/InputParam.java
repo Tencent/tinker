@@ -34,6 +34,7 @@ public class InputParam {
     public final String  keypass;
     public final String  storealias;
     public final String  storepass;
+    public final String customDiffPath;
     public final boolean ignoreWarning;
     public final boolean allowLoaderInAnyDex;
     public final boolean removeLoaderForAllDex;
@@ -96,6 +97,7 @@ public class InputParam {
             String keypass,
             String storealias,
             String storepass,
+            String customDiffPath,
             boolean ignoreWarning,
             boolean allowLoaderInAnyDex,
             boolean removeLoaderForAllDex,
@@ -127,6 +129,7 @@ public class InputParam {
         this.keypass = keypass;
         this.storealias = storealias;
         this.storepass = storepass;
+        this.customDiffPath = customDiffPath;
         this.ignoreWarning = ignoreWarning;
         this.allowLoaderInAnyDex = allowLoaderInAnyDex;
         this.removeLoaderForAllDex = removeLoaderForAllDex;
@@ -164,6 +167,7 @@ public class InputParam {
         private String  keypass;
         private String  storealias;
         private String  storepass;
+        private String  customDiffPath;
         private boolean ignoreWarning;
         private boolean allowLoaderInAnyDex;
         private boolean removeLoaderForAllDex;
@@ -302,6 +306,11 @@ public class InputParam {
             return this;
         }
 
+        public Builder setCustomDiffPath(String path) {
+            this.customDiffPath = path;
+            return this;
+        }
+
         public Builder setRemoveLoaderForAllDex(boolean removeLoaderForAllDex){
             this.removeLoaderForAllDex = removeLoaderForAllDex;
             return this;
@@ -366,6 +375,7 @@ public class InputParam {
                     keypass,
                     storealias,
                     storepass,
+                    customDiffPath,
                     ignoreWarning,
                     allowLoaderInAnyDex,
                     removeLoaderForAllDex,

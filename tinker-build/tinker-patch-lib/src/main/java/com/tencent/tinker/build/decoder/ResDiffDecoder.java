@@ -16,11 +16,12 @@
 
 package com.tencent.tinker.build.decoder;
 
-import com.tencent.tinker.bsdiff.BSDiff;
 import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
+import com.tencent.tinker.build.util.DiffFactory;
 import com.tencent.tinker.build.util.FileOperation;
+import com.tencent.tinker.build.util.CustomDiff;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.MD5;
 import com.tencent.tinker.build.util.TinkerPatchException;
@@ -223,7 +224,7 @@ public class ResDiffDecoder extends BaseDecoder {
             if (!outputFile.getParentFile().exists()) {
                 outputFile.getParentFile().mkdirs();
             }
-            BSDiff.bsdiff(oldFile, newFile, outputFile);
+            DiffFactory.diffFile(config, oldFile, newFile, outputFile);
             //treat it as normal modify
             if (Utils.checkBsDiffFileSize(outputFile, newFile)) {
                 LargeModeInfo largeModeInfo = new LargeModeInfo();

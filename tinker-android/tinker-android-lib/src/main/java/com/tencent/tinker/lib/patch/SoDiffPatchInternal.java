@@ -22,6 +22,8 @@ import android.os.SystemClock;
 
 import com.tencent.tinker.bsdiff.BSPatch;
 import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.lib.filepatch.FilePatchFactory;
+import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -39,11 +41,11 @@ import java.util.zip.ZipFile;
 /**
  * Created by zhangshaowen on 16/3/21.
  */
-public class BsDiffPatchInternal extends BasePatchInternal {
+public class SoDiffPatchInternal extends BasePatchInternal {
     private static final String TAG = "Tinker.BsDiffPatchInternal";
 
     protected static boolean tryRecoverLibraryFiles(Tinker manager, ShareSecurityCheck checker, Context context,
-                                                    String patchVersionDirectory, File patchFile) {
+                                                    String patchVersionDirectory, File patchFile, boolean useCustomPatcher, PatchResult patchResult) {
 
         if (!manager.isEnabledForNativeLib()) {
             ShareTinkerLog.w(TAG, "patch recover, library is not enabled");
@@ -56,19 +58,20 @@ public class BsDiffPatchInternal extends BasePatchInternal {
             return true;
         }
         long begin = SystemClock.elapsedRealtime();
-        boolean result = patchLibraryExtractViaBsDiff(context, patchVersionDirectory, libMeta, patchFile);
+        boolean result = patchLibraryExtractViaBsDiff(context, patchVersionDirectory, libMeta, patchFile, useCustomPatcher);
         long cost = SystemClock.elapsedRealtime() - begin;
+        patchResult.soCostTime = cost;
         ShareTinkerLog.i(TAG, "recover lib result:%b, cost:%d", result, cost);
         return result;
     }
 
 
-    private static boolean patchLibraryExtractViaBsDiff(Context context, String patchVersionDirectory, String meta, File patchFile) {
+    private static boolean patchLibraryExtractViaBsDiff(Context context, String patchVersionDirectory, String meta, File patchFile, boolean useCustomPatcher) {
         String dir = patchVersionDirectory + "/" + SO_PATH + "/";
-        return extractBsDiffInternals(context, dir, meta, patchFile, TYPE_LIBRARY);
+        return extractBsDiffInternals(context, dir, meta, patchFile, TYPE_LIBRARY, useCustomPatcher);
     }
 
-    private static boolean extractBsDiffInternals(Context context, String dir, String meta, File patchFile, int type) {
+    private static boolean extractBsDiffInternals(Context context, String dir, String meta, File patchFile, int type, boolean useCustomPatcher) {
         //parse
         ArrayList<ShareBsDiffPatchInfo> patchList = new ArrayList<>();
 
@@ -181,7 +184,7 @@ public class BsDiffPatchInternal extends BasePatchInternal {
                     try {
                         oldStream = apk.getInputStream(rawApkFileEntry);
                         newStream = patch.getInputStream(patchFileEntry);
-                        BSPatch.patchFast(oldStream, newStream, extractedFile);
+                        FilePatchFactory.getFilePatcher(context, useCustomPatcher).patchFast(oldStream, newStream, extractedFile);
                     } finally {
                         IOHelper.closeQuietly(oldStream);
                         IOHelper.closeQuietly(newStream);

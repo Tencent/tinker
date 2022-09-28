@@ -22,11 +22,23 @@ import java.io.Serializable;
  * Created by zhangshaowen on 16/3/19.
  */
 public class PatchResult implements Serializable {
+    public static final int PATCH_TYPE_UNKNOWN = -1;
+    public static final int PATCH_TYPE_BSDIFF = 0;
+    public static final int PATCH_TYPE_CUSTOM = 1;
+
     public boolean isSuccess;
 
     public String rawPatchFilePath;
 
-    public long costTime;
+    public long totalCostTime;
+
+    public long dexCostTime;
+
+    public long soCostTime;
+
+    public long resCostTime;
+
+    public int type = PATCH_TYPE_UNKNOWN;
 
     public long dexoptTriggerTime;
 
@@ -43,7 +55,7 @@ public class PatchResult implements Serializable {
         sb.append("\nPatchResult: \n");
         sb.append("isSuccess:" + isSuccess + "\n");
         sb.append("rawPatchFilePath:" + rawPatchFilePath + "\n");
-        sb.append("costTime:" + costTime + "\n");
+        sb.append("costTime:" + totalCostTime + "\n");
         sb.append("dexoptTriggerTime:" + dexoptTriggerTime + "\n");
         sb.append("isOatGenerated:" + isOatGenerated + "\n");
         if (patchVersion != null) {

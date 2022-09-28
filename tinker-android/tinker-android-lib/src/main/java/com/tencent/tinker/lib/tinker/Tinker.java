@@ -19,6 +19,8 @@ package com.tencent.tinker.lib.tinker;
 import android.content.Context;
 import android.content.Intent;
 
+import com.tencent.tinker.lib.filepatch.AbstractFilePatch;
+import com.tencent.tinker.lib.filepatch.FilePatchFactory;
 import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
@@ -58,6 +60,7 @@ public class Tinker {
     final PatchReporter patchReporter;
     final File          patchInfoFile;
     final File          patchInfoLockFile;
+    final AbstractFilePatch customPatcher;
     final boolean       isMainProcess;
     final boolean       isPatchProcess;
     /**
@@ -77,7 +80,7 @@ public class Tinker {
 
     private Tinker(Context context, int tinkerFlags, LoadReporter loadReporter, PatchReporter patchReporter,
                    PatchListener listener, File patchDirectory, File patchInfoFile, File patchInfoLockFile,
-                   boolean isInMainProc, boolean isPatchProcess, boolean tinkerLoadVerifyFlag) {
+                   AbstractFilePatch customPatcher, boolean isInMainProc, boolean isPatchProcess, boolean tinkerLoadVerifyFlag) {
         this.context = context;
         this.listener = listener;
         this.loadReporter = loadReporter;
@@ -86,6 +89,7 @@ public class Tinker {
         this.patchDirectory = patchDirectory;
         this.patchInfoFile = patchInfoFile;
         this.patchInfoLockFile = patchInfoLockFile;
+        this.customPatcher = customPatcher;
         this.isMainProcess = isInMainProc;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
         this.isPatchProcess = isPatchProcess;
@@ -242,6 +246,10 @@ public class Tinker {
         return patchInfoLockFile;
     }
 
+    public AbstractFilePatch getCustomPatcher() {
+        return customPatcher;
+    }
+
     public PatchListener getPatchListener() {
         return listener;
     }
@@ -322,6 +330,7 @@ public class Tinker {
         private LoadReporter  loadReporter;
         private PatchReporter patchReporter;
         private PatchListener listener;
+        private AbstractFilePatch patcher;
         private File          patchDirectory;
         private File          patchInfoFile;
         private File          patchInfoLockFile;
@@ -399,6 +408,11 @@ public class Tinker {
             return this;
         }
 
+        public Builder customPatcher(AbstractFilePatch patcher) {
+            this.patcher = patcher;
+            return this;
+        }
+
         public Tinker build() {
             if (status == -1) {
                 status = ShareConstants.TINKER_ENABLE_ALL;
@@ -421,7 +435,7 @@ public class Tinker {
             }
 
             return new Tinker(context, status, loadReporter, patchReporter, listener, patchDirectory,
-                patchInfoFile, patchInfoLockFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
+                patchInfoFile, patchInfoLockFile, patcher, mainProcess, patchProcess, tinkerLoadVerifyFlag);
         }
     }
 

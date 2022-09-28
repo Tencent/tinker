@@ -22,6 +22,8 @@ import android.os.SystemClock;
 
 import com.tencent.tinker.bsdiff.BSPatch;
 import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.lib.filepatch.FilePatchFactory;
+import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -51,7 +53,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
     protected static final String TAG = "Tinker.ResDiffPatchInternal";
 
     protected static boolean tryRecoverResourceFiles(Tinker manager, ShareSecurityCheck checker, Context context,
-                                                String patchVersionDirectory, File patchFile) {
+                                                     String patchVersionDirectory, File patchFile, boolean useCustomPatcher, PatchResult patchResult) {
 
         if (!manager.isEnabledForResource()) {
             ShareTinkerLog.w(TAG, "patch recover, resource is not enabled");
@@ -65,24 +67,25 @@ public class ResDiffPatchInternal extends BasePatchInternal {
         }
 
         long begin = SystemClock.elapsedRealtime();
-        boolean result = patchResourceExtractViaResourceDiff(context, patchVersionDirectory, resourceMeta, patchFile);
+        boolean result = patchResourceExtractViaResourceDiff(context, patchVersionDirectory, resourceMeta, patchFile, useCustomPatcher);
         long cost = SystemClock.elapsedRealtime() - begin;
+        patchResult.resCostTime = cost;
         ShareTinkerLog.i(TAG, "recover resource result:%b, cost:%d", result, cost);
         return result;
     }
 
     private static boolean patchResourceExtractViaResourceDiff(Context context, String patchVersionDirectory,
-                                                               String meta, File patchFile) {
+                                                               String meta, File patchFile, boolean useCustomPatcher) {
         String dir = patchVersionDirectory + "/" + ShareConstants.RES_PATH + "/";
 
-        if (!extractResourceDiffInternals(context, dir, meta, patchFile, TYPE_RESOURCE)) {
+        if (!extractResourceDiffInternals(context, dir, meta, patchFile, TYPE_RESOURCE, useCustomPatcher)) {
             ShareTinkerLog.w(TAG, "patch recover, extractDiffInternals fail");
             return false;
         }
         return true;
     }
 
-    private static boolean extractResourceDiffInternals(Context context, String dir, String meta, File patchFile, int type) {
+    private static boolean extractResourceDiffInternals(Context context, String dir, String meta, File patchFile, int type, boolean useCustomPatcher) {
         ShareResPatchInfo resPatchInfo = new ShareResPatchInfo();
         ShareResPatchInfo.parseAllResPatchInfo(meta, resPatchInfo);
         ShareTinkerLog.i(TAG, "res dir: %s, meta: %s", dir, resPatchInfo.toString());
@@ -122,7 +125,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             String apkPath = applicationInfo.sourceDir;
 
 
-            if (!checkAndExtractResourceLargeFile(context, apkPath, directory, tempResFileDirectory, patchFile, resPatchInfo, type)) {
+            if (!checkAndExtractResourceLargeFile(context, apkPath, directory, tempResFileDirectory, patchFile, resPatchInfo, type, useCustomPatcher)) {
                 return false;
             }
 
@@ -236,7 +239,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
     }
 
     private static boolean checkAndExtractResourceLargeFile(Context context, String apkPath, File directory, File tempFileDirtory,
-                                                            File patchFile, ShareResPatchInfo resPatchInfo, int type) {
+                                                            File patchFile, ShareResPatchInfo resPatchInfo, int type, boolean useCustomPatcher) {
         long start = System.currentTimeMillis();
         Tinker manager = Tinker.with(context);
         ZipFile apkFile = null;
@@ -325,7 +328,7 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                 try {
                     oldStream = apkFile.getInputStream(baseEntry);
                     newStream = patchZipFile.getInputStream(patchEntry);
-                    BSPatch.patchFast(oldStream, newStream, largeModeInfo.file);
+                    FilePatchFactory.getFilePatcher(context, useCustomPatcher).patchFast(oldStream, newStream, largeModeInfo.file);
                 } finally {
                     IOHelper.closeQuietly(oldStream);
                     IOHelper.closeQuietly(newStream);

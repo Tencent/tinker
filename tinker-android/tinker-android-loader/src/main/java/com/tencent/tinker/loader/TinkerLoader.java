@@ -112,6 +112,9 @@ public class TinkerLoader extends AbstractTinkerLoader {
         final boolean isProtectedApp = patchInfo.isProtectedApp;
         resultIntent.putExtra(ShareIntentUtil.INTENT_IS_PROTECTED_APP, isProtectedApp);
 
+        final boolean useCustomPatch = patchInfo.useCustomPatch;
+        resultIntent.putExtra(ShareIntentUtil.INTENT_USE_CUSTOM_PATCH, useCustomPatch);
+
         String oldVersion = patchInfo.oldVersion;
         String newVersion = patchInfo.newVersion;
         String oatDex = patchInfo.oatDir;

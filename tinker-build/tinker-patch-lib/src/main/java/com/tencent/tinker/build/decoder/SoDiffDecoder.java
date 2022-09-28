@@ -16,9 +16,9 @@
 
 package com.tencent.tinker.build.decoder;
 
-import com.tencent.tinker.bsdiff.BSDiff;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
+import com.tencent.tinker.build.util.DiffFactory;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.MD5;
@@ -31,11 +31,11 @@ import java.io.IOException;
 /**
  * Created by zhangshaowen on 16/2/27.
  */
-public class BsDiffDecoder extends BaseDecoder {
+public class SoDiffDecoder extends BaseDecoder {
     private final InfoWriter logWriter;
     private final InfoWriter metaWriter;
 
-    public BsDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
+    public SoDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
         super(config);
 
         if (metaPath != null) {
@@ -65,10 +65,10 @@ public class BsDiffDecoder extends BaseDecoder {
         }
         //new add file
         String newMd5 = MD5.getMD5(newFile);
-        File bsDiffFile = getOutputPath(newFile).toFile();
+        File diffFile = getOutputPath(newFile).toFile();
 
         if (oldFile == null || !oldFile.exists()) {
-            FileOperation.copyFileUsingStream(newFile, bsDiffFile);
+            FileOperation.copyFileUsingStream(newFile, diffFile);
             writeLogFiles(newFile, null, null, newMd5);
             return true;
         }
@@ -78,7 +78,7 @@ public class BsDiffDecoder extends BaseDecoder {
             return false;
         }
         if (oldFile.length() == 0 || newFile.length() == 0) {
-            FileOperation.copyFileUsingStream(newFile, bsDiffFile);
+            FileOperation.copyFileUsingStream(newFile, diffFile);
             writeLogFiles(newFile, null, null, newMd5);
             return true;
         }
@@ -90,15 +90,16 @@ public class BsDiffDecoder extends BaseDecoder {
             return false;
         }
 
-        if (!bsDiffFile.getParentFile().exists()) {
-            bsDiffFile.getParentFile().mkdirs();
+        if (!diffFile.getParentFile().exists()) {
+            diffFile.getParentFile().mkdirs();
         }
-        BSDiff.bsdiff(oldFile, newFile, bsDiffFile);
 
-        if (Utils.checkBsDiffFileSize(bsDiffFile, newFile)) {
-            writeLogFiles(newFile, oldFile, bsDiffFile, newMd5);
+        diffFile(oldFile, newFile, diffFile);
+
+        if (Utils.checkBsDiffFileSize(diffFile, newFile)) {
+            writeLogFiles(newFile, oldFile, diffFile, newMd5);
         } else {
-            FileOperation.copyFileUsingStream(newFile, bsDiffFile);
+            FileOperation.copyFileUsingStream(newFile, diffFile);
             writeLogFiles(newFile, null, null, newMd5);
         }
         return true;
@@ -146,5 +147,9 @@ public class BsDiffDecoder extends BaseDecoder {
 
             logWriter.writeLineToInfoFile(log);
         }
+    }
+
+    private void diffFile(File oldFile, File newFile, File diffFile) throws IOException {
+        DiffFactory.diffFile(config, oldFile, newFile, diffFile);
     }
 }

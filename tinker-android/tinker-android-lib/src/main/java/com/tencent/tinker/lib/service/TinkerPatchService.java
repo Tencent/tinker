@@ -233,8 +233,10 @@ public class TinkerPatchService extends IntentService {
 
             patchResult.isSuccess = result;
             patchResult.rawPatchFilePath = path;
-            patchResult.costTime = cost;
+            patchResult.totalCostTime = cost;
+            patchResult.type = tinker.getCustomPatcher() == null ? PatchResult.PATCH_TYPE_BSDIFF : PatchResult.PATCH_TYPE_CUSTOM;
             patchResult.e = e;
+
 
             unmarkRunning(context);
             sIsPatchApplying.set(false);

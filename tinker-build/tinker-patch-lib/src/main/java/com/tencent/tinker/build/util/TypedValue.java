@@ -46,6 +46,8 @@ public class TypedValue {
     // Please keep it synchronized with the one defined in ShareConstants.
     public static final String PKGMETA_KEY_IS_PROTECTED_APP = "is_protected_app";
 
+    public static final String PKGMETA_KEY_USE_CUSTOM_FILE_PATCH = "use_custom_file_patch";
+
     public static final String PACKAGE_META_FILE = "package_meta.txt";
 
     // Please keep it synchronized with the other one defined in 'EnvConsts' class

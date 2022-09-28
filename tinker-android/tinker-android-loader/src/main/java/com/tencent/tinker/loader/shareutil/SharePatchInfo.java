@@ -36,6 +36,7 @@ public class SharePatchInfo {
     public static final String OLD_VERSION                 = ShareConstants.OLD_VERSION;
     public static final String NEW_VERSION                 = ShareConstants.NEW_VERSION;
     public static final String IS_PROTECTED_APP            = ShareConstants.PKGMETA_KEY_IS_PROTECTED_APP;
+    public static final String USE_CUSTOM_FILE_PATCH       = ShareConstants.PKGMETA_KEY_USE_CUSTOM_FILE_PATCH;
     public static final String VERSION_TO_REMOVE           = "version_to_remove";
     public static final String FINGER_PRINT                = "print";
     public static final String OAT_DIR                     = "dir";
@@ -44,12 +45,13 @@ public class SharePatchInfo {
     public String oldVersion;
     public String newVersion;
     public boolean isProtectedApp;
+    public boolean useCustomPatch;
     public String versionToRemove;
     public String fingerPrint;
     public String oatDir;
     public boolean isRemoveInterpretOATDir;
 
-    public SharePatchInfo(String oldVer, String newVer, boolean isProtectedApp, String versionToRemove, String finger, String oatDir, boolean isRemoveInterpretOATDir) {
+    public SharePatchInfo(String oldVer, String newVer, boolean isProtectedApp, boolean useCustomPatch, String versionToRemove, String finger, String oatDir, boolean isRemoveInterpretOATDir) {
         // TODO Auto-generated constructor stub
         this.oldVersion = oldVer;
         this.newVersion = newVer;
@@ -124,6 +126,7 @@ public class SharePatchInfo {
         String newVer = null;
         String lastFingerPrint = null;
         boolean isProtectedApp = false;
+        boolean useCustomPatch = false;
         String versionToRemove = null;
         String oatDir = null;
         boolean isRemoveInterpretOATDir = false;
@@ -138,6 +141,8 @@ public class SharePatchInfo {
                 newVer = properties.getProperty(NEW_VERSION);
                 final String isProtectedAppStr = properties.getProperty(IS_PROTECTED_APP);
                 isProtectedApp = (isProtectedAppStr != null && !isProtectedAppStr.isEmpty() && !"0".equals(isProtectedAppStr));
+                final String useCustomPatchStr = properties.getProperty(USE_CUSTOM_FILE_PATCH);
+                useCustomPatch = (useCustomPatchStr != null && !useCustomPatchStr.isEmpty() && !"0".equals(useCustomPatchStr));
                 versionToRemove = properties.getProperty(VERSION_TO_REMOVE);
                 lastFingerPrint = properties.getProperty(FINGER_PRINT);
                 oatDir = properties.getProperty(OAT_DIR);
@@ -163,7 +168,7 @@ public class SharePatchInfo {
         }
 
         if (isReadPatchSuccessful) {
-            return new SharePatchInfo(oldVer, newVer, isProtectedApp, versionToRemove, lastFingerPrint, oatDir, isRemoveInterpretOATDir);
+            return new SharePatchInfo(oldVer, newVer, isProtectedApp, useCustomPatch, versionToRemove, lastFingerPrint, oatDir, isRemoveInterpretOATDir);
         }
 
         return null;
@@ -214,6 +219,7 @@ public class SharePatchInfo {
             newProperties.put(OLD_VERSION, info.oldVersion);
             newProperties.put(NEW_VERSION, info.newVersion);
             newProperties.put(IS_PROTECTED_APP, (info.isProtectedApp ? "1" : "0"));
+            newProperties.put(USE_CUSTOM_FILE_PATCH, (info.useCustomPatch ? "1" : "0"));
             newProperties.put(VERSION_TO_REMOVE, info.versionToRemove);
             newProperties.put(FINGER_PRINT, info.fingerPrint);
             newProperties.put(OAT_DIR, info.oatDir);

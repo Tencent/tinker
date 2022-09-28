@@ -19,6 +19,8 @@ package com.tencent.tinker.lib.tinker;
 import android.content.Context;
 
 import com.tencent.tinker.entry.ApplicationLike;
+import com.tencent.tinker.lib.filepatch.AbstractFilePatch;
+import com.tencent.tinker.lib.filepatch.FilePatchFactory;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.reporter.LoadReporter;
@@ -66,6 +68,23 @@ public class TinkerInstaller {
             .listener(listener)
             .patchReporter(patchReporter)
             .tinkerLoadVerifyFlag(applicationLike.getTinkerLoadVerifyFlag()).build();
+
+        Tinker.create(tinker);
+        tinker.install(applicationLike.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor);
+        return tinker;
+    }
+
+    public static Tinker install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter,
+                                 PatchListener listener, Class<? extends AbstractResultService> resultServiceClass,
+                                 AbstractPatch upgradePatchProcessor, AbstractFilePatch filePatch) {
+
+        Tinker tinker = new Tinker.Builder(applicationLike.getApplication())
+                .tinkerFlags(applicationLike.getTinkerFlags())
+                .loadReport(loadReporter)
+                .listener(listener)
+                .patchReporter(patchReporter)
+                .customPatcher(filePatch)
+                .tinkerLoadVerifyFlag(applicationLike.getTinkerLoadVerifyFlag()).build();
 
         Tinker.create(tinker);
         tinker.install(applicationLike.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor);

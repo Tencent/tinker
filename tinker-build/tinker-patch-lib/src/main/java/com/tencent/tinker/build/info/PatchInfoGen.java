@@ -30,6 +30,8 @@ import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.Properties;
 
+import tinker.net.dongliu.apk.parser.utils.Utils;
+
 /**
  * Created by zhangshaowen on 16/3/8.
  */
@@ -69,9 +71,15 @@ public class PatchInfoGen {
         config.mPackageFields.put(TypedValue.PKGMETA_KEY_IS_PROTECTED_APP, config.mIsProtectedApp ? "1" : "0");
     }
 
+    private void addFilePatchFlag() {
+        // If use custom file patcher
+        config.mPackageFields.put(TypedValue.PKGMETA_KEY_USE_CUSTOM_FILE_PATCH, Utils.isEmpty(config.mCustomDiffPath) ? "0" : "1" );
+    }
+
     public void gen() throws Exception {
         addTinkerID();
         addProtectedAppFlag();
+        addFilePatchFlag();
 
         Properties newProperties = new Properties();
         for (String key : config.mPackageFields.keySet()) {

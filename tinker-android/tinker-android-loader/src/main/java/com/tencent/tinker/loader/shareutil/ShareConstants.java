@@ -37,6 +37,8 @@ public class ShareConstants {
 
     // Please keep it synchronized with the one defined in TypedValue.
     public static final String PKGMETA_KEY_IS_PROTECTED_APP = "is_protected_app";
+    // Please keep it synchronized with the one defined in TypedValue.
+    public static final String PKGMETA_KEY_USE_CUSTOM_FILE_PATCH = "use_custom_file_patch";
 
     public static final String OLD_VERSION     = "old";
     public static final String NEW_VERSION     = "new";
