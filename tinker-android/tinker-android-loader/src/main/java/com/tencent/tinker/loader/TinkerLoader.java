@@ -92,7 +92,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
         //tinker/patch.info
         File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectoryPath);
-
         //check patch info file whether exist
         if (!patchInfoFile.exists()) {
             ShareTinkerLog.w(TAG, "tryLoadPatchFiles:patch info not exist:" + patchInfoFile.getAbsolutePath());
@@ -102,7 +101,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
         //old = 641e634c5b8f1649c75caf73794acbdf
         //new = 2c150d8560334966952678930ba67fa8
         File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectoryPath);
-
         patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
         if (patchInfo == null) {
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_CORRUPTED);
@@ -173,7 +171,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
 
                         String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
                         ShareTinkerInternals.killProcessExceptMain(app);
-                        SharePatchFileUtil.deleteDir(patchVersionDirFullPath);
+                        SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath);
                     }
                 } else {
                     patchInfo.versionToRemove = "";
@@ -244,7 +242,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
         }
 
         ShareSecurityCheck securityCheck = new ShareSecurityCheck(app);
-
         int returnCode = ShareTinkerInternals.checkTinkerPackage(app, tinkerFlag, patchVersionFile, securityCheck);
         if (returnCode != ShareConstants.ERROR_PACKAGE_CHECK_OK) {
             ShareTinkerLog.w(TAG, "tryLoadPatchFiles:checkTinkerPackage");
