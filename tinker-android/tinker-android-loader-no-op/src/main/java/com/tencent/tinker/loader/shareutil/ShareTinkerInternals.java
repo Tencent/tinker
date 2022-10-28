@@ -28,11 +28,13 @@ import android.os.Build;
 import android.text.TextUtils;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -104,14 +106,41 @@ public class ShareTinkerInternals {
         return Build.VERSION.SDK_INT > 25;
     }
 
-    public static String getCurrentInstructionSet() throws Exception {
+    public static String getCurrentInstructionSet() {
         if (currentInstructionSet != null) {
             return currentInstructionSet;
         }
-        Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
-        Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
 
-        currentInstructionSet = (String) currentGet.invoke(null);
+        try {
+            Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
+            Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
+            currentGet.setAccessible(true);
+            currentInstructionSet = (String) currentGet.invoke(null);
+        } catch (Throwable ignored) {
+            switch (Build.CPU_ABI) {
+                case "armeabi":
+                case "armeabi-v7a":
+                    currentInstructionSet = "arm";
+                    break;
+                case "arm64-v8a":
+                    currentInstructionSet = "arm64";
+                    break;
+                case "x86":
+                    currentInstructionSet = "x86";
+                    break;
+                case "x86_64":
+                    currentInstructionSet = "x86_64";
+                    break;
+                case "mips":
+                    currentInstructionSet = "mips";
+                    break;
+                case "mips64":
+                    currentInstructionSet = "mips64";
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported abi: " + Build.CPU_ABI);
+            }
+        }
         ShareTinkerLog.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
         return currentInstructionSet;
     }
@@ -484,11 +513,42 @@ public class ShareTinkerInternals {
 
     @SuppressLint("NewApi")
     private static String getProcessNameInternal(final Context context) {
-        if (ShareTinkerInternals.isNewerOrEqualThanVersion(28, true)) {
+        if (isNewerOrEqualThanVersion(28, true)) {
             final String result = Application.getProcessName();
             if (!TextUtils.isEmpty(result)) {
                 return result;
             }
+        }
+
+        // The 'currentProcess' method only exists on api 18 and newer systems.
+        if (isNewerOrEqualThanVersion(18, true)) {
+            try {
+                final Class<?> activityThreadClazz = Class.forName("android.app.ActivityThread");
+                final Method currentProcessMethod = ShareReflectUtil.findMethod(activityThreadClazz, "currentProcessName");
+                currentProcessMethod.setAccessible(true);
+                final String result = (String) currentProcessMethod.invoke(null);
+                if (result != null && !result.isEmpty()) {
+                    return result;
+                }
+            } catch (Throwable thr) {
+                ShareTinkerLog.e(TAG, "getProcessNameInternal reflect activity thread exception:" + thr.getMessage());
+            }
+        }
+
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/self/cmdline"), StandardCharsets.US_ASCII));
+            String result = br.readLine();
+            if (result != null) {
+                result = result.trim();
+                if (!result.isEmpty()) {
+                    return result;
+                }
+            }
+        } catch (Throwable thr) {
+            ShareTinkerLog.e(TAG, "getProcessNameInternal parse cmdline exception:" + thr.getMessage());
+        } finally {
+            SharePatchFileUtil.closeQuietly(br);
         }
 
         if (context != null) {
@@ -506,24 +566,9 @@ public class ShareTinkerInternals {
                         }
                     }
                 }
-            } catch (Throwable ignored) {
-                // Ignored.
+            } catch (Throwable thr) {
+                ShareTinkerLog.e(TAG, "getProcessNameInternal getRunningAppProcesses exception:" + thr.getMessage());
             }
-        }
-
-        final byte[] buf = new byte[2048];
-        InputStream in = null;
-        try {
-            in = new BufferedInputStream(new FileInputStream("/proc/self/cmdline"));
-            int len = in.read(buf);
-            while (len > 0 && (buf[len - 1] <= 0 || buf[len - 1] == 10 || buf[len - 1] == 13)) --len;
-            if (len > 0) {
-                return new String(buf, StandardCharsets.US_ASCII);
-            }
-        } catch (Throwable thr) {
-            ShareTinkerLog.e(TAG, "getProcessNameInternal parse cmdline exception:" + thr.getMessage());
-        } finally {
-            SharePatchFileUtil.closeQuietly(in);
         }
 
         return null;

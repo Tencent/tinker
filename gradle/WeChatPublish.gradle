@@ -166,7 +166,7 @@ class WeChatPublishExtension {
     }
 
     private void checkVersion() {
-        if (!(fullVersion ==~ /\d+\.\d+(?:\.\d+)?(?:\.\d+)?(?:-[\w-]+)?/)) {
+        if (!(fullVersion ==~ /\d+\.\d+(?:\.\d+)?(?:\.\d+)?(?:\.\d+)?(?:-[\w-]+)?/)) {
             def message = "Invalid version: ${fullVersion}"
             if (!isSnapshot)
                 throw new GradleException(message)
