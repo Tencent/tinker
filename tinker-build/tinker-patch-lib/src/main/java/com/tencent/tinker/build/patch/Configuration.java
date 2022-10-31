@@ -268,6 +268,7 @@ public class Configuration {
 
         mUseSignAPk = param.useSign;
         mCustomDiffPath = param.customDiffPath;
+        mCustomDiffPathArgs = param.customDiffPathArgs;
         setSignData(param.signFile, param.keypass, param.storealias, param.storepass);
 
         FileOperation.cleanDir(new File(mOutFolder));

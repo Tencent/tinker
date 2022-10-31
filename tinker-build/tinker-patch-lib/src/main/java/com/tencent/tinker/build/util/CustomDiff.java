@@ -15,7 +15,7 @@ import java.util.List;
 public class CustomDiff {
 
     public static boolean checkHasCustomDiff(Configuration config) {
-        return config.mCustomDiffPath != null && !config.mCustomDiffPath.trim().isEmpty();
+        return config.mCustomDiffPath != null && !config.mCustomDiffPath.trim().isEmpty() && config.mCustomDiffPathArgs != null && !config.mCustomDiffPathArgs.isEmpty();
     }
 
     public static void diffFile(String mCustomDiffPath,String mCustomDiffPathArgs, File oldFile, File newFile, File diffFile) throws IOException {
