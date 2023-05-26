@@ -13,13 +13,11 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.patch;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.SystemClock;
-
 import com.tencent.tinker.bsdiff.BSPatch;
 import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.filepatch.FilePatchFactory;
@@ -31,7 +29,6 @@ import com.tencent.tinker.loader.shareutil.ShareBsDiffPatchInfo;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -42,17 +39,15 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/21.
  */
 public class SoDiffPatchInternal extends BasePatchInternal {
+
     private static final String TAG = "Tinker.BsDiffPatchInternal";
 
-    protected static boolean tryRecoverLibraryFiles(Tinker manager, ShareSecurityCheck checker, Context context,
-                                                    String patchVersionDirectory, File patchFile, boolean useCustomPatcher, PatchResult patchResult) {
-
+    protected static boolean tryRecoverLibraryFiles(Tinker manager, ShareSecurityCheck checker, Context context, String patchVersionDirectory, File patchFile, boolean useCustomPatcher, PatchResult patchResult) {
         if (!manager.isEnabledForNativeLib()) {
             ShareTinkerLog.w(TAG, "patch recover, library is not enabled");
             return true;
         }
         String libMeta = checker.getMetaContentMap().get(SO_META_FILE);
-
         if (libMeta == null) {
             ShareTinkerLog.w(TAG, "patch recover, library is not contained");
             return true;
@@ -65,7 +60,6 @@ public class SoDiffPatchInternal extends BasePatchInternal {
         return result;
     }
 
-
     private static boolean patchLibraryExtractViaBsDiff(Context context, String patchVersionDirectory, String meta, File patchFile, boolean useCustomPatcher) {
         String dir = patchVersionDirectory + "/" + SO_PATH + "/";
         return extractBsDiffInternals(context, dir, meta, patchFile, TYPE_LIBRARY, useCustomPatcher);
@@ -74,14 +68,11 @@ public class SoDiffPatchInternal extends BasePatchInternal {
     private static boolean extractBsDiffInternals(Context context, String dir, String meta, File patchFile, int type, boolean useCustomPatcher) {
         //parse
         ArrayList<ShareBsDiffPatchInfo> patchList = new ArrayList<>();
-
         ShareBsDiffPatchInfo.parseDiffPatchInfo(meta, patchList);
-
         if (patchList.isEmpty()) {
             ShareTinkerLog.w(TAG, "extract patch list is empty! type:%s:", ShareTinkerInternals.getTypeString(type));
             return true;
         }
-
         File directory = new File(dir);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -100,10 +91,8 @@ public class SoDiffPatchInternal extends BasePatchInternal {
             String apkPath = applicationInfo.sourceDir;
             apk = new ZipFile(apkPath);
             patch = new ZipFile(patchFile);
-
             for (ShareBsDiffPatchInfo info : patchList) {
                 long start = System.currentTimeMillis();
-
                 final String infoPath = info.path;
                 String patchRealPath;
                 if (infoPath.equals("")) {
@@ -118,11 +107,8 @@ public class SoDiffPatchInternal extends BasePatchInternal {
                     return false;
                 }
                 String middle;
-
                 middle = info.path + "/" + info.name;
-
                 File extractedFile = new File(dir + middle);
-
                 //check file whether already exist
                 if (extractedFile.exists()) {
                     if (fileMd5.equals(SharePatchFileUtil.getMD5(extractedFile))) {
@@ -136,18 +122,14 @@ public class SoDiffPatchInternal extends BasePatchInternal {
                 } else {
                     extractedFile.getParentFile().mkdirs();
                 }
-
-
                 String patchFileMd5 = info.patchMd5;
                 //it is a new file, just copy
                 ZipEntry patchFileEntry = patch.getEntry(patchRealPath);
-
                 if (patchFileEntry == null) {
                     ShareTinkerLog.w(TAG, "patch entry is null. path:" + patchRealPath);
                     manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.name, type);
                     return false;
                 }
-
                 if (patchFileMd5.equals("0")) {
                     if (!extract(patch, patchFileEntry, extractedFile, fileMd5, false)) {
                         ShareTinkerLog.w(TAG, "Failed to extract file " + extractedFile.getPath());
@@ -161,17 +143,13 @@ public class SoDiffPatchInternal extends BasePatchInternal {
                         manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
                         return false;
                     }
-
                     ZipEntry rawApkFileEntry = apk.getEntry(patchRealPath);
-
                     if (rawApkFileEntry == null) {
                         ShareTinkerLog.w(TAG, "apk entry is null. path:" + patchRealPath);
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.name, type);
                         return false;
                     }
-
                     String rawApkCrc = info.rawCrc;
-
                     //check source crc instead of md5 for faster
                     String rawEntryCrc = String.valueOf(rawApkFileEntry.getCrc());
                     if (!rawEntryCrc.equals(rawApkCrc)) {
@@ -189,7 +167,6 @@ public class SoDiffPatchInternal extends BasePatchInternal {
                         IOHelper.closeQuietly(oldStream);
                         IOHelper.closeQuietly(newStream);
                     }
-
                     //go go go bsdiff get the
                     if (!SharePatchFileUtil.verifyFileMd5(extractedFile, fileMd5)) {
                         ShareTinkerLog.w(TAG, "Failed to recover diff file " + extractedFile.getPath());
@@ -197,11 +174,9 @@ public class SoDiffPatchInternal extends BasePatchInternal {
                         SharePatchFileUtil.safeDeleteFile(extractedFile);
                         return false;
                     }
-                    ShareTinkerLog.w(TAG, "success recover bsdiff file: %s, use time: %d",
-                        extractedFile.getPath(), (System.currentTimeMillis() - start));
+                    ShareTinkerLog.w(TAG, "success recover bsdiff file: %s, use time: %d", extractedFile.getPath(), (System.currentTimeMillis() - start));
                 }
             }
-
         } catch (Throwable e) {
             throw new TinkerRuntimeException("patch " + ShareTinkerInternals.getTypeString(type) + " extract failed (" + e.getMessage() + ").", e);
         } finally {
@@ -210,5 +185,4 @@ public class SoDiffPatchInternal extends BasePatchInternal {
         }
         return true;
     }
-
 }

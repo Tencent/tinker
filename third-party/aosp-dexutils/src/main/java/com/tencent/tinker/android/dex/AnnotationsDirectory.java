@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section;
@@ -26,6 +25,7 @@ import com.tencent.tinker.android.dex.util.HashCodeHelper;
  * Structure of AnnotationsDirectory element in Dex file.
  */
 public class AnnotationsDirectory extends Section.Item<AnnotationsDirectory> {
+
     public int classAnnotationsOffset;
 
     /**
@@ -46,11 +46,7 @@ public class AnnotationsDirectory extends Section.Item<AnnotationsDirectory> {
      */
     public int[][] parameterAnnotations;
 
-    public AnnotationsDirectory(
-            int off,
-            int classAnnotationsOffset,
-            int[][] fieldAnnotations, int[][] methodAnnotations, int[][] parameterAnnotations
-    ) {
+    public AnnotationsDirectory(int off, int classAnnotationsOffset, int[][] fieldAnnotations, int[][] methodAnnotations, int[][] parameterAnnotations) {
         super(off);
         this.classAnnotationsOffset = classAnnotationsOffset;
         this.fieldAnnotations = fieldAnnotations;
@@ -63,78 +59,63 @@ public class AnnotationsDirectory extends Section.Item<AnnotationsDirectory> {
         if (classAnnotationsOffset != other.classAnnotationsOffset) {
             return CompareUtils.uCompare(classAnnotationsOffset, other.classAnnotationsOffset);
         }
-
         int fieldsSize = fieldAnnotations.length;
         int methodsSize = methodAnnotations.length;
         int parameterListSize = parameterAnnotations.length;
         int oFieldsSize = other.fieldAnnotations.length;
         int oMethodsSize = other.methodAnnotations.length;
         int oParameterListSize = other.parameterAnnotations.length;
-
         if (fieldsSize != oFieldsSize) {
             return CompareUtils.sCompare(fieldsSize, oFieldsSize);
         }
-
         if (methodsSize != oMethodsSize) {
             return CompareUtils.sCompare(methodsSize, oMethodsSize);
         }
-
         if (parameterListSize != oParameterListSize) {
             return CompareUtils.sCompare(parameterListSize, oParameterListSize);
         }
-
         for (int i = 0; i < fieldsSize; ++i) {
             int fieldIdx = fieldAnnotations[i][0];
             int annotationOffset = fieldAnnotations[i][1];
             int othFieldIdx = other.fieldAnnotations[i][0];
             int othAnnotationOffset = other.fieldAnnotations[i][1];
-
             if (fieldIdx != othFieldIdx) {
                 return CompareUtils.uCompare(fieldIdx, othFieldIdx);
             }
-
             if (annotationOffset != othAnnotationOffset) {
                 return CompareUtils.sCompare(annotationOffset, othAnnotationOffset);
             }
         }
-
         for (int i = 0; i < methodsSize; ++i) {
             int methodIdx = methodAnnotations[i][0];
             int annotationOffset = methodAnnotations[i][1];
             int othMethodIdx = other.methodAnnotations[i][0];
             int othAnnotationOffset = other.methodAnnotations[i][1];
-
             if (methodIdx != othMethodIdx) {
                 return CompareUtils.uCompare(methodIdx, othMethodIdx);
             }
-
             if (annotationOffset != othAnnotationOffset) {
                 return CompareUtils.sCompare(annotationOffset, othAnnotationOffset);
             }
         }
-
         for (int i = 0; i < parameterListSize; ++i) {
             int methodIdx = parameterAnnotations[i][0];
             int annotationOffset = parameterAnnotations[i][1];
             int othMethodIdx = other.parameterAnnotations[i][0];
             int othAnnotationOffset = other.parameterAnnotations[i][1];
-
             if (methodIdx != othMethodIdx) {
                 return CompareUtils.uCompare(methodIdx, othMethodIdx);
             }
-
             if (annotationOffset != othAnnotationOffset) {
                 return CompareUtils.sCompare(annotationOffset, othAnnotationOffset);
             }
         }
-
         return 0;
     }
 
     @Override
     public int hashCode() {
-        return HashCodeHelper.hash(classAnnotationsOffset, fieldAnnotations, methodAnnotations,
-                parameterAnnotations);
+        return HashCodeHelper.hash(classAnnotationsOffset, fieldAnnotations, methodAnnotations, parameterAnnotations);
     }
 
     @Override

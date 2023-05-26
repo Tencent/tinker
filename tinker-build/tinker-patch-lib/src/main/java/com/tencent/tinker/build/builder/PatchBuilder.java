@@ -13,16 +13,13 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.builder;
-
 
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.commons.util.IOHelper;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,12 +33,18 @@ import java.util.ArrayList;
  * @author zhangshaowen
  */
 public class PatchBuilder {
+
     private static final String PATCH_NAME = "patch";
+
     private final Configuration config;
-    private       File          unSignedApk;
-    private       File          signedApk;
-    private       File          signedWith7ZipApk;
-    private       File          sevenZipOutPutDir;
+
+    private File unSignedApk;
+
+    private File signedApk;
+
+    private File signedWith7ZipApk;
+
+    private File sevenZipOutPutDir;
 
     public PatchBuilder(Configuration config) {
         this.config = config;
@@ -54,8 +57,7 @@ public class PatchBuilder {
     public void buildPatch() throws Exception {
         final File resultDir = config.mTempResultDir;
         if (!resultDir.exists()) {
-            throw new IOException(String.format(
-                "Missing patch unzip files, path=%s\n", resultDir.getAbsolutePath()));
+            throw new IOException(String.format("Missing patch unzip files, path=%s\n", resultDir.getAbsolutePath()));
         }
         //no file change
         if (resultDir.listFiles().length == 0) {
@@ -63,9 +65,7 @@ public class PatchBuilder {
         }
         generateUnsignedApk(unSignedApk);
         signApk(unSignedApk, signedApk);
-
         use7zApk(signedApk, signedWith7ZipApk, sevenZipOutPutDir);
-
         if (!signedApk.exists()) {
             Logger.e("Result: final unsigned patch result: %s, size=%d", unSignedApk.getAbsolutePath(), unSignedApk.length());
         } else {
@@ -75,15 +75,10 @@ public class PatchBuilder {
                 long length7zip = signedWith7ZipApk.length();
                 Logger.e("Result: final signed with 7zip patch result: %s, size=%d", signedWith7ZipApk.getAbsolutePath(), length7zip);
                 if (length7zip > length) {
-                    Logger.e("Warning: %s is bigger than %s %d byte, you should choose %s at these time!",
-                        signedWith7ZipApk.getName(),
-                        signedApk.getName(),
-                        (length7zip - length),
-                        signedApk.getName());
+                    Logger.e("Warning: %s is bigger than %s %d byte, you should choose %s at these time!", signedWith7ZipApk.getName(), signedApk.getName(), (length7zip - length), signedApk.getName());
                 }
             }
         }
-
     }
 
     private String getSignatureAlgorithm() throws Exception {
@@ -102,8 +97,7 @@ public class PatchBuilder {
             } else if (keyAlgorithm.equalsIgnoreCase("EC")) {
                 signatureAlgorithm = "SHA1withECDSA";
             } else {
-                throw new RuntimeException("private key is not a DSA or "
-                        + "RSA key");
+                throw new RuntimeException("private key is not a DSA or " + "RSA key");
             }
             return signatureAlgorithm;
         } finally {
@@ -123,7 +117,6 @@ public class PatchBuilder {
             Logger.d("Signing apk: %s", output.getName());
             String signatureAlgorithm = getSignatureAlgorithm();
             Logger.d("Signing key algorithm is %s", signatureAlgorithm);
-
             if (output.exists()) {
                 output.delete();
             }
@@ -144,7 +137,6 @@ public class PatchBuilder {
             command.add(output.getAbsolutePath());
             command.add(input.getAbsolutePath());
             command.add(config.mStoreAlias);
-
             Process process = new ProcessBuilder(command).start();
             process.waitFor();
             process.destroy();
@@ -162,15 +154,11 @@ public class PatchBuilder {
         Logger.d("Generate unsigned apk: %s", output.getName());
         final File tempOutDir = config.mTempResultDir;
         if (!tempOutDir.exists()) {
-            throw new IOException(String.format(
-                "Missing patch unzip files, path=%s\n", tempOutDir.getAbsolutePath()));
+            throw new IOException(String.format("Missing patch unzip files, path=%s\n", tempOutDir.getAbsolutePath()));
         }
         FileOperation.zipInputDir(tempOutDir, output, null);
-
         if (!output.exists()) {
-            throw new IOException(String.format(
-                "can not found the unsigned apk file path=%s",
-                output.getAbsolutePath()));
+            throw new IOException(String.format("can not found the unsigned apk file path=%s", output.getAbsolutePath()));
         }
     }
 
@@ -179,14 +167,10 @@ public class PatchBuilder {
             return;
         }
         if (!inputSignedFile.exists()) {
-            throw new IOException(
-                String.format("can not found the signed apk file to 7z, if you want to use 7z, "
-                    + "you must fill the sign data in the config file path=%s", inputSignedFile.getAbsolutePath())
-            );
+            throw new IOException(String.format("can not found the signed apk file to 7z, if you want to use 7z, " + "you must fill the sign data in the config file path=%s", inputSignedFile.getAbsolutePath()));
         }
         Logger.d("Try use 7za to compress the patch file: %s, will cost much more time", out7zipFile.getName());
         Logger.d("Current 7za path:%s", config.mSevenZipPath);
-
         FileOperation.unZipAPk(inputSignedFile.getAbsolutePath(), tempFilesDir.getAbsolutePath());
         //7zip may not enable
         if (!FileOperation.sevenZipInputDir(tempFilesDir, out7zipFile, config)) {
@@ -194,9 +178,7 @@ public class PatchBuilder {
         }
         FileOperation.deleteDir(tempFilesDir);
         if (!out7zipFile.exists()) {
-            throw new IOException(String.format(
-                "[use7zApk]7z repackage signed apk fail,you must install 7z command line version first, linux: p7zip, window: 7za, path=%s",
-                out7zipFile.getAbsolutePath()));
+            throw new IOException(String.format("[use7zApk]7z repackage signed apk fail,you must install 7z command line version first, linux: p7zip, window: 7za, path=%s", out7zipFile.getAbsolutePath()));
         }
     }
 }

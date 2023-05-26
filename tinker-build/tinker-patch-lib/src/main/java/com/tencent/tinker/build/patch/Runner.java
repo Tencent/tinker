@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.patch;
 
 import com.tencent.tinker.build.builder.PatchBuilder;
@@ -21,20 +20,22 @@ import com.tencent.tinker.build.decoder.ApkDecoder;
 import com.tencent.tinker.build.info.PatchInfo;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TinkerPatchException;
-
 import java.io.IOException;
 
 /**
  * Created by zhangshaowen on 2/26/16.
  */
 public class Runner {
+
     public static final int ERRNO_ERRORS = 1;
-    public static final int ERRNO_USAGE  = 2;
+
+    public static final int ERRNO_USAGE = 2;
 
     private final boolean mIsGradleEnv;
 
-    protected static long          mBeginTime;
-    protected        Configuration mConfig;
+    protected static long mBeginTime;
+
+    protected Configuration mConfig;
 
     public Runner(boolean isGradleEnv) {
         mIsGradleEnv = isGradleEnv;
@@ -60,7 +61,6 @@ public class Runner {
 
     protected void tinkerPatch() {
         Logger.d("-----------------------Tinker patch begin-----------------------");
-
         Logger.d(mConfig.toString());
         try {
             //gen patch
@@ -68,19 +68,15 @@ public class Runner {
             decoder.onAllPatchesStart();
             decoder.patch(mConfig.mOldApkFile, mConfig.mNewApkFile);
             decoder.onAllPatchesEnd();
-
             //gen meta file and version file
             PatchInfo info = new PatchInfo(mConfig);
             info.gen();
-
             //build patch
             PatchBuilder builder = new PatchBuilder(mConfig);
             builder.buildPatch();
-
         } catch (Throwable e) {
             goToError(e, ERRNO_USAGE);
         }
-
         Logger.d("Tinker patch done, total time cost: %fs", diffTimeFromBegin());
         Logger.d("Tinker patch done, you can go to file to find the output %s", mConfig.mOutFolder);
         Logger.d("-----------------------Tinker patch end-------------------------");
@@ -109,5 +105,4 @@ public class Runner {
         long end = System.currentTimeMillis();
         return (end - mBeginTime) / 1000.0;
     }
-
 }

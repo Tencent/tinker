@@ -25,9 +25,7 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.tencent.tinker.bsdiff;
-
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -40,7 +38,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.zip.GZIPInputStream;
-
 
 /**
  * Java Binary patcher (based on bspatch by Joe Desbonnet, joe@galway.net (JBPatch))
@@ -70,7 +67,6 @@ public class BSPatch {
     /**
      * BSPatch using less memory size.
      * Memory size = diffFile size + max block size
-     *
      */
     public static int patchLessMemory(RandomAccessFile oldFile, File newFile, File diffFile, int extLen) throws IOException {
         if (oldFile == null || oldFile.length() <= 0) {
@@ -82,7 +78,6 @@ public class BSPatch {
         if (diffFile == null || diffFile.length() <= 0) {
             return RETURN_DIFF_FILE_ERR;
         }
-
         byte[] diffBytes = new byte[(int) diffFile.length()];
         InputStream diffInputStream = new FileInputStream(diffFile);
         try {
@@ -99,7 +94,6 @@ public class BSPatch {
      * extLen   the length of the apk external info. set 0 if has no external info.
      */
     public static int patchLessMemory(RandomAccessFile oldFile, int oldsize, byte[] diffBuf, int diffSize, File newFile, int extLen) throws IOException {
-
         if (oldFile == null || oldsize <= 0) {
             return RETURN_OLD_FILE_ERR;
         }
@@ -109,58 +103,49 @@ public class BSPatch {
         if (diffBuf == null || diffSize <= 0) {
             return RETURN_DIFF_FILE_ERR;
         }
-
         // int commentLenPos = oldsize - extLen - 2;
         // if (commentLenPos <= 2) {
         //     return RETURN_OLD_FILE_ERR;
         // }
-
         DataInputStream diffIn = new DataInputStream(new ByteArrayInputStream(diffBuf, 0, diffSize));
-
-        diffIn.skip(8); // skip headerMagic at header offset 0 (length 8 bytes)
-        long ctrlBlockLen = diffIn.readLong(); // ctrlBlockLen after bzip2 compression at heater offset 8 (length 8 bytes)
-        long diffBlockLen = diffIn.readLong(); // diffBlockLen after bzip2 compression at header offset 16 (length 8 bytes)
-        int newsize = (int) diffIn.readLong(); // size of new file at header offset 24 (length 8 bytes)
-
+        // skip headerMagic at header offset 0 (length 8 bytes)
+        diffIn.skip(8);
+        // ctrlBlockLen after bzip2 compression at heater offset 8 (length 8 bytes)
+        long ctrlBlockLen = diffIn.readLong();
+        // diffBlockLen after bzip2 compression at header offset 16 (length 8 bytes)
+        long diffBlockLen = diffIn.readLong();
+        // size of new file at header offset 24 (length 8 bytes)
+        int newsize = (int) diffIn.readLong();
         diffIn.close();
-
         InputStream in = new ByteArrayInputStream(diffBuf, 0, diffSize);
         in.skip(BSUtil.HEADER_SIZE);
         DataInputStream ctrlBlockIn = new DataInputStream(new GZIPInputStream(in));
-
         in = new ByteArrayInputStream(diffBuf, 0, diffSize);
         in.skip(ctrlBlockLen + BSUtil.HEADER_SIZE);
         InputStream diffBlockIn = new GZIPInputStream(in);
-
         in = new ByteArrayInputStream(diffBuf, 0, diffSize);
         in.skip(diffBlockLen + ctrlBlockLen + BSUtil.HEADER_SIZE);
         InputStream extraBlockIn = new GZIPInputStream(in);
-
         OutputStream outStream = new FileOutputStream(newFile);
         try {
             int oldpos = 0;
             int newpos = 0;
             int[] ctrl = new int[3];
-
             // int nbytes;
             while (newpos < newsize) {
-
                 for (int i = 0; i <= 2; i++) {
                     ctrl[i] = ctrlBlockIn.readInt();
                 }
-
                 if (newpos + ctrl[0] > newsize) {
                     outStream.close();
                     return RETURN_DIFF_FILE_ERR;
                 }
-
                 // Read ctrl[0] bytes from diffBlock stream
                 byte[] buffer = new byte[ctrl[0]];
                 if (!BSUtil.readFromStream(diffBlockIn, buffer, 0, ctrl[0])) {
                     outStream.close();
                     return RETURN_DIFF_FILE_ERR;
                 }
-
                 byte[] oldBuffer = new byte[ctrl[0]];
                 if (oldFile.read(oldBuffer, 0, ctrl[0]) < ctrl[0]) {
                     outStream.close();
@@ -171,21 +156,17 @@ public class BSPatch {
                     //     oldBuffer[i] = 0;
                     //     oldBuffer[i + 1] = 0;
                     // }
-
                     if ((oldpos + i >= 0) && (oldpos + i < oldsize)) {
                         buffer[i] += oldBuffer[i];
                     }
                 }
                 outStream.write(buffer);
-
                 newpos += ctrl[0];
                 oldpos += ctrl[0];
-
                 if (newpos + ctrl[1] > newsize) {
                     outStream.close();
                     return RETURN_DIFF_FILE_ERR;
                 }
-
                 buffer = new byte[ctrl[1]];
                 if (!BSUtil.readFromStream(extraBlockIn, buffer, 0, ctrl[1])) {
                     outStream.close();
@@ -193,7 +174,6 @@ public class BSPatch {
                 }
                 outStream.write(buffer);
                 outStream.flush();
-
                 newpos += ctrl[1];
                 oldpos += ctrl[2];
                 oldFile.seek(oldpos);
@@ -211,7 +191,6 @@ public class BSPatch {
     /**
      * This patch method is fast ,but using more memory.
      * Memory size = oldBuf + diffBuf + newBuf
-     *
      */
     public static int patchFast(File oldFile, File newFile, File diffFile, int extLen) throws IOException {
         if (oldFile == null || oldFile.length() <= 0) {
@@ -223,7 +202,6 @@ public class BSPatch {
         if (diffFile == null || diffFile.length() <= 0) {
             return RETURN_DIFF_FILE_ERR;
         }
-
         InputStream oldInputStream = new BufferedInputStream(new FileInputStream(oldFile));
         byte[] diffBytes = new byte[(int) diffFile.length()];
         InputStream diffInputStream = new FileInputStream(diffFile);
@@ -232,9 +210,7 @@ public class BSPatch {
         } finally {
             diffInputStream.close();
         }
-
         byte[] newBytes = patchFast(oldInputStream, (int) oldFile.length(), diffBytes, extLen);
-
         OutputStream newOutputStream = new FileOutputStream(newFile);
         try {
             newOutputStream.write(newBytes);
@@ -247,7 +223,6 @@ public class BSPatch {
     /**
      * This patch method is fast ,but using more memory.
      * Memory size = oldBuf + diffBuf + newBuf
-     *
      */
     public static int patchFast(InputStream oldInputStream, InputStream diffInputStream, File newFile) throws IOException {
         if (oldInputStream == null) {
@@ -259,12 +234,9 @@ public class BSPatch {
         if (diffInputStream == null) {
             return RETURN_DIFF_FILE_ERR;
         }
-
         byte[] oldBytes = BSUtil.inputStreamToByte(oldInputStream);
         byte[] diffBytes = BSUtil.inputStreamToByte(diffInputStream);
-
         byte[] newBytes = patchFast(oldBytes, oldBytes.length, diffBytes, diffBytes.length, 0);
-
         OutputStream newOutputStream = new FileOutputStream(newFile);
         try {
             newOutputStream.write(newBytes);
@@ -278,14 +250,11 @@ public class BSPatch {
         if (oldInputStream == null) {
             return null;
         }
-
         if (diffInputStream == null) {
             return null;
         }
-
         byte[] oldBytes = BSUtil.inputStreamToByte(oldInputStream);
         byte[] diffBytes = BSUtil.inputStreamToByte(diffInputStream);
-
         byte[] newBytes = patchFast(oldBytes, oldBytes.length, diffBytes, diffBytes.length, 0);
         return newBytes;
     }
@@ -299,7 +268,6 @@ public class BSPatch {
         byte[] oldBuf = new byte[oldsize];
         BSUtil.readFromStream(oldInputStream, oldBuf, 0, oldsize);
         oldInputStream.close();
-
         return BSPatch.patchFast(oldBuf, oldsize, diffBytes, diffBytes.length, extLen);
     }
 
@@ -309,74 +277,60 @@ public class BSPatch {
      */
     public static byte[] patchFast(byte[] oldBuf, int oldsize, byte[] diffBuf, int diffSize, int extLen) throws IOException {
         DataInputStream diffIn = new DataInputStream(new ByteArrayInputStream(diffBuf, 0, diffSize));
-
-        diffIn.skip(8); // skip headerMagic at header offset 0 (length 8 bytes)
-        long ctrlBlockLen = diffIn.readLong(); // ctrlBlockLen after bzip2 compression at heater offset 8 (length 8 bytes)
-        long diffBlockLen = diffIn.readLong(); // diffBlockLen after bzip2 compression at header offset 16 (length 8 bytes)
-        int newsize = (int) diffIn.readLong(); // size of new file at header offset 24 (length 8 bytes)
-
+        // skip headerMagic at header offset 0 (length 8 bytes)
+        diffIn.skip(8);
+        // ctrlBlockLen after bzip2 compression at heater offset 8 (length 8 bytes)
+        long ctrlBlockLen = diffIn.readLong();
+        // diffBlockLen after bzip2 compression at header offset 16 (length 8 bytes)
+        long diffBlockLen = diffIn.readLong();
+        // size of new file at header offset 24 (length 8 bytes)
+        int newsize = (int) diffIn.readLong();
         diffIn.close();
-
         InputStream in = new ByteArrayInputStream(diffBuf, 0, diffSize);
         in.skip(BSUtil.HEADER_SIZE);
         DataInputStream ctrlBlockIn = new DataInputStream(new GZIPInputStream(in));
-
         in = new ByteArrayInputStream(diffBuf, 0, diffSize);
         in.skip(ctrlBlockLen + BSUtil.HEADER_SIZE);
         InputStream diffBlockIn = new GZIPInputStream(in);
-
         in = new ByteArrayInputStream(diffBuf, 0, diffSize);
         in.skip(diffBlockLen + ctrlBlockLen + BSUtil.HEADER_SIZE);
         InputStream extraBlockIn = new GZIPInputStream(in);
-
         // byte[] newBuf = new byte[newsize + 1];
         byte[] newBuf = new byte[newsize];
-
         int oldpos = 0;
         int newpos = 0;
         int[] ctrl = new int[3];
-
         // int nbytes;
         while (newpos < newsize) {
-
             for (int i = 0; i <= 2; i++) {
                 ctrl[i] = ctrlBlockIn.readInt();
             }
-
             if (newpos + ctrl[0] > newsize) {
                 throw new IOException("Corrupt by wrong patch file.");
             }
-
             // Read ctrl[0] bytes from diffBlock stream
             if (!BSUtil.readFromStream(diffBlockIn, newBuf, newpos, ctrl[0])) {
                 throw new IOException("Corrupt by wrong patch file.");
             }
-
             for (int i = 0; i < ctrl[0]; i++) {
                 if ((oldpos + i >= 0) && (oldpos + i < oldsize)) {
                     newBuf[newpos + i] += oldBuf[oldpos + i];
                 }
             }
-
             newpos += ctrl[0];
             oldpos += ctrl[0];
-
             if (newpos + ctrl[1] > newsize) {
                 throw new IOException("Corrupt by wrong patch file.");
             }
-
             if (!BSUtil.readFromStream(extraBlockIn, newBuf, newpos, ctrl[1])) {
                 throw new IOException("Corrupt by wrong patch file.");
             }
-
             newpos += ctrl[1];
             oldpos += ctrl[2];
         }
         ctrlBlockIn.close();
         diffBlockIn.close();
         extraBlockIn.close();
-
         return newBuf;
     }
-
 }

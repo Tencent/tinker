@@ -13,18 +13,16 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.service;
 
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 
 /**
  * Created by zhangshaowen on 16/3/19.
  */
 public class DefaultTinkerResultService extends AbstractResultService {
+
     private static final String TAG = "Tinker.DefaultTinkerResultService";
 
     @Override

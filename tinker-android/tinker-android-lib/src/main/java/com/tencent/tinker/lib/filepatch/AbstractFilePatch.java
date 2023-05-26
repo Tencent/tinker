@@ -7,5 +7,4 @@ import java.io.InputStream;
 public abstract class AbstractFilePatch {
 
     public abstract int patchFast(InputStream oldInputStream, InputStream diffInputStream, File newFile) throws IOException;
-
 }

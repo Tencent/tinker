@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.decoder;
 
 import com.tencent.tinker.build.apkparser.AndroidParser;
@@ -27,7 +26,6 @@ import com.tencent.tinker.build.util.MD5;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -44,7 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
 import tinker.net.dongliu.apk.parser.ApkParser;
 import tinker.net.dongliu.apk.parser.struct.ResourceValue;
 import tinker.net.dongliu.apk.parser.struct.resource.ResourceEntry;
@@ -55,32 +52,40 @@ import tinker.net.dongliu.apk.parser.struct.resource.Type;
  * Created by zhangshaowen on 16/8/8.
  */
 public class ResDiffDecoder extends BaseDecoder {
-    private static final String TEST_RESOURCE_NAME        = "only_use_to_test_tinker_resource.txt";
+
+    private static final String TEST_RESOURCE_NAME = "only_use_to_test_tinker_resource.txt";
+
     private static final String TEST_RESOURCE_ASSETS_PATH = "assets/" + TEST_RESOURCE_NAME;
 
     private static final String TEMP_RES_ZIP = "temp_res.zip";
-    private final InfoWriter        logWriter;
-    private final InfoWriter        metaWriter;
-    private       ArrayList<String> addedSet;
-    private       ArrayList<String> modifiedSet;
-    private       ArrayList<String> storedSet;
 
-    private ArrayList<String>              largeModifiedSet;
+    private final InfoWriter logWriter;
+
+    private final InfoWriter metaWriter;
+
+    private ArrayList<String> addedSet;
+
+    private ArrayList<String> modifiedSet;
+
+    private ArrayList<String> storedSet;
+
+    private ArrayList<String> largeModifiedSet;
+
     private HashMap<String, LargeModeInfo> largeModifiedMap;
-    private ArrayList<String>              deletedSet;
 
-    private ApkParser                      newApkParser;
-    private Set<String>                    newApkAnimResNames;
+    private ArrayList<String> deletedSet;
+
+    private ApkParser newApkParser;
+
+    private Set<String> newApkAnimResNames;
 
     public ResDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
         super(config);
-
         if (metaPath != null) {
             metaWriter = new InfoWriter(config, config.mTempResultDir + File.separator + metaPath);
         } else {
             metaWriter = null;
         }
-
         if (logPath != null) {
             logWriter = new InfoWriter(config, config.mOutFolder + File.separator + logPath);
         } else {
@@ -92,7 +97,6 @@ public class ResDiffDecoder extends BaseDecoder {
         largeModifiedMap = new HashMap<>();
         deletedSet = new ArrayList<>();
         storedSet = new ArrayList<>();
-
         newApkParser = new ApkParser(config.mNewApkFile);
         newApkAnimResNames = new HashSet<>();
     }
@@ -130,22 +134,18 @@ public class ResDiffDecoder extends BaseDecoder {
             if (newApkResPkgNameMap == null) {
                 break;
             }
-
             final ResourcePackage newApkResPackage = newApkResPkgNameMap.get(newApkParser.getApkMeta().getPackageName());
             if (newApkResPackage == null) {
                 break;
             }
-
             final Map<String, List<Type>> newApkResTypesNameMap = newApkResPackage.getTypesNameMap();
             if (newApkResTypesNameMap == null) {
                 break;
             }
-
             final List<Type> newApkAnimResTypes = newApkResTypesNameMap.get("anim");
             if (newApkAnimResTypes == null) {
                 break;
             }
-
             for (Type animType : newApkAnimResTypes) {
                 for (ResourceEntry value : animType.getResourceEntryNameHashMap().values()) {
                     if (value == null) {
@@ -164,7 +164,6 @@ public class ResDiffDecoder extends BaseDecoder {
     @Override
     public boolean patch(File oldFile, File newFile) throws IOException, TinkerPatchException {
         String name = getRelativePathStringToNewFile(newFile);
-
         //actually, it won't go below
         if (newFile == null || !newFile.exists()) {
             String relativeStringByOldDir = getRelativePathStringToOldFile(oldFile);
@@ -176,9 +175,7 @@ public class ResDiffDecoder extends BaseDecoder {
             writeResLog(newFile, oldFile, TypedValue.DEL);
             return true;
         }
-
         File outputFile = getOutputPath(newFile).toFile();
-
         if (oldFile == null || !oldFile.exists()) {
             if (Utils.checkFileInPattern(config.mResIgnoreChangePattern, name)) {
                 Logger.e("found add resource: " + name + " ,but it match ignore change pattern, just ignore!");
@@ -196,7 +193,6 @@ public class ResDiffDecoder extends BaseDecoder {
         //new add file
         String newMd5 = MD5.getMD5(newFile);
         String oldMd5 = MD5.getMD5(oldFile);
-
         //oldFile or newFile may be 0b length
         if (oldMd5 != null && oldMd5.equals(newMd5)) {
             return false;
@@ -247,30 +243,26 @@ public class ResDiffDecoder extends BaseDecoder {
         if (logWriter != null) {
             String log = "";
             String relative;
-            switch (mode) {
+            switch(mode) {
                 case TypedValue.ADD:
                     relative = getRelativePathStringToNewFile(newFile);
                     Logger.d("Found add resource: " + relative);
-                    log = "add resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
-                        + FileOperation.getFileSizes(newFile);
+                    log = "add resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize=" + FileOperation.getFileSizes(newFile);
                     break;
                 case TypedValue.MOD:
                     relative = getRelativePathStringToNewFile(newFile);
                     Logger.d("Found modify resource: " + relative);
-                    log = "modify resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
-                        + FileOperation.getFileSizes(newFile);
+                    log = "modify resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize=" + FileOperation.getFileSizes(newFile);
                     break;
                 case TypedValue.DEL:
                     relative = getRelativePathStringToOldFile(oldFile);
                     Logger.d("Found deleted resource: " + relative);
-                    log = "deleted resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
-                        + FileOperation.getFileSizes(newFile);
+                    log = "deleted resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize=" + FileOperation.getFileSizes(newFile);
                     break;
                 case TypedValue.LARGE_MOD:
                     relative = getRelativePathStringToNewFile(newFile);
                     Logger.d("Found large modify resource: " + relative + " size:" + newFile.length());
-                    log = "large modify resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
-                        + FileOperation.getFileSizes(newFile);
+                    log = "large modify resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize=" + FileOperation.getFileSizes(newFile);
                     break;
                 default:
                     break;
@@ -284,8 +276,7 @@ public class ResDiffDecoder extends BaseDecoder {
         FileOperation.copyResourceUsingStream(TEST_RESOURCE_NAME, dest);
         addedSet.add(TEST_RESOURCE_ASSETS_PATH);
         Logger.d("Add Test resource file: " + TEST_RESOURCE_ASSETS_PATH);
-        String log = "add test resource: " + TEST_RESOURCE_ASSETS_PATH + ", oldSize=" + 0 + ", newSize="
-            + FileOperation.getFileSizes(dest);
+        String log = "add test resource: " + TEST_RESOURCE_ASSETS_PATH + ", oldSize=" + 0 + ", newSize=" + FileOperation.getFileSizes(dest);
         logWriter.writeLineToInfoFile(log);
     }
 
@@ -295,31 +286,26 @@ public class ResDiffDecoder extends BaseDecoder {
         if (addedSet.isEmpty() && modifiedSet.isEmpty() && largeModifiedSet.isEmpty()) {
             return;
         }
-
         if (!config.mResRawPattern.contains(TypedValue.RES_ARSC)) {
             throw new TinkerPatchException("resource must contain resources.arsc pattern");
         }
         if (!config.mResRawPattern.contains(TypedValue.RES_MANIFEST)) {
             throw new TinkerPatchException("resource must contain AndroidManifest.xml pattern");
         }
-
         //check gradle build
         if (config.mUsingGradle) {
             final boolean ignoreWarning = config.mIgnoreWarning;
-            final boolean resourceArscChanged = modifiedSet.contains(TypedValue.RES_ARSC)
-                || largeModifiedSet.contains(TypedValue.RES_ARSC);
+            final boolean resourceArscChanged = modifiedSet.contains(TypedValue.RES_ARSC) || largeModifiedSet.contains(TypedValue.RES_ARSC);
             if (resourceArscChanged && !config.mUseApplyResource) {
                 if (ignoreWarning) {
                     //ignoreWarning, just log
                     Logger.e("Warning:ignoreWarning is true, but resources.arsc is changed, you should use applyResourceMapping mode to build the new apk, otherwise, it may be crash at some times");
                 } else {
                     Logger.e("Warning:ignoreWarning is false, but resources.arsc is changed, you should use applyResourceMapping mode to build the new apk, otherwise, it may be crash at some times");
-
-                    throw new TinkerPatchException(
-                        String.format("ignoreWarning is false, but resources.arsc is changed, you should use applyResourceMapping mode to build the new apk, otherwise, it may be crash at some times")
-                    );
+                    throw new TinkerPatchException(String.format("ignoreWarning is false, but resources.arsc is changed, you should use applyResourceMapping mode to build the new apk, otherwise, it may be crash at some times"));
                 }
-            } /*else if (config.mUseApplyResource) {
+            }
+            /*else if (config.mUseApplyResource) {
                 int totalChangeSize = addedSet.size() + modifiedSet.size() + largeModifiedSet.size();
                 if (totalChangeSize == 1 && resourceArscChanged) {
                     Logger.e("Warning: we are using applyResourceMapping mode to build the new apk, but there is only resources.arsc changed, you should ensure there is actually resource changed!");
@@ -328,7 +314,6 @@ public class ResDiffDecoder extends BaseDecoder {
         }
         //add delete set
         deletedSet.addAll(getDeletedResource(config.mTempUnzipOldDir, config.mTempUnzipNewDir));
-
         //we can't modify AndroidManifest file
         addedSet.remove(TypedValue.RES_MANIFEST);
         deletedSet.remove(TypedValue.RES_MANIFEST);
@@ -339,33 +324,23 @@ public class ResDiffDecoder extends BaseDecoder {
         removeIgnoreChangeFile(deletedSet);
         removeIgnoreChangeFile(addedSet);
         removeIgnoreChangeFile(largeModifiedSet);
-
         // after ignore-changes resource files are being removed, we now check if there's any anim
         // resources in added and modified files.
         checkIfSpecificResWasAnimRes(addedSet);
         checkIfSpecificResWasAnimRes(modifiedSet);
         checkIfSpecificResWasAnimRes(largeModifiedSet);
-
         // last add test res in assets for user cannot ignore it;
         addAssetsFileForTestResource();
-
         File tempResZip = new File(config.mOutFolder + File.separator + TEMP_RES_ZIP);
         final File tempResFiles = config.mTempResultDir;
-
         //gen zip resources_out.zip
         FileOperation.zipInputDir(tempResFiles, tempResZip, null);
         File extractToZip = new File(config.mOutFolder + File.separator + TypedValue.RES_OUT);
-
-        String resZipMd5 = Utils.genResOutputFile(extractToZip, tempResZip, config,
-            addedSet, modifiedSet, deletedSet, largeModifiedSet, largeModifiedMap);
-
+        String resZipMd5 = Utils.genResOutputFile(extractToZip, tempResZip, config, addedSet, modifiedSet, deletedSet, largeModifiedSet, largeModifiedMap);
         Logger.e("Final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5);
-        logWriter.writeLineToInfoFile(
-            String.format("Final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5)
-        );
+        logWriter.writeLineToInfoFile(String.format("Final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5));
         //delete temp file
         FileOperation.deleteFile(tempResZip);
-
         //first, write resource meta first
         //use resources.arsc's base crc to identify base.apk
         String arscBaseCrc = FileOperation.getZipEntryCrc(config.mOldApkFile, TypedValue.RES_ARSC);
@@ -373,32 +348,26 @@ public class ResDiffDecoder extends BaseDecoder {
         if (arscBaseCrc == null || arscMd5 == null) {
             throw new TinkerPatchException("can't find resources.arsc's base crc or md5");
         }
-
         String resourceMeta = Utils.getResourceMeta(arscBaseCrc, arscMd5);
         writeMetaFile(resourceMeta);
-
         //pattern
         String patternMeta = TypedValue.PATTERN_TITLE;
         HashSet<String> patterns = new HashSet<>(config.mResRawPattern);
         //we will process them separate
         patterns.remove(TypedValue.RES_MANIFEST);
-
         writeMetaFile(patternMeta + patterns.size());
         //write pattern
         for (String item : patterns) {
             writeMetaFile(item);
         }
-
         //add store files
         getCompressMethodFromApk();
-
         //write meta file, write large modify first
         writeMetaFile(largeModifiedSet, TypedValue.LARGE_MOD);
         writeMetaFile(modifiedSet, TypedValue.MOD);
         writeMetaFile(addedSet, TypedValue.ADD);
         writeMetaFile(deletedSet, TypedValue.DEL);
         writeMetaFile(storedSet, TypedValue.STORED);
-
     }
 
     private void checkIfSpecificResWasAnimRes(Collection<String> specificFileNames) {
@@ -406,8 +375,7 @@ public class ResDiffDecoder extends BaseDecoder {
         for (String resFileName : specificFileNames) {
             if (newApkAnimResNames.contains(resFileName)) {
                 if (Utils.isStringMatchesPatterns(resFileName, config.mResIgnoreChangeWarningPattern)) {
-                    Logger.d("\nAnimation resource: " + resFileName
-                            + " was changed, but it's filtered by ignoreChangeWarning pattern, just ignore.\n");
+                    Logger.d("\nAnimation resource: " + resFileName + " was changed, but it's filtered by ignoreChangeWarning pattern, just ignore.\n");
                 } else {
                     changedAnimResNames.add(resFileName);
                 }
@@ -416,20 +384,10 @@ public class ResDiffDecoder extends BaseDecoder {
         if (!changedAnimResNames.isEmpty()) {
             if (config.mIgnoreWarning) {
                 //ignoreWarning, just log
-                Logger.e("Warning:ignoreWarning is true, but we found animation resource is changed. "
-                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
-                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
-                        + "related res: " + changedAnimResNames + "\n");
+                Logger.e("Warning:ignoreWarning is true, but we found animation resource is changed. " + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. " + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n" + "related res: " + changedAnimResNames + "\n");
             } else {
-                Logger.e("Warning:ignoreWarning is false, but we found animation resource is changed. "
-                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
-                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
-                        + "related res: " + changedAnimResNames + "\n");
-                throw new TinkerPatchException(
-                        "ignoreWarning is false, but we found animation resource is changed. "
-                        + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. "
-                        + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n"
-                        + "related res: " + changedAnimResNames);
+                Logger.e("Warning:ignoreWarning is false, but we found animation resource is changed. " + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. " + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n" + "related res: " + changedAnimResNames + "\n");
+                throw new TinkerPatchException("ignoreWarning is false, but we found animation resource is changed. " + "Please check if any one was used in 'overridePendingTransition' which may leads to crash. " + "If all of them were not used in that method, just add them into 'res { ignoreChangeWarning }' option.\n" + "related res: " + changedAnimResNames);
             }
         }
     }
@@ -441,7 +399,6 @@ public class ResDiffDecoder extends BaseDecoder {
             ArrayList<String> sets = new ArrayList<>();
             sets.addAll(modifiedSet);
             sets.addAll(addedSet);
-
             ZipEntry zipEntry;
             for (String name : sets) {
                 zipEntry = zipFile.getEntry(name);
@@ -449,7 +406,6 @@ public class ResDiffDecoder extends BaseDecoder {
                     storedSet.add(name);
                 }
             }
-
         } catch (Throwable throwable) {
             // Ignored.
         } finally {
@@ -481,7 +437,7 @@ public class ResDiffDecoder extends BaseDecoder {
     private void writeMetaFile(ArrayList<String> set, int mode) {
         if (!set.isEmpty()) {
             String title = "";
-            switch (mode) {
+            switch(mode) {
                 case TypedValue.ADD:
                     title = TypedValue.ADD_TITLE + set.size();
                     break;
@@ -520,15 +476,22 @@ public class ResDiffDecoder extends BaseDecoder {
     }
 
     public class LargeModeInfo {
+
         public File path = null;
+
         public long crc;
+
         public String md5 = null;
     }
 
     class DeletedResVisitor extends SimpleFileVisitor<Path> {
-        Configuration     config;
-        Path              newApkPath;
-        Path              oldApkPath;
+
+        Configuration config;
+
+        Path newApkPath;
+
+        Path oldApkPath;
+
         ArrayList<String> deletedFiles;
 
         DeletedResVisitor(Configuration config, Path newPath, Path oldPath) {
@@ -540,13 +503,9 @@ public class ResDiffDecoder extends BaseDecoder {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-
             Path relativePath = oldApkPath.relativize(file);
-
             Path newPath = newApkPath.resolve(relativePath);
-
             String patternKey = relativePath.toString().replace("\\", "/");
-
             if (Utils.checkFileInPattern(config.mResFilePattern, patternKey)) {
                 //not contain in new path, is deleted
                 if (!newPath.toFile().exists()) {

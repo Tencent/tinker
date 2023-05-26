@@ -27,7 +27,6 @@
  */
 package com.tencent.tinker.bsdiff;
 
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -47,19 +46,19 @@ import java.util.zip.GZIPOutputStream;
 public class BSDiff {
 
     //private static final String VERSION = "jbdiff-0.1.0.1";
-
     // This is
-    private static final byte[] MAGIC_BYTES = new byte[]{0x4D, 0x69, 0x63,
-        0x72, 0x6F, 0x4D, 0x73, 0x67};
+    private static final byte[] MAGIC_BYTES = new byte[] { 0x4D, 0x69, 0x63, 0x72, 0x6F, 0x4D, 0x73, 0x67 };
 
     private static void split(int[] arrayI, int[] arrayV, int start, int len, int h) {
         final int STM_ENTER = 0x00;
         final int STM_RECURSIVE_CALLSITE1_NEXT = 0x01;
         final int STM_EXIT = 0x02;
-
         class EmuStackFrame {
+
             int stmRetLabel;
+
             int start, len, h;
+
             int i, j, k, x, jj, kk;
 
             EmuStackFrame(int stmRetLabel, int start, int len, int h) {
@@ -75,126 +74,114 @@ public class BSDiff {
                 this.kk = 0;
             }
         }
-
         final Stack<EmuStackFrame> emuStack = new Stack<>();
         emuStack.push(new EmuStackFrame(STM_EXIT, start, len, h));
-
         int stmLabel = STM_ENTER;
         while (!emuStack.empty()) {
             final EmuStackFrame currFrame = emuStack.peek();
-            switch (stmLabel) {
-                case STM_ENTER: {
-                    if (currFrame.len < 16) {
-                        for (currFrame.k = currFrame.start; currFrame.k < currFrame.start + currFrame.len; currFrame.k += currFrame.j) {
-                            currFrame.j = 1;
-                            currFrame.x = arrayV[arrayI[currFrame.k] + currFrame.h];
-                            for (currFrame.i = 1; currFrame.k + currFrame.i < currFrame.start + currFrame.len; currFrame.i++) {
-                                if (arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h] < currFrame.x) {
-                                    currFrame.x = arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h];
-                                    currFrame.j = 0;
+            switch(stmLabel) {
+                case STM_ENTER:
+                    {
+                        if (currFrame.len < 16) {
+                            for (currFrame.k = currFrame.start; currFrame.k < currFrame.start + currFrame.len; currFrame.k += currFrame.j) {
+                                currFrame.j = 1;
+                                currFrame.x = arrayV[arrayI[currFrame.k] + currFrame.h];
+                                for (currFrame.i = 1; currFrame.k + currFrame.i < currFrame.start + currFrame.len; currFrame.i++) {
+                                    if (arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h] < currFrame.x) {
+                                        currFrame.x = arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h];
+                                        currFrame.j = 0;
+                                    }
+                                    if (arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h] == currFrame.x) {
+                                        int tmp = arrayI[currFrame.k + currFrame.j];
+                                        arrayI[currFrame.k + currFrame.j] = arrayI[currFrame.k + currFrame.i];
+                                        arrayI[currFrame.k + currFrame.i] = tmp;
+                                        currFrame.j++;
+                                    }
                                 }
-
-                                if (arrayV[arrayI[currFrame.k + currFrame.i] + currFrame.h] == currFrame.x) {
-                                    int tmp = arrayI[currFrame.k + currFrame.j];
-                                    arrayI[currFrame.k + currFrame.j] = arrayI[currFrame.k + currFrame.i];
-                                    arrayI[currFrame.k + currFrame.i] = tmp;
-                                    currFrame.j++;
+                                for (currFrame.i = 0; currFrame.i < currFrame.j; currFrame.i++) {
+                                    arrayV[arrayI[currFrame.k + currFrame.i]] = currFrame.k + currFrame.j - 1;
                                 }
-
+                                if (currFrame.j == 1) {
+                                    arrayI[currFrame.k] = -1;
+                                }
                             }
-
-                            for (currFrame.i = 0; currFrame.i < currFrame.j; currFrame.i++) {
-                                arrayV[arrayI[currFrame.k + currFrame.i]] = currFrame.k + currFrame.j - 1;
+                            stmLabel = STM_EXIT;
+                            continue;
+                        }
+                        currFrame.x = arrayV[arrayI[currFrame.start + currFrame.len / 2] + currFrame.h];
+                        currFrame.jj = 0;
+                        currFrame.kk = 0;
+                        for (currFrame.i = currFrame.start; currFrame.i < currFrame.start + currFrame.len; currFrame.i++) {
+                            if (arrayV[arrayI[currFrame.i] + currFrame.h] < currFrame.x) {
+                                currFrame.jj++;
                             }
-                            if (currFrame.j == 1) {
-                                arrayI[currFrame.k] = -1;
+                            if (arrayV[arrayI[currFrame.i] + currFrame.h] == currFrame.x) {
+                                currFrame.kk++;
                             }
                         }
-
+                        currFrame.jj += currFrame.start;
+                        currFrame.kk += currFrame.jj;
+                        currFrame.i = currFrame.start;
+                        currFrame.j = 0;
+                        currFrame.k = 0;
+                        while (currFrame.i < currFrame.jj) {
+                            if (arrayV[arrayI[currFrame.i] + currFrame.h] < currFrame.x) {
+                                currFrame.i++;
+                            } else if (arrayV[arrayI[currFrame.i] + currFrame.h] == currFrame.x) {
+                                int tmp = arrayI[currFrame.i];
+                                arrayI[currFrame.i] = arrayI[currFrame.jj + currFrame.j];
+                                arrayI[currFrame.jj + currFrame.j] = tmp;
+                                currFrame.j++;
+                            } else {
+                                int tmp = arrayI[currFrame.i];
+                                arrayI[currFrame.i] = arrayI[currFrame.kk + currFrame.k];
+                                arrayI[currFrame.kk + currFrame.k] = tmp;
+                                currFrame.k++;
+                            }
+                        }
+                        while (currFrame.jj + currFrame.j < currFrame.kk) {
+                            if (arrayV[arrayI[currFrame.jj + currFrame.j] + currFrame.h] == currFrame.x) {
+                                currFrame.j++;
+                            } else {
+                                int tmp = arrayI[currFrame.jj + currFrame.j];
+                                arrayI[currFrame.jj + currFrame.j] = arrayI[currFrame.kk + currFrame.k];
+                                arrayI[currFrame.kk + currFrame.k] = tmp;
+                                currFrame.k++;
+                            }
+                        }
+                        stmLabel = STM_RECURSIVE_CALLSITE1_NEXT;
+                        if (currFrame.jj > currFrame.start) {
+                            // split(arrayI, arrayV, start, jj - currFrame.start, h);
+                            emuStack.push(new EmuStackFrame(stmLabel, currFrame.start, currFrame.jj - currFrame.start, currFrame.h));
+                            stmLabel = STM_ENTER;
+                            continue;
+                        }
+                        break;
+                    }
+                case STM_RECURSIVE_CALLSITE1_NEXT:
+                    {
+                        for (currFrame.i = 0; currFrame.i < currFrame.kk - currFrame.jj; currFrame.i++) {
+                            arrayV[arrayI[currFrame.jj + currFrame.i]] = currFrame.kk - 1;
+                        }
+                        if (currFrame.jj == currFrame.kk - 1) {
+                            arrayI[currFrame.jj] = -1;
+                        }
                         stmLabel = STM_EXIT;
-                        continue;
-                    }
-
-                    currFrame.x = arrayV[arrayI[currFrame.start + currFrame.len / 2] + currFrame.h];
-                    currFrame.jj = 0;
-                    currFrame.kk = 0;
-                    for (currFrame.i = currFrame.start; currFrame.i < currFrame.start + currFrame.len; currFrame.i++) {
-                        if (arrayV[arrayI[currFrame.i] + currFrame.h] < currFrame.x) {
-                            currFrame.jj++;
+                        if (currFrame.start + currFrame.len > currFrame.kk) {
+                            // split(arrayI, arrayV, kk, start + len - kk, h);
+                            emuStack.push(new EmuStackFrame(stmLabel, currFrame.kk, currFrame.start + currFrame.len - currFrame.kk, currFrame.h));
+                            stmLabel = STM_ENTER;
+                            continue;
                         }
-                        if (arrayV[arrayI[currFrame.i] + currFrame.h] == currFrame.x) {
-                            currFrame.kk++;
-                        }
+                        break;
                     }
-
-                    currFrame.jj += currFrame.start;
-                    currFrame.kk += currFrame.jj;
-
-                    currFrame.i = currFrame.start;
-                    currFrame.j = 0;
-                    currFrame.k = 0;
-                    while (currFrame.i < currFrame.jj) {
-                        if (arrayV[arrayI[currFrame.i] + currFrame.h] < currFrame.x) {
-                            currFrame.i++;
-                        } else if (arrayV[arrayI[currFrame.i] + currFrame.h] == currFrame.x) {
-                            int tmp = arrayI[currFrame.i];
-                            arrayI[currFrame.i] = arrayI[currFrame.jj + currFrame.j];
-                            arrayI[currFrame.jj + currFrame.j] = tmp;
-                            currFrame.j++;
-                        } else {
-                            int tmp = arrayI[currFrame.i];
-                            arrayI[currFrame.i] = arrayI[currFrame.kk + currFrame.k];
-                            arrayI[currFrame.kk + currFrame.k] = tmp;
-                            currFrame.k++;
-                        }
-
-                    }
-
-                    while (currFrame.jj + currFrame.j < currFrame.kk) {
-                        if (arrayV[arrayI[currFrame.jj + currFrame.j] + currFrame.h] == currFrame.x) {
-                            currFrame.j++;
-                        } else {
-                            int tmp = arrayI[currFrame.jj + currFrame.j];
-                            arrayI[currFrame.jj + currFrame.j] = arrayI[currFrame.kk + currFrame.k];
-                            arrayI[currFrame.kk + currFrame.k] = tmp;
-                            currFrame.k++;
-                        }
-
-                    }
-
-                    stmLabel = STM_RECURSIVE_CALLSITE1_NEXT;
-                    if (currFrame.jj > currFrame.start) {
-                        // split(arrayI, arrayV, start, jj - currFrame.start, h);
-                        emuStack.push(new EmuStackFrame(stmLabel, currFrame.start, currFrame.jj - currFrame.start, currFrame.h));
-                        stmLabel = STM_ENTER;
-                        continue;
-                    }
-                    break;
-                }
-                case STM_RECURSIVE_CALLSITE1_NEXT: {
-                    for (currFrame.i = 0; currFrame.i < currFrame.kk - currFrame.jj; currFrame.i++) {
-                        arrayV[arrayI[currFrame.jj + currFrame.i]] = currFrame.kk - 1;
-                    }
-
-                    if (currFrame.jj == currFrame.kk - 1) {
-                        arrayI[currFrame.jj] = -1;
-                    }
-
-                    stmLabel = STM_EXIT;
-                    if (currFrame.start + currFrame.len > currFrame.kk) {
-                        // split(arrayI, arrayV, kk, start + len - kk, h);
-                        emuStack.push(new EmuStackFrame(stmLabel, currFrame.kk, currFrame.start + currFrame.len - currFrame.kk, currFrame.h));
-                        stmLabel = STM_ENTER;
-                        continue;
-                    }
-                    break;
-                }
                 case STM_EXIT:
-                default: {
-                    stmLabel = currFrame.stmRetLabel;
-                    emuStack.pop();
-                    break;
-                }
+                default:
+                    {
+                        stmLabel = currFrame.stmRetLabel;
+                        emuStack.pop();
+                        break;
+                    }
             }
         }
     }
@@ -297,57 +284,45 @@ public class BSDiff {
     //     }
     //
     // }
-
     /**
      * Fast suffix sporting. Larsson and Sadakane's qsufsort algorithm. See
      * http://www.cs.lth.se/Research/Algorithms/Papers/jesper5.ps
      */
     private static void qsufsort(int[] arrayI, int[] arrayV, byte[] oldBuf, int oldsize) {
-
         // int oldsize = oldBuf.length;
         int[] buckets = new int[256];
-
         // No need to do that in Java.
         // for ( int i = 0; i < 256; i++ ) {
         // buckets[i] = 0;
         // }
-
         for (int i = 0; i < oldsize; i++) {
             buckets[oldBuf[i] & 0xff]++;
         }
-
         for (int i = 1; i < 256; i++) {
             buckets[i] += buckets[i - 1];
         }
-
         for (int i = 255; i > 0; i--) {
             buckets[i] = buckets[i - 1];
         }
-
         buckets[0] = 0;
-
         for (int i = 0; i < oldsize; i++) {
             arrayI[++buckets[oldBuf[i] & 0xff]] = i;
         }
-
         arrayI[0] = oldsize;
         for (int i = 0; i < oldsize; i++) {
             arrayV[i] = buckets[oldBuf[i] & 0xff];
         }
         arrayV[oldsize] = 0;
-
         for (int i = 1; i < 256; i++) {
             if (buckets[i] == buckets[i - 1] + 1) {
                 arrayI[buckets[i]] = -1;
             }
         }
-
         arrayI[0] = -1;
-
         for (int h = 1; arrayI[0] != -(oldsize + 1); h += h) {
             int len = 0;
             int i;
-            for (i = 0; i < oldsize + 1;) {
+            for (i = 0; i < oldsize + 1; ) {
                 if (arrayI[i] < 0) {
                     len -= arrayI[i];
                     i -= arrayI[i];
@@ -361,30 +336,24 @@ public class BSDiff {
                     i += len;
                     len = 0;
                 }
-
             }
-
             if (len != 0) {
                 arrayI[i - len] = -len;
             }
         }
-
         for (int i = 0; i < oldsize + 1; i++) {
             arrayI[arrayV[i]] = i;
         }
     }
-
 
     /**
      * 分别将 oldBufd[start..oldSize] 和 oldBufd[end..oldSize] 与  newBuf[newBufOffset...newSize] 进行匹配，
      * 返回他们中的最长匹配长度，并且将最长匹配的开始位置记录到pos.value中。
      */
     private static int search(int[] arrayI, byte[] oldBuf, int oldSize, byte[] newBuf, int newSize, int newBufOffset, int start, int end, IntByRef pos) {
-
         if (end - start < 2) {
             int x = matchlen(oldBuf, oldSize, arrayI[start], newBuf, newSize, newBufOffset);
             int y = matchlen(oldBuf, oldSize, arrayI[end], newBuf, newSize, newBufOffset);
-
             if (x > y) {
                 pos.value = arrayI[start];
                 return x;
@@ -393,22 +362,20 @@ public class BSDiff {
                 return y;
             }
         }
-
         // binary search
         int x = start + (end - start) / 2;
         if (memcmp(oldBuf, oldSize, arrayI[x], newBuf, newSize, newBufOffset) < 0) {
-            return search(arrayI, oldBuf, oldSize, newBuf, newSize, newBufOffset, x, end, pos);  // Calls itself recursively
+            // Calls itself recursively
+            return search(arrayI, oldBuf, oldSize, newBuf, newSize, newBufOffset, x, end, pos);
         } else {
             return search(arrayI, oldBuf, oldSize, newBuf, newSize, newBufOffset, start, x, pos);
         }
     }
 
-
     /**
      * Count the number of bytes that match in oldBuf[oldOffset...oldSize] and newBuf[newOffset...newSize]
      */
     private static int matchlen(byte[] oldBuf, int oldSize, int oldOffset, byte[] newBuf, int newSize, int newOffset) {
-
         int end = Math.min(oldSize - oldOffset, newSize - newOffset);
         for (int i = 0; i < end; i++) {
             if (oldBuf[oldOffset + i] != newBuf[newOffset + i]) {
@@ -424,22 +391,17 @@ public class BSDiff {
      * return 1 if s1[s1offset...s1Size] is bigger than s2[s2offset...s2Size] otherwise return -1
      */
     private static int memcmp(byte[] s1, int s1Size, int s1offset, byte[] s2, int s2Size, int s2offset) {
-
         int n = s1Size - s1offset;
-
         if (n > (s2Size - s2offset)) {
             n = s2Size - s2offset;
         }
-
         for (int i = 0; i < n; i++) {
-
             if (s1[i + s1offset] != s2[i + s2offset]) {
                 return s1[i + s1offset] < s2[i + s2offset] ? -1 : 1;
             }
         }
         return 0;
     }
-
 
     public static void bsdiff(File oldFile, File newFile, File diffFile) throws IOException {
         InputStream oldInputStream = new BufferedInputStream(new FileInputStream(oldFile));
@@ -453,35 +415,25 @@ public class BSDiff {
         }
     }
 
-
     public static byte[] bsdiff(InputStream oldInputStream, int oldsize, InputStream newInputStream, int newsize) throws IOException {
-
         byte[] oldBuf = new byte[oldsize];
-
         BSUtil.readFromStream(oldInputStream, oldBuf, 0, oldsize);
         oldInputStream.close();
-
         byte[] newBuf = new byte[newsize];
         BSUtil.readFromStream(newInputStream, newBuf, 0, newsize);
         newInputStream.close();
-
         return bsdiff(oldBuf, oldsize, newBuf, newsize);
     }
 
-
     public static byte[] bsdiff(byte[] oldBuf, int oldsize, byte[] newBuf, int newsize) throws IOException {
-
         int[] arrayI = new int[oldsize + 1];
         qsufsort(arrayI, new int[oldsize + 1], oldBuf, oldsize);
-
         // diff block
         int diffBLockLen = 0;
         byte[] diffBlock = new byte[newsize];
-
         // extra block
         int extraBlockLen = 0;
         byte[] extraBlock = new byte[newsize];
-
         /*
          * Diff file is composed as follows:
          *
@@ -501,22 +453,19 @@ public class BSDiff {
          * ctrlBlock comprises a set of records, each record 12 bytes.
          * A record comprises 3 x 32 bit integers. The ctrlBlock is not compressed.
          */
-
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         DataOutputStream diffOut = new DataOutputStream(byteOut);
-
         // Write as much of header as we have now. Size of ctrlBlock and diffBlock must be filled in later.
         diffOut.write(MAGIC_BYTES);
-        diffOut.writeLong(-1); // place holder for ctrlBlockLen
-        diffOut.writeLong(-1); // place holder for diffBlockLen
+        // place holder for ctrlBlockLen
+        diffOut.writeLong(-1);
+        // place holder for diffBlockLen
+        diffOut.writeLong(-1);
         diffOut.writeLong(newsize);
         diffOut.flush();
-
         GZIPOutputStream bzip2Out = new GZIPOutputStream(diffOut);
         DataOutputStream dataOut = new DataOutputStream(bzip2Out);
-
         int oldscore, scsc;
-
         int overlap, ss, lens;
         int i;
         int scan = 0;
@@ -524,38 +473,30 @@ public class BSDiff {
         int lastscan = 0;
         int lastpos = 0;
         int lastoffset = 0;
-
         IntByRef pos = new IntByRef();
         // int ctrlBlockLen = 0;
-
         while (scan < newsize) {
             oldscore = 0;
-
             for (scsc = scan += matchLen; scan < newsize; scan++) {
                 //  oldBuf[0...oldsize] newBuf[scan...newSize]. pos.value，scan
                 matchLen = search(arrayI, oldBuf, oldsize, newBuf, newsize, scan, 0, oldsize, pos);
-
                 for (; scsc < scan + matchLen; scsc++) {
                     if ((scsc + lastoffset < oldsize) && (oldBuf[scsc + lastoffset] == newBuf[scsc])) {
                         oldscore++;
                     }
                 }
-
                 if (((matchLen == oldscore) && (matchLen != 0)) || (matchLen > oldscore + 8)) {
                     break;
                 }
-
                 if ((scan + lastoffset < oldsize) && (oldBuf[scan + lastoffset] == newBuf[scan])) {
                     oldscore--;
                 }
             }
-
             if ((matchLen != oldscore) || (scan == newsize)) {
-
                 int equalNum = 0;
                 int sf = 0;
                 int lenFromOld = 0;
-                for (i = 0; (lastscan + i < scan) && (lastpos + i < oldsize);) {
+                for (i = 0; (lastscan + i < scan) && (lastpos + i < oldsize); ) {
                     if (oldBuf[lastpos + i] == newBuf[lastscan + i]) {
                         equalNum++;
                     }
@@ -565,7 +506,6 @@ public class BSDiff {
                         lenFromOld = i;
                     }
                 }
-
                 int lenb = 0;
                 if (scan < newsize) {
                     equalNum = 0;
@@ -580,7 +520,6 @@ public class BSDiff {
                         }
                     }
                 }
-
                 if (lastscan + lenFromOld > scan - lenb) {
                     overlap = (lastscan + lenFromOld) - (scan - lenb);
                     equalNum = 0;
@@ -598,42 +537,37 @@ public class BSDiff {
                             lens = i + 1;
                         }
                     }
-
                     lenFromOld += lens - overlap;
                     lenb -= lens;
                 }
-
                 // ? byte casting introduced here -- might affect things
                 for (i = 0; i < lenFromOld; i++) {
                     diffBlock[diffBLockLen + i] = (byte) (newBuf[lastscan + i] - oldBuf[lastpos + i]);
                 }
-
                 for (i = 0; i < (scan - lenb) - (lastscan + lenFromOld); i++) {
                     extraBlock[extraBlockLen + i] = newBuf[lastscan + lenFromOld + i];
                 }
-
                 diffBLockLen += lenFromOld;
                 extraBlockLen += (scan - lenb) - (lastscan + lenFromOld);
-
                 // Write control block entry (3 x int)
-                dataOut.writeInt(lenFromOld);  // oldBuf
-                dataOut.writeInt((scan - lenb) - (lastscan + lenFromOld));  // diffBufextraBlock
-                dataOut.writeInt((pos.value - lenb) - (lastpos + lenFromOld));  // oldBuf
-
+                // oldBuf
+                dataOut.writeInt(lenFromOld);
+                // diffBufextraBlock
+                dataOut.writeInt((scan - lenb) - (lastscan + lenFromOld));
+                // oldBuf
+                dataOut.writeInt((pos.value - lenb) - (lastpos + lenFromOld));
                 lastscan = scan - lenb;
                 lastpos = pos.value - lenb;
                 lastoffset = pos.value - scan;
-            } // end if
-        } // end while loop
-
+            }
+            // end if
+        }
+        // end while loop
         dataOut.flush();
         bzip2Out.finish();
-
         // now compressed ctrlBlockLen
         int ctrlBlockLen = diffOut.size() - BSUtil.HEADER_SIZE;
-
         // GZIPOutputStream gzOut;
-
         /*
          * Write diff block
          */
@@ -643,7 +577,6 @@ public class BSDiff {
         bzip2Out.flush();
         int diffBlockLen = diffOut.size() - ctrlBlockLen - BSUtil.HEADER_SIZE;
         // System.err.println( "Diff: diffBlockLen=" + diffBlockLen );
-
         /*
          * Write extra block
          */
@@ -651,26 +584,23 @@ public class BSDiff {
         bzip2Out.write(extraBlock, 0, extraBlockLen);
         bzip2Out.finish();
         bzip2Out.flush();
-
         diffOut.close();
-
         /*
          * Write missing header info.
          */
         ByteArrayOutputStream byteHeaderOut = new ByteArrayOutputStream(BSUtil.HEADER_SIZE);
         DataOutputStream headerOut = new DataOutputStream(byteHeaderOut);
         headerOut.write(MAGIC_BYTES);
-        headerOut.writeLong(ctrlBlockLen); // place holder for ctrlBlockLen
-        headerOut.writeLong(diffBlockLen); // place holder for diffBlockLen
+        // place holder for ctrlBlockLen
+        headerOut.writeLong(ctrlBlockLen);
+        // place holder for diffBlockLen
+        headerOut.writeLong(diffBlockLen);
         headerOut.writeLong(newsize);
         headerOut.close();
-
         // Copy header information into the diff
         byte[] diffBytes = byteOut.toByteArray();
         byte[] headerBytes = byteHeaderOut.toByteArray();
-
         System.arraycopy(headerBytes, 0, diffBytes, 0, headerBytes.length);
-
         return diffBytes;
     }
 
@@ -691,7 +621,6 @@ public class BSDiff {
     //        bsdiff(oldFile, newFile, diffFile);
     //
     //    }
-
     public static void main(String[] args) throws IOException {
         final File oldFile = new File("/Users/tomystang/bsdiff-test/old/classes.dex");
         final File newFile = new File("/Users/tomystang/bsdiff-test/new/classes.dex");
@@ -700,6 +629,7 @@ public class BSDiff {
     }
 
     private static class IntByRef {
+
         private int value;
     }
 }

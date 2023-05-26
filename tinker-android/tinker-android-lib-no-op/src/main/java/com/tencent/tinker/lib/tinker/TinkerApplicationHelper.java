@@ -13,13 +13,11 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.tinker;
 
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 import java.util.HashMap;
 
@@ -29,6 +27,7 @@ import java.util.HashMap;
  * Created by zhangshaowen on 16/6/28.
  */
 public class TinkerApplicationHelper {
+
     private static final String TAG = "Tinker.TinkerApplicationHelper";
 
     public static boolean isTinkerEnableAll(ApplicationLike applicationLike) {
@@ -83,7 +82,6 @@ public class TinkerApplicationHelper {
         if (libName == null || libName.isEmpty() || applicationLike == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-
         System.loadLibrary(libName);
     }
 

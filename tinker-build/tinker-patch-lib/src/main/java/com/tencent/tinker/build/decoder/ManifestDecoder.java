@@ -13,9 +13,7 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.decoder;
-
 
 import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.patch.Configuration;
@@ -23,14 +21,12 @@ import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
-
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.io.XMLWriter;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -43,7 +39,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import tinker.net.dongliu.apk.parser.bean.ApkMeta;
 import tinker.net.dongliu.apk.parser.bean.GlEsVersion;
 import tinker.net.dongliu.apk.parser.bean.Permission;
@@ -52,21 +47,33 @@ import tinker.net.dongliu.apk.parser.bean.UseFeature;
 /**
  * Created by zhangshaowen on 16/4/6.
  */
-
 public class ManifestDecoder extends BaseDecoder {
-    private static final String XML_NODENAME_APPLICATION        = "application";
-    private static final String XML_NODENAME_USES_SDK           = "uses-sdk";
-    private static final String XML_NODEATTR_MIN_SDK_VERSION    = "minSdkVersion";
+
+    private static final String XML_NODENAME_APPLICATION = "application";
+
+    private static final String XML_NODENAME_USES_SDK = "uses-sdk";
+
+    private static final String XML_NODEATTR_MIN_SDK_VERSION = "minSdkVersion";
+
     private static final String XML_NODEATTR_TARGET_SDK_VERSION = "targetSdkVersion";
-    private static final String XML_NODEATTR_PACKAGE            = "package";
-    private static final String XML_NODENAME_ACTIVITY           = "activity";
-    private static final String XML_NODENAME_SERVICE            = "service";
-    private static final String XML_NODENAME_RECEIVER           = "receiver";
-    private static final String XML_NODENAME_PROVIDER           = "provider";
-    private static final String XML_NODEATTR_NAME               = "name";
-    private static final String XML_NODEATTR_EXPORTED           = "exported";
-    private static final String XML_NODEATTR_PROCESS            = "process";
-    private static final String XML_NODENAME_INTENTFILTER       = "intent-filter";
+
+    private static final String XML_NODEATTR_PACKAGE = "package";
+
+    private static final String XML_NODENAME_ACTIVITY = "activity";
+
+    private static final String XML_NODENAME_SERVICE = "service";
+
+    private static final String XML_NODENAME_RECEIVER = "receiver";
+
+    private static final String XML_NODENAME_PROVIDER = "provider";
+
+    private static final String XML_NODEATTR_NAME = "name";
+
+    private static final String XML_NODEATTR_EXPORTED = "exported";
+
+    private static final String XML_NODEATTR_PROCESS = "process";
+
+    private static final String XML_NODENAME_INTENTFILTER = "intent-filter";
 
     public ManifestDecoder(Configuration config) throws IOException {
         super(config);
@@ -77,68 +84,45 @@ public class ManifestDecoder extends BaseDecoder {
         try {
             AndroidParser oldAndroidManifest = AndroidParser.getAndroidManifest(oldFile);
             AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(newFile);
-
             //check minSdkVersion
             int minSdkVersion = Integer.parseInt(oldAndroidManifest.apkMeta.getMinSdkVersion());
-
             if (minSdkVersion < TypedValue.ANDROID_40_API_LEVEL) {
                 if (config.mDexRaw) {
                     final StringBuilder sb = new StringBuilder();
-                    sb.append("your old apk's minSdkVersion ")
-                      .append(minSdkVersion)
-                      .append(" is below 14, you should set the dexMode to 'jar', ")
-                      .append("otherwise, it will crash at some time");
+                    sb.append("your old apk's minSdkVersion ").append(minSdkVersion).append(" is below 14, you should set the dexMode to 'jar', ").append("otherwise, it will crash at some time");
                     announceWarningOrException(sb.toString());
                 }
             }
-
             final String oldXml = oldAndroidManifest.xml.trim();
             final String newXml = newAndroidManifest.xml.trim();
             final boolean isManifestChanged = !oldXml.equals(newXml);
-
             if (!isManifestChanged) {
                 Logger.d("\nManifest has no changes, skip rest decode works.");
                 return false;
             }
-
             ensureApkMetaUnchanged(oldAndroidManifest.apkMeta, newAndroidManifest.apkMeta);
-
             // check whether there is any new Android Component and get their names.
             // so far only Activity increment can pass checking.
             final Set<String> incActivities = getIncrementActivities(oldAndroidManifest.activities, newAndroidManifest.activities);
             final Set<String> incServices = getIncrementServices(oldAndroidManifest.services, newAndroidManifest.services);
             final Set<String> incReceivers = getIncrementReceivers(oldAndroidManifest.receivers, newAndroidManifest.receivers);
             final Set<String> incProviders = getIncrementProviders(oldAndroidManifest.providers, newAndroidManifest.providers);
-
-            final boolean hasIncComponent = (!incActivities.isEmpty() || !incServices.isEmpty()
-                    || !incProviders.isEmpty() || !incReceivers.isEmpty());
-
+            final boolean hasIncComponent = (!incActivities.isEmpty() || !incServices.isEmpty() || !incProviders.isEmpty() || !incReceivers.isEmpty());
             if (!config.mSupportHotplugComponent && hasIncComponent) {
-                announceWarningOrException("manifest was changed, while hot plug component support mode is disabled. "
-                        + "Such changes will not take effect, related components: \n"
-                        + " activity: " + incActivities + "\n"
-                        + " service: " + incServices + "\n"
-                        + " receiver: " + incReceivers + "\n"
-                        + " provider: " + incProviders + "\n"
-                );
+                announceWarningOrException("manifest was changed, while hot plug component support mode is disabled. " + "Such changes will not take effect, related components: \n" + " activity: " + incActivities + "\n" + " service: " + incServices + "\n" + " receiver: " + incReceivers + "\n" + " provider: " + incProviders + "\n");
             }
-
             // generate increment manifest.
             if (hasIncComponent) {
                 final Document newXmlDoc = DocumentHelper.parseText(newAndroidManifest.xml);
                 final Document incXmlDoc = DocumentHelper.createDocument();
-
                 final Element newRootNode = newXmlDoc.getRootElement();
                 final String packageName = newRootNode.attributeValue(XML_NODEATTR_PACKAGE);
                 if (Utils.isNullOrNil(packageName)) {
                     throw new TinkerPatchException("Unable to find package name from manifest: " + newFile.getAbsolutePath());
                 }
-
                 final Element newAppNode = newRootNode.element(XML_NODENAME_APPLICATION);
-
                 final Element incAppNode = incXmlDoc.addElement(newAppNode.getQName());
                 copyAttributes(newAppNode, incAppNode);
-
                 if (!incActivities.isEmpty()) {
                     final List<Element> newActivityNodes = newAppNode.elements(XML_NODENAME_ACTIVITY);
                     final List<Element> incActivityNodes = getIncrementActivityNodes(packageName, newActivityNodes, incActivities);
@@ -146,7 +130,6 @@ public class ManifestDecoder extends BaseDecoder {
                         incAppNode.add(node.detach());
                     }
                 }
-
                 if (!incServices.isEmpty()) {
                     final List<Element> newServiceNodes = newAppNode.elements(XML_NODENAME_SERVICE);
                     final List<Element> incServiceNodes = getIncrementServiceNodes(packageName, newServiceNodes, incServices);
@@ -154,7 +137,6 @@ public class ManifestDecoder extends BaseDecoder {
                         incAppNode.add(node.detach());
                     }
                 }
-
                 if (!incReceivers.isEmpty()) {
                     final List<Element> newReceiverNodes = newAppNode.elements(XML_NODENAME_RECEIVER);
                     final List<Element> incReceiverNodes = getIncrementReceiverNodes(packageName, newReceiverNodes, incReceivers);
@@ -162,7 +144,6 @@ public class ManifestDecoder extends BaseDecoder {
                         incAppNode.add(node.detach());
                     }
                 }
-
                 if (!incProviders.isEmpty()) {
                     final List<Element> newProviderNodes = newAppNode.elements(XML_NODENAME_PROVIDER);
                     final List<Element> incProviderNodes = getIncrementProviderNodes(packageName, newProviderNodes, incProviders);
@@ -170,7 +151,6 @@ public class ManifestDecoder extends BaseDecoder {
                         incAppNode.add(node.detach());
                     }
                 }
-
                 final File incXmlOutput = new File(config.mTempResultDir, TypedValue.INCCOMPONENT_META_FILE);
                 if (!incXmlOutput.exists()) {
                     incXmlOutput.getParentFile().mkdirs();
@@ -185,12 +165,9 @@ public class ManifestDecoder extends BaseDecoder {
                     Utils.closeQuietly(os);
                 }
             }
-
             if (isManifestChanged && !hasIncComponent) {
-                Logger.d("\nManifest was changed, while there's no any new components added."
-                       + " Make sure if such changes were all you expected.\n");
+                Logger.d("\nManifest was changed, while there's no any new components added." + " Make sure if such changes were all you expected.\n");
             }
-
         } catch (ParseException e) {
             e.printStackTrace();
             throw new TinkerPatchException("Parse android manifest error!");
@@ -201,7 +178,6 @@ public class ManifestDecoder extends BaseDecoder {
             e.printStackTrace();
             throw new TinkerPatchException("Failed to generate increment manifest.", e);
         }
-
         return false;
     }
 
@@ -212,80 +188,61 @@ public class ManifestDecoder extends BaseDecoder {
         }
         if (oldMeta != null && newMeta != null) {
             if (!nullSafeEquals(oldMeta.getPackageName(), newMeta.getPackageName(), null)) {
-                announceWarningOrException("Package name changed, old: " + oldMeta.getPackageName()
-                        + ", new: " + newMeta.getPackageName());
+                announceWarningOrException("Package name changed, old: " + oldMeta.getPackageName() + ", new: " + newMeta.getPackageName());
             }
             if (!nullSafeEquals(oldMeta.getLabel(), newMeta.getLabel(), null)) {
-                announceWarningOrException("App label changed, old: " + oldMeta.getLabel()
-                        + ", new: " + newMeta.getLabel());
+                announceWarningOrException("App label changed, old: " + oldMeta.getLabel() + ", new: " + newMeta.getLabel());
             }
             if (!nullSafeEquals(oldMeta.getIcon(), newMeta.getIcon(), null)) {
-                announceWarningOrException("App icon res ref changed, old: " + oldMeta.getIcon()
-                        + ", new: " + newMeta.getIcon());
+                announceWarningOrException("App icon res ref changed, old: " + oldMeta.getIcon() + ", new: " + newMeta.getIcon());
             }
             if (!nullSafeEquals(oldMeta.getVersionName(), newMeta.getVersionName(), null)) {
-                Logger.e("Note: Version name changed, old: " + oldMeta.getVersionName()
-                        + ", new: " + newMeta.getVersionName());
+                Logger.e("Note: Version name changed, old: " + oldMeta.getVersionName() + ", new: " + newMeta.getVersionName());
             }
             final Long oldVersionCode = oldMeta.getVersionCode();
             final Long newVersionCode = newMeta.getVersionCode();
             if (oldVersionCode != null && newVersionCode != null) {
                 if (newVersionCode < oldVersionCode) {
-                    announceWarningOrException("Version code downgrade, old: " + oldVersionCode
-                            + ", new: " + newVersionCode);
+                    announceWarningOrException("Version code downgrade, old: " + oldVersionCode + ", new: " + newVersionCode);
                 }
             } else if (!(oldVersionCode == null && newVersionCode == null)) {
-                announceWarningOrException("Version code of old or new apk is missing, old: " + oldVersionCode
-                        + ", new: " + newVersionCode);
+                announceWarningOrException("Version code of old or new apk is missing, old: " + oldVersionCode + ", new: " + newVersionCode);
             }
             if (!nullSafeEquals(oldMeta.getInstallLocation(), newMeta.getInstallLocation(), null)) {
-                announceWarningOrException("Install location changed, old: " + oldMeta.getInstallLocation()
-                        + ", new: " + newMeta.getInstallLocation());
+                announceWarningOrException("Install location changed, old: " + oldMeta.getInstallLocation() + ", new: " + newMeta.getInstallLocation());
             }
             if (!nullSafeEquals(oldMeta.getMinSdkVersion(), newMeta.getMinSdkVersion(), null)) {
-                announceWarningOrException("MinSdkVersion changed, old: " + oldMeta.getMinSdkVersion()
-                        + ", new: " + newMeta.getMinSdkVersion());
+                announceWarningOrException("MinSdkVersion changed, old: " + oldMeta.getMinSdkVersion() + ", new: " + newMeta.getMinSdkVersion());
             }
             if (!nullSafeEquals(oldMeta.getTargetSdkVersion(), newMeta.getTargetSdkVersion(), null)) {
-                announceWarningOrException("TargetSdkVersion changed, old: " + oldMeta.getTargetSdkVersion()
-                        + ", new: " + newMeta.getTargetSdkVersion());
+                announceWarningOrException("TargetSdkVersion changed, old: " + oldMeta.getTargetSdkVersion() + ", new: " + newMeta.getTargetSdkVersion());
             }
             if (!nullSafeEquals(oldMeta.getMaxSdkVersion(), newMeta.getMaxSdkVersion(), null)) {
-                announceWarningOrException("MaxSdkVersion changed, old: " + oldMeta.getMaxSdkVersion()
-                        + ", new: " + newMeta.getMaxSdkVersion());
+                announceWarningOrException("MaxSdkVersion changed, old: " + oldMeta.getMaxSdkVersion() + ", new: " + newMeta.getMaxSdkVersion());
             }
             if (!nullSafeEquals(oldMeta.getGlEsVersion(), newMeta.getGlEsVersion(), GLES_VERSION_EQUALS)) {
-                announceWarningOrException("GLEsVersion changed, old: "
-                        + GLES_VERSION_DESCRIBER.describe(oldMeta.getGlEsVersion())
-                        + ", new: " + GLES_VERSION_DESCRIBER.describe(newMeta.getGlEsVersion()));
+                announceWarningOrException("GLEsVersion changed, old: " + GLES_VERSION_DESCRIBER.describe(oldMeta.getGlEsVersion()) + ", new: " + GLES_VERSION_DESCRIBER.describe(newMeta.getGlEsVersion()));
             }
             if (!nullSafeEquals(oldMeta.isAnyDensity(), newMeta.isAnyDensity(), null)) {
-                announceWarningOrException("Value of isAnyDensity changed, old: " + oldMeta.isAnyDensity()
-                        + ", new: " + newMeta.isAnyDensity());
+                announceWarningOrException("Value of isAnyDensity changed, old: " + oldMeta.isAnyDensity() + ", new: " + newMeta.isAnyDensity());
             }
             if (!nullSafeEquals(oldMeta.isSmallScreens(), newMeta.isSmallScreens(), null)) {
-                announceWarningOrException("Value of isSmallScreens changed, old: " + oldMeta.isSmallScreens()
-                        + ", new: " + newMeta.isSmallScreens());
+                announceWarningOrException("Value of isSmallScreens changed, old: " + oldMeta.isSmallScreens() + ", new: " + newMeta.isSmallScreens());
             }
             if (!nullSafeEquals(oldMeta.isNormalScreens(), newMeta.isNormalScreens(), null)) {
-                announceWarningOrException("Value of isNormalScreens changed, old: " + oldMeta.isNormalScreens()
-                        + ", new: " + newMeta.isNormalScreens());
+                announceWarningOrException("Value of isNormalScreens changed, old: " + oldMeta.isNormalScreens() + ", new: " + newMeta.isNormalScreens());
             }
             if (!nullSafeEquals(oldMeta.isLargeScreens(), newMeta.isLargeScreens(), null)) {
-                announceWarningOrException("Value of isLargeScreens changed, old: " + oldMeta.isLargeScreens()
-                        + ", new: " + newMeta.isLargeScreens());
+                announceWarningOrException("Value of isLargeScreens changed, old: " + oldMeta.isLargeScreens() + ", new: " + newMeta.isLargeScreens());
             }
             if (!nullSafeEqualsIgnoreOrder(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions(), null)) {
-                announceWarningOrException("Uses permissions changed, related uses-permissions: "
-                        + describeChanges(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions()));
+                announceWarningOrException("Uses permissions changed, related uses-permissions: " + describeChanges(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions()));
             }
             if (!nullSafeEqualsIgnoreOrder(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_DESCRIBER)) {
-                announceWarningOrException("Uses features changed, related uses-features: "
-                        + describeChanges(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_DESCRIBER));
+                announceWarningOrException("Uses features changed, related uses-features: " + describeChanges(oldMeta.getUsesFeatures(), newMeta.getUsesFeatures(), USE_FEATURE_DESCRIBER));
             }
             if (!nullSafeEqualsIgnoreOrder(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_DESCRIBER)) {
-                announceWarningOrException("Uses features changed, related permissions: "
-                        + describeChanges(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_DESCRIBER));
+                announceWarningOrException("Uses features changed, related permissions: " + describeChanges(oldMeta.getPermissions(), newMeta.getPermissions(), PERMISSION_DESCRIBER));
             }
         } else {
             announceWarningOrException("One of apk meta is null, are we processing invalid manifest ?");
@@ -293,10 +250,12 @@ public class ManifestDecoder extends BaseDecoder {
     }
 
     private interface EqualsChecker<T> {
+
         boolean isEquals(T lhs, T rhs);
     }
 
     private static final EqualsChecker<GlEsVersion> GLES_VERSION_EQUALS = new EqualsChecker<GlEsVersion>() {
+
         @Override
         public boolean isEquals(GlEsVersion lhs, GlEsVersion rhs) {
             if (lhs.getMajor() != rhs.getMajor()) {
@@ -361,46 +320,36 @@ public class ManifestDecoder extends BaseDecoder {
     }
 
     private interface ObjectDescriber<T> {
+
         String describe(T obj);
     }
 
     private static final ObjectDescriber<GlEsVersion> GLES_VERSION_DESCRIBER = new ObjectDescriber<GlEsVersion>() {
+
         @Override
         public String describe(GlEsVersion obj) {
             final StringBuilder sb = new StringBuilder();
-            sb.append("{")
-              .append("majar:").append(obj.getMajor())
-              .append("minor:").append(obj.getMinor())
-              .append(",required:").append(obj.isRequired())
-              .append("}");
+            sb.append("{").append("majar:").append(obj.getMajor()).append("minor:").append(obj.getMinor()).append(",required:").append(obj.isRequired()).append("}");
             return sb.toString();
         }
     };
 
     private static final ObjectDescriber<UseFeature> USE_FEATURE_DESCRIBER = new ObjectDescriber<UseFeature>() {
+
         @Override
         public String describe(UseFeature obj) {
             final StringBuilder sb = new StringBuilder();
-            sb.append("{")
-              .append("name:").append(obj.getName())
-              .append(",required:").append(obj.isRequired())
-              .append("}");
+            sb.append("{").append("name:").append(obj.getName()).append(",required:").append(obj.isRequired()).append("}");
             return sb.toString();
         }
     };
 
     private static final ObjectDescriber<Permission> PERMISSION_DESCRIBER = new ObjectDescriber<Permission>() {
+
         @Override
         public String describe(Permission obj) {
             final StringBuilder sb = new StringBuilder();
-            sb.append("{")
-              .append("name:").append(obj.getName())
-              .append(",label:").append(obj.getLabel())
-              .append(",icon:").append(obj.getIcon())
-              .append(",description:").append(obj.getDescription())
-              .append(",group:").append(obj.getGroup())
-              .append(",protectionLevel:").append(obj.getProtectionLevel())
-              .append("}");
+            sb.append("{").append("name:").append(obj.getName()).append(",label:").append(obj.getLabel()).append(",icon:").append(obj.getIcon()).append(",description:").append(obj.getDescription()).append(",group:").append(obj.getGroup()).append(",protectionLevel:").append(obj.getProtectionLevel()).append("}");
             return sb.toString();
         }
     };
@@ -423,9 +372,7 @@ public class ManifestDecoder extends BaseDecoder {
         }
         final List<String> removedDescs = new ArrayList<>(oldDescs);
         final StringBuilder sb = new StringBuilder();
-        sb.append("{added:").append(addedDescs)
-          .append(",removed:").append(removedDescs)
-          .append("}");
+        sb.append("{added:").append(addedDescs).append(",removed:").append(removedDescs).append("}");
         return sb.toString();
     }
 
@@ -439,9 +386,7 @@ public class ManifestDecoder extends BaseDecoder {
         final Set<String> incNames = new HashSet<>(newServices);
         incNames.removeAll(oldServices);
         if (!incNames.isEmpty()) {
-            announceWarningOrException("found added services: " + incNames.toString()
-                    + "\n currently tinker does not support increase new services, "
-                    + "such these changes would not take effect.");
+            announceWarningOrException("found added services: " + incNames.toString() + "\n currently tinker does not support increase new services, " + "such these changes would not take effect.");
         }
         return incNames;
     }
@@ -450,9 +395,7 @@ public class ManifestDecoder extends BaseDecoder {
         final Set<String> incNames = new HashSet<>(newReceivers);
         incNames.removeAll(oldReceivers);
         if (!incNames.isEmpty()) {
-            announceWarningOrException("found added receivers: " + incNames.toString()
-                    + "\n currently tinker does not support increase new receivers, "
-                    + "such these changes would not take effect.");
+            announceWarningOrException("found added receivers: " + incNames.toString() + "\n currently tinker does not support increase new receivers, " + "such these changes would not take effect.");
         }
         return incNames;
     }
@@ -461,9 +404,7 @@ public class ManifestDecoder extends BaseDecoder {
         final Set<String> incNames = new HashSet<>(newProviders);
         incNames.removeAll(oldProviders);
         if (!incNames.isEmpty()) {
-            announceWarningOrException("found added providers: " + incNames.toString()
-                    + "\n currently tinker does not support increase new providers, "
-                    + "such these changes would not take effect.");
+            announceWarningOrException("found added providers: " + incNames.toString() + "\n currently tinker does not support increase new providers, " + "such these changes would not take effect.");
         }
         return incNames;
     }
@@ -478,24 +419,15 @@ public class ManifestDecoder extends BaseDecoder {
             if (!incActivities.contains(activityClazzName)) {
                 continue;
             }
-            final String exportedVal = newActivityNode.attributeValue(XML_NODEATTR_EXPORTED,
-                    Utils.isNullOrNil(newActivityNode.elements(XML_NODENAME_INTENTFILTER)) ? "false" : "true");
+            final String exportedVal = newActivityNode.attributeValue(XML_NODEATTR_EXPORTED, Utils.isNullOrNil(newActivityNode.elements(XML_NODENAME_INTENTFILTER)) ? "false" : "true");
             if ("true".equalsIgnoreCase(exportedVal)) {
-                announceWarningOrException(
-                        String.format("found a new exported activity %s"
-                                + ", tinker does not support increase exported activity.", activityClazzName)
-                );
+                announceWarningOrException(String.format("found a new exported activity %s" + ", tinker does not support increase exported activity.", activityClazzName));
             }
             final String processVal = newActivityNode.attributeValue(XML_NODEATTR_PROCESS);
             if (processVal != null && processVal.charAt(0) == ':') {
-                announceWarningOrException(
-                        String.format("found a new activity %s which would be run in standalone process"
-                                + ", tinker does not support increase such kind of activities.", activityClazzName)
-                );
+                announceWarningOrException(String.format("found a new activity %s which would be run in standalone process" + ", tinker does not support increase such kind of activities.", activityClazzName));
             }
-
             Logger.d("Found increment activity: " + activityClazzName);
-
             result.add(newActivityNode);
         }
         return result;
@@ -536,11 +468,9 @@ public class ManifestDecoder extends BaseDecoder {
 
     @Override
     public void onAllPatchesStart() throws IOException, TinkerPatchException {
-
     }
 
     @Override
     public void onAllPatchesEnd() throws IOException, TinkerPatchException {
-
     }
 }

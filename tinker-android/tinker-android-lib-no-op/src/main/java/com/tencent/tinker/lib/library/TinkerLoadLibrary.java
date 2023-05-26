@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.library;
 
 import android.content.Context;
-
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 
@@ -25,8 +23,8 @@ import com.tencent.tinker.loader.TinkerRuntimeException;
  * Created by zhangshaowen on 17/1/5.
  * Thanks for Android Fragmentation
  */
-
 public class TinkerLoadLibrary {
+
     public static void loadArmLibrary(Context context, String libName) {
         if (libName == null || libName.isEmpty() || context == null) {
             throw new TinkerRuntimeException("libName or context is null!");

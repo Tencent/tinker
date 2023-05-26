@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.util;
 
 import android.app.ActivityManager;
@@ -22,16 +21,15 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
-
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import java.util.List;
 
 /**
  * Created by zhangshaowen on 16/3/10.
  */
 public class TinkerServiceInternals extends ShareTinkerInternals {
+
     private static final String TAG = "Tinker.ServiceInternals";
 
     /**
@@ -44,11 +42,9 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
         if (serverProcessName == null) {
             return;
         }
-
         final ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         // ActivityManager getRunningAppProcesses()
-        List<ActivityManager.RunningAppProcessInfo> appProcessList = am
-            .getRunningAppProcesses();
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = am.getRunningAppProcesses();
         if (appProcessList == null) {
             return;
         }
@@ -58,13 +54,11 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
                 android.os.Process.killProcess(appProcess.pid);
             }
         }
-
     }
 
     public static boolean isTinkerPatchServiceRunning(Context context) {
         return TinkerPatchService.isRunning(context);
     }
-
 
     public static String getTinkerPatchServiceName(final Context context) {
         if (patchServiceProcessName != null) {
@@ -87,7 +81,6 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
      */
     public static boolean isInTinkerPatchServiceProcess(Context context) {
         String process = getProcessName(context);
-
         String service = TinkerServiceInternals.getTinkerPatchServiceName(context);
         if (service == null || service.length() == 0) {
             return false;
@@ -97,7 +90,6 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
 
     private static String getServiceProcessName(Context context, Class<? extends Service> serviceClass) {
         PackageManager packageManager = context.getPackageManager();
-
         ComponentName component = new ComponentName(context, serviceClass);
         ServiceInfo serviceInfo;
         try {
@@ -106,8 +98,6 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
             // Service is disabled.
             return null;
         }
-
         return serviceInfo.processName;
     }
-
 }

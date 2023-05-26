@@ -1,9 +1,7 @@
 package com.tencent.tinker.loader;
 
 import android.annotation.SuppressLint;
-
 import com.tencent.tinker.anno.Keep;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -11,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 import dalvik.system.BaseDexClassLoader;
 import dalvik.system.PathClassLoader;
 
@@ -21,6 +18,7 @@ import dalvik.system.PathClassLoader;
 @Keep
 @SuppressLint("NewApi")
 public final class TinkerClassLoader extends PathClassLoader {
+
     private final ClassLoader mOriginAppClassLoader;
 
     TinkerClassLoader(String dexPath, File optimizedDir, String libraryPath, ClassLoader originAppClassLoader) {
@@ -51,23 +49,17 @@ public final class TinkerClassLoader extends PathClassLoader {
         if (resource != null) {
             return resource;
         }
-
         resource = findResource(name);
         if (resource != null) {
             return resource;
         }
-
         return mOriginAppClassLoader.getResource(name);
     }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
         @SuppressWarnings("unchecked")
-        final Enumeration<URL>[] resources = (Enumeration<URL>[]) new Enumeration<?>[] {
-                Object.class.getClassLoader().getResources(name),
-                findResources(name),
-                mOriginAppClassLoader.getResources(name)
-        };
+        final Enumeration<URL>[] resources = (Enumeration<URL>[]) new Enumeration<?>[] { Object.class.getClassLoader().getResources(name), findResources(name), mOriginAppClassLoader.getResources(name) };
         return new CompoundEnumeration<>(resources);
     }
 
@@ -90,7 +82,9 @@ public final class TinkerClassLoader extends PathClassLoader {
 
     @Keep
     class CompoundEnumeration<E> implements Enumeration<E> {
+
         private Enumeration<E>[] enums;
+
         private int index = 0;
 
         public CompoundEnumeration(Enumeration<E>[] enums) {

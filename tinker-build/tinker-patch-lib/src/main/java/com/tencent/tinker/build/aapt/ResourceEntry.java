@@ -13,14 +13,14 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import java.util.Arrays;
 
 public class ResourceEntry {
 
-    public String name  = null;
+    public String name = null;
+
     public String value = null;
 
     public ResourceEntry(String name, String value) {
@@ -29,9 +29,8 @@ public class ResourceEntry {
     }
 
     public int hashCode() {
-        return Arrays.hashCode(new Object[]{this.name});
+        return Arrays.hashCode(new Object[] { this.name });
     }
-
 
     public boolean equals(Object object) {
         if (!(object instanceof ResourceEntry)) {

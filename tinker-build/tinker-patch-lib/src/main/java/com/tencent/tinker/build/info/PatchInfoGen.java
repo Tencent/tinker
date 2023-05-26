@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.info;
 
 import com.tencent.tinker.build.apkparser.AndroidParser;
@@ -21,7 +20,6 @@ import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.commons.util.IOHelper;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,15 +27,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.Properties;
-
 import tinker.net.dongliu.apk.parser.utils.Utils;
 
 /**
  * Created by zhangshaowen on 16/3/8.
  */
 public class PatchInfoGen {
+
     private final Configuration config;
-    private final File          packageInfoFile;
+
+    private final File packageInfoFile;
 
     public PatchInfoGen(Configuration config) {
         this.config = config;
@@ -48,17 +47,14 @@ public class PatchInfoGen {
         if (!config.mPackageFields.containsKey(TypedValue.TINKER_ID)) {
             AndroidParser oldAndroidManifest = AndroidParser.getAndroidManifest(config.mOldApkFile);
             String tinkerID = oldAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
-
             if (tinkerID == null) {
                 throw new TinkerPatchException("can't find TINKER_ID from the old apk manifest file, it must be set!");
             }
             config.mPackageFields.put(TypedValue.TINKER_ID, tinkerID);
         }
-
         if (!config.mPackageFields.containsKey(TypedValue.NEW_TINKER_ID)) {
             AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(config.mNewApkFile);
             String tinkerID = newAndroidManifest.metaDatas.get(TypedValue.TINKER_ID);
-
             if (tinkerID == null) {
                 throw new TinkerPatchException("can't find TINKER_ID from the new apk manifest file, it must be set!");
             }
@@ -73,19 +69,17 @@ public class PatchInfoGen {
 
     private void addFilePatchFlag() {
         // If use custom file patcher
-        config.mPackageFields.put(TypedValue.PKGMETA_KEY_USE_CUSTOM_FILE_PATCH, Utils.isEmpty(config.mCustomDiffPath) ? "0" : "1" );
+        config.mPackageFields.put(TypedValue.PKGMETA_KEY_USE_CUSTOM_FILE_PATCH, Utils.isEmpty(config.mCustomDiffPath) ? "0" : "1");
     }
 
     public void gen() throws Exception {
         addTinkerID();
         addProtectedAppFlag();
         addFilePatchFlag();
-
         Properties newProperties = new Properties();
         for (String key : config.mPackageFields.keySet()) {
             newProperties.put(key, config.mPackageFields.get(key));
         }
-
         String comment = "base package config field";
         OutputStream os = null;
         try {

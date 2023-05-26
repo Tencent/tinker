@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import com.google.common.base.Function;
@@ -21,7 +20,6 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
-
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,13 +30,16 @@ import java.util.regex.Pattern;
 public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
 
     private static final Pattern TEXT_SYMBOLS_LINE = Pattern.compile("(\\S+) (\\S+) (\\S+) (.+)");
+
     public static final Function<String, RDotTxtEntry> TO_ENTRY = new Function<String, RDotTxtEntry>() {
+
         public RDotTxtEntry apply(String input) {
             Optional<RDotTxtEntry> entry = parse(input);
             Preconditions.checkNotNull(entry.isPresent(), "Could not parse R.txt entry: '%s'", input);
             return entry.get();
         }
     };
+
     // A symbols file may look like:
     //
     // int id placeholder 0x7f020000
@@ -56,9 +57,13 @@ public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
     // - the name of the resource
     // - the value of the resource id
     public final IdType idType;
-    public final RType  type;
+
+    public final RType type;
+
     public final String name;
-    public       String idValue;
+
+    public String idValue;
+
     public RDotTxtEntry(IdType idType, RType type, String name, String idValue) {
         this.idType = Preconditions.checkNotNull(idType);
         this.type = Preconditions.checkNotNull(type);
@@ -71,12 +76,10 @@ public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
         if (!matcher.matches()) {
             return Optional.absent();
         }
-
         IdType idType = IdType.from(matcher.group(1));
         RType type = RType.valueOf(matcher.group(2).toUpperCase());
         String name = matcher.group(3);
         String idValue = matcher.group(4);
-
         return Optional.of(new RDotTxtEntry(idType, type, name, idValue));
     }
 
@@ -98,14 +101,13 @@ public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
         if (!(obj instanceof RDotTxtEntry)) {
             return false;
         }
-
         RDotTxtEntry that = (RDotTxtEntry) obj;
         return Objects.equal(this.type, that.type) && Objects.equal(this.name, that.name);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(new Object[]{type, name});
+        return Arrays.hashCode(new Object[] { type, name });
     }
 
     @Override
@@ -116,7 +118,31 @@ public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
     // Taken from http://developer.android.com/reference/android/R.html
     // TRANSITION for api level 19
     public enum RType {
-        ANIM, ANIMATOR, ARRAY, ATTR, BOOL, COLOR, DIMEN, DRAWABLE, FONT, FRACTION, ID, INTEGER, INTERPOLATOR, LAYOUT, MENU, MIPMAP, PLURALS, RAW, STRING, STYLE, STYLEABLE, TRANSITION, XML, NAVIGATION;
+
+        ANIM,
+        ANIMATOR,
+        ARRAY,
+        ATTR,
+        BOOL,
+        COLOR,
+        DIMEN,
+        DRAWABLE,
+        FONT,
+        FRACTION,
+        ID,
+        INTEGER,
+        INTERPOLATOR,
+        LAYOUT,
+        MENU,
+        MIPMAP,
+        PLURALS,
+        RAW,
+        STRING,
+        STYLE,
+        STYLEABLE,
+        TRANSITION,
+        XML,
+        NAVIGATION;
 
         @Override
         public String toString() {
@@ -125,6 +151,7 @@ public class RDotTxtEntry implements Comparable<RDotTxtEntry> {
     }
 
     public enum IdType {
+
         INT, INT_ARRAY;
 
         public static IdType from(String raw) {

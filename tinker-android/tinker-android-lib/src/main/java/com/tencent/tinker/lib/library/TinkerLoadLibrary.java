@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.library;
 
 import android.content.Context;
 import android.os.Build;
-
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
@@ -30,7 +28,6 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -43,8 +40,8 @@ import java.util.List;
  * Created by zhangshaowen on 17/1/5.
  * Thanks for Android Fragmentation
  */
-
 public class TinkerLoadLibrary {
+
     private static final String TAG = "Tinker.LoadLibrary";
 
     /**
@@ -57,9 +54,7 @@ public class TinkerLoadLibrary {
         if (libName == null || libName.isEmpty() || context == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-
         Tinker tinker = Tinker.with(context);
-
         if (tinker.isEnabledForNativeLib()) {
             if (TinkerLoadLibrary.loadLibraryFromTinker(context, "lib/armeabi", libName)) {
                 return;
@@ -96,13 +91,11 @@ public class TinkerLoadLibrary {
         if (libName == null || libName.isEmpty() || context == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-
         Tinker tinker = Tinker.with(context);
         if (tinker.isEnabledForNativeLib()) {
             if (TinkerLoadLibrary.loadLibraryFromTinker(context, "lib/armeabi-v7a", libName)) {
                 return;
             }
-
         }
         System.loadLibrary(libName);
     }
@@ -136,11 +129,9 @@ public class TinkerLoadLibrary {
      */
     public static boolean loadLibraryFromTinker(Context context, String relativePath, String libName) throws UnsatisfiedLinkError {
         final Tinker tinker = Tinker.with(context);
-
         libName = libName.startsWith("lib") ? libName : "lib" + libName;
         libName = libName.endsWith(".so") ? libName : libName + ".so";
         String relativeLibPath = relativePath + "/" + libName;
-
         //TODO we should add cpu abi, and the real path later
         if (tinker.isEnabledForNativeLib() && tinker.isTinkerLoaded()) {
             TinkerLoadResult loadResult = tinker.getTinkerLoadResultIfPresent();
@@ -167,7 +158,6 @@ public class TinkerLoadLibrary {
                 }
             }
         }
-
         return false;
     }
 
@@ -199,7 +189,6 @@ public class TinkerLoadLibrary {
             return false;
         }
         ShareTinkerLog.i(TAG, "before hack classloader:" + classLoader.toString());
-
         try {
             installNativeLibraryPath(classLoader, soDir);
             return true;
@@ -223,26 +212,22 @@ public class TinkerLoadLibrary {
             ShareTinkerLog.e(TAG, "no loaded patch, skip installation.");
             return false;
         }
-
         final String currentVersion = TinkerApplicationHelper.getCurrentVersion(appLike);
         if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
             ShareTinkerLog.e(TAG, "failed to get current patch version.");
             return false;
         }
-
         final File patchDirectory = SharePatchFileUtil.getPatchDirectory(appLike.getApplication());
         if (patchDirectory == null) {
             ShareTinkerLog.e(TAG, "failed to get current patch directory.");
             return false;
         }
-
         File patchVersionDirectory = new File(patchDirectory.getAbsolutePath() + "/" + SharePatchFileUtil.getPatchVersionDirectory(currentVersion));
         File libPath = new File(patchVersionDirectory.getAbsolutePath() + "/lib/lib/" + currentABI);
         if (!libPath.exists()) {
             ShareTinkerLog.e(TAG, "tinker lib path [%s] is not exists.", libPath);
             return false;
         }
-
         final ClassLoader classLoader = appLike.getApplication().getClassLoader();
         if (classLoader == null) {
             ShareTinkerLog.e(TAG, "classloader is null");
@@ -250,8 +235,7 @@ public class TinkerLoadLibrary {
         } else {
             ShareTinkerLog.i(TAG, "before hack classloader:" + classLoader.toString());
             try {
-                final Method installNativeLibraryPathMethod =
-                        TinkerLoadLibrary.class.getDeclaredMethod("installNativeLibraryPath", ClassLoader.class, File.class);
+                final Method installNativeLibraryPathMethod = TinkerLoadLibrary.class.getDeclaredMethod("installNativeLibraryPath", ClassLoader.class, File.class);
                 installNativeLibraryPathMethod.setAccessible(true);
                 installNativeLibraryPathMethod.invoke(null, classLoader, libPath);
                 return true;
@@ -272,23 +256,20 @@ public class TinkerLoadLibrary {
      *   2. Otherwise remove path of {@code folder} first, then re-inject it to the
      *   beginning of pathList in the classloader.
      */
-    private static void installNativeLibraryPath(ClassLoader classLoader, File folder)
-        throws Throwable {
+    private static void installNativeLibraryPath(ClassLoader classLoader, File folder) throws Throwable {
         if (folder == null || !folder.exists()) {
             ShareTinkerLog.e(TAG, "installNativeLibraryPath, folder %s is illegal", folder);
             return;
         }
         // android o sdk_int 26
         // for android o preview sdk_int 25
-        if ((Build.VERSION.SDK_INT == 25 && Build.VERSION.PREVIEW_SDK_INT != 0)
-            || Build.VERSION.SDK_INT > 25) {
+        if ((Build.VERSION.SDK_INT == 25 && Build.VERSION.PREVIEW_SDK_INT != 0) || Build.VERSION.SDK_INT > 25) {
             try {
                 V25.install(classLoader, folder);
             } catch (Throwable throwable) {
                 // install fail, try to treat it as v23
                 // some preview N version may go here
-                ShareTinkerLog.e(TAG, "installNativeLibraryPath, v25 fail, sdk: %d, error: %s, try to fallback to V23",
-                        Build.VERSION.SDK_INT, throwable.getMessage());
+                ShareTinkerLog.e(TAG, "installNativeLibraryPath, v25 fail, sdk: %d, error: %s, try to fallback to V23", Build.VERSION.SDK_INT, throwable.getMessage());
                 V23.install(classLoader, folder);
             }
         } else if (Build.VERSION.SDK_INT >= 23) {
@@ -296,9 +277,7 @@ public class TinkerLoadLibrary {
                 V23.install(classLoader, folder);
             } catch (Throwable throwable) {
                 // install fail, try to treat it as v14
-                ShareTinkerLog.e(TAG, "installNativeLibraryPath, v23 fail, sdk: %d, error: %s, try to fallback to V14",
-                    Build.VERSION.SDK_INT, throwable.getMessage());
-
+                ShareTinkerLog.e(TAG, "installNativeLibraryPath, v23 fail, sdk: %d, error: %s, try to fallback to V14", Build.VERSION.SDK_INT, throwable.getMessage());
                 V14.install(classLoader, folder);
             }
         } else if (Build.VERSION.SDK_INT >= 14) {
@@ -309,13 +288,13 @@ public class TinkerLoadLibrary {
     }
 
     private static final class V4 {
-        private static void install(ClassLoader classLoader, File folder)  throws Throwable {
+
+        private static void install(ClassLoader classLoader, File folder) throws Throwable {
             String addPath = folder.getPath();
             Field pathField = ShareReflectUtil.findField(classLoader, "libPath");
             final String origLibPaths = (String) pathField.get(classLoader);
             final String[] origLibPathSplit = origLibPaths.split(":");
             final StringBuilder newLibPaths = new StringBuilder(addPath);
-
             for (String origLibPath : origLibPathSplit) {
                 if (origLibPath == null || addPath.equals(origLibPath)) {
                     continue;
@@ -323,7 +302,6 @@ public class TinkerLoadLibrary {
                 newLibPaths.append(':').append(origLibPath);
             }
             pathField.set(classLoader, newLibPaths.toString());
-
             final Field libraryPathElementsFiled = ShareReflectUtil.findField(classLoader, "libraryPathElements");
             final List<String> libraryPathElements = (List<String>) libraryPathElementsFiled.get(classLoader);
             final Iterator<String> libPathElementIt = libraryPathElements.iterator();
@@ -340,13 +318,12 @@ public class TinkerLoadLibrary {
     }
 
     private static final class V14 {
-        private static void install(ClassLoader classLoader, File folder)  throws Throwable {
+
+        private static void install(ClassLoader classLoader, File folder) throws Throwable {
             final Field pathListField = ShareReflectUtil.findField(classLoader, "pathList");
             final Object dexPathList = pathListField.get(classLoader);
-
             final Field nativeLibDirField = ShareReflectUtil.findField(dexPathList, "nativeLibraryDirectories");
             final File[] origNativeLibDirs = (File[]) nativeLibDirField.get(dexPathList);
-
             final List<File> newNativeLibDirList = new ArrayList<>(origNativeLibDirs.length + 1);
             newNativeLibDirList.add(folder);
             for (File origNativeLibDir : origNativeLibDirs) {
@@ -359,12 +336,11 @@ public class TinkerLoadLibrary {
     }
 
     private static final class V23 {
-        private static void install(ClassLoader classLoader, File folder)  throws Throwable {
+
+        private static void install(ClassLoader classLoader, File folder) throws Throwable {
             final Field pathListField = ShareReflectUtil.findField(classLoader, "pathList");
             final Object dexPathList = pathListField.get(classLoader);
-
             final Field nativeLibraryDirectories = ShareReflectUtil.findField(dexPathList, "nativeLibraryDirectories");
-
             List<File> origLibDirs = (List<File>) nativeLibraryDirectories.get(dexPathList);
             if (origLibDirs == null) {
                 origLibDirs = new ArrayList<>(2);
@@ -378,35 +354,28 @@ public class TinkerLoadLibrary {
                 }
             }
             origLibDirs.add(0, folder);
-
             final Field systemNativeLibraryDirectories = ShareReflectUtil.findField(dexPathList, "systemNativeLibraryDirectories");
             List<File> origSystemLibDirs = (List<File>) systemNativeLibraryDirectories.get(dexPathList);
             if (origSystemLibDirs == null) {
                 origSystemLibDirs = new ArrayList<>(2);
             }
-
             final List<File> newLibDirs = new ArrayList<>(origLibDirs.size() + origSystemLibDirs.size() + 1);
             newLibDirs.addAll(origLibDirs);
             newLibDirs.addAll(origSystemLibDirs);
-
-            final Method makeElements = ShareReflectUtil.findMethod(dexPathList,
-                    "makePathElements", List.class, File.class, List.class);
+            final Method makeElements = ShareReflectUtil.findMethod(dexPathList, "makePathElements", List.class, File.class, List.class);
             final ArrayList<IOException> suppressedExceptions = new ArrayList<>();
-
             final Object[] elements = (Object[]) makeElements.invoke(dexPathList, newLibDirs, null, suppressedExceptions);
-
             final Field nativeLibraryPathElements = ShareReflectUtil.findField(dexPathList, "nativeLibraryPathElements");
             nativeLibraryPathElements.set(dexPathList, elements);
         }
     }
 
     private static final class V25 {
-        private static void install(ClassLoader classLoader, File folder)  throws Throwable {
+
+        private static void install(ClassLoader classLoader, File folder) throws Throwable {
             final Field pathListField = ShareReflectUtil.findField(classLoader, "pathList");
             final Object dexPathList = pathListField.get(classLoader);
-
             final Field nativeLibraryDirectories = ShareReflectUtil.findField(dexPathList, "nativeLibraryDirectories");
-
             List<File> origLibDirs = (List<File>) nativeLibraryDirectories.get(dexPathList);
             if (origLibDirs == null) {
                 origLibDirs = new ArrayList<>(2);
@@ -420,21 +389,16 @@ public class TinkerLoadLibrary {
                 }
             }
             origLibDirs.add(0, folder);
-
             final Field systemNativeLibraryDirectories = ShareReflectUtil.findField(dexPathList, "systemNativeLibraryDirectories");
             List<File> origSystemLibDirs = (List<File>) systemNativeLibraryDirectories.get(dexPathList);
             if (origSystemLibDirs == null) {
                 origSystemLibDirs = new ArrayList<>(2);
             }
-
             final List<File> newLibDirs = new ArrayList<>(origLibDirs.size() + origSystemLibDirs.size() + 1);
             newLibDirs.addAll(origLibDirs);
             newLibDirs.addAll(origSystemLibDirs);
-
             final Method makeElements = ShareReflectUtil.findMethod(dexPathList, "makePathElements", List.class);
-
             final Object[] elements = (Object[]) makeElements.invoke(dexPathList, newLibDirs);
-
             final Field nativeLibraryPathElements = ShareReflectUtil.findField(dexPathList, "nativeLibraryPathElements");
             nativeLibraryPathElements.set(dexPathList, elements);
         }

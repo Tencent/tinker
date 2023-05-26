@@ -3,8 +3,8 @@ package com.tencent.tinker.commons.dexpatcher;
 /**
  * Created by tangyinsheng on 2016/9/18.
  */
-
 public final class DexPatcherLogger {
+
     private IDexPatcherLogger loggerImpl = null;
 
     public IDexPatcherLogger getLoggerImpl() {
@@ -50,8 +50,8 @@ public final class DexPatcherLogger {
         }
     }
 
-
     public interface IDexPatcherLogger {
+
         void v(String msg);
 
         void d(String msg);

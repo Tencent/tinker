@@ -13,15 +13,11 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.reporter;
-
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
-
 import java.io.File;
 import java.util.List;
 
@@ -29,6 +25,7 @@ import java.util.List;
  * Created by zhangshaowen on 16/3/14.
  */
 public class DefaultPatchReporter implements PatchReporter {
+
     protected final Context context;
 
     public DefaultPatchReporter(Context context) {

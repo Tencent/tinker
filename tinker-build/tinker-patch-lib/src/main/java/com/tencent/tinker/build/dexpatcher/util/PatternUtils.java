@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.dexpatcher.util;
 
 /**
@@ -25,11 +24,8 @@ public class PatternUtils {
         if (dotPattern.startsWith("L") && dotPattern.endsWith(";") || dotPattern.startsWith("[")) {
             return dotPattern.replace('.', '/').replace("[", "\\[");
         }
-
         String descriptor = dotPattern.replace('.', '/');
-
         StringBuilder sb = new StringBuilder();
-
         int i;
         for (i = dotPattern.length() - 1; i >= 1; i -= 2) {
             char ch = dotPattern.charAt(i);
@@ -40,9 +36,7 @@ public class PatternUtils {
                 break;
             }
         }
-
         descriptor = descriptor.substring(0, i + 1);
-
         if ("void".equals(descriptor)) {
             descriptor = "V";
             sb.append(descriptor);
@@ -72,18 +66,15 @@ public class PatternUtils {
             sb.append(descriptor);
         } else {
             sb.append('L').append(descriptor);
-
             if (!descriptor.endsWith(";")) {
                 sb.append(';');
             }
         }
-
         String regEx = sb.toString();
         regEx = regEx.replace("*", ".*");
         regEx = regEx.replace("?", ".?");
         regEx = regEx.replace("$", "\\$");
         regEx = '^' + regEx + '$';
-
         return regEx;
     }
 }

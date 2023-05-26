@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 public final class SizeOf {
+
     public static final int UBYTE = 1;
+
     public static final int USHORT = 2;
+
     public static final int UINT = 4;
+
     public static final int SIGNATURE = UBYTE * 20;
+
     public static final int CHECKSUM = UBYTE * 4;
+
     /**
      * magic ubyte[8]
      * checksum uint
@@ -47,31 +52,38 @@ public final class SizeOf {
      * data_size uint
      * data_off uint
      */
-    public static final int HEADER_ITEM = (8 * UBYTE) + UINT + SIGNATURE + (20 * UINT); // 0x70
+    // 0x70
+    public static final int HEADER_ITEM = (8 * UBYTE) + UINT + SIGNATURE + (20 * UINT);
+
     /**
      * string_data_off uint
      */
     public static final int STRING_ID_ITEM = UINT;
+
     /**
      * descriptor_idx uint
      */
     public static final int TYPE_ID_ITEM = UINT;
+
     /**
      * type_idx ushort
      */
     public static final int TYPE_ITEM = USHORT;
+
     /**
      * shorty_idx uint
      * return_type_idx uint
      * return_type_idx uint
      */
     public static final int PROTO_ID_ITEM = UINT + UINT + UINT;
+
     /**
      * class_idx ushort
      * type_idx/proto_idx ushort
      * name_idx uint
      */
     public static final int MEMBER_ID_ITEM = USHORT + USHORT + UINT;
+
     /**
      * class_idx uint
      * access_flags uint
@@ -83,6 +95,7 @@ public final class SizeOf {
      * static_values_off uint
      */
     public static final int CLASS_DEF_ITEM = 8 * UINT;
+
     /**
      * type ushort
      * unused ushort
@@ -90,6 +103,7 @@ public final class SizeOf {
      * offset uint
      */
     public static final int MAP_ITEM = USHORT + USHORT + UINT + UINT;
+
     /**
      * start_addr uint
      * insn_count ushort
@@ -97,7 +111,8 @@ public final class SizeOf {
      */
     public static final int TRY_ITEM = UINT + USHORT + USHORT;
 
-    private SizeOf() { }
+    private SizeOf() {
+    }
 
     public static int roundToTimesOfFour(int value) {
         return (value + 3) & (~3);

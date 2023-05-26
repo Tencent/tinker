@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.util;
 
 import com.tencent.tinker.android.utils.SparseBoolArray;
@@ -24,36 +23,62 @@ import com.tencent.tinker.android.utils.SparseIntArray;
  *
  * *** This file is renamed from IndexMap in dx project. ***
  */
-
 public class SparseIndexMap extends AbstractIndexMap {
+
     private final SparseIntArray stringIdsMap = new SparseIntArray();
+
     private final SparseIntArray typeIdsMap = new SparseIntArray();
+
     private final SparseIntArray protoIdsMap = new SparseIntArray();
+
     private final SparseIntArray fieldIdsMap = new SparseIntArray();
+
     private final SparseIntArray methodIdsMap = new SparseIntArray();
+
     private final SparseIntArray typeListOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray annotationOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray annotationSetOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray annotationSetRefListOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray annotationsDirectoryOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray staticValuesOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray classDataOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray debugInfoItemOffsetsMap = new SparseIntArray();
+
     private final SparseIntArray codeOffsetsMap = new SparseIntArray();
 
     private final SparseBoolArray deletedStringIds = new SparseBoolArray();
+
     private final SparseBoolArray deletedTypeIds = new SparseBoolArray();
+
     private final SparseBoolArray deletedProtoIds = new SparseBoolArray();
+
     private final SparseBoolArray deletedFieldIds = new SparseBoolArray();
+
     private final SparseBoolArray deletedMethodIds = new SparseBoolArray();
+
     private final SparseBoolArray deletedTypeListOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedAnnotationOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedAnnotationSetOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedAnnotationSetRefListOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedAnnotationsDirectoryOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedStaticValuesOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedClassDataOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedDebugInfoItemOffsets = new SparseBoolArray();
+
     private final SparseBoolArray deletedCodeOffsets = new SparseBoolArray();
 
     public void mapStringIds(int oldIndex, int newIndex) {
@@ -61,7 +86,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markStringIdDeleted(int index) {
-        if (index < 0) return;
+        if (index < 0)
+            return;
         deletedStringIds.put(index, true);
     }
 
@@ -70,7 +96,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markTypeIdDeleted(int index) {
-        if (index < 0) return;
+        if (index < 0)
+            return;
         deletedTypeIds.put(index, true);
     }
 
@@ -79,7 +106,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markProtoIdDeleted(int index) {
-        if (index < 0) return;
+        if (index < 0)
+            return;
         deletedProtoIds.put(index, true);
     }
 
@@ -88,7 +116,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markFieldIdDeleted(int index) {
-        if (index < 0) return;
+        if (index < 0)
+            return;
         deletedFieldIds.put(index, true);
     }
 
@@ -97,7 +126,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markMethodIdDeleted(int index) {
-        if (index < 0) return;
+        if (index < 0)
+            return;
         deletedMethodIds.put(index, true);
     }
 
@@ -106,7 +136,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markTypeListDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedTypeListOffsets.put(offset, true);
     }
 
@@ -115,7 +146,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markAnnotationDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedAnnotationOffsets.put(offset, true);
     }
 
@@ -124,7 +156,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markAnnotationSetDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedAnnotationSetOffsets.put(offset, true);
     }
 
@@ -133,7 +166,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markAnnotationSetRefListDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedAnnotationSetRefListOffsets.put(offset, true);
     }
 
@@ -142,7 +176,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markAnnotationsDirectoryDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedAnnotationsDirectoryOffsets.put(offset, true);
     }
 
@@ -151,7 +186,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markStaticValuesDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedStaticValuesOffsets.put(offset, true);
     }
 
@@ -160,7 +196,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markClassDataDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedClassDataOffsets.put(offset, true);
     }
 
@@ -169,7 +206,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markDebugInfoItemDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedDebugInfoItemOffsets.put(offset, true);
     }
 
@@ -178,7 +216,8 @@ public class SparseIndexMap extends AbstractIndexMap {
     }
 
     public void markCodeDeleted(int offset) {
-        if (offset < 0) return;
+        if (offset < 0)
+            return;
         deletedCodeOffsets.put(offset, true);
     }
 

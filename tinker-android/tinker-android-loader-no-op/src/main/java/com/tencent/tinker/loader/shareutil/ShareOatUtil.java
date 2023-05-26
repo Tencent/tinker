@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import java.io.File;
@@ -25,8 +24,8 @@ import java.nio.charset.Charset;
 /**
  * Created by tangyinsheng on 2017/3/14.
  */
-
 public final class ShareOatUtil {
+
     private static final String TAG = "Tinker.OatUtil";
 
     private ShareOatUtil() {
@@ -54,37 +53,21 @@ public final class ShareOatUtil {
             if (roDataHdr == null) {
                 throw new IOException("Unable to find .rodata section.");
             }
-
             final FileChannel channel = elfFile.getChannel();
             channel.position(roDataHdr.shOffset);
-
             final byte[] oatMagicAndVersion = new byte[8];
             ShareElfFile.readUntilLimit(channel, ByteBuffer.wrap(oatMagicAndVersion), "Failed to read oat magic and version.");
-
-            if (oatMagicAndVersion[0] != 'o'
-                    || oatMagicAndVersion[1] != 'a'
-                    || oatMagicAndVersion[2] != 't'
-                    || oatMagicAndVersion[3] != '\n') {
-                throw new IOException(
-                        String.format("Bad oat magic: %x %x %x %x",
-                                oatMagicAndVersion[0],
-                                oatMagicAndVersion[1],
-                                oatMagicAndVersion[2],
-                                oatMagicAndVersion[3])
-                );
+            if (oatMagicAndVersion[0] != 'o' || oatMagicAndVersion[1] != 'a' || oatMagicAndVersion[2] != 't' || oatMagicAndVersion[3] != '\n') {
+                throw new IOException(String.format("Bad oat magic: %x %x %x %x", oatMagicAndVersion[0], oatMagicAndVersion[1], oatMagicAndVersion[2], oatMagicAndVersion[3]));
             }
-
             final int versionOffsetFromOatBegin = 4;
             final int versionBytes = 3;
-
-            final String oatVersion = new String(oatMagicAndVersion,
-                    versionOffsetFromOatBegin, versionBytes, Charset.forName("ASCII"));
+            final String oatVersion = new String(oatMagicAndVersion, versionOffsetFromOatBegin, versionBytes, Charset.forName("ASCII"));
             try {
                 Integer.parseInt(oatVersion);
             } catch (NumberFormatException e) {
                 throw new IOException("Bad oat version: " + oatVersion);
             }
-
             ByteBuffer buffer = ByteBuffer.allocate(128);
             buffer.order(elfFile.getDataOrder());
             // TODO This is a risk point, since each oat version may use a different offset.
@@ -94,13 +77,11 @@ public final class ShareOatUtil {
             channel.position(roDataHdr.shOffset + isaNumOffsetFromOatBegin);
             buffer.limit(4);
             ShareElfFile.readUntilLimit(channel, buffer, "Failed to read isa num.");
-
             int isaNum = buffer.getInt();
             if (isaNum < 0 || isaNum >= InstructionSet.values().length) {
                 throw new IOException("Bad isa num: " + isaNum);
             }
-
-            switch (InstructionSet.values()[isaNum]) {
+            switch(InstructionSet.values()[isaNum]) {
                 case kArm:
                 case kThumb2:
                     result = "arm";
@@ -139,6 +120,7 @@ public final class ShareOatUtil {
     }
 
     private enum InstructionSet {
+
         kNone,
         kArm,
         kArm64,

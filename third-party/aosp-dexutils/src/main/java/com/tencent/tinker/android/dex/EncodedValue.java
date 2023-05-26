@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.ByteInput;
 import com.tencent.tinker.android.dex.util.CompareUtils;
-
 import java.util.Arrays;
-
 import static com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 
 /**
  * An encoded value or array.
  */
 public final class EncodedValue extends Item<EncodedValue> {
+
     public byte[] data;
 
     public EncodedValue(int off, byte[] data) {
@@ -36,6 +34,7 @@ public final class EncodedValue extends Item<EncodedValue> {
 
     public ByteInput asByteInput() {
         return new ByteInput() {
+
             private int position = 0;
 
             @Override
@@ -45,7 +44,8 @@ public final class EncodedValue extends Item<EncodedValue> {
         };
     }
 
-    @Override public int compareTo(EncodedValue other) {
+    @Override
+    public int compareTo(EncodedValue other) {
         return CompareUtils.uArrCompare(data, other.data);
     }
 

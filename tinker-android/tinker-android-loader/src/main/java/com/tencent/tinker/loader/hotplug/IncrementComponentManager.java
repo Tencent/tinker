@@ -15,15 +15,12 @@ import android.os.PatternMatcher;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Xml;
-
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Method;
@@ -33,26 +30,32 @@ import java.util.Map;
 /**
  * Created by tangyinsheng on 2017/8/3.
  */
-
 public final class IncrementComponentManager {
+
     private static final String TAG = "Tinker.IncrementCompMgr";
 
     private static final int TAG_ACTIVITY = 0;
+
     private static final int TAG_SERVICE = 1;
+
     private static final int TAG_PROVIDER = 2;
+
     private static final int TAG_RECEIVER = 3;
 
     private static Context sContext = null;
+
     private static String sPackageName = null;
+
     private static volatile boolean sInitialized = false;
+
     private static final Map<String, ActivityInfo> CLASS_NAME_TO_ACTIVITY_INFO_MAP = new HashMap<>();
+
     private static final Map<String, IntentFilter> CLASS_NAME_TO_INTENT_FILTER_MAP = new HashMap<>();
 
-
     private static abstract class AttrTranslator<T_RESULT> {
+
         final void translate(Context context, int tagType, XmlPullParser parser, T_RESULT result) {
             onInit(context, tagType, parser);
-
             final int attrCount = parser.getAttributeCount();
             for (int i = 0; i < attrCount; ++i) {
                 final String attrPrefix = parser.getAttributePrefix(i);
@@ -77,9 +80,7 @@ public final class IncrementComponentManager {
         @Override
         void onInit(Context context, int tagType, XmlPullParser parser) {
             try {
-                if (tagType == TAG_ACTIVITY
-                        && (parser.getEventType() != XmlPullParser.START_TAG
-                        || !"activity".equals(parser.getName()))) {
+                if (tagType == TAG_ACTIVITY && (parser.getEventType() != XmlPullParser.START_TAG || !"activity".equals(parser.getName()))) {
                     throw new IllegalStateException("unexpected xml parser state when parsing incremental component manifest.");
                 }
             } catch (XmlPullParserException e) {
@@ -175,8 +176,7 @@ public final class IncrementComponentManager {
                 }
             } else if ("showOnLockScreen".equals(attrName) || "showForAllUsers".equals(attrName)) {
                 if (Build.VERSION.SDK_INT >= 23) {
-                    final int flag = ShareReflectUtil
-                            .getValueOfStaticIntField(ActivityInfo.class, "FLAG_SHOW_FOR_ALL_USERS", 0);
+                    final int flag = ShareReflectUtil.getValueOfStaticIntField(ActivityInfo.class, "FLAG_SHOW_FOR_ALL_USERS", 0);
                     if ("true".equalsIgnoreCase(attrValue)) {
                         result.flags |= flag;
                     } else {
@@ -216,8 +216,7 @@ public final class IncrementComponentManager {
                     result.persistableMode = Integer.decode(attrValue);
                 }
             } else if ("allowEmbedded".equals(attrName)) {
-                final int flag = ShareReflectUtil
-                        .getValueOfStaticIntField(ActivityInfo.class, "FLAG_ALLOW_EMBEDDED", 0);
+                final int flag = ShareReflectUtil.getValueOfStaticIntField(ActivityInfo.class, "FLAG_ALLOW_EMBEDDED", 0);
                 if ("true".equalsIgnoreCase(attrValue)) {
                     result.flags |= flag;
                 } else {
@@ -361,7 +360,7 @@ public final class IncrementComponentManager {
             parser.setInput(sr);
             int event = parser.getEventType();
             while (event != XmlPullParser.END_DOCUMENT) {
-                switch (event) {
+                switch(event) {
                     case XmlPullParser.START_TAG:
                         final String tagName = parser.getName();
                         if ("activity".equalsIgnoreCase(tagName)) {
@@ -397,11 +396,9 @@ public final class IncrementComponentManager {
     }
 
     @SuppressWarnings("unchecked")
-    private static synchronized ActivityInfo parseActivity(Context context, XmlPullParser parser)
-            throws XmlPullParserException, IOException {
+    private static synchronized ActivityInfo parseActivity(Context context, XmlPullParser parser) throws XmlPullParserException, IOException {
         final ActivityInfo aInfo = new ActivityInfo();
         final ApplicationInfo appInfo = context.getApplicationInfo();
-
         aInfo.applicationInfo = appInfo;
         aInfo.packageName = sPackageName;
         aInfo.processName = appInfo.processName;
@@ -409,30 +406,24 @@ public final class IncrementComponentManager {
         aInfo.permission = appInfo.permission;
         aInfo.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         aInfo.taskAffinity = appInfo.taskAffinity;
-
         if (Build.VERSION.SDK_INT >= 11 && (appInfo.flags & ApplicationInfo.FLAG_HARDWARE_ACCELERATED) != 0) {
             aInfo.flags |= ActivityInfo.FLAG_HARDWARE_ACCELERATED;
         }
-
         if (Build.VERSION.SDK_INT >= 21) {
             aInfo.documentLaunchMode = ActivityInfo.DOCUMENT_LAUNCH_NONE;
         }
         if (Build.VERSION.SDK_INT >= 14) {
             aInfo.uiOptions = appInfo.uiOptions;
         }
-
         ACTIVITY_INFO_ATTR_TRANSLATOR.translate(context, TAG_ACTIVITY, parser, aInfo);
-
         final int outerDepth = parser.getDepth();
         while (true) {
             final int type = parser.next();
-            if (type == XmlPullParser.END_DOCUMENT
-                    || (type == XmlPullParser.END_TAG && parser.getDepth() <= outerDepth)) {
+            if (type == XmlPullParser.END_DOCUMENT || (type == XmlPullParser.END_TAG && parser.getDepth() <= outerDepth)) {
                 break;
             } else if (type == XmlPullParser.END_TAG || type == XmlPullParser.TEXT) {
                 continue;
             }
-
             final String tagName = parser.getName();
             if ("intent-filter".equalsIgnoreCase(tagName)) {
                 parseIntentFilter(context, aInfo.name, parser);
@@ -440,40 +431,32 @@ public final class IncrementComponentManager {
                 parseMetaData(context, aInfo, parser);
             }
         }
-
         return aInfo;
     }
 
-    private static synchronized void parseIntentFilter(Context context, String componentName, XmlPullParser parser)
-            throws XmlPullParserException, IOException {
+    private static synchronized void parseIntentFilter(Context context, String componentName, XmlPullParser parser) throws XmlPullParserException, IOException {
         final IntentFilter intentFilter = new IntentFilter();
-
         final String priorityStr = parser.getAttributeValue(null, "priority");
         if (!TextUtils.isEmpty(priorityStr)) {
             intentFilter.setPriority(Integer.decode(priorityStr));
         }
-
         final String autoVerify = parser.getAttributeValue(null, "autoVerify");
         if (!TextUtils.isEmpty(autoVerify)) {
             try {
-                final Method setAutoVerifyMethod
-                        = ShareReflectUtil.findMethod(IntentFilter.class, "setAutoVerify", boolean.class);
+                final Method setAutoVerifyMethod = ShareReflectUtil.findMethod(IntentFilter.class, "setAutoVerify", boolean.class);
                 setAutoVerifyMethod.invoke(intentFilter, "true".equalsIgnoreCase(autoVerify));
             } catch (Throwable ignored) {
                 // Ignored.
             }
         }
-
         final int outerDepth = parser.getDepth();
         while (true) {
             final int type = parser.next();
-            if (type == XmlPullParser.END_DOCUMENT
-                    || (type == XmlPullParser.END_TAG && parser.getDepth() <= outerDepth)) {
+            if (type == XmlPullParser.END_DOCUMENT || (type == XmlPullParser.END_TAG && parser.getDepth() <= outerDepth)) {
                 break;
             } else if (type == XmlPullParser.END_TAG || type == XmlPullParser.TEXT) {
                 continue;
             }
-
             final String tagName = parser.getName();
             if ("action".equals(tagName)) {
                 final String name = parser.getAttributeValue(null, "name");
@@ -532,12 +515,10 @@ public final class IncrementComponentManager {
             }
             skipCurrentTag(parser);
         }
-
         CLASS_NAME_TO_INTENT_FILTER_MAP.put(componentName, intentFilter);
     }
 
-    private static synchronized void parseMetaData(Context context, ActivityInfo aInfo, XmlPullParser parser)
-            throws XmlPullParserException, IOException {
+    private static synchronized void parseMetaData(Context context, ActivityInfo aInfo, XmlPullParser parser) throws XmlPullParserException, IOException {
         final ClassLoader myCl = IncrementComponentManager.class.getClassLoader();
         final String name = parser.getAttributeValue(null, "name");
         final String value = parser.getAttributeValue(null, "value");
@@ -552,9 +533,7 @@ public final class IncrementComponentManager {
     private static void skipCurrentTag(XmlPullParser parser) throws IOException, XmlPullParserException {
         int outerDepth = parser.getDepth();
         int type;
-        while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
-                && (type != XmlPullParser.END_TAG
-                || parser.getDepth() > outerDepth)) {
+        while ((type = parser.next()) != XmlPullParser.END_DOCUMENT && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
         }
     }
 
@@ -577,12 +556,10 @@ public final class IncrementComponentManager {
     // TODO needs to support rest type of components.
     public static ResolveInfo resolveIntent(Intent intent) {
         ensureInitialized();
-
         int maxPriority = -1;
         String bestComponentName = null;
         IntentFilter respFilter = null;
         int bestMatchRes = 0;
-
         final ComponentName component = intent.getComponent();
         if (component != null) {
             final String compName = component.getClassName();
@@ -594,12 +571,8 @@ public final class IncrementComponentManager {
             for (Map.Entry<String, IntentFilter> item : CLASS_NAME_TO_INTENT_FILTER_MAP.entrySet()) {
                 final String componentName = item.getKey();
                 final IntentFilter intentFilter = item.getValue();
-                final int matchRes = intentFilter.match(intent.getAction(), intent.getType(),
-                        intent.getScheme(), intent.getData(), intent.getCategories(), TAG);
-                final boolean matches = (matchRes != IntentFilter.NO_MATCH_ACTION)
-                        && (matchRes != IntentFilter.NO_MATCH_CATEGORY)
-                        && (matchRes != IntentFilter.NO_MATCH_DATA)
-                        && (matchRes != IntentFilter.NO_MATCH_TYPE);
+                final int matchRes = intentFilter.match(intent.getAction(), intent.getType(), intent.getScheme(), intent.getData(), intent.getCategories(), TAG);
+                final boolean matches = (matchRes != IntentFilter.NO_MATCH_ACTION) && (matchRes != IntentFilter.NO_MATCH_CATEGORY) && (matchRes != IntentFilter.NO_MATCH_DATA) && (matchRes != IntentFilter.NO_MATCH_TYPE);
                 final int priority = intentFilter.getPriority();
                 if (matches && priority > maxPriority) {
                     maxPriority = priority;

@@ -2,7 +2,6 @@ package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.bsdiff.BSDiff;
 import com.tencent.tinker.build.patch.Configuration;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -40,5 +39,4 @@ public class DiffFactory {
             e.printStackTrace();
         }
     }
-
 }

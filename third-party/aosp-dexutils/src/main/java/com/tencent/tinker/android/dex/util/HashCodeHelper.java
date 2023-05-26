@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 
 public final class HashCodeHelper {
+
     public static int hash(Object... values) {
         if (values == null || values.length == 0) {
             return 0;

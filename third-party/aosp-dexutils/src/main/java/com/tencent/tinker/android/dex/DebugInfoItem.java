@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
@@ -26,18 +25,29 @@ import com.tencent.tinker.android.dex.util.HashCodeHelper;
  * Structure of DebugInfoItem element in Dex file.
  */
 public class DebugInfoItem extends Item<DebugInfoItem> {
+
     public static final byte DBG_END_SEQUENCE = 0x00;
+
     public static final byte DBG_ADVANCE_PC = 0x01;
+
     public static final byte DBG_ADVANCE_LINE = 0x02;
+
     public static final byte DBG_START_LOCAL = 0x03;
+
     public static final byte DBG_START_LOCAL_EXTENDED = 0x04;
+
     public static final byte DBG_END_LOCAL = 0x05;
+
     public static final byte DBG_RESTART_LOCAL = 0x06;
+
     public static final byte DBG_SET_PROLOGUE_END = 0x07;
+
     public static final byte DBG_SET_EPILOGUE_BEGIN = 0x08;
+
     public static final byte DBG_SET_FILE = 0x09;
 
     public int lineStart;
+
     public int[] parameterNames;
 
     public byte[] infoSTM;
@@ -56,10 +66,9 @@ public class DebugInfoItem extends Item<DebugInfoItem> {
         if (origLineStart != destLineStart) {
             return origLineStart - destLineStart;
         }
-
         int cmpRes = CompareUtils.uArrCompare(parameterNames, o.parameterNames);
-        if (cmpRes != 0) return cmpRes;
-
+        if (cmpRes != 0)
+            return cmpRes;
         cmpRes = CompareUtils.uArrCompare(infoSTM, o.infoSTM);
         return cmpRes;
     }

@@ -7,11 +7,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Process;
 import android.util.Log;
-
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.lang.reflect.Field;
 
 /**
@@ -24,9 +22,9 @@ import java.lang.reflect.Field;
  * <p>
  * Monitor and handle them.
  * <p>
- *
  */
 public final class AppInfoChangedBlocker {
+
     private static final String TAG = "Tinker.AppInfoChangedBlocker";
 
     public static boolean tryStart(Application app) {
@@ -74,7 +72,8 @@ public final class AppInfoChangedBlocker {
             try {
                 appInfoChanged = ShareReflectUtil.findField($H, "APPLICATION_INFO_CHANGED").getInt(null);
             } catch (Throwable e) {
-                appInfoChanged = 156; // default value
+                // default value
+                appInfoChanged = 156;
             }
             APPLICATION_INFO_CHANGED = appInfoChanged;
         }
@@ -102,6 +101,5 @@ public final class AppInfoChangedBlocker {
             }
             return false;
         }
-
     }
 }

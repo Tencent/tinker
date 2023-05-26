@@ -8,24 +8,21 @@ import android.content.pm.ActivityInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Message;
-
 import com.tencent.tinker.loader.hotplug.EnvConsts;
 import com.tencent.tinker.loader.hotplug.IncrementComponentManager;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
 import static com.tencent.tinker.loader.hotplug.interceptor.HandlerMessageInterceptor.MessageHandler;
 
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
-
 public class MHMessageHandler implements MessageHandler {
+
     private static final String TAG = "Tinker.MHMsgHndlr";
 
     private static final int LAUNCH_ACTIVITY;
@@ -74,9 +71,7 @@ public class MHMessageHandler implements MessageHandler {
                     ShareTinkerLog.w(TAG, "cannot fetch intent from message received by mH.");
                     return false;
                 }
-
                 ShareIntentUtil.fixIntentClassLoader(maybeHackedIntent, mContext.getClassLoader());
-
                 final ComponentName oldComponent = maybeHackedIntent.getParcelableExtra(EnvConsts.INTENT_EXTRA_OLD_COMPONENT);
                 if (oldComponent == null) {
                     ShareTinkerLog.w(TAG, "oldComponent was null, start " + maybeHackedIntent.getComponent() + " next.");
@@ -89,8 +84,7 @@ public class MHMessageHandler implements MessageHandler {
                 }
                 final ActivityInfo targetAInfo = IncrementComponentManager.queryActivityInfo(oldComponent.getClassName());
                 if (targetAInfo == null) {
-                    ShareTinkerLog.e(TAG, "Failed to query target activity's info,"
-                            + " perhaps the target is not hotpluged component. Target: " + oldComponent.getClassName());
+                    ShareTinkerLog.e(TAG, "Failed to query target activity's info," + " perhaps the target is not hotpluged component. Target: " + oldComponent.getClassName());
                     return false;
                 }
                 fixActivityScreenOrientation(activityClientRecord, targetAInfo.screenOrientation);
@@ -101,7 +95,6 @@ public class MHMessageHandler implements MessageHandler {
                 ShareTinkerLog.e(TAG, "exception in handleMessage.", thr);
             }
         }
-
         return false;
     }
 

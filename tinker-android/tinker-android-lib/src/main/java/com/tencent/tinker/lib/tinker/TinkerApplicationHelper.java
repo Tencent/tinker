@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.tinker;
 
 import android.content.Intent;
-
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -26,7 +24,6 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +34,7 @@ import java.util.Map;
  * Created by zhangshaowen on 16/6/28.
  */
 public class TinkerApplicationHelper {
+
     private static final String TAG = "Tinker.TinkerApplicationHelper";
 
     /**
@@ -105,7 +103,6 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-
         return SharePatchFileUtil.getPatchDirectory(applicationLike.getApplication());
     }
 
@@ -120,14 +117,11 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-
         Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
-
         if (tinkerResultIntent == null) {
             return false;
         }
         int loadCode = ShareIntentUtil.getIntentReturnCode(tinkerResultIntent);
-
         return (loadCode == ShareConstants.ERROR_LOAD_OK);
     }
 
@@ -141,20 +135,16 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-
         Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
-
         if (tinkerResultIntent == null) {
             return null;
         }
         int loadCode = ShareIntentUtil.getIntentReturnCode(tinkerResultIntent);
-
         if (loadCode == ShareConstants.ERROR_LOAD_OK) {
             return ShareIntentUtil.getIntentPatchDexPaths(tinkerResultIntent);
         }
         return null;
     }
-
 
     /**
      * you can use this api to get load libs before tinker is installed
@@ -166,14 +156,11 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-
         Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
-
         if (tinkerResultIntent == null) {
             return null;
         }
         int loadCode = ShareIntentUtil.getIntentReturnCode(tinkerResultIntent);
-
         if (loadCode == ShareConstants.ERROR_LOAD_OK) {
             return ShareIntentUtil.getIntentPatchLibsPaths(tinkerResultIntent);
         }
@@ -190,14 +177,11 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-
         Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
-
         if (tinkerResultIntent == null) {
             return null;
         }
         int loadCode = ShareIntentUtil.getIntentReturnCode(tinkerResultIntent);
-
         if (loadCode == ShareConstants.ERROR_LOAD_OK) {
             return ShareIntentUtil.getIntentPackageConfig(tinkerResultIntent);
         }
@@ -213,9 +197,7 @@ public class TinkerApplicationHelper {
         if (applicationLike == null || applicationLike.getApplication() == null) {
             throw new TinkerRuntimeException("tinkerApplication is null");
         }
-
         Intent tinkerResultIntent = applicationLike.getTinkerResultIntent();
-
         if (tinkerResultIntent == null) {
             return null;
         }
@@ -255,16 +237,13 @@ public class TinkerApplicationHelper {
         if (libName == null || libName.isEmpty() || applicationLike == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-
         if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
             if (TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi-v7a", libName)) {
                 return;
             }
-
         }
         System.loadLibrary(libName);
     }
-
 
     /**
      * only support auto load lib/armeabi library from patch.
@@ -275,12 +254,10 @@ public class TinkerApplicationHelper {
         if (libName == null || libName.isEmpty() || applicationLike == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-
         if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
             if (TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi", libName)) {
                 return;
             }
-
         }
         System.loadLibrary(libName);
     }
@@ -299,7 +276,6 @@ public class TinkerApplicationHelper {
         libname = libname.startsWith("lib") ? libname : "lib" + libname;
         libname = libname.endsWith(".so") ? libname : libname + ".so";
         String relativeLibPath = relativePath + "/" + libname;
-
         //TODO we should add cpu abi, and the real path later
         if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
             return false;
@@ -307,12 +283,10 @@ public class TinkerApplicationHelper {
         if (!TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
             return false;
         }
-
         final HashMap<String, String> loadLibraries = TinkerApplicationHelper.getLoadLibraryAndMd5(applicationLike);
         if (loadLibraries == null) {
             return false;
         }
-
         final String currentVersion = TinkerApplicationHelper.getCurrentVersion(applicationLike);
         if (ShareTinkerInternals.isNullOrNil(currentVersion)) {
             return false;
@@ -323,7 +297,6 @@ public class TinkerApplicationHelper {
         }
         final File patchVersionDirectory = new File(patchDirectory.getAbsolutePath() + "/" + SharePatchFileUtil.getPatchVersionDirectory(currentVersion));
         final String libPrePath = patchVersionDirectory.getAbsolutePath() + "/" + ShareConstants.SO_PATH;
-
         for (Map.Entry<String, String> libEntry : loadLibraries.entrySet()) {
             final String name = libEntry.getKey();
             if (!name.equals(relativeLibPath)) {
@@ -345,7 +318,6 @@ public class TinkerApplicationHelper {
                 return true;
             }
         }
-
         return false;
     }
 }

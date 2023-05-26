@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader;
 
 import static android.os.Build.VERSION.SDK_INT;
@@ -21,7 +20,6 @@ import static android.os.Build.VERSION_CODES.KITKAT;
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findConstructor;
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findField;
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findMethod;
-
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
@@ -30,13 +28,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.util.ArrayMap;
-
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -53,27 +49,40 @@ import java.util.Map;
  * Thanks for Android Fragmentation
  */
 class TinkerResourcePatcher {
+
     private static final String TAG = "Tinker.ResourcePatcher";
+
     private static final String TEST_ASSETS_VALUE = "only_use_to_test_tinker_resource.txt";
 
     // original object
     private static Collection<WeakReference<Resources>> references = null;
+
     private static Object currentActivityThread = null;
+
     private static AssetManager newAssetManager = null;
 
     // method
     private static Constructor<?> newAssetManagerCtor = null;
+
     private static Method addAssetPathMethod = null;
+
     private static Method addAssetPathAsSharedLibraryMethod = null;
+
     private static Method ensureStringBlocksMethod = null;
 
     // field
     private static Field assetsFiled = null;
+
     private static Field resourcesImplFiled = null;
+
     private static Field resDir = null;
+
     private static Field packagesFiled = null;
+
     private static Field resourcePackagesFiled = null;
+
     private static Field publicSourceDirField = null;
+
     private static Field stringBlocksField = null;
 
     private static long storedPatchedResModifiedTime = 0L;
@@ -83,11 +92,9 @@ class TinkerResourcePatcher {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
         //     used as the asset path for new Resources objects.
         //   - Set Application#mLoadedApk to the found LoadedApk instance
-
         // Find the ActivityThread instance for the current thread
         Class<?> activityThread = Class.forName("android.app.ActivityThread");
         currentActivityThread = ShareReflectUtil.getActivityThread(context, activityThread);
-
         // API version 8 has PackageInfo, 10 has LoadedApk. 9, I don't know.
         Class<?> loadedApkClass;
         try {
@@ -95,21 +102,17 @@ class TinkerResourcePatcher {
         } catch (ClassNotFoundException e) {
             loadedApkClass = Class.forName("android.app.ActivityThread$PackageInfo");
         }
-
         resDir = findField(loadedApkClass, "mResDir");
         packagesFiled = findField(activityThread, "mPackages");
         if (Build.VERSION.SDK_INT < 27) {
             resourcePackagesFiled = findField(activityThread, "mResourcePackages");
         }
-
         // Create a new AssetManager instance and point it to the resources
         final AssetManager assets = context.getAssets();
         addAssetPathMethod = findMethod(assets, "addAssetPath", String.class);
         if (shouldAddSharedLibraryAssets(context.getApplicationInfo())) {
-            addAssetPathAsSharedLibraryMethod =
-                    findMethod(assets, "addAssetPathAsSharedLibrary", String.class);
+            addAssetPathAsSharedLibraryMethod = findMethod(assets, "addAssetPathAsSharedLibrary", String.class);
         }
-
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
         try {
@@ -118,11 +121,9 @@ class TinkerResourcePatcher {
         } catch (Throwable ignored) {
             // Ignored.
         }
-
         // Use class fetched from instance to avoid some ROMs that use customized AssetManager
         // class. (e.g. Baidu OS)
         newAssetManagerCtor = findConstructor(assets);
-
         // Iterate over all known Resources objects
         if (SDK_INT >= KITKAT) {
             //pre-N
@@ -132,8 +133,7 @@ class TinkerResourcePatcher {
             final Object resourcesManager = mGetInstance.invoke(null);
             try {
                 Field fMActiveResources = findField(resourcesManagerClass, "mActiveResources");
-                final ArrayMap<?, WeakReference<Resources>> activeResources19 =
-                        (ArrayMap<?, WeakReference<Resources>>) fMActiveResources.get(resourcesManager);
+                final ArrayMap<?, WeakReference<Resources>> activeResources19 = (ArrayMap<?, WeakReference<Resources>>) fMActiveResources.get(resourcesManager);
                 references = activeResources19.values();
             } catch (NoSuchFieldException ignore) {
                 // N moved the resources to mResourceReferences
@@ -142,17 +142,14 @@ class TinkerResourcePatcher {
             }
         } else {
             final Field fMActiveResources = findField(activityThread, "mActiveResources");
-            final HashMap<?, WeakReference<Resources>> activeResources7 =
-                    (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
+            final HashMap<?, WeakReference<Resources>> activeResources7 = (HashMap<?, WeakReference<Resources>>) fMActiveResources.get(currentActivityThread);
             references = activeResources7.values();
         }
         // check resource
         if (references == null) {
             throw new IllegalStateException("resource references is null");
         }
-
         final Resources resources = context.getResources();
-
         // fix jianGuo pro has private field 'mAssets' with Resource
         // try use mResourcesImpl first
         if (SDK_INT >= 24) {
@@ -166,7 +163,6 @@ class TinkerResourcePatcher {
         } else {
             assetsFiled = findField(resources, "mAssets");
         }
-
         try {
             publicSourceDirField = findField(ApplicationInfo.class, "publicSourceDir");
         } catch (NoSuchFieldException ignore) {
@@ -183,20 +179,16 @@ class TinkerResourcePatcher {
         if (externalResourceFile == null) {
             return;
         }
-
         final ApplicationInfo appInfo = context.getApplicationInfo();
-
         final Field[] packagesFields;
         if (Build.VERSION.SDK_INT < 27) {
-            packagesFields = new Field[]{packagesFiled, resourcePackagesFiled};
+            packagesFields = new Field[] { packagesFiled, resourcePackagesFiled };
         } else {
-            packagesFields = new Field[]{packagesFiled};
+            packagesFields = new Field[] { packagesFiled };
         }
         for (Field field : packagesFields) {
             final Object value = field.get(currentActivityThread);
-
-            for (Map.Entry<String, WeakReference<?>> entry
-                    : ((Map<String, WeakReference<?>>) value).entrySet()) {
+            for (Map.Entry<String, WeakReference<?>> entry : ((Map<String, WeakReference<?>>) value).entrySet()) {
                 final Object loadedApk = entry.getValue().get();
                 if (loadedApk == null) {
                     continue;
@@ -207,20 +199,17 @@ class TinkerResourcePatcher {
                 }
             }
         }
-
         if (isReInject) {
             ShareTinkerLog.i(TAG, "Re-injecting, skip rest logic.");
             recordCurrentPatchedResModifiedTime(externalResourceFile);
             return;
         }
-
         newAssetManager = (AssetManager) newAssetManagerCtor.newInstance();
         // Create a new AssetManager instance and point it to the resources installed under
         if (((Integer) addAssetPathMethod.invoke(newAssetManager, externalResourceFile)) == 0) {
             throw new IllegalStateException("Could not create new AssetManager");
         }
         recordCurrentPatchedResModifiedTime(externalResourceFile);
-
         // Add SharedLibraries to AssetManager for resolve system resources not found issue
         // This influence SharedLibrary Package ID
         if (shouldAddSharedLibraryAssets(appInfo)) {
@@ -234,14 +223,12 @@ class TinkerResourcePatcher {
                 ShareTinkerLog.i(TAG, "addAssetPathAsSharedLibrary " + sharedLibrary);
             }
         }
-
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
         // in L, so we do it unconditionally.
         if (stringBlocksField != null && ensureStringBlocksMethod != null) {
             stringBlocksField.set(newAssetManager, null);
             ensureStringBlocksMethod.invoke(newAssetManager);
         }
-
         for (WeakReference<Resources> wr : references) {
             final Resources resources = wr.get();
             if (resources == null) {
@@ -258,12 +245,9 @@ class TinkerResourcePatcher {
                 final Field implAssets = findField(resourceImpl, "mAssets");
                 implAssets.set(resourceImpl, newAssetManager);
             }
-
             clearPreloadTypedArrayIssue(resources);
-
             resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
         }
-
         // Handle issues caused by WebView on Android N.
         // Issue: On Android N, if an activity contains a webview, when screen rotates
         // our resource patch may lost effects.
@@ -277,11 +261,9 @@ class TinkerResourcePatcher {
                 // Ignored.
             }
         }
-
         if (!checkResUpdate(context)) {
             throw new TinkerRuntimeException(ShareConstants.CHECK_RES_INSTALL_FAIL);
         }
-
         installResourceInsuranceHacks(context, externalResourceFile);
     }
 
@@ -293,8 +275,7 @@ class TinkerResourcePatcher {
             final Field mCallbackField = ShareReflectUtil.findField(Handler.class, "mCallback");
             final Handler.Callback originCallback = (Handler.Callback) mCallbackField.get(mH);
             if (!(originCallback instanceof ResourceInsuranceHandlerCallback)) {
-                final ResourceInsuranceHandlerCallback hackCallback = new ResourceInsuranceHandlerCallback(
-                        context, patchedResApkPath, originCallback, mH.getClass());
+                final ResourceInsuranceHandlerCallback hackCallback = new ResourceInsuranceHandlerCallback(context, patchedResApkPath, originCallback, mH.getClass());
                 mCallbackField.set(mH, hackCallback);
             } else {
                 ShareTinkerLog.w(TAG, "installResourceInsuranceHacks: already installed, skip rest logic.");
@@ -305,17 +286,23 @@ class TinkerResourcePatcher {
     }
 
     private static final class ResourceInsuranceHandlerCallback implements Handler.Callback {
+
         private static final String LAUNCH_ACTIVITY_LIFECYCLE_ITEM_CLASSNAME = "android.app.servertransaction.LaunchActivityItem";
 
         private final Context mContext;
+
         private final String mPatchResApkPath;
+
         private final Handler.Callback mOriginalCallback;
 
         private final int LAUNCH_ACTIVITY;
+
         private final int RELAUNCH_ACTIVITY;
+
         private final int EXECUTE_TRANSACTION;
 
         private Method mGetCallbacksMethod = null;
+
         private boolean mSkipInterceptExecuteTransaction = false;
 
         ResourceInsuranceHandlerCallback(Context context, String patchResApkPath, Handler.Callback original, Class<?> hClazz) {
@@ -325,9 +312,8 @@ class TinkerResourcePatcher {
             mOriginalCallback = original;
             LAUNCH_ACTIVITY = fetchMessageId(hClazz, "LAUNCH_ACTIVITY", 100);
             RELAUNCH_ACTIVITY = fetchMessageId(hClazz, "RELAUNCH_ACTIVITY", 126);
-
             if (ShareTinkerInternals.isNewerOrEqualThanVersion(28, true)) {
-                EXECUTE_TRANSACTION  = fetchMessageId(hClazz, "EXECUTE_TRANSACTION ", 159);
+                EXECUTE_TRANSACTION = fetchMessageId(hClazz, "EXECUTE_TRANSACTION ", 159);
             } else {
                 EXECUTE_TRANSACTION = -1;
             }
@@ -475,7 +461,6 @@ class TinkerResourcePatcher {
     }
 
     private static boolean shouldAddSharedLibraryAssets(ApplicationInfo applicationInfo) {
-        return SDK_INT >= Build.VERSION_CODES.N && applicationInfo != null &&
-                applicationInfo.sharedLibraryFiles != null;
+        return SDK_INT >= Build.VERSION_CODES.N && applicationInfo != null && applicationInfo.sharedLibraryFiles != null;
     }
 }

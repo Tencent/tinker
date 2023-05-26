@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.decoder;
 
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.TinkerPatchException;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,6 +25,7 @@ import java.util.ArrayList;
  * Created by zhangshaowen on 16/3/9.
  */
 public class UniqueDexDiffDecoder extends DexDiffDecoder {
+
     private ArrayList<String> addedDexFiles;
 
     public UniqueDexDiffDecoder(Configuration config, String metaPath, String logPath) throws IOException {
@@ -47,5 +46,4 @@ public class UniqueDexDiffDecoder extends DexDiffDecoder {
         }
         return added;
     }
-
 }

@@ -13,20 +13,16 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.entry;
 
 /**
  * Created by zhangshaowen on 16/3/8.
  */
-
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-
 import com.tencent.tinker.anno.Keep;
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
@@ -34,10 +30,10 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
  */
 @Keep
 public class DefaultApplicationLike extends ApplicationLike {
+
     private static final String TAG = "Tinker.DefaultAppLike";
 
-    public DefaultApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
-                                  long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent) {
+    public DefaultApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag, long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent) {
         super(application, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent);
     }
 

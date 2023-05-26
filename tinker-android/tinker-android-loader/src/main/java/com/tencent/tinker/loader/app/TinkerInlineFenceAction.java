@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.app;
 
 import android.content.Context;
@@ -27,17 +26,29 @@ import android.os.Message;
  * Created by tangyinsheng on 2019-11-05.
  */
 public final class TinkerInlineFenceAction {
+
     public static final int ACTION_ON_BASE_CONTEXT_ATTACHED = 1;
+
     public static final int ACTION_ON_CREATE = 2;
+
     public static final int ACTION_ON_CONFIGURATION_CHANGED = 3;
+
     public static final int ACTION_ON_TRIM_MEMORY = 4;
+
     public static final int ACTION_ON_LOW_MEMORY = 5;
+
     public static final int ACTION_ON_TERMINATE = 6;
+
     public static final int ACTION_GET_CLASSLOADER = 7;
+
     public static final int ACTION_GET_BASE_CONTEXT = 8;
+
     public static final int ACTION_GET_ASSETS = 9;
+
     public static final int ACTION_GET_RESOURCES = 10;
+
     public static final int ACTION_GET_SYSTEM_SERVICE = 11;
+
     public static final int ACTION_MZ_NIGHTMODE_USE_OF = 12;
 
     static void callOnBaseContextAttached(Handler inlineFence, Context context) {
@@ -147,7 +158,7 @@ public final class TinkerInlineFenceAction {
     static Object callGetSystemService(Handler inlineFence, String name, Object service) {
         Message msg = null;
         try {
-            msg = Message.obtain(inlineFence, ACTION_GET_SYSTEM_SERVICE, new Object[]{name, service});
+            msg = Message.obtain(inlineFence, ACTION_GET_SYSTEM_SERVICE, new Object[] { name, service });
             inlineFence.handleMessage(msg);
             return msg.obj;
         } finally {

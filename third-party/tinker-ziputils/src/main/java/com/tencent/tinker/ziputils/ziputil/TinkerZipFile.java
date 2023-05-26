@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 import java.io.BufferedInputStream;
@@ -32,7 +31,6 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 // import libcore.io.IoUtils;
-
 /**
  * modify by zhangshaowen on 16/6/7.
  *
@@ -48,19 +46,23 @@ import java.util.zip.ZipOutputStream;
  * an existing zip file.
  */
 public class TinkerZipFile implements Closeable, ZipConstants {
+
     /**
      * Open zip file for reading.
      */
     public static final int OPEN_READ = 1;
+
     /**
      * Delete zip file when closed.
      */
     public static final int OPEN_DELETE = 4;
+
     /**
      * General Purpose Bit Flags, Bit 0.
      * If set, indicates that the file is encrypted.
      */
     static final int GPBF_ENCRYPTED_FLAG = 1 << 0;
+
     /**
      * General Purpose Bit Flags, Bit 3.
      * If this bit is set, the fields crc-32, compressed
@@ -73,6 +75,7 @@ public class TinkerZipFile implements Closeable, ZipConstants {
      * compression method.)
      */
     static final int GPBF_DATA_DESCRIPTOR_FLAG = 1 << 3;
+
     /**
      * General Purpose Bit Flags, Bit 11.
      * Language encoding flag (EFS).  If this bit is set,
@@ -80,6 +83,7 @@ public class TinkerZipFile implements Closeable, ZipConstants {
      * must be encoded using UTF-8.
      */
     static final int GPBF_UTF8_FLAG = 1 << 11;
+
     /**
      * Supported General Purpose Bit Flags Mask.
      * Bit mask of bits not supported.
@@ -89,10 +93,15 @@ public class TinkerZipFile implements Closeable, ZipConstants {
      * use cases (See http://b/8617715).
      */
     static final int GPBF_UNSUPPORTED_MASK = GPBF_ENCRYPTED_FLAG;
+
     private final String filename;
+
     private final LinkedHashMap<String, TinkerZipEntry> entries = new LinkedHashMap<String, TinkerZipEntry>();
+
     private File fileToDeleteOnClose;
+
     private RandomAccessFile raf;
+
     private String comment;
 
     /**
@@ -106,6 +115,7 @@ public class TinkerZipFile implements Closeable, ZipConstants {
     public TinkerZipFile(File file) throws ZipException, IOException {
         this(file, OPEN_READ);
     }
+
     /**
      * Constructs a new {@code ZipFile} allowing read access to the contents of the given file.
      *
@@ -116,6 +126,7 @@ public class TinkerZipFile implements Closeable, ZipConstants {
     public TinkerZipFile(String name) throws IOException {
         this(new File(name), OPEN_READ);
     }
+
     /**
      * Constructs a new {@code ZipFile} allowing access to the given file.
      *
@@ -140,7 +151,6 @@ public class TinkerZipFile implements Closeable, ZipConstants {
             fileToDeleteOnClose = null;
         }
         raf = new RandomAccessFile(filename, "r");
-
         readCentralDir();
         // guard.open("close");
     }
@@ -156,6 +166,7 @@ public class TinkerZipFile implements Closeable, ZipConstants {
         }
         return false;
     }
+
     /*@Override protected void finalize() throws IOException {
         try {
             if (guard != null) {
@@ -169,7 +180,6 @@ public class TinkerZipFile implements Closeable, ZipConstants {
             }
         }
     }*/
-
     /**
      * Returns true if a and b are equal, including if they are both null.
      * <p><i>Note: In platform versions 1.1 and earlier, this method only worked well if
@@ -179,14 +189,16 @@ public class TinkerZipFile implements Closeable, ZipConstants {
      * @return true if a and b are equal
      */
     public static boolean equals(CharSequence a, CharSequence b) {
-        if (a == b) return true;
+        if (a == b)
+            return true;
         int length;
         if (a != null && b != null && (length = a.length()) == b.length()) {
             if (a instanceof String && b instanceof String) {
                 return a.equals(b);
             } else {
                 for (int i = 0; i < length; i++) {
-                    if (a.charAt(i) != b.charAt(i)) return false;
+                    if (a.charAt(i) != b.charAt(i))
+                        return false;
                 }
                 return true;
             }
@@ -218,7 +230,8 @@ public class TinkerZipFile implements Closeable, ZipConstants {
             int diskWithCentralDir = it.readShort() & 0xffff;
             numEntries = it.readShort() & 0xffff;
             int totalNumEntries = it.readShort() & 0xffff;
-            it.skip(4); // Ignore centralDirSize.
+            // Ignore centralDirSize.
+            it.skip(4);
             centralDirOffset = ((long) it.readInt()) & 0xffffffffL;
             if (numEntries != totalNumEntries || diskNumber != 0 || diskWithCentralDir != 0) {
                 throw new ZipException("Spanned archives not supported");
@@ -230,12 +243,7 @@ public class TinkerZipFile implements Closeable, ZipConstants {
 
     static void throwZipException(String filename, long fileSize, String entryName, long localHeaderRelOffset, String msg, int magic) throws ZipException {
         final String hexString = Integer.toHexString(magic);
-        throw new ZipException("file name:" + filename
-                               + ", file size" + fileSize
-                               + ", entry name:" + entryName
-                               + ", entry localHeaderRelOffset:" + localHeaderRelOffset
-                               + ", "
-                               + msg + " signature not found; was " + hexString);
+        throw new ZipException("file name:" + filename + ", file size" + fileSize + ", entry name:" + entryName + ", entry localHeaderRelOffset:" + localHeaderRelOffset + ", " + msg + " signature not found; was " + hexString);
     }
 
     /**
@@ -248,7 +256,8 @@ public class TinkerZipFile implements Closeable, ZipConstants {
     public void close() throws IOException {
         // guard.close();
         RandomAccessFile localRaf = raf;
-        if (localRaf != null) { // Only close initialized instances
+        if (localRaf != null) {
+            // Only close initialized instances
             synchronized (localRaf) {
                 raf = null;
                 localRaf.close();
@@ -280,10 +289,12 @@ public class TinkerZipFile implements Closeable, ZipConstants {
         checkNotClosed();
         final Iterator<TinkerZipEntry> iterator = entries.values().iterator();
         return new Enumeration<TinkerZipEntry>() {
+
             public boolean hasMoreElements() {
                 checkNotClosed();
                 return iterator.hasNext();
             }
+
             public TinkerZipEntry nextElement() {
                 checkNotClosed();
                 return iterator.next();
@@ -421,65 +432,57 @@ public class TinkerZipFile implements Closeable, ZipConstants {
         if (scanOffset < 0) {
             throw new ZipException("File too short to be a zip file: " + raf.length());
         }
-
         raf.seek(0);
         final int headerMagic = Integer.reverseBytes(raf.readInt());
         if (headerMagic != LOCSIG) {
             throw new ZipException("Not a zip archive");
         }
-
         long stopOffset = scanOffset - 65536;
         if (stopOffset < 0) {
             stopOffset = 0;
         }
-
         while (true) {
             raf.seek(scanOffset);
             if (Integer.reverseBytes(raf.readInt()) == ENDSIG) {
                 break;
             }
-
             scanOffset--;
             if (scanOffset < stopOffset) {
                 throw new ZipException("End Of Central Directory signature not found");
             }
         }
-
         // Read the End Of Central Directory. ENDHDR includes the signature bytes,
         // which we've already read.
         byte[] eocd = new byte[ENDHDR - 4];
         raf.readFully(eocd);
-
         // Pull out the information we need.
         BufferIterator it = HeapBufferIterator.iterator(eocd, 0, eocd.length, ByteOrder.LITTLE_ENDIAN);
         int diskNumber = it.readShort() & 0xffff;
         int diskWithCentralDir = it.readShort() & 0xffff;
         int numEntries = it.readShort() & 0xffff;
         int totalNumEntries = it.readShort() & 0xffff;
-        it.skip(4); // Ignore centralDirSize.
+        // Ignore centralDirSize.
+        it.skip(4);
         long centralDirOffset = ((long) it.readInt()) & 0xffffffffL;
         int commentLength = it.readShort() & 0xffff;
-
         if (numEntries != totalNumEntries || diskNumber != 0 || diskWithCentralDir != 0) {
             throw new ZipException("Spanned archives not supported");
         }
-
         if (commentLength > 0) {
             byte[] commentBytes = new byte[commentLength];
             raf.readFully(commentBytes);
             comment = new String(commentBytes, 0, commentBytes.length, StandardCharsets.UTF_8);
         }
-
         // Seek to the first CDE and read all entries.
         // We have to do this now (from the constructor) rather than lazily because the
         // public API doesn't allow us to throw IOException except from the constructor
         // or from getInputStream.
         RAFStream rafStream = new RAFStream(raf, centralDirOffset);
         BufferedInputStream bufferedStream = new BufferedInputStream(rafStream, 4096);
-        byte[] hdrBuf = new byte[CENHDR]; // Reuse the same buffer for each entry.
+        // Reuse the same buffer for each entry.
+        byte[] hdrBuf = new byte[CENHDR];
         for (int i = 0; i < numEntries; ++i) {
-            TinkerZipEntry newEntry = new TinkerZipEntry(hdrBuf, bufferedStream, StandardCharsets.UTF_8,
-                (false) /* isZip64 */);
+            TinkerZipEntry newEntry = new TinkerZipEntry(hdrBuf, bufferedStream, StandardCharsets.UTF_8, (false));
             if (newEntry.localHeaderRelOffset >= centralDirOffset) {
                 throw new ZipException("Local file header offset is after central directory");
             }
@@ -488,14 +491,17 @@ public class TinkerZipFile implements Closeable, ZipConstants {
                 throw new ZipException("Duplicate entry name: " + entryName);
             }
         }
-
     }
 
     // private final CloseGuard guard = CloseGuard.get();
     static class EocdRecord {
+
         final long numEntries;
+
         final long centralDirOffset;
+
         final int commentLength;
+
         EocdRecord(long numEntries, long centralDirOffset, int commentLength) {
             this.numEntries = numEntries;
             this.centralDirOffset = centralDirOffset;
@@ -514,24 +520,35 @@ public class TinkerZipFile implements Closeable, ZipConstants {
      * @hide
      */
     public static class RAFStream extends InputStream {
+
         private final RandomAccessFile sharedRaf;
+
         private long endOffset;
+
         private long offset;
+
         public RAFStream(RandomAccessFile raf, long initialOffset, long endOffset) {
             sharedRaf = raf;
             offset = initialOffset;
             this.endOffset = endOffset;
         }
+
         public RAFStream(RandomAccessFile raf, long initialOffset) throws IOException {
             this(raf, initialOffset, raf.length());
         }
-        @Override public int available() throws IOException {
+
+        @Override
+        public int available() throws IOException {
             return (offset < endOffset ? 1 : 0);
         }
-        @Override public int read() throws IOException {
+
+        @Override
+        public int read() throws IOException {
             return Streams.readSingleByte(this);
         }
-        @Override public int read(byte[] buffer, int byteOffset, int byteCount) throws IOException {
+
+        @Override
+        public int read(byte[] buffer, int byteOffset, int byteCount) throws IOException {
             synchronized (sharedRaf) {
                 final long length = endOffset - offset;
                 if (byteCount > length) {
@@ -547,7 +564,9 @@ public class TinkerZipFile implements Closeable, ZipConstants {
                 }
             }
         }
-        @Override public long skip(long byteCount) throws IOException {
+
+        @Override
+        public long skip(long byteCount) throws IOException {
             if (byteCount > endOffset - offset) {
                 byteCount = endOffset - offset;
             }
@@ -565,7 +584,9 @@ public class TinkerZipFile implements Closeable, ZipConstants {
             }
         }*/
     }
-    /** @hide */
+    /**
+     * @hide
+     */
     /*public static class ZipInflaterInputStream extends InflaterInputStream {
         private final ZipEntry entry;
         private long bytesRead = 0;

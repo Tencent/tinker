@@ -1,17 +1,17 @@
 package com.tencent.tinker.loader.hotplug.interceptor;
 
 import android.util.Log;
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
-
 public abstract class Interceptor<T_TARGET> {
+
     private static final String TAG = "Tinker.Interceptor";
 
     private T_TARGET mTarget = null;
+
     private volatile boolean mInstalled = false;
 
     protected abstract T_TARGET fetchTarget() throws Throwable;

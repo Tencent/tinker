@@ -13,19 +13,16 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
 import com.tencent.tinker.commons.util.IOHelper;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
@@ -47,14 +43,16 @@ import javax.xml.xpath.XPathFactory;
 public final class AaptUtil {
 
     private static final String ID_DEFINITION_PREFIX = "@+id/";
-    private static final String ITEM_TAG             = "item";
+
+    private static final String ITEM_TAG = "item";
 
     private static final XPathExpression ANDROID_ID_USAGE = createExpression("//@*[starts-with(., '@') and " + "not(starts-with(., '@+')) and " + "not(starts-with(., '@android:')) and " + "not(starts-with(., '@null'))]");
 
     private static final XPathExpression ANDROID_ID_DEFINITION = createExpression("//@*[starts-with(., '@+') and " + "not(starts-with(., '@+android:id')) and " + "not(starts-with(., '@+id/android:'))]");
 
     private static final Map<String, RType> RESOURCE_TYPES = getResourceTypes();
-    private static final List<String>       IGNORED_TAGS   = Arrays.asList("eat-comment", "skip");
+
+    private static final List<String> IGNORED_TAGS = Arrays.asList("eat-comment", "skip");
 
     private static XPathExpression createExpression(String expressionStr) {
         try {
@@ -155,7 +153,6 @@ public final class AaptUtil {
         if (dashIndex != -1) {
             directoryName = directoryName.substring(0, dashIndex);
         }
-
         if (!RESOURCE_TYPES.containsKey(directoryName)) {
             throw new AaptUtilException(resourceDirectoryFile.getAbsolutePath() + " is not a valid resource sub-directory.");
         }
@@ -168,7 +165,6 @@ public final class AaptUtil {
                 String filename = file.getName();
                 int dotIndex = filename.indexOf('.');
                 String resourceName = dotIndex != -1 ? filename.substring(0, dotIndex) : filename;
-
                 RType rType = RESOURCE_TYPES.get(directoryName);
                 resourceCollector.addIntResourceIfNotPresent(rType, resourceName);
                 ResourceDirectory resourceDirectoryBean = new ResourceDirectory(file.getParentFile().getName(), file.getAbsolutePath());
@@ -198,12 +194,10 @@ public final class AaptUtil {
         Document document = JavaXmlUtil.parse(valuesFullFilename);
         String directoryName = new File(valuesFullFilename).getParentFile().getName();
         Element root = document.getDocumentElement();
-
         for (Node node = root.getFirstChild(); node != null; node = node.getNextSibling()) {
             if (node.getNodeType() != Node.ELEMENT_NODE) {
                 continue;
             }
-
             String resourceType = node.getNodeName();
             if (resourceType.equals(ITEM_TAG)) {
                 resourceType = node.getAttributes().getNamedItem("type").getNodeValue();
@@ -211,18 +205,15 @@ public final class AaptUtil {
                     resourceCollector.addIgnoreId(node.getAttributes().getNamedItem("name").getNodeValue());
                 }
             }
-
             if (IGNORED_TAGS.contains(resourceType)) {
                 continue;
             }
-
             if (!RESOURCE_TYPES.containsKey(resourceType)) {
                 throw new AaptUtilException("Invalid resource type '<" + resourceType + ">' in '" + valuesFullFilename + "'.");
             }
-
             RType rType = RESOURCE_TYPES.get(resourceType);
             String resourceValue = null;
-            switch (rType) {
+            switch(rType) {
                 case STRING:
                 case COLOR:
                 case DIMEN:
@@ -231,16 +222,22 @@ public final class AaptUtil {
                 case INTEGER:
                     resourceValue = node.getTextContent().trim();
                     break;
-                case ARRAY://has sub item
-                case PLURALS://has sub item
-                case STYLE://has sub item
-                case STYLEABLE://has sub item
+                //has sub item
+                case ARRAY:
+                //has sub item
+                case PLURALS:
+                //has sub item
+                case STYLE:
+                case //has sub item
+                STYLEABLE:
                     resourceValue = subNodeToString(node);
                     break;
-                case FRACTION://no sub item
+                case //no sub item
+                FRACTION:
                     resourceValue = nodeToString(node, true);
                     break;
-                case ATTR://no sub item
+                case //no sub item
+                ATTR:
                     resourceValue = nodeToString(node, true);
                     break;
                 default:
@@ -262,10 +259,8 @@ public final class AaptUtil {
             if (!resourceName.startsWith(ID_DEFINITION_PREFIX)) {
                 throw new AaptUtilException("Invalid definition of a resource: '" + resourceName + "'");
             }
-
             resourceCollector.addIntResourceIfNotPresent(RType.ID, resourceName.substring(ID_DEFINITION_PREFIX.length()));
         }
-
         NodeList nodesUsingIds = (NodeList) ANDROID_ID_USAGE.evaluate(document, XPathConstants.NODESET);
         for (int i = 0; i < nodesUsingIds.getLength(); i++) {
             String resourceName = nodesUsingIds.item(i).getNodeValue();
@@ -275,20 +270,16 @@ public final class AaptUtil {
             }
             String rawRType = resourceName.substring(1, slashPosition);
             String name = resourceName.substring(slashPosition + 1);
-
             if (name.startsWith("android:")) {
                 continue;
             }
-
             if (rawRType.startsWith("tools:")) {
                 continue;
             }
-
             if (!RESOURCE_TYPES.containsKey(rawRType)) {
                 throw new AaptUtilException("Invalid reference '" + resourceName + "' in '" + xmlFullFilename + "'");
             }
             RType rType = RESOURCE_TYPES.get(rawRType);
-
             // if (!resourceCollector.isContainResource(rType, IdType.INT, sanitizeName(resourceCollector, name))) {
             //     throw new AaptUtilException("Not found reference '" + resourceName + "' in '" + xmlFullFilename + "'");
             // }
@@ -300,23 +291,19 @@ public final class AaptUtil {
         String resourceName = sanitizeName(rType, resourceCollector, extractNameAttribute(node));
         resourceCollector.addRTypeResourceName(rType, resourceName, resourceValue, resourceDirectory);
         if (rType.equals(RType.STYLEABLE)) {
-
             int count = 0;
             for (Node attrNode = node.getFirstChild(); attrNode != null; attrNode = attrNode.getNextSibling()) {
                 if (attrNode.getNodeType() != Node.ELEMENT_NODE || !attrNode.getNodeName().equals("attr")) {
                     continue;
                 }
-
                 String rawAttrName = extractNameAttribute(attrNode);
                 String attrName = sanitizeName(rType, resourceCollector, rawAttrName);
                 resourceCollector.addResource(RType.STYLEABLE, IdType.INT, String.format("%s_%s", resourceName, attrName), Integer.toString(count++));
-
                 if (!rawAttrName.startsWith("android:")) {
                     resourceCollector.addIntResourceIfNotPresent(RType.ATTR, rawAttrName);
                     resourceCollector.addRTypeResourceName(RType.ATTR, rawAttrName, nodeToString(attrNode, true), resourceDirectory);
                 }
             }
-
             resourceCollector.addIntArrayResourceIfNotPresent(rType, resourceName, count);
         } else {
             resourceCollector.addIntResourceIfNotPresent(rType, resourceName);
@@ -470,7 +457,9 @@ public final class AaptUtil {
     }
 
     public static class PackageRTypeResourceMap {
-        private String                                                      packageName      = null;
+
+        private String packageName = null;
+
         private Map<RType, Set<com.tencent.tinker.build.aapt.RDotTxtEntry>> rTypeResourceMap = null;
 
         public PackageRTypeResourceMap(String packageName, Map<RType, Set<com.tencent.tinker.build.aapt.RDotTxtEntry>> rTypeResourceMap) {
@@ -480,6 +469,7 @@ public final class AaptUtil {
     }
 
     public static class AaptUtilException extends RuntimeException {
+
         private static final long serialVersionUID = 1702278793911780809L;
 
         public AaptUtilException(String message) {

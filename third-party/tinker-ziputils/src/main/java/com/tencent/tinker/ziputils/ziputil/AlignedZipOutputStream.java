@@ -15,20 +15,20 @@ import java.util.zip.ZipException;
  * Created by tangyinsheng on 2018/11/20.
  */
 public class AlignedZipOutputStream extends DeflaterOutputStream {
-    /**
-     * Constants migrated from ZipConstants
-     */
-    private static final long
-            LOCSIG = 0x4034b50, EXTSIG = 0x8074b50, CENSIG = 0x2014b50, ENDSIG = 0x6054b50;
 
     /**
      * Constants migrated from ZipConstants
      */
-    private static final int
-            LOCHDR = 30, EXTHDR = 16;
+    private static final long LOCSIG = 0x4034b50, EXTSIG = 0x8074b50, CENSIG = 0x2014b50, ENDSIG = 0x6054b50;
+
+    /**
+     * Constants migrated from ZipConstants
+     */
+    private static final int LOCHDR = 30, EXTHDR = 16;
 
     // 1980-01-01 00:00:00
     private static final int MOD_DATE_CONST = 0x21;
+
     private static final int TIME_CONST = 0;
 
     /**
@@ -54,7 +54,7 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
 
     private static final byte[] EMPTY_BYTE_ARRAY = {};
 
-    private static final byte[] ONE_ELEM_BYTE_ARRAY = {0};
+    private static final byte[] ONE_ELEM_BYTE_ARRAY = { 0 };
 
     /**
      * Indicates deflated entries.
@@ -85,6 +85,7 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
     private long crcDataSize = 0;
 
     private int offset = 0;
+
     private int nameLength;
 
     private byte[] nameBytes;
@@ -148,7 +149,6 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         if (currentEntry.getMethod() == DEFLATED) {
             super.finish();
         }
-
         // Verify values for STORED types
         if (currentEntry.getMethod() == STORED) {
             if (crc.getValue() != currentEntry.getCrc()) {
@@ -158,9 +158,7 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
                 throw new ZipException("Size mismatch");
             }
         }
-
         int curOffset = LOCHDR;
-
         // Write the DataDescriptor
         if (currentEntry.getMethod() != STORED) {
             curOffset += EXTHDR;
@@ -180,8 +178,10 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         // http://code.google.com/p/android/issues/detail?id=20214
         flags |= GPBF_UTF8_FLAG;
         writeLong(cDir, CENSIG);
-        writeShort(cDir, ZIPLocalHeaderVersionNeeded); // Version created
-        writeShort(cDir, ZIPLocalHeaderVersionNeeded); // Version to extract
+        // Version created
+        writeShort(cDir, ZIPLocalHeaderVersionNeeded);
+        // Version to extract
+        writeShort(cDir, ZIPLocalHeaderVersionNeeded);
         writeShort(cDir, flags);
         writeShort(cDir, currentEntry.getMethod());
         writeShort(cDir, TIME_CONST);
@@ -200,17 +200,21 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         } else {
             writeShort(cDir, 0);
         }
-
         String comment = currentEntry.getComment();
         byte[] commentBytes = EMPTY_BYTE_ARRAY;
         if (comment != null) {
             commentBytes = comment.getBytes(Charset.forName("UTF-8"));
         }
-        writeShort(cDir, commentBytes.length); // Comment length.
-        writeShort(cDir, 0); // Disk Start
-        writeShort(cDir, 0); // Internal File Attributes
-        writeLong(cDir, 0); // External File Attributes
-        writeLong(cDir, offset); // Relative Offset of Local File Header
+        // Comment length.
+        writeShort(cDir, commentBytes.length);
+        // Disk Start
+        writeShort(cDir, 0);
+        // Internal File Attributes
+        writeShort(cDir, 0);
+        // External File Attributes
+        writeLong(cDir, 0);
+        // Relative Offset of Local File Header
+        writeLong(cDir, offset);
         cDir.write(nameBytes);
         nameBytes = null;
         if (currentEntry.getExtra() != null) {
@@ -249,12 +253,18 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         int cdirSize = cDir.size();
         // Write Central Dir End
         writeLong(cDir, ENDSIG);
-        writeShort(cDir, 0); // Disk Number
-        writeShort(cDir, 0); // Start Disk
-        writeShort(cDir, entries.size()); // Number of entries
-        writeShort(cDir, entries.size()); // Number of entries
-        writeLong(cDir, cdirSize); // Size of central dir
-        writeLong(cDir, offset + padding); // Offset of central dir
+        // Disk Number
+        writeShort(cDir, 0);
+        // Start Disk
+        writeShort(cDir, 0);
+        // Number of entries
+        writeShort(cDir, entries.size());
+        // Number of entries
+        writeShort(cDir, entries.size());
+        // Size of central dir
+        writeLong(cDir, cdirSize);
+        // Offset of central dir
+        writeLong(cDir, offset + padding);
         writeShort(cDir, commentBytes.length);
         if (commentBytes.length > 0) {
             cDir.write(commentBytes);
@@ -297,13 +307,11 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         if (currentEntry != null) {
             closeEntry();
         }
-
         // Did this ZipEntry specify a method, or should we use the default?
         int method = ze.getMethod();
         if (method == -1) {
             method = defaultCompressionMethod;
         }
-
         // If the method is STORED, check that the ZipEntry was configured appropriately.
         if (method == STORED) {
             if (ze.getCompressedSize() == -1) {
@@ -321,13 +329,11 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
                 throw new ZipException("STORED entry size/compressed size mismatch");
             }
         }
-
         checkOpen();
-
         if (entries.contains(ze.getName())) {
             throw new ZipException("Entry already exists: " + ze.getName());
         }
-        if (entries.size() == 64*1024-1) {
+        if (entries.size() == 64 * 1024 - 1) {
             throw new ZipException("Too many entries for the zip file format's 16-bit entry count");
         }
         nameBytes = ze.getName().getBytes(Charset.forName("UTF-8"));
@@ -335,21 +341,20 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         if (nameLength > 0xffff) {
             throw new IllegalArgumentException("Name too long: " + nameLength + " UTF-8 bytes");
         }
-
         def.setLevel(compressionLevel);
         ze.setMethod(method);
-
         currentEntry = ze;
         entries.add(currentEntry.getName());
-
         // Local file header.
         // http://www.pkware.com/documents/casestudies/APPNOTE.TXT
         int flags = (method == STORED) ? 0 : GPBF_DATA_DESCRIPTOR_FLAG;
         // Java always outputs UTF-8 filenames. (Before Java 7, the RI didn't set this flag and used
         // modified UTF-8. From Java 7, it sets this flag and uses normal UTF-8.)
         flags |= GPBF_UTF8_FLAG;
-        writeLong(out, LOCSIG); // Entry header
-        writeShort(out, ZIPLocalHeaderVersionNeeded); // Extraction version
+        // Entry header
+        writeLong(out, LOCSIG);
+        // Extraction version
+        writeShort(out, ZIPLocalHeaderVersionNeeded);
         writeShort(out, flags);
         writeShort(out, method);
         if (currentEntry.getTime() == -1) {
@@ -357,7 +362,6 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         }
         writeShort(out, TIME_CONST);
         writeShort(out, MOD_DATE_CONST);
-
         if (method == STORED) {
             writeLong(out, currentEntry.getCrc());
             writeLong(out, currentEntry.getSize());
@@ -391,7 +395,6 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
             this.commentBytes = null;
             return;
         }
-
         byte[] newCommentBytes = comment.getBytes(Charset.forName("UTF-8"));
         if (newCommentBytes.length > 0xffff) {
             throw new IllegalArgumentException("Comment too long: " + newCommentBytes.length + " bytes");
@@ -443,7 +446,7 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
     public void write(int b) throws IOException {
         // Use static pre-allocated byte array to avoid memory fragment.
         final byte[] buf = ONE_ELEM_BYTE_ARRAY;
-        buf[0] = (byte)(b & 0xff);
+        buf[0] = (byte) (b & 0xff);
         write(buf, 0, 1);
     }
 
@@ -459,7 +462,6 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
         if (currentEntry == null) {
             throw new ZipException("No active entry");
         }
-
         if (currentEntry.getMethod() == STORED) {
             out.write(buffer, offset, byteCount);
         } else {
@@ -471,8 +473,7 @@ public class AlignedZipOutputStream extends DeflaterOutputStream {
 
     private void checkOffsetAndCount(int arrayLength, int offset, int count) {
         if ((offset | count) < 0 || offset > arrayLength || arrayLength - offset < count) {
-            throw new ArrayIndexOutOfBoundsException("length=" + arrayLength + "; regionStart=" + offset
-                    + "; regionLength=" + count);
+            throw new ArrayIndexOutOfBoundsException("length=" + arrayLength + "; regionStart=" + offset + "; regionLength=" + count);
         }
     }
 

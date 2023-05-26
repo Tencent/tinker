@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import java.util.ArrayList;
@@ -23,17 +22,27 @@ import java.util.regex.Pattern;
 
 public final class StringUtil {
 
-    public static final  String BLANK                     = "";
-    public static final  String SPACE                     = " ";
-    public static final  String NULL                      = "null";
-    public static final  String CRLF_STRING               = "\r\n";
-    public static final  byte   CR                        = '\r';
-    public static final  byte   LF                        = '\n';
-    public static final  byte[] CRLF                      = {CR, LF};
-    private static final String METCH_PATTERN_REGEX       = "[\\*]+";
-    private static final String METCH_PATTERN             = Constant.Symbol.WILDCARD;
+    public static final String BLANK = "";
+
+    public static final String SPACE = " ";
+
+    public static final String NULL = "null";
+
+    public static final String CRLF_STRING = "\r\n";
+
+    public static final byte CR = '\r';
+
+    public static final byte LF = '\n';
+
+    public static final byte[] CRLF = { CR, LF };
+
+    private static final String METCH_PATTERN_REGEX = "[\\*]+";
+
+    private static final String METCH_PATTERN = Constant.Symbol.WILDCARD;
+
     private static final String METCH_PATTERN_REPLACEMENT = "[\\\\S|\\\\s]*";
-    private static final String ZERO                      = "0";
+
+    private static final String ZERO = "0";
 
     private StringUtil() {
     }
@@ -73,7 +82,7 @@ public final class StringUtil {
     public static String[] nullToBlank(final String[] stringArray) {
         String[] result = stringArray;
         if (stringArray == null) {
-            result = new String[]{};
+            result = new String[] {};
         }
         return result;
     }

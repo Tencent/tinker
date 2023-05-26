@@ -13,25 +13,30 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.Log;
 
 import android.util.Log;
-
 import com.tencent.tinker.lib.util.TinkerLog;
 
 /**
  * Created by zhangshaowen on 16/6/3.
  */
 public class MyLogImp implements TinkerLog.TinkerLogImp {
+
     private static final String TAG = "Tinker.MyLogImp";
 
     public static final int LEVEL_VERBOSE = 0;
-    public static final int LEVEL_DEBUG   = 1;
-    public static final int LEVEL_INFO    = 2;
+
+    public static final int LEVEL_DEBUG = 1;
+
+    public static final int LEVEL_INFO = 2;
+
     public static final int LEVEL_WARNING = 3;
-    public static final int LEVEL_ERROR   = 4;
-    public static final int LEVEL_NONE    = 5;
+
+    public static final int LEVEL_ERROR = 4;
+
+    public static final int LEVEL_NONE = 5;
+
     private static int level = LEVEL_VERBOSE;
 
     public static int getLogLevel() {
@@ -41,7 +46,6 @@ public class MyLogImp implements TinkerLog.TinkerLogImp {
     public static void setLevel(final int level) {
         MyLogImp.level = level;
         android.util.Log.w(TAG, "new log level: " + level);
-
     }
 
     @Override

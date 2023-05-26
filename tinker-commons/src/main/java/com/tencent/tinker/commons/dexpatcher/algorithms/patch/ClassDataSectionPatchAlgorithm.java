@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.algorithms.patch;
 
 import com.tencent.tinker.android.dex.ClassData;
@@ -28,17 +27,13 @@ import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
  * Created by tangyinsheng on 2016/7/4.
  */
 public class ClassDataSectionPatchAlgorithm extends DexSectionPatchAlgorithm<ClassData> {
+
     private TableOfContents.Section patchedClassDataTocSec = null;
+
     private Dex.Section patchedClassDataSec = null;
 
-    public ClassDataSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            Dex patchedDex,
-            SparseIndexMap oldToPatchedIndexMap
-    ) {
+    public ClassDataSectionPatchAlgorithm(DexPatchFile patchFile, Dex oldDex, Dex patchedDex, SparseIndexMap oldToPatchedIndexMap) {
         super(patchFile, oldDex, oldToPatchedIndexMap);
-
         if (patchedDex != null) {
             this.patchedClassDataTocSec = patchedDex.getTableOfContents().classDatas;
             this.patchedClassDataSec = patchedDex.openSection(this.patchedClassDataTocSec);

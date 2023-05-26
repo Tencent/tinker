@@ -13,19 +13,18 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.service;
 
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by zhangshaowen on 16/3/14.
  */
 public abstract class AbstractResultService extends IntentService {
+
     private static final String TAG = "Tinker.AbstractResultService";
 
     public AbstractResultService() {

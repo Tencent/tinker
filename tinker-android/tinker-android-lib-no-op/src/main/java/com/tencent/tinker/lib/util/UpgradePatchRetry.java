@@ -13,18 +13,17 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.util;
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by zhangshaowen on 16/7/3.
  */
 public class UpgradePatchRetry {
+
     private static final String TAG = "Tinker.UpgradePatchRetry";
 
     private static UpgradePatchRetry sInstance;

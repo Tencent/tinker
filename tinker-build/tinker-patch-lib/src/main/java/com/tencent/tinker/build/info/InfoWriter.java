@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.info;
 
 import com.tencent.tinker.build.patch.Configuration;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -29,12 +27,15 @@ import java.util.List;
  * Created by zhangshaowen on 16/3/8.
  */
 public class InfoWriter {
+
     protected final Configuration config;
+
     /**
      * infoFile, output info
      */
-    protected final String        infoPath;
-    protected final File          infoFile;
+    protected final String infoPath;
+
+    protected final File infoFile;
 
     /**
      * 首次使用时初始化
@@ -44,7 +45,6 @@ public class InfoWriter {
     public InfoWriter(Configuration config, String infoPath) throws IOException {
         this.config = config;
         this.infoPath = infoPath;
-
         if (infoPath != null) {
             this.infoFile = new File(infoPath);
             if (!infoFile.getParentFile().exists()) {
@@ -53,13 +53,11 @@ public class InfoWriter {
         } else {
             this.infoFile = null;
         }
-
     }
 
     public Configuration getConfig() {
         return config;
     }
-
 
     public void writeLinesToInfoFile(List<String> lines) throws IOException {
         for (String line : lines) {
@@ -85,15 +83,14 @@ public class InfoWriter {
         if (infoWrite == null) {
             this.infoWrite = new BufferedWriter(new FileWriter(infoFile, false));
         }
-
     }
 
     public void close() {
         try {
-            if (infoWrite != null) infoWrite.close();
+            if (infoWrite != null)
+                infoWrite.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 }

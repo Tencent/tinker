@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.ByteInput;
@@ -24,6 +23,7 @@ import com.tencent.tinker.android.dex.util.ByteOutput;
  * section 7.6.
  */
 public final class Leb128 {
+
     private Leb128() {
     }
 
@@ -36,15 +36,12 @@ public final class Leb128 {
      */
     public static int unsignedLeb128Size(int value) {
         // TODO: This could be much cleverer.
-
         int remaining = value >>> 7;
         int count = 0;
-
         while (remaining != 0) {
             remaining >>>= 7;
             count++;
         }
-
         return count + 1;
     }
 
@@ -61,21 +58,16 @@ public final class Leb128 {
      */
     public static int signedLeb128Size(int value) {
         // TODO: This could be much cleverer.
-
         int remaining = value >> 7;
         int count = 0;
         boolean hasMore = true;
         int end = ((value & Integer.MIN_VALUE) == 0) ? 0 : -1;
-
         while (hasMore) {
-            hasMore = (remaining != end)
-                || ((remaining & 1) != ((value >> 6) & 1));
-
+            hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1));
             value = remaining;
             remaining >>= 7;
             count++;
         }
-
         return count;
     }
 
@@ -87,23 +79,19 @@ public final class Leb128 {
         int cur;
         int count = 0;
         int signBits = -1;
-
         do {
             cur = in.readByte() & 0xff;
             result |= (cur & 0x7f) << (count * 7);
             signBits <<= 7;
             count++;
         } while (((cur & 0x80) == 0x80) && count < 5);
-
         if ((cur & 0x80) == 0x80) {
             throw new DexException("invalid LEB128 sequence");
         }
-
         // Sign extend if appropriate
         if (((signBits >> 1) & result) != 0) {
             result |= signBits;
         }
-
         return result;
     }
 
@@ -114,17 +102,14 @@ public final class Leb128 {
         int result = 0;
         int cur;
         int count = 0;
-
         do {
             cur = in.readByte() & 0xff;
             result |= (cur & 0x7f) << (count * 7);
             count++;
         } while (((cur & 0x80) == 0x80) && count < 5);
-
         if ((cur & 0x80) == 0x80) {
             throw new DexException("invalid LEB128 sequence");
         }
-
         return result;
     }
 
@@ -148,10 +133,8 @@ public final class Leb128 {
             value = remaining;
             remaining >>>= 7;
         }
-
         out.writeByte((byte) (value & 0x7f));
         ++bytesWritten;
-
         return bytesWritten;
     }
 
@@ -173,15 +156,12 @@ public final class Leb128 {
         int end = ((value & Integer.MIN_VALUE) == 0) ? 0 : -1;
         int bytesWritten = 0;
         while (hasMore) {
-            hasMore = (remaining != end)
-                    || ((remaining & 1) != ((value >> 6) & 1));
-
+            hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1));
             out.writeByte((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
             ++bytesWritten;
             value = remaining;
             remaining >>= 7;
         }
-
         return bytesWritten;
     }
 }

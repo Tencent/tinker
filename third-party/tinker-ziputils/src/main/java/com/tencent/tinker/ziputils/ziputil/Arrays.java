@@ -13,13 +13,13 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 /**
  * modify by zhangshaowen on 16/6/7.
  */
 public class Arrays {
+
     public static void checkOffsetAndCount(int arrayLength, int offset, int count) {
         if ((offset | count) < 0 || offset > arrayLength || arrayLength - offset < count) {
             // throw new ArrayIndexOutOfBoundsException(arrayLength, offset,

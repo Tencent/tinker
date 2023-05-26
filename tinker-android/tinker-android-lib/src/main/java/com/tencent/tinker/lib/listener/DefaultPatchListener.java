@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.listener;
 
 import android.content.ComponentName;
@@ -22,7 +21,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.text.TextUtils;
-
 import com.tencent.tinker.lib.service.TinkerPatchForeService;
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
@@ -33,16 +31,16 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import java.io.File;
-
 import static android.content.Context.BIND_AUTO_CREATE;
 
 /**
  * Created by zhangshaowen on 16/3/14.
  */
 public class DefaultPatchListener implements PatchListener {
+
     protected final Context context;
+
     private ServiceConnection connection;
 
     public DefaultPatchListener(Context context) {
@@ -70,10 +68,10 @@ public class DefaultPatchListener implements PatchListener {
         return returnCode;
     }
 
-
     private void runForgService() {
         try {
             connection = new ServiceConnection() {
+
                 @Override
                 public void onServiceConnected(ComponentName name, IBinder service) {
                 }
@@ -114,12 +112,10 @@ public class DefaultPatchListener implements PatchListener {
         if (!SharePatchFileUtil.isLegalFile(file)) {
             return ShareConstants.ERROR_PATCH_NOTEXIST;
         }
-
         //patch service can not send request
         if (manager.isPatchProcess()) {
             return ShareConstants.ERROR_PATCH_INSERVICE;
         }
-
         //if the patch service is running, pending
         if (TinkerServiceInternals.isTinkerPatchServiceRunning(context)) {
             return ShareConstants.ERROR_PATCH_RUNNING;
@@ -127,12 +123,9 @@ public class DefaultPatchListener implements PatchListener {
         if (ShareTinkerInternals.isVmJit()) {
             return ShareConstants.ERROR_PATCH_JIT;
         }
-
         final TinkerLoadResult loadResult = manager.getTinkerLoadResultIfPresent();
         // only call repair on main process
-        final boolean repairOptNeeded = manager.isMainProcess()
-                && loadResult != null && loadResult.useInterpretMode;
-
+        final boolean repairOptNeeded = manager.isMainProcess() && loadResult != null && loadResult.useInterpretMode;
         if (!repairOptNeeded) {
             // Hit if we have already applied patch but main process did not restart.
             final String patchDirectory = manager.getPatchDirectory().getAbsolutePath();
@@ -149,12 +142,9 @@ public class DefaultPatchListener implements PatchListener {
                 // Ignored.
             }
         }
-
         if (!UpgradePatchRetry.getInstance(context).onPatchListenerCheck(patchMd5)) {
             return ShareConstants.ERROR_PATCH_RETRY_COUNT_LIMIT;
         }
-
         return ShareConstants.ERROR_PATCH_OK;
     }
-
 }

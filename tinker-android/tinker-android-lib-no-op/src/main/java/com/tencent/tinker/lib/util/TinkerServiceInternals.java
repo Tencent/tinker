@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.util;
 
 import android.content.Context;
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
@@ -25,6 +23,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
  * Created by zhangshaowen on 16/3/10.
  */
 public class TinkerServiceInternals extends ShareTinkerInternals {
+
     private static final String TAG = "Tinker.ServiceInternals";
 
     public static void killTinkerPatchServiceProcess(Context context) {
@@ -34,7 +33,6 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
     public static boolean isTinkerPatchServiceRunning(Context context) {
         return false;
     }
-
 
     public static String getTinkerPatchServiceName(final Context context) {
         return null;

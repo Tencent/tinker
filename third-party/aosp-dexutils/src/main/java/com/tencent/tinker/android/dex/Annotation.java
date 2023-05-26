@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.HashCodeHelper;
-
 import static com.tencent.tinker.android.dex.EncodedValueReader.ENCODED_ANNOTATION;
 
 /**
  * An annotation.
  */
 public final class Annotation extends Item<Annotation> {
+
     public byte visibility;
+
     public EncodedValue encodedAnnotation;
 
     public Annotation(int off, byte visibility, EncodedValue encodedAnnotation) {
@@ -45,9 +45,11 @@ public final class Annotation extends Item<Annotation> {
         return reader.getAnnotationType();
     }
 
-    @Override public int compareTo(Annotation other) {
+    @Override
+    public int compareTo(Annotation other) {
         int cmpRes = encodedAnnotation.compareTo(other.encodedAnnotation);
-        if (cmpRes != 0) return cmpRes;
+        if (cmpRes != 0)
+            return cmpRes;
         return CompareUtils.uCompare(visibility, other.visibility);
     }
 

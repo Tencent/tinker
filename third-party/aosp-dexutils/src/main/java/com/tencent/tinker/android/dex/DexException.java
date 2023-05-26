@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 /**
@@ -21,6 +20,7 @@ package com.tencent.tinker.android.dex;
  * processing a dex file.
  */
 public class DexException extends RuntimeException {
+
     static final long serialVersionUID = 1L;
 
     public DexException(String message) {

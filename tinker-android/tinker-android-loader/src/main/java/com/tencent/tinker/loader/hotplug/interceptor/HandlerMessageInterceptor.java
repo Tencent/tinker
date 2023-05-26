@@ -2,17 +2,16 @@ package com.tencent.tinker.loader.hotplug.interceptor;
 
 import android.os.Handler;
 import android.os.Message;
-
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
-
 import java.lang.reflect.Field;
 
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
-
 public class HandlerMessageInterceptor extends Interceptor<Handler.Callback> {
+
     private final Handler mTarget;
+
     private final MessageHandler mMessageHandler;
 
     private static Field sMCallbackField = null;
@@ -55,12 +54,16 @@ public class HandlerMessageInterceptor extends Interceptor<Handler.Callback> {
     }
 
     public interface MessageHandler {
+
         boolean handleMessage(Message msg);
     }
 
     private static class CallbackWrapper implements Handler.Callback, ITinkerHotplugProxy {
-        private final MessageHandler   mMessageHandler;
+
+        private final MessageHandler mMessageHandler;
+
         private final Handler.Callback mOrigCallback;
+
         private volatile boolean mIsInHandleMethod;
 
         CallbackWrapper(MessageHandler messageHandler, Handler.Callback origCallback) {

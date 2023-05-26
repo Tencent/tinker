@@ -13,35 +13,33 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader;
 
 import android.content.Intent;
-
 import com.tencent.tinker.loader.shareutil.ShareBsDiffPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-
 /**
  * Created by zhangshaowen on 16/3/8.
  */
-
 /**
  * check the complete of the dex files
  * pre-load patch dex files
  * we won't load patch library directly!
  */
 public class TinkerSoLoader {
+
     protected static final String SO_MEAT_FILE = ShareConstants.SO_META_FILE;
-    protected static final String SO_PATH      = ShareConstants.SO_PATH;
-    private static final   String TAG          = "Tinker.TinkerSoLoader";
+
+    protected static final String SO_PATH = ShareConstants.SO_PATH;
+
+    private static final String TAG = "Tinker.TinkerSoLoader";
 
     /**
      * all the library files in meta file exist?
@@ -58,16 +56,12 @@ public class TinkerSoLoader {
         }
         ArrayList<ShareBsDiffPatchInfo> libraryList = new ArrayList<>();
         ShareBsDiffPatchInfo.parseDiffPatchInfo(meta, libraryList);
-
         if (libraryList.isEmpty()) {
             return true;
         }
-
         //tinker//patch-641e634c/lib
         String libraryPath = directory + "/" + SO_PATH + "/";
-
         HashMap<String, String> libs = new HashMap<>();
-
         for (ShareBsDiffPatchInfo info : libraryList) {
             if (!ShareBsDiffPatchInfo.checkDiffPatchInfo(info)) {
                 intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_PACKAGE_PATCH_CHECK, ShareConstants.ERROR_PACKAGE_CHECK_LIB_META_CORRUPTED);
@@ -75,18 +69,14 @@ public class TinkerSoLoader {
                 return false;
             }
             String middle = info.path + "/" + info.name;
-
             //unlike dex, keep the original structure
             libs.put(middle, info.md5);
         }
-
         File libraryDir = new File(libraryPath);
-
         if (!libraryDir.exists() || !libraryDir.isDirectory()) {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_LIB_DIRECTORY_NOT_EXIST);
             return false;
         }
-
         //fast check whether there is any dex files missing
         for (String relative : libs.keySet()) {
             File libFile = new File(libraryPath + relative);
@@ -96,11 +86,8 @@ public class TinkerSoLoader {
                 return false;
             }
         }
-
         //if is ok, add to result intent
         intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_LIBS_PATH, libs);
         return true;
     }
-
-
 }

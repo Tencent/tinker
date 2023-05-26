@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dx.util;
 
 /**
  * Utilities for formatting numbers as hexadecimal.
  */
 public final class Hex {
+
     /**
      * This class is uninstantiable.
      */
@@ -39,7 +39,6 @@ public final class Hex {
             result[15 - i] = Character.forDigit((int) v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -55,7 +54,6 @@ public final class Hex {
             result[7 - i] = Character.forDigit(v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -71,7 +69,6 @@ public final class Hex {
             result[5 - i] = Character.forDigit(v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -87,7 +84,6 @@ public final class Hex {
             result[3 - i] = Character.forDigit(v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -119,7 +115,6 @@ public final class Hex {
             result[1 - i] = Character.forDigit(v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -131,7 +126,6 @@ public final class Hex {
      */
     public static String uNibble(int v) {
         char[] result = new char[1];
-
         result[0] = Character.forDigit(v & 0x0f, 16);
         return new String(result);
     }
@@ -144,19 +138,16 @@ public final class Hex {
      */
     public static String s8(long v) {
         char[] result = new char[17];
-
         if (v < 0) {
             result[0] = '-';
             v = -v;
         } else {
             result[0] = '+';
         }
-
         for (int i = 0; i < 16; i++) {
             result[16 - i] = Character.forDigit((int) v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -168,19 +159,16 @@ public final class Hex {
      */
     public static String s4(int v) {
         char[] result = new char[9];
-
         if (v < 0) {
             result[0] = '-';
             v = -v;
         } else {
             result[0] = '+';
         }
-
         for (int i = 0; i < 8; i++) {
             result[8 - i] = Character.forDigit(v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -192,19 +180,16 @@ public final class Hex {
      */
     public static String s2(int v) {
         char[] result = new char[5];
-
         if (v < 0) {
             result[0] = '-';
             v = -v;
         } else {
             result[0] = '+';
         }
-
         for (int i = 0; i < 4; i++) {
             result[4 - i] = Character.forDigit(v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -216,19 +201,16 @@ public final class Hex {
      */
     public static String s1(int v) {
         char[] result = new char[3];
-
         if (v < 0) {
             result[0] = '-';
             v = -v;
         } else {
             result[0] = '+';
         }
-
         for (int i = 0; i < 2; i++) {
             result[2 - i] = Character.forDigit(v & 0x0f, 16);
             v >>= 4;
         }
-
         return new String(result);
     }
 
@@ -246,36 +228,36 @@ public final class Hex {
      * header
      * @return {@code non-null;} a string of the dump
      */
-    public static String dump(byte[] arr, int offset, int length,
-                              int outOffset, int bpl, int addressLength) {
+    public static String dump(byte[] arr, int offset, int length, int outOffset, int bpl, int addressLength) {
         int end = offset + length;
-
         // twos-complement math trick: ((x < 0) || (y < 0)) <=> ((x|y) < 0)
         if (((offset | length | end) < 0) || (end > arr.length)) {
-            throw new IndexOutOfBoundsException("arr.length "
-                                                + arr.length + "; "
-                                                + offset + "..!" + end);
+            throw new IndexOutOfBoundsException("arr.length " + arr.length + "; " + offset + "..!" + end);
         }
-
         if (outOffset < 0) {
             throw new IllegalArgumentException("outOffset < 0");
         }
-
         if (length == 0) {
             return "";
         }
-
         StringBuffer sb = new StringBuffer(length * 4 + 6);
         int col = 0;
-
         while (length > 0) {
             if (col == 0) {
                 String astr;
-                switch (addressLength) {
-                    case 2:  astr = Hex.u1(outOffset); break;
-                    case 4:  astr = Hex.u2(outOffset); break;
-                    case 6:  astr = Hex.u3(outOffset); break;
-                    default: astr = Hex.u4(outOffset); break;
+                switch(addressLength) {
+                    case 2:
+                        astr = Hex.u1(outOffset);
+                        break;
+                    case 4:
+                        astr = Hex.u2(outOffset);
+                        break;
+                    case 6:
+                        astr = Hex.u3(outOffset);
+                        break;
+                    default:
+                        astr = Hex.u4(outOffset);
+                        break;
                 }
                 sb.append(astr);
                 sb.append(": ");
@@ -292,11 +274,9 @@ public final class Hex {
             }
             length--;
         }
-
         if (col != 0) {
             sb.append('\n');
         }
-
         return sb.toString();
     }
 

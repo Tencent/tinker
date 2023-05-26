@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.ByteInput;
@@ -25,7 +24,9 @@ import java.io.UTFDataFormatException;
  * <p>Derived from libcore's MUTF-8 encoder at java.nio.charset.ModifiedUtf8.
  */
 public final class Mutf8 {
-    private Mutf8() { }
+
+    private Mutf8() {
+    }
 
     /**
      * Decodes bytes from {@code in} into {@code out} until a delimiter 0x00 is
@@ -68,7 +69,8 @@ public final class Mutf8 {
         final int length = s.length();
         for (int i = 0; i < length; ++i) {
             char ch = s.charAt(i);
-            if (ch != 0 && ch <= 127) { // U+0000 uses two bytes.
+            if (ch != 0 && ch <= 127) {
+                // U+0000 uses two bytes.
                 ++result;
             } else if (ch <= 2047) {
                 result += 2;
@@ -90,7 +92,8 @@ public final class Mutf8 {
         final int length = s.length();
         for (int i = 0; i < length; i++) {
             char ch = s.charAt(i);
-            if (ch != 0 && ch <= 127) { // U+0000 uses two bytes.
+            if (ch != 0 && ch <= 127) {
+                // U+0000 uses two bytes.
                 dst[offset++] = (byte) ch;
             } else if (ch <= 2047) {
                 dst[offset++] = (byte) (0xc0 | (0x1f & (ch >> 6)));

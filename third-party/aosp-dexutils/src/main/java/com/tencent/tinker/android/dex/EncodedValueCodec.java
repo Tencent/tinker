@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.ByteInput;
@@ -23,6 +22,7 @@ import com.tencent.tinker.android.dex.util.ByteOutput;
  * Read and write {@code encoded_value} primitives.
  */
 public final class EncodedValueCodec {
+
     private EncodedValueCodec() {
     }
 
@@ -40,16 +40,13 @@ public final class EncodedValueCodec {
          * purpose).
          */
         int requiredBits = 65 - Long.numberOfLeadingZeros(value ^ (value >> 63));
-
         // Round up the requiredBits to a number of bytes.
         int requiredBytes = (requiredBits + 0x07) >> 3;
-
         /*
          * Write the header byte, which includes the type and
          * requiredBytes - 1.
          */
         out.writeByte(type | ((requiredBytes - 1) << 5));
-
         // Write the value, per se.
         while (requiredBytes > 0) {
             out.writeByte((byte) value);
@@ -67,16 +64,13 @@ public final class EncodedValueCodec {
         if (requiredBits == 0) {
             requiredBits = 1;
         }
-
         // Round up the requiredBits to a number of bytes.
         int requiredBytes = (requiredBits + 0x07) >> 3;
-
         /*
          * Write the header byte, which includes the type and
          * requiredBytes - 1.
          */
         out.writeByte(type | ((requiredBytes - 1) << 5));
-
         // Write the value, per se.
         while (requiredBytes > 0) {
             out.writeByte((byte) value);
@@ -94,19 +88,15 @@ public final class EncodedValueCodec {
         if (requiredBits == 0) {
             requiredBits = 1;
         }
-
         // Round up the requiredBits to a number of bytes.
         int requiredBytes = (requiredBits + 0x07) >> 3;
-
         // Scootch the first bits to be written down to the low-order bits.
         value >>= 64 - (requiredBytes * 8);
-
         /*
          * Write the header byte, which includes the type and
          * requiredBytes - 1.
          */
         out.writeByte(type | ((requiredBytes - 1) << 5));
-
         // Write the value, per se.
         while (requiredBytes > 0) {
             out.writeByte((byte) value);

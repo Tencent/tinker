@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader;
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
@@ -26,17 +24,21 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareResPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 
 /**
  * Created by liangwenxiang on 2016/4/14.
  */
 public class TinkerResourceLoader {
+
     protected static final String RESOURCE_META_FILE = ShareConstants.RES_META_FILE;
-    protected static final String RESOURCE_FILE      = ShareConstants.RES_NAME;
-    protected static final String RESOURCE_PATH      = ShareConstants.RES_PATH;
+
+    protected static final String RESOURCE_FILE = ShareConstants.RES_NAME;
+
+    protected static final String RESOURCE_PATH = ShareConstants.RES_PATH;
+
     private static final String TAG = "Tinker.ResourceLoader";
+
     private static ShareResPatchInfo resPatchInfo = new ShareResPatchInfo();
 
     private TinkerResourceLoader() {
@@ -49,10 +51,9 @@ public class TinkerResourceLoader {
         if (resPatchInfo == null || resPatchInfo.resArscMd5 == null) {
             return true;
         }
-        String resourceString = directory + "/" + RESOURCE_PATH +  "/" + RESOURCE_FILE;
+        String resourceString = directory + "/" + RESOURCE_PATH + "/" + RESOURCE_FILE;
         File resourceFile = new File(resourceString);
         long start = System.currentTimeMillis();
-
         if (application.isTinkerLoadVerifyFlag()) {
             if (!SharePatchFileUtil.checkResourceArscMd5(resourceFile, resPatchInfo.resArscMd5)) {
                 ShareTinkerLog.e(TAG, "Failed to load resource file, path: " + resourceFile.getPath() + ", expect md5: " + resPatchInfo.resArscMd5);
@@ -94,7 +95,6 @@ public class TinkerResourceLoader {
         }
         //only parse first line for faster
         ShareResPatchInfo.parseResPatchInfoFirstLine(meta, resPatchInfo);
-
         if (resPatchInfo.resArscMd5 == null) {
             return true;
         }
@@ -104,14 +104,11 @@ public class TinkerResourceLoader {
             return false;
         }
         String resourcePath = directory + "/" + RESOURCE_PATH + "/";
-
         File resourceDir = new File(resourcePath);
-
         if (!resourceDir.exists() || !resourceDir.isDirectory()) {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_DIRECTORY_NOT_EXIST);
             return false;
         }
-
         File resourceFile = new File(resourcePath + RESOURCE_FILE);
         if (!SharePatchFileUtil.isLegalFile(resourceFile)) {
             ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_RESOURCE_FILE_NOT_EXIST);

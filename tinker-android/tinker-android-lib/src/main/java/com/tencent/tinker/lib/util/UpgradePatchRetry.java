@@ -13,19 +13,16 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.util;
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -40,19 +37,29 @@ import java.util.Properties;
  * Created by zhangshaowen on 16/7/3.
  */
 public class UpgradePatchRetry {
+
     private static final String TAG = "Tinker.UpgradePatchRetry";
 
     private static final String RETRY_INFO_NAME = "patch.retry";
+
     private static final String TEMP_PATCH_NAME = "temp.apk";
 
     private static final String RETRY_FILE_MD5_PROPERTY = "md5";
-    private static final String RETRY_COUNT_PROPERTY    = "times";
-    private static final int    RETRY_MAX_COUNT         = 20;
+
+    private static final String RETRY_COUNT_PROPERTY = "times";
+
+    private static final int RETRY_MAX_COUNT = 20;
+
     private static UpgradePatchRetry sInstance;
+
     private boolean isRetryEnable = true;
-    private File    retryInfoFile = null;
-    private File    tempPatchFile = null;
+
+    private File retryInfoFile = null;
+
+    private File tempPatchFile = null;
+
     private Context context = null;
+
     private int maxRetryCount = RETRY_MAX_COUNT;
 
     /**
@@ -96,12 +103,10 @@ public class UpgradePatchRetry {
             ShareTinkerLog.w(TAG, "onPatchRetryLoad retry is not main process, just return");
             return false;
         }
-
         if (!retryInfoFile.exists()) {
             ShareTinkerLog.w(TAG, "onPatchRetryLoad retry info not exist, just return");
             return false;
         }
-
         if (TinkerServiceInternals.isTinkerPatchServiceRunning(context)) {
             ShareTinkerLog.w(TAG, "onPatchRetryLoad tinker service is running, just return");
             return false;
@@ -122,28 +127,22 @@ public class UpgradePatchRetry {
             ShareTinkerLog.w(TAG, "onPatchServiceStart retry disabled, just return");
             return;
         }
-
         if (intent == null) {
             ShareTinkerLog.e(TAG, "onPatchServiceStart intent is null, just return");
             return;
         }
-
         String path = TinkerPatchService.getPatchPathExtra(intent);
-
         if (path == null) {
             ShareTinkerLog.w(TAG, "onPatchServiceStart patch path is null, just return");
             return;
         }
-
         RetryInfo retryInfo;
         File patchFile = new File(path);
-
         String patchMd5 = SharePatchFileUtil.getMD5(patchFile);
         if (patchMd5 == null) {
             ShareTinkerLog.w(TAG, "onPatchServiceStart patch md5 is null, just return");
             return;
         }
-
         if (retryInfoFile.exists()) {
             retryInfo = RetryInfo.readRetryProperty(retryInfoFile);
             if (retryInfo.md5 == null || retryInfo.times == null || !patchMd5.equals(retryInfo.md5)) {
@@ -160,12 +159,10 @@ public class UpgradePatchRetry {
                     retryInfo.times = String.valueOf(nowTimes + 1);
                 }
             }
-
         } else {
             copyToTempFile(patchFile);
             retryInfo = new RetryInfo(patchMd5, "1");
         }
-
         RetryInfo.writeRetryProperty(retryInfoFile, retryInfo);
     }
 
@@ -208,7 +205,6 @@ public class UpgradePatchRetry {
             return true;
         }
         RetryInfo retryInfo = RetryInfo.readRetryProperty(retryInfoFile);
-
         if (md5.equals(retryInfo.md5)) {
             ShareTinkerLog.i(TAG, "onPatchResetMaxCheck, reset max check to 1");
             retryInfo.times = "1";
@@ -216,6 +212,7 @@ public class UpgradePatchRetry {
         }
         return true;
     }
+
     /**
      * if we receive any result, we can delete the temp retry info file
      */
@@ -224,12 +221,10 @@ public class UpgradePatchRetry {
             ShareTinkerLog.w(TAG, "onPatchServiceResult retry disabled, just return");
             return;
         }
-
         //delete temp patch file
         if (tempPatchFile.exists()) {
             SharePatchFileUtil.safeDeleteFile(tempPatchFile);
         }
-
     }
 
     private void copyToTempFile(File patchFile) {
@@ -237,7 +232,6 @@ public class UpgradePatchRetry {
             return;
         }
         ShareTinkerLog.w(TAG, "try copy file: %s to %s", patchFile.getAbsolutePath(), tempPatchFile.getAbsolutePath());
-
         try {
             SharePatchFileUtil.copyFileUsingStream(patchFile, tempPatchFile);
         } catch (IOException e) {
@@ -246,7 +240,9 @@ public class UpgradePatchRetry {
     }
 
     static class RetryInfo {
+
         String md5;
+
         String times;
 
         RetryInfo(String md5, String times) {
@@ -257,7 +253,6 @@ public class UpgradePatchRetry {
         static RetryInfo readRetryProperty(File infoFile) {
             String md5 = null;
             String times = null;
-
             Properties properties = new Properties();
             FileInputStream inputStream = null;
             try {
@@ -270,7 +265,6 @@ public class UpgradePatchRetry {
             } finally {
                 IOHelper.closeQuietly(inputStream);
             }
-
             return new RetryInfo(md5, times);
         }
 
@@ -278,12 +272,10 @@ public class UpgradePatchRetry {
             if (info == null) {
                 return;
             }
-
             File parentFile = infoFile.getParentFile();
             if (!parentFile.exists()) {
                 parentFile.mkdirs();
             }
-
             Properties newProperties = new Properties();
             newProperties.put(RETRY_FILE_MD5_PROPERTY, info.md5);
             newProperties.put(RETRY_COUNT_PROPERTY, info.times);
@@ -296,7 +288,6 @@ public class UpgradePatchRetry {
             } finally {
                 IOHelper.closeQuietly(outputStream);
             }
-
         }
     }
 }

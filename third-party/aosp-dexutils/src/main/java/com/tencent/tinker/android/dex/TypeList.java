@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
 import com.tencent.tinker.android.dex.util.CompareUtils;
-
 import java.util.Arrays;
 
 public final class TypeList extends Item<TypeList> {
+
     public static final TypeList EMPTY = new TypeList(0, Dex.EMPTY_SHORT_ARRAY);
 
     public short[] types;
@@ -31,7 +30,8 @@ public final class TypeList extends Item<TypeList> {
         this.types = types;
     }
 
-    @Override public int compareTo(TypeList other) {
+    @Override
+    public int compareTo(TypeList other) {
         return CompareUtils.uArrCompare(types, other.types);
     }
 

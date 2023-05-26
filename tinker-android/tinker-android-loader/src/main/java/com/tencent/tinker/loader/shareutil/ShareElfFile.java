@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import java.io.Closeable;
@@ -31,26 +30,29 @@ import java.util.Map;
 /**
  * Created by tangyinsheng on 2017/3/13.
  */
-
 public class ShareElfFile implements Closeable {
+
     public static final int FILE_TYPE_OTHERS = -1;
+
     public static final int FILE_TYPE_ODEX = 0;
+
     public static final int FILE_TYPE_ELF = 1;
 
     private final FileInputStream fis;
+
     private final Map<String, SectionHeader> sectionNameToHeaderMap = new HashMap<>();
+
     public ElfHeader elfHeader = null;
+
     public ProgramHeader[] programHeaders = null;
+
     public SectionHeader[] sectionHeaders = null;
 
     public ShareElfFile(File file) throws IOException {
         fis = new FileInputStream(file);
         final FileChannel channel = fis.getChannel();
-
         elfHeader = new ElfHeader(channel);
-
         final ByteBuffer headerBuffer = ByteBuffer.allocate(128);
-
         headerBuffer.limit(elfHeader.ePhEntSize);
         headerBuffer.order(elfHeader.eIndent[ElfHeader.EI_DATA] == ElfHeader.ELFDATA2LSB ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
         channel.position(elfHeader.ePhOff);
@@ -59,7 +61,6 @@ public class ShareElfFile implements Closeable {
             readUntilLimit(channel, headerBuffer, "failed to read phdr.");
             programHeaders[i] = new ProgramHeader(headerBuffer, elfHeader.eIndent[ElfHeader.EI_CLASS]);
         }
-
         channel.position(elfHeader.eShOff);
         headerBuffer.limit(elfHeader.eShEntSize);
         sectionHeaders = new SectionHeader[elfHeader.eShNum];
@@ -67,7 +68,6 @@ public class ShareElfFile implements Closeable {
             readUntilLimit(channel, headerBuffer, "failed to read shdr.");
             sectionHeaders[i] = new SectionHeader(headerBuffer, elfHeader.eIndent[ElfHeader.EI_CLASS]);
         }
-
         if (elfHeader.eShStrNdx > 0) {
             final SectionHeader shStrTabSectionHeader = sectionHeaders[elfHeader.eShStrNdx];
             final ByteBuffer shStrTab = getSection(shStrTabSectionHeader);
@@ -113,9 +113,7 @@ public class ShareElfFile implements Closeable {
         bufferOut.rewind();
         int bytesRead = channel.read(bufferOut);
         if (bytesRead != bufferOut.limit()) {
-            throw new IOException(errMsg + " Rest bytes insufficient, expect to read "
-                    + bufferOut.limit() + " bytes but only "
-                    + bytesRead + " bytes were read.");
+            throw new IOException(errMsg + " Rest bytes insufficient, expect to read " + bufferOut.limit() + " bytes but only " + bytesRead + " bytes were read.");
         }
         bufferOut.flip();
     }
@@ -170,40 +168,70 @@ public class ShareElfFile implements Closeable {
     }
 
     public static class ElfHeader {
+
         // Elf indent field index.
         public static final int EI_CLASS = 4;
+
         public static final int EI_DATA = 5;
+
         public static final int EI_VERSION = 6;
+
         // Elf classes.
         public static final int ELFCLASS32 = 1;
+
         public static final int ELFCLASS64 = 2;
+
         // Elf data encoding.
         public static final int ELFDATA2LSB = 1;
+
         public static final int ELFDATA2MSB = 2;
+
         // Elf types.
         public static final int ET_NONE = 0;
+
         public static final int ET_REL = 1;
+
         public static final int ET_EXEC = 2;
+
         public static final int ET_DYN = 3;
+
         public static final int ET_CORE = 4;
+
         public static final int ET_LOPROC = 0xff00;
+
         public static final int ET_HIPROC = 0xffff;
+
         // Elf indent version.
         public static final int EV_CURRENT = 1;
+
         private static final int EI_NINDENT = 16;
+
         public final byte[] eIndent = new byte[EI_NINDENT];
+
         public final short eType;
+
         public final short eMachine;
+
         public final int eVersion;
+
         public final long eEntry;
+
         public final long ePhOff;
+
         public final long eShOff;
+
         public final int eFlags;
+
         public final short eEhSize;
+
         public final short ePhEntSize;
+
         public final short ePhNum;
+
         public final short eShEntSize;
+
         public final short eShNum;
+
         public final short eShStrNdx;
 
         private ElfHeader(FileChannel channel) throws IOException {
@@ -212,21 +240,16 @@ public class ShareElfFile implements Closeable {
             if (eIndent[0] != 0x7F || eIndent[1] != 'E' || eIndent[2] != 'L' || eIndent[3] != 'F') {
                 throw new IOException(String.format("bad elf magic: %x %x %x %x.", eIndent[0], eIndent[1], eIndent[2], eIndent[3]));
             }
-
             assertInRange(eIndent[EI_CLASS], ELFCLASS32, ELFCLASS64, "bad elf class: " + eIndent[EI_CLASS]);
             assertInRange(eIndent[EI_DATA], ELFDATA2LSB, ELFDATA2MSB, "bad elf data encoding: " + eIndent[EI_DATA]);
-
             final ByteBuffer restBuffer = ByteBuffer.allocate(eIndent[EI_CLASS] == ELFCLASS32 ? 36 : 48);
             restBuffer.order(eIndent[EI_DATA] == ELFDATA2LSB ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
             readUntilLimit(channel, restBuffer, "failed to read rest part of ehdr.");
-
             eType = restBuffer.getShort();
             eMachine = restBuffer.getShort();
-
             eVersion = restBuffer.getInt();
             assertInRange(eVersion, EV_CURRENT, EV_CURRENT, "bad elf version: " + eVersion);
-
-            switch (eIndent[EI_CLASS]) {
+            switch(eIndent[EI_CLASS]) {
                 case ELFCLASS32:
                     eEntry = restBuffer.getInt();
                     ePhOff = restBuffer.getInt();
@@ -251,33 +274,51 @@ public class ShareElfFile implements Closeable {
     }
 
     public static class ProgramHeader {
+
         // Segment types.
         public static final int PT_NULL = 0;
+
         public static final int PT_LOAD = 1;
+
         public static final int PT_DYNAMIC = 2;
+
         public static final int PT_INTERP = 3;
+
         public static final int PT_NOTE = 4;
+
         public static final int PT_SHLIB = 5;
+
         public static final int PT_PHDR = 6;
+
         public static final int PT_LOPROC = 0x70000000;
+
         public static final int PT_HIPROC = 0x7fffffff;
 
         // Segment flags.
         public static final int PF_R = 0x04;
+
         public static final int PF_W = 0x02;
+
         public static final int PF_X = 0x01;
 
         public final int pType;
+
         public final int pFlags;
+
         public final long pOffset;
+
         public final long pVddr;
+
         public final long pPddr;
+
         public final long pFileSize;
+
         public final long pMemSize;
+
         public final long pAlign;
 
         private ProgramHeader(ByteBuffer buffer, int elfClass) throws IOException {
-            switch (elfClass) {
+            switch(elfClass) {
                 case ElfHeader.ELFCLASS32:
                     pType = buffer.getInt();
                     pOffset = buffer.getInt();
@@ -305,53 +346,88 @@ public class ShareElfFile implements Closeable {
     }
 
     public static class SectionHeader {
+
         // Special section indexes.
         public static final int SHN_UNDEF = 0;
+
         public static final int SHN_LORESERVE = 0xff00;
+
         public static final int SHN_LOPROC = 0xff00;
+
         public static final int SHN_HIPROC = 0xff1f;
+
         public static final int SHN_ABS = 0xfff1;
+
         public static final int SHN_COMMON = 0xfff2;
+
         public static final int SHN_HIRESERVE = 0xffff;
 
         // Section types.
         public static final int SHT_NULL = 0;
+
         public static final int SHT_PROGBITS = 1;
+
         public static final int SHT_SYMTAB = 2;
+
         public static final int SHT_STRTAB = 3;
+
         public static final int SHT_RELA = 4;
+
         public static final int SHT_HASH = 5;
+
         public static final int SHT_DYNAMIC = 6;
+
         public static final int SHT_NOTE = 7;
+
         public static final int SHT_NOBITS = 8;
+
         public static final int SHT_REL = 9;
+
         public static final int SHT_SHLIB = 10;
+
         public static final int SHT_DYNSYM = 11;
+
         public static final int SHT_LOPROC = 0x70000000;
+
         public static final int SHT_HIPROC = 0x7fffffff;
+
         public static final int SHT_LOUSER = 0x80000000;
+
         public static final int SHT_HIUSER = 0xffffffff;
 
         // Section flags.
         public static final int SHF_WRITE = 0x1;
+
         public static final int SHF_ALLOC = 0x2;
+
         public static final int SHF_EXECINSTR = 0x4;
+
         public static final int SHF_MASKPROC = 0xf0000000;
 
         public final int shName;
+
         public final int shType;
+
         public final long shFlags;
+
         public final long shAddr;
+
         public final long shOffset;
+
         public final long shSize;
+
         public final int shLink;
+
         public final int shInfo;
+
         public final long shAddrAlign;
+
         public final long shEntSize;
+
         public String shNameStr;
 
         private SectionHeader(ByteBuffer buffer, int elfClass) throws IOException {
-            switch (elfClass) {
+            switch(elfClass) {
                 case ElfHeader.ELFCLASS32:
                     shName = buffer.getInt();
                     shType = buffer.getInt();

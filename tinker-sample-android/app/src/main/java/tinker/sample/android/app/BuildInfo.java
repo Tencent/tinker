@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.app;
 
 import tinker.sample.android.BuildConfig;
@@ -23,15 +22,19 @@ import tinker.sample.android.BuildConfig;
  * we use BuildInfo instead of {@link BuildInfo} to make less change
  */
 public class BuildInfo {
+
     /**
      * they are not final, so they won't change with the BuildConfig values!
      */
-    public static boolean DEBUG        = BuildConfig.DEBUG;
-    public static String  VERSION_NAME = BuildConfig.VERSION_NAME;
-    public static int     VERSION_CODE = BuildConfig.VERSION_CODE;
+    public static boolean DEBUG = BuildConfig.DEBUG;
 
-    public static String MESSAGE       = BuildConfig.MESSAGE;
-    public static String TINKER_ID     = BuildConfig.TINKER_ID;
-    public static String PLATFORM      = BuildConfig.PLATFORM;
+    public static String VERSION_NAME = BuildConfig.VERSION_NAME;
 
+    public static int VERSION_CODE = BuildConfig.VERSION_CODE;
+
+    public static String MESSAGE = BuildConfig.MESSAGE;
+
+    public static String TINKER_ID = BuildConfig.TINKER_ID;
+
+    public static String PLATFORM = BuildConfig.PLATFORM;
 }

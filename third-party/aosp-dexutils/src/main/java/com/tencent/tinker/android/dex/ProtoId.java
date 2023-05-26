@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class ProtoId extends TableOfContents.Section.Item<ProtoId> {
+
     public int shortyIndex;
+
     public int returnTypeIndex;
+
     public int parametersOffset;
 
     public ProtoId(int off, int shortyIndex, int returnTypeIndex, int parametersOffset) {
@@ -42,7 +44,6 @@ public final class ProtoId extends TableOfContents.Section.Item<ProtoId> {
         }
         return CompareUtils.sCompare(parametersOffset, other.parametersOffset);
     }
-
 
     @Override
     public int hashCode() {

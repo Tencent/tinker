@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dx.instruction;
 
 import java.io.EOFException;
@@ -22,7 +21,10 @@ import java.io.EOFException;
  * Reads code from a {@code short[]}.
  */
 public final class ShortArrayCodeInput extends CodeCursor {
-    /** source array to read from */
+
+    /**
+     * source array to read from
+     */
     private final short[] array;
 
     /**
@@ -32,7 +34,6 @@ public final class ShortArrayCodeInput extends CodeCursor {
         if (array == null) {
             throw new NullPointerException("array == null");
         }
-
         this.array = array;
     }
 
@@ -63,7 +64,6 @@ public final class ShortArrayCodeInput extends CodeCursor {
     public int readInt() throws EOFException {
         int short0 = read();
         int short1 = read();
-
         return short0 | (short1 << 16);
     }
 
@@ -75,7 +75,6 @@ public final class ShortArrayCodeInput extends CodeCursor {
         long short1 = read();
         long short2 = read();
         long short3 = read();
-
         return short0 | (short1 << 16) | (short2 << 32) | (short3 << 48);
     }
 }

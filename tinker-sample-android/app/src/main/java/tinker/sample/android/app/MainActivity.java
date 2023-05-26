@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.app;
 
 import android.Manifest;
@@ -34,17 +33,16 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 import com.tencent.tinker.lib.library.TinkerLoadLibrary;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import tinker.sample.android.R;
 import tinker.sample.android.util.Utils;
 
 public class MainActivity extends AppCompatActivity {
+
     private static final String TAG = "Tinker.MainActivity";
 
     private TextView mTvMessage = null;
@@ -58,61 +56,51 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "i am on onCreate classloader:" + MainActivity.class.getClassLoader().toString());
         //test resource change
         Log.e(TAG, "i am on onCreate string:" + getResources().getString(R.string.test_resource));
-//        Log.e(TAG, "i am on patch onCreate");
-
+        //        Log.e(TAG, "i am on patch onCreate");
         mTvMessage = findViewById(R.id.tv_message);
-
         askForRequiredPermissions();
-
         Button loadPatchButton = (Button) findViewById(R.id.loadPatch);
-
         loadPatchButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
                 TinkerInstaller.onReceiveUpgradePatch(getApplicationContext(), Environment.getExternalStorageDirectory().getAbsolutePath() + "/patch_signed_7zip.apk");
             }
         });
-
         Button loadLibraryButton = (Button) findViewById(R.id.loadLibrary);
-
         loadLibraryButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
                 // #method 1, hack classloader library path
                 TinkerLoadLibrary.installNavitveLibraryABI(getApplicationContext(), "armeabi");
                 System.loadLibrary("stlport_shared");
-
                 // #method 2, for lib/armeabi, just use TinkerInstaller.loadLibrary
-//                TinkerLoadLibrary.loadArmLibrary(getApplicationContext(), "stlport_shared");
-
+                //                TinkerLoadLibrary.loadArmLibrary(getApplicationContext(), "stlport_shared");
                 // #method 3, load tinker patch library directly
-//                TinkerInstaller.loadLibraryFromTinker(getApplicationContext(), "assets/x86", "stlport_shared");
-
+                //                TinkerInstaller.loadLibraryFromTinker(getApplicationContext(), "assets/x86", "stlport_shared");
             }
         });
-
         Button cleanPatchButton = (Button) findViewById(R.id.cleanPatch);
-
         cleanPatchButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
                 Tinker.with(getApplicationContext()).cleanPatch();
             }
         });
-
         Button killSelfButton = (Button) findViewById(R.id.killSelf);
-
         killSelfButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
                 ShareTinkerInternals.killAllOtherProcess(getApplicationContext());
                 android.os.Process.killProcess(android.os.Process.myPid());
             }
         });
-
         Button buildInfoButton = (Button) findViewById(R.id.showInfo);
-
         buildInfoButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
                 showInfo(MainActivity.this);
@@ -125,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         if (!hasRequiredPermissions()) {
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.READ_EXTERNAL_STORAGE }, 0);
         }
     }
 
@@ -148,22 +136,18 @@ public class MainActivity extends AppCompatActivity {
             sb.append(String.format("[patch is loaded] \n"));
             sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
             sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
-
             sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
             sb.append(String.format("[TINKER_ID] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName(ShareConstants.TINKER_ID)));
             sb.append(String.format("[packageConfig patchMessage] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName("patchMessage")));
             sb.append(String.format("[TINKER_ID Rom Space] %d k \n", tinker.getTinkerRomSpace()));
-
         } else {
             sb.append(String.format("[patch is not loaded] \n"));
             sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
             sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
-
             sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
             sb.append(String.format("[TINKER_ID] %s \n", ShareTinkerInternals.getManifestTinkerID(getApplicationContext())));
         }
         sb.append(String.format("[BaseBuildInfo Message] %s \n", BaseBuildInfo.TEST_MESSAGE));
-
         final TextView v = new TextView(context);
         v.setText(sb);
         v.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
@@ -173,7 +157,6 @@ public class MainActivity extends AppCompatActivity {
         v.setTypeface(Typeface.MONOSPACE);
         final int padding = 16;
         v.setPadding(padding, padding, padding, padding);
-
         final AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setCancelable(true);
         builder.setView(v);
@@ -185,11 +168,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         Log.e(TAG, "i am on onResume");
-//        Log.e(TAG, "i am on patch onResume");
-
+        //        Log.e(TAG, "i am on patch onResume");
         super.onResume();
         Utils.setBackground(false);
-
         if (hasRequiredPermissions()) {
             mTvMessage.setVisibility(View.GONE);
         } else {

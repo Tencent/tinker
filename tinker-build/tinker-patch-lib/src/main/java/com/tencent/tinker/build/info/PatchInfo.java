@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.info;
 
 import com.tencent.tinker.build.patch.Configuration;
@@ -25,11 +24,9 @@ public class PatchInfo {
 
     private final PatchInfoGen infoGen;
 
-
     public PatchInfo(Configuration config) {
         infoGen = new PatchInfoGen(config);
     }
-
 
     /**
      * gen the meta file txt

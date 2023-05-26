@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 import java.io.BufferedInputStream;
@@ -26,6 +25,7 @@ import java.io.InputStream;
  * Created by zhangshaowen on 16/8/10.
  */
 public class TinkerZipUtil {
+
     private static final int BUFFER_SIZE = 4096;
 
     public static void extractTinkerEntry(TinkerZipFile apk, TinkerZipEntry zipEntry, TinkerZipOutputStream outputStream) throws IOException {
@@ -34,7 +34,6 @@ public class TinkerZipUtil {
             in = apk.getInputStream(zipEntry);
             outputStream.putNextEntry(new TinkerZipEntry(zipEntry));
             byte[] buffer = new byte[BUFFER_SIZE];
-
             for (int length = in.read(buffer); length != -1; length = in.read(buffer)) {
                 outputStream.write(buffer, 0, length);
             }
@@ -48,7 +47,6 @@ public class TinkerZipUtil {
 
     public static void extractLargeModifyFile(TinkerZipEntry sourceArscEntry, File newFile, long newFileCrc, TinkerZipOutputStream outputStream) throws IOException {
         TinkerZipEntry newArscZipEntry = new TinkerZipEntry(sourceArscEntry);
-
         newArscZipEntry.setMethod(TinkerZipEntry.STORED);
         newArscZipEntry.setSize(newFile.length());
         newArscZipEntry.setCompressedSize(newFile.length());
@@ -58,7 +56,6 @@ public class TinkerZipUtil {
             in = new BufferedInputStream(new FileInputStream(newFile));
             outputStream.putNextEntry(new TinkerZipEntry(newArscZipEntry));
             byte[] buffer = new byte[BUFFER_SIZE];
-
             for (int length = in.read(buffer); length != -1; length = in.read(buffer)) {
                 outputStream.write(buffer, 0, length);
             }

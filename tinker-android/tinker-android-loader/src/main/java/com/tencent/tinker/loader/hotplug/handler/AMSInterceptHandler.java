@@ -10,24 +10,23 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.os.Build;
-
 import com.tencent.tinker.loader.hotplug.ActivityStubManager;
 import com.tencent.tinker.loader.hotplug.EnvConsts;
 import com.tencent.tinker.loader.hotplug.IncrementComponentManager;
 import com.tencent.tinker.loader.hotplug.interceptor.ServiceBinderInterceptor.BinderInvocationHandler;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
-
 import java.lang.reflect.Method;
 
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
-
 public class AMSInterceptHandler implements BinderInvocationHandler {
+
     private static final String TAG = "Tinker.AMSIntrcptHndlr";
 
-    private static final int[] TRANSLUCENT_ATTR_ID = {android.R.attr.windowIsTranslucent};
+    private static final int[] TRANSLUCENT_ATTR_ID = { android.R.attr.windowIsTranslucent };
+
     private static final int INTENT_SENDER_ACTIVITY;
 
     static {

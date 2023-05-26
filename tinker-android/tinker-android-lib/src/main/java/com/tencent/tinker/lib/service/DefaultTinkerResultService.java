@@ -13,9 +13,7 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.service;
-
 
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
@@ -23,13 +21,13 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.lib.util.TinkerServiceInternals;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
-
 import java.io.File;
 
 /**
  * Created by zhangshaowen on 16/3/19.
  */
 public class DefaultTinkerResultService extends AbstractResultService {
+
     private static final String TAG = "Tinker.DefaultTinkerResultService";
 
     /**
@@ -44,10 +42,8 @@ public class DefaultTinkerResultService extends AbstractResultService {
             return;
         }
         ShareTinkerLog.i(TAG, "DefaultTinkerResultService received a result:%s ", result.toString());
-
         //first, we want to kill the recover process
         TinkerServiceInternals.killTinkerPatchServiceProcess(getApplicationContext());
-
         // if success and newPatch, it is nice to delete the raw file, and restart at once
         // only main process can load an upgrade patch!
         if (result.isSuccess) {
@@ -70,8 +66,7 @@ public class DefaultTinkerResultService extends AbstractResultService {
         }
         ShareTinkerLog.w(TAG, "deleteRawPatchFile rawFile path: %s", rawFile.getPath());
         String fileName = rawFile.getName();
-        if (!fileName.startsWith(ShareConstants.PATCH_BASE_NAME)
-            || !fileName.endsWith(ShareConstants.PATCH_SUFFIX)) {
+        if (!fileName.startsWith(ShareConstants.PATCH_BASE_NAME) || !fileName.endsWith(ShareConstants.PATCH_SUFFIX)) {
             SharePatchFileUtil.safeDeleteFile(rawFile);
             return;
         }
@@ -80,12 +75,10 @@ public class DefaultTinkerResultService extends AbstractResultService {
             SharePatchFileUtil.safeDeleteFile(rawFile);
         } else {
             File grandFile = parentFile.getParentFile();
-            if (!grandFile.getName().equals(ShareConstants.PATCH_DIRECTORY_NAME)
-                && !grandFile.getName().equals(ShareConstants.PATCH_DIRECTORY_NAME_SPEC)) {
+            if (!grandFile.getName().equals(ShareConstants.PATCH_DIRECTORY_NAME) && !grandFile.getName().equals(ShareConstants.PATCH_DIRECTORY_NAME_SPEC)) {
                 SharePatchFileUtil.safeDeleteFile(rawFile);
             }
         }
-
     }
 
     public boolean checkIfNeedKill(PatchResult result) {
@@ -101,6 +94,4 @@ public class DefaultTinkerResultService extends AbstractResultService {
         }
         return true;
     }
-
-
 }

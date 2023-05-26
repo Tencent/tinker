@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dx.instruction;
 
 import com.tencent.tinker.android.utils.SparseIntArray;
@@ -22,10 +21,15 @@ import com.tencent.tinker.android.utils.SparseIntArray;
  * Cursor over code units, for reading or writing out Dalvik bytecode.
  */
 public abstract class CodeCursor {
-    /** base address map */
+
+    /**
+     * base address map
+     */
     private final SparseIntArray baseAddressMap;
 
-    /** next index within {@link #array} to read from or write to */
+    /**
+     * next index within {@link #array} to read from or write to
+     */
     private int cursor;
 
     /**

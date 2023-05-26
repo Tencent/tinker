@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import java.io.File;
@@ -129,11 +128,11 @@ public final class FileUtil {
     }
 
     public static class FileUtilException extends RuntimeException {
+
         private static final long serialVersionUID = 3884649425767533205L;
 
         public FileUtilException(Throwable cause) {
             super(cause);
         }
     }
-
 }

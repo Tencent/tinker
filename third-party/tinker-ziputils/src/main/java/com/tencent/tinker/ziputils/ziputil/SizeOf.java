@@ -13,19 +13,25 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 /**
  * modify by zhangshaowen on 16/6/7.
  */
 public final class SizeOf {
+
     public static final int CHAR = 2;
+
     public static final int DOUBLE = 8;
+
     public static final int FLOAT = 4;
+
     public static final int INT = 4;
+
     public static final int LONG = 8;
+
     public static final int SHORT = 2;
+
     private SizeOf() {
     }
 }

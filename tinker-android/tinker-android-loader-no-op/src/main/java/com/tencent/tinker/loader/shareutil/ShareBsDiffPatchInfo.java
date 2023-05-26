@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import java.util.ArrayList;
@@ -23,9 +22,13 @@ import java.util.ArrayList;
  * Created by zhangshaowen on 16/3/16.
  */
 public class ShareBsDiffPatchInfo {
+
     public String name;
+
     public String md5;
+
     public String rawCrc;
+
     public String patchMd5;
 
     public String path;
@@ -58,11 +61,9 @@ public class ShareBsDiffPatchInfo {
             final String md5 = kv[2].trim();
             final String rawCrc = kv[3].trim();
             final String patchMd5 = kv[4].trim();
-
             ShareBsDiffPatchInfo dexInfo = new ShareBsDiffPatchInfo(name, md5, path, rawCrc, patchMd5);
             diffList.add(dexInfo);
         }
-
     }
 
     public static boolean checkDiffPatchInfo(ShareBsDiffPatchInfo info) {
@@ -74,7 +75,6 @@ public class ShareBsDiffPatchInfo {
         if (name == null || name.length() <= 0 || md5 == null || md5.length() != ShareConstants.MD5_LENGTH) {
             return false;
         }
-
         return true;
     }
 

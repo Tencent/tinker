@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
-
 import java.io.UTFDataFormatException;
 
 /**
@@ -26,6 +24,7 @@ import java.io.UTFDataFormatException;
  * Structure of StringData element in Dex file.
  */
 public class StringData extends Item<StringData> {
+
     public String value;
 
     public StringData(int offset, String value) {

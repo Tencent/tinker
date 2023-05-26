@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import java.util.Arrays;
@@ -22,9 +21,11 @@ import java.util.Set;
 
 public class ResourceDirectory {
 
-    public String             directoryName        = null;
-    public String             resourceFullFilename = null;
-    public Set<ResourceEntry> resourceEntrySet     = new HashSet<ResourceEntry>();
+    public String directoryName = null;
+
+    public String resourceFullFilename = null;
+
+    public Set<ResourceEntry> resourceEntrySet = new HashSet<ResourceEntry>();
 
     public ResourceDirectory(String directoryName, String resourceFullFilename) {
         this.directoryName = directoryName;
@@ -32,9 +33,8 @@ public class ResourceDirectory {
     }
 
     public int hashCode() {
-        return Arrays.hashCode(new Object[]{this.directoryName, this.resourceFullFilename});
+        return Arrays.hashCode(new Object[] { this.directoryName, this.resourceFullFilename });
     }
-
 
     public boolean equals(Object object) {
         if (!(object instanceof ResourceDirectory)) {

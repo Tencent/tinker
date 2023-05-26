@@ -13,9 +13,7 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.decoder;
-
 
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.FileOperation;
@@ -24,7 +22,6 @@ import com.tencent.tinker.build.util.MD5;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -39,14 +36,20 @@ import java.util.regex.Matcher;
  * Created by zhangshaowen on 16/3/15.
  */
 public class ApkDecoder extends BaseDecoder {
+
     private final File mOldApkDir;
+
     private final File mNewApkDir;
 
-    private final ManifestDecoder      manifestDecoder;
+    private final ManifestDecoder manifestDecoder;
+
     private final UniqueDexDiffDecoder dexPatchDecoder;
-    private final SoDiffDecoder        soPatchDecoder;
-    private final ResDiffDecoder       resPatchDecoder;
-    private final ArkHotDecoder        arkHotDecoder;
+
+    private final SoDiffDecoder soPatchDecoder;
+
+    private final ResDiffDecoder resPatchDecoder;
+
+    private final ArkHotDecoder arkHotDecoder;
 
     /**
      * if resource's file is also contain in dex or library pattern,
@@ -58,15 +61,12 @@ public class ApkDecoder extends BaseDecoder {
         super(config);
         this.mNewApkDir = config.mTempUnzipNewDir;
         this.mOldApkDir = config.mTempUnzipOldDir;
-
         this.manifestDecoder = new ManifestDecoder(config);
-
         //put meta files in assets
         String prePath = TypedValue.FILE_ASSETS + File.separator;
         dexPatchDecoder = new UniqueDexDiffDecoder(config, prePath + TypedValue.DEX_META_FILE, TypedValue.DEX_LOG_FILE);
         soPatchDecoder = new SoDiffDecoder(config, prePath + TypedValue.SO_META_FILE, TypedValue.SO_LOG_FILE);
         resPatchDecoder = new ResDiffDecoder(config, prePath + TypedValue.RES_META_TXT, TypedValue.RES_LOG_FILE);
-
         arkHotDecoder = new ArkHotDecoder(config, prePath + TypedValue.ARKHOT_META_TXT);
         Logger.d("config: " + config.mArkHotPatchPath + " " + config.mArkHotPatchName + prePath + TypedValue.ARKHOT_META_TXT);
         resDuplicateFiles = new ArrayList<>();
@@ -75,15 +75,11 @@ public class ApkDecoder extends BaseDecoder {
     private void unzipApkFile(File file, File destFile) throws TinkerPatchException, IOException {
         String apkName = file.getName();
         if (!apkName.endsWith(TypedValue.FILE_APK)) {
-            throw new TinkerPatchException(
-                String.format("input apk file path must end with .apk, yours %s\n", apkName)
-            );
+            throw new TinkerPatchException(String.format("input apk file path must end with .apk, yours %s\n", apkName));
         }
-
         String destPath = destFile.getAbsolutePath();
         Logger.d("UnZipping apk to %s", destPath);
         FileOperation.unZipAPk(file.getAbsoluteFile().getAbsolutePath(), destPath);
-
     }
 
     private void unzipApkFiles(File oldFile, File newFile) throws IOException, TinkerPatchException {
@@ -112,30 +108,23 @@ public class ApkDecoder extends BaseDecoder {
         writeToLogFile(oldFile, newFile);
         //check manifest change first
         manifestDecoder.patch(oldFile, newFile);
-
         unzipApkFiles(oldFile, newFile);
-
         Files.walkFileTree(mNewApkDir.toPath(), new ApkFilesVisitor(config, mNewApkDir.toPath(), mOldApkDir.toPath(), dexPatchDecoder, soPatchDecoder, resPatchDecoder));
-
         // get all duplicate resource file
         for (File duplicateRes : resDuplicateFiles) {
             // resPatchDecoder.patch(duplicateRes, null);
-            Logger.e("Warning: res file %s is also match at dex or library pattern, "
-                + "we treat it as unchanged in the new resource_out.zip", getRelativePathStringToOldFile(duplicateRes));
+            Logger.e("Warning: res file %s is also match at dex or library pattern, " + "we treat it as unchanged in the new resource_out.zip", getRelativePathStringToOldFile(duplicateRes));
         }
-
         soPatchDecoder.onAllPatchesEnd();
         dexPatchDecoder.onAllPatchesEnd();
         manifestDecoder.onAllPatchesEnd();
         resPatchDecoder.onAllPatchesEnd();
         arkHotDecoder.onAllPatchesEnd();
-
         //clean resources
         dexPatchDecoder.clean();
         soPatchDecoder.clean();
         resPatchDecoder.clean();
         arkHotDecoder.clean();
-
         return true;
     }
 
@@ -144,12 +133,18 @@ public class ApkDecoder extends BaseDecoder {
     }
 
     class ApkFilesVisitor extends SimpleFileVisitor<Path> {
-        BaseDecoder     dexDecoder;
-        BaseDecoder     soDecoder;
-        BaseDecoder     resDecoder;
-        Configuration   config;
-        Path            newApkPath;
-        Path            oldApkPath;
+
+        BaseDecoder dexDecoder;
+
+        BaseDecoder soDecoder;
+
+        BaseDecoder resDecoder;
+
+        Configuration config;
+
+        Path newApkPath;
+
+        Path oldApkPath;
 
         ApkFilesVisitor(Configuration config, Path newPath, Path oldPath, BaseDecoder dex, BaseDecoder so, BaseDecoder resDecoder) {
             this.config = config;
@@ -162,24 +157,19 @@ public class ApkDecoder extends BaseDecoder {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-
             Path relativePath = newApkPath.relativize(file);
-
             Path oldPath = oldApkPath.resolve(relativePath);
-
             File oldFile = null;
             //is a new file?!
             if (oldPath.toFile().exists()) {
                 oldFile = oldPath.toFile();
             }
             String patternKey = relativePath.toString().replace("\\", "/");
-
             if (Utils.checkFileInPattern(config.mDexFilePattern, patternKey)) {
                 //also treat duplicate file as unchanged
                 if (Utils.checkFileInPattern(config.mResFilePattern, patternKey) && oldFile != null) {
                     resDuplicateFiles.add(oldFile);
                 }
-
                 try {
                     dexDecoder.patch(oldFile, file.toFile());
                 } catch (Exception e) {
@@ -192,19 +182,16 @@ public class ApkDecoder extends BaseDecoder {
                 if (Utils.checkFileInPattern(config.mResFilePattern, patternKey) && oldFile != null) {
                     resDuplicateFiles.add(oldFile);
                 }
-
                 // For abi validation purpose.
                 if (file.toFile().exists()) {
                     final String newAbi = getAbiFromPath(file.toFile().getAbsolutePath());
                     if (newAbi != null) {
                         final File oldSoPathWithNewAbi = new File(oldApkPath.toFile(), "lib/" + newAbi);
                         if (!oldSoPathWithNewAbi.exists()) {
-                            throw new UnsupportedOperationException("Tinker does not support to add new ABI: " + newAbi
-                                    + ", related new so: " + file.toFile().getAbsolutePath());
+                            throw new UnsupportedOperationException("Tinker does not support to add new ABI: " + newAbi + ", related new so: " + file.toFile().getAbsolutePath());
                         }
                     }
                 }
-
                 try {
                     soDecoder.patch(oldFile, file.toFile());
                 } catch (Exception e) {

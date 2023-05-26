@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader;
 
 /**
@@ -26,19 +25,14 @@ package com.tencent.tinker.loader;
 public class TinkerResourcesKey {
 
     private static final class V24 {
-
-
     }
 
     private static final class V19 {
-
     }
 
     private static final class V17 {
-
     }
 
     private static final class V7 {
-
     }
 }

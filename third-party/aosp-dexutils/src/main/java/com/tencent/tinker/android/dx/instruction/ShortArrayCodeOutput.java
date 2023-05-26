@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dx.instruction;
 
 /**
  * Writes code to a {@code short[]}.
  */
 public final class ShortArrayCodeOutput extends CodeCursor {
-    /** array to write to */
+
+    /**
+     * array to write to
+     */
     private short[] array;
 
     /**
@@ -32,7 +34,6 @@ public final class ShortArrayCodeOutput extends CodeCursor {
         if (initSize < 0) {
             throw new IllegalArgumentException("initSize < 0");
         }
-
         this.array = new short[initSize];
     }
 
@@ -53,11 +54,9 @@ public final class ShortArrayCodeOutput extends CodeCursor {
      */
     public short[] getArray() {
         int cursor = cursor();
-
         if (cursor == array.length) {
             return array;
         }
-
         short[] result = new short[cursor];
         System.arraycopy(array, 0, result, 0, cursor);
         return result;
@@ -144,7 +143,6 @@ public final class ShortArrayCodeOutput extends CodeCursor {
                 even = true;
             }
         }
-
         if (!even) {
             write((short) value);
         }

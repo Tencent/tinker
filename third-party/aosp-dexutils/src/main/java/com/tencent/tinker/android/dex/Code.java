@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
@@ -21,16 +20,22 @@ import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class Code extends Item<Code> {
+
     public int registersSize;
+
     public int insSize;
+
     public int outsSize;
+
     public int debugInfoOffset;
+
     public short[] instructions;
+
     public Try[] tries;
+
     public CatchHandler[] catchHandlers;
 
-    public Code(int off, int registersSize, int insSize, int outsSize, int debugInfoOffset,
-            short[] instructions, Try[] tries, CatchHandler[] catchHandlers) {
+    public Code(int off, int registersSize, int insSize, int outsSize, int debugInfoOffset, short[] instructions, Try[] tries, CatchHandler[] catchHandlers) {
         super(off);
         this.registersSize = registersSize;
         this.insSize = insSize;
@@ -72,8 +77,7 @@ public final class Code extends Item<Code> {
 
     @Override
     public int hashCode() {
-        return HashCodeHelper.hash(registersSize,
-                insSize, outsSize, debugInfoOffset, instructions, tries, catchHandlers);
+        return HashCodeHelper.hash(registersSize, insSize, outsSize, debugInfoOffset, instructions, tries, catchHandlers);
     }
 
     @Override
@@ -93,31 +97,29 @@ public final class Code extends Item<Code> {
                 res += SizeOf.USHORT;
             }
             res += tries.length * SizeOf.TRY_ITEM;
-
             int catchHandlerSize = catchHandlers.length;
             res += Leb128.unsignedLeb128Size(catchHandlerSize);
-
             for (CatchHandler catchHandler : catchHandlers) {
                 int typeIdxAddrPairCount = catchHandler.typeIndexes.length;
                 if (catchHandler.catchAllAddress != -1) {
-                    res += Leb128.signedLeb128Size(-typeIdxAddrPairCount)
-                         + Leb128.unsignedLeb128Size(catchHandler.catchAllAddress);
+                    res += Leb128.signedLeb128Size(-typeIdxAddrPairCount) + Leb128.unsignedLeb128Size(catchHandler.catchAllAddress);
                 } else {
                     res += Leb128.signedLeb128Size(typeIdxAddrPairCount);
                 }
                 for (int i = 0; i < typeIdxAddrPairCount; ++i) {
-                    res += Leb128.unsignedLeb128Size(catchHandler.typeIndexes[i])
-                         + Leb128.unsignedLeb128Size(catchHandler.addresses[i]);
+                    res += Leb128.unsignedLeb128Size(catchHandler.typeIndexes[i]) + Leb128.unsignedLeb128Size(catchHandler.addresses[i]);
                 }
             }
         }
-
         return res;
     }
 
     public static class Try implements Comparable<Try> {
+
         public int startAddress;
+
         public int instructionCount;
+
         public int catchHandlerIndex;
 
         public Try(int startAddress, int instructionCount, int catchHandlerIndex) {
@@ -141,9 +143,13 @@ public final class Code extends Item<Code> {
     }
 
     public static class CatchHandler implements Comparable<CatchHandler> {
+
         public int[] typeIndexes;
+
         public int[] addresses;
+
         public int catchAllAddress;
+
         public int offset;
 
         public CatchHandler(int[] typeIndexes, int[] addresses, int catchAllAddress, int offset) {

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.utils;
 
 /**
@@ -38,10 +37,14 @@ package com.tencent.tinker.android.utils;
  * order in the case of <code>valueAt(int)</code>.</p>
  */
 public class SparseIntArray implements Cloneable {
+
     private static final int[] EMPTY_INT_ARRAY = new int[0];
+
     private int[] mKeys;
+
     private int[] mValues;
-    private int   mSize;
+
+    private int mSize;
 
     /**
      * Creates a new SparseIntArray containing no mappings.
@@ -104,7 +107,6 @@ public class SparseIntArray implements Cloneable {
      */
     public int get(int key, int valueIfKeyNotFound) {
         int i = binarySearch(mKeys, mSize, key);
-
         if (i < 0) {
             return valueIfKeyNotFound;
         } else {
@@ -117,7 +119,6 @@ public class SparseIntArray implements Cloneable {
      */
     public void delete(int key) {
         int i = binarySearch(mKeys, mSize, key);
-
         if (i >= 0) {
             removeAt(i);
         }
@@ -139,7 +140,6 @@ public class SparseIntArray implements Cloneable {
      */
     public void put(int key, int value) {
         int i = binarySearch(mKeys, mSize, key);
-
         if (i >= 0) {
             mValues[i] = value;
         } else {
@@ -236,7 +236,6 @@ public class SparseIntArray implements Cloneable {
             put(key, value);
             return;
         }
-
         mKeys = appendElementIntoIntArray(mKeys, mSize, key);
         mValues = appendElementIntoIntArray(mValues, mSize, value);
         mSize++;
@@ -245,20 +244,20 @@ public class SparseIntArray implements Cloneable {
     private int binarySearch(int[] array, int size, int value) {
         int lo = 0;
         int hi = size - 1;
-
         while (lo <= hi) {
             int mid = (lo + hi) >>> 1;
             int midVal = array[mid];
-
             if (midVal < value) {
                 lo = mid + 1;
             } else if (midVal > value) {
                 hi = mid - 1;
             } else {
-                return mid;  // value found
+                // value found
+                return mid;
             }
         }
-        return ~lo;  // value not present
+        // value not present
+        return ~lo;
     }
 
     private int[] appendElementIntoIntArray(int[] array, int currentSize, int element) {
@@ -278,13 +277,11 @@ public class SparseIntArray implements Cloneable {
         if (currentSize > array.length) {
             throw new IllegalArgumentException("Bad currentSize, originalSize: " + array.length + " currentSize: " + currentSize);
         }
-
         if (currentSize + 1 <= array.length) {
             System.arraycopy(array, index, array, index + 1, currentSize - index);
             array[index] = element;
             return array;
         }
-
         int[] newArray = new int[SparseIntArray.growSize(currentSize)];
         System.arraycopy(array, 0, newArray, 0, index);
         newArray[index] = element;
@@ -302,7 +299,6 @@ public class SparseIntArray implements Cloneable {
         if (size() <= 0) {
             return "{}";
         }
-
         StringBuilder buffer = new StringBuilder(mSize * 28);
         buffer.append('{');
         for (int i = 0; i < mSize; i++) {

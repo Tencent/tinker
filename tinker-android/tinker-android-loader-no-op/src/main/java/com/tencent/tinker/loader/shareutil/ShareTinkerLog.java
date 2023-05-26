@@ -13,25 +13,25 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-
 import java.lang.reflect.Constructor;
 
 /**
  * Created by zhangshaowen on 16/3/17.
  */
 public class ShareTinkerLog {
+
     private static final String TAG = "Tinker.ShareTinkerLog";
 
     public static final int FN_LOG_PRINT_STACKTRACE = 0xFA1;
+
     public static final int FN_LOG_PRINT_PENDING_LOGS = 0xFA2;
 
-    private static final Handler[] tinkerLogInlineFenceRef = {null};
+    private static final Handler[] tinkerLogInlineFenceRef = { null };
 
     private static final TinkerLogImp debugLog = new TinkerLogImp() {
 
@@ -45,7 +45,6 @@ public class ShareTinkerLog {
         public void i(final String tag, final String format, final Object... params) {
             String log = (params == null || params.length == 0) ? format : String.format(format, params);
             Log.i(tag, log);
-
         }
 
         @Override
@@ -77,7 +76,7 @@ public class ShareTinkerLog {
         }
     };
 
-    private static final TinkerLogImp[] tinkerLogImpRef = {debugLog};
+    private static final TinkerLogImp[] tinkerLogImpRef = { debugLog };
 
     static {
         synchronized (tinkerLogInlineFenceRef) {
@@ -153,7 +152,7 @@ public class ShareTinkerLog {
 
     private static void printLog(int priority, String tag, String fmt, Object... values) {
         final long timestamp = System.currentTimeMillis();
-        final Object[] args = {priority, timestamp, tag, fmt, values};
+        final Object[] args = { priority, timestamp, tag, fmt, values };
         final Handler inlineFence = getInlineFence();
         if (inlineFence != null) {
             final Message msg = Message.obtain(inlineFence, priority, args);
@@ -166,7 +165,7 @@ public class ShareTinkerLog {
 
     private static void printLog(String tag, Throwable thr, String fmt, Object... values) {
         final long timestamp = System.currentTimeMillis();
-        final Object[] args = {FN_LOG_PRINT_STACKTRACE, timestamp, tag, thr, fmt, values};
+        final Object[] args = { FN_LOG_PRINT_STACKTRACE, timestamp, tag, thr, fmt, values };
         final Handler inlineFence = getInlineFence();
         if (inlineFence != null) {
             final Message msg = Message.obtain(inlineFence, FN_LOG_PRINT_STACKTRACE, args);
@@ -190,6 +189,5 @@ public class ShareTinkerLog {
         void e(final String tag, final String fmt, final Object... values);
 
         void printErrStackTrace(String tag, Throwable tr, final String format, final Object... values);
-
     }
 }

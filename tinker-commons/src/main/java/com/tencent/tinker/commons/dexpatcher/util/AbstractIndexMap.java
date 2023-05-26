@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.util;
 
 import com.tencent.tinker.android.dex.Annotation;
@@ -35,7 +34,6 @@ import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.util.ByteInput;
 import com.tencent.tinker.android.dex.util.ByteOutput;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
@@ -44,7 +42,6 @@ import java.io.ByteArrayOutputStream;
  *
  * *** This file is renamed from IndexMap in dx project. ***
  */
-
 public abstract class AbstractIndexMap {
 
     public abstract int adjustStringIndex(int stringIndex);
@@ -90,27 +87,21 @@ public abstract class AbstractIndexMap {
         int adjustedDeclaringClassIndex = adjustTypeIdIndex(methodId.declaringClassIndex);
         int adjustedProtoIndex = adjustProtoIdIndex(methodId.protoIndex);
         int adjustedNameIndex = adjustStringIndex(methodId.nameIndex);
-        return new MethodId(
-                methodId.off, adjustedDeclaringClassIndex, adjustedProtoIndex, adjustedNameIndex
-        );
+        return new MethodId(methodId.off, adjustedDeclaringClassIndex, adjustedProtoIndex, adjustedNameIndex);
     }
 
     public FieldId adjust(FieldId fieldId) {
         int adjustedDeclaringClassIndex = adjustTypeIdIndex(fieldId.declaringClassIndex);
         int adjustedTypeIndex = adjustTypeIdIndex(fieldId.typeIndex);
         int adjustedNameIndex = adjustStringIndex(fieldId.nameIndex);
-        return new FieldId(
-                fieldId.off, adjustedDeclaringClassIndex, adjustedTypeIndex, adjustedNameIndex
-        );
+        return new FieldId(fieldId.off, adjustedDeclaringClassIndex, adjustedTypeIndex, adjustedNameIndex);
     }
 
     public ProtoId adjust(ProtoId protoId) {
         int adjustedShortyIndex = adjustStringIndex(protoId.shortyIndex);
         int adjustedReturnTypeIndex = adjustTypeIdIndex(protoId.returnTypeIndex);
         int adjustedParametersOffset = adjustTypeListOffset(protoId.parametersOffset);
-        return new ProtoId(
-                protoId.off, adjustedShortyIndex, adjustedReturnTypeIndex, adjustedParametersOffset
-        );
+        return new ProtoId(protoId.off, adjustedShortyIndex, adjustedReturnTypeIndex, adjustedParametersOffset);
     }
 
     public ClassDef adjust(ClassDef classDef) {
@@ -121,11 +112,7 @@ public abstract class AbstractIndexMap {
         int adjustedAnnotationsOffset = adjustAnnotationsDirectoryOffset(classDef.annotationsOffset);
         int adjustedClassDataOffset = adjustClassDataOffset(classDef.classDataOffset);
         int adjustedStaticValuesOffset = adjustStaticValuesOffset(classDef.staticValuesOffset);
-        return new ClassDef(
-                classDef.off, adjustedTypeIndex, classDef.accessFlags, adjustedSupertypeIndex,
-                adjustedInterfacesOffset, adjustedSourceFileIndex, adjustedAnnotationsOffset,
-                adjustedClassDataOffset, adjustedStaticValuesOffset
-        );
+        return new ClassDef(classDef.off, adjustedTypeIndex, classDef.accessFlags, adjustedSupertypeIndex, adjustedInterfacesOffset, adjustedSourceFileIndex, adjustedAnnotationsOffset, adjustedClassDataOffset, adjustedStaticValuesOffset);
     }
 
     public ClassData adjust(ClassData classData) {
@@ -133,20 +120,14 @@ public abstract class AbstractIndexMap {
         ClassData.Field[] adjustedInstanceFields = adjustFields(classData.instanceFields);
         ClassData.Method[] adjustedDirectMethods = adjustMethods(classData.directMethods);
         ClassData.Method[] adjustedVirtualMethods = adjustMethods(classData.virtualMethods);
-        return new ClassData(
-                classData.off, adjustedStaticFields, adjustedInstanceFields,
-                adjustedDirectMethods, adjustedVirtualMethods
-        );
+        return new ClassData(classData.off, adjustedStaticFields, adjustedInstanceFields, adjustedDirectMethods, adjustedVirtualMethods);
     }
 
     public Code adjust(Code code) {
         int adjustedDebugInfoOffset = adjustDebugInfoItemOffset(code.debugInfoOffset);
         short[] adjustedInstructions = adjustInstructions(code.instructions);
         Code.CatchHandler[] adjustedCatchHandlers = adjustCatchHandlers(code.catchHandlers);
-        return new Code(
-                code.off, code.registersSize, code.insSize, code.outsSize,
-                adjustedDebugInfoOffset, adjustedInstructions, code.tries, adjustedCatchHandlers
-        );
+        return new Code(code.off, code.registersSize, code.insSize, code.outsSize, adjustedDebugInfoOffset, adjustedInstructions, code.tries, adjustedCatchHandlers);
     }
 
     private short[] adjustInstructions(short[] instructions) {
@@ -169,10 +150,7 @@ public abstract class AbstractIndexMap {
             for (int j = 0; j < typeIndexesCount; ++j) {
                 adjustedTypeIndexes[j] = adjustTypeIdIndex(catchHandler.typeIndexes[j]);
             }
-            adjustedCatchHandlers[i] = new Code.CatchHandler(
-                    adjustedTypeIndexes, catchHandler.addresses,
-                    catchHandler.catchAllAddress, catchHandler.offset
-            );
+            adjustedCatchHandlers[i] = new Code.CatchHandler(adjustedTypeIndexes, catchHandler.addresses, catchHandler.catchAllAddress, catchHandler.offset);
         }
         return adjustedCatchHandlers;
     }
@@ -193,9 +171,7 @@ public abstract class AbstractIndexMap {
             ClassData.Method method = methods[i];
             int adjustedMethodIndex = adjustMethodIdIndex(method.methodIndex);
             int adjustedCodeOffset = adjustCodeOffset(method.codeOffset);
-            adjustedMethods[i] = new ClassData.Method(
-                    adjustedMethodIndex, method.accessFlags, adjustedCodeOffset
-            );
+            adjustedMethods[i] = new ClassData.Method(adjustedMethodIndex, method.accessFlags, adjustedCodeOffset);
         }
         return adjustedMethods;
     }
@@ -203,9 +179,7 @@ public abstract class AbstractIndexMap {
     public DebugInfoItem adjust(DebugInfoItem debugInfoItem) {
         int[] parameterNames = adjustParameterNames(debugInfoItem.parameterNames);
         byte[] infoSTM = adjustDebugInfoItemSTM(debugInfoItem.infoSTM);
-        return new DebugInfoItem(
-                debugInfoItem.off, debugInfoItem.lineStart, parameterNames, infoSTM
-        );
+        return new DebugInfoItem(debugInfoItem.off, debugInfoItem.lineStart, parameterNames, infoSTM);
     }
 
     private int[] adjustParameterNames(int[] parameterNames) {
@@ -221,116 +195,109 @@ public abstract class AbstractIndexMap {
         ByteArrayInputStream bais = new ByteArrayInputStream(infoSTM);
         final ByteArrayInputStream baisRef = bais;
         ByteInput inAdapter = new ByteInput() {
+
             @Override
             public byte readByte() {
                 return (byte) (baisRef.read() & 0xFF);
             }
         };
-
         ByteArrayOutputStream baos = new ByteArrayOutputStream(infoSTM.length + 512);
         final ByteArrayOutputStream baosRef = baos;
         ByteOutput outAdapter = new ByteOutput() {
+
             @Override
             public void writeByte(int i) {
                 baosRef.write(i);
             }
         };
-
-        outside_whileloop:
-        while (true) {
+        outside_whileloop: while (true) {
             int opcode = bais.read() & 0xFF;
             baos.write(opcode);
-            switch (opcode) {
-                case DebugInfoItem.DBG_END_SEQUENCE: {
-                    break outside_whileloop;
-                }
-                case DebugInfoItem.DBG_ADVANCE_PC: {
-                    int addrDiff = Leb128.readUnsignedLeb128(inAdapter);
-                    Leb128.writeUnsignedLeb128(outAdapter, addrDiff);
-                    break;
-                }
-                case DebugInfoItem.DBG_ADVANCE_LINE: {
-                    int lineDiff = Leb128.readSignedLeb128(inAdapter);
-                    Leb128.writeSignedLeb128(outAdapter, lineDiff);
-                    break;
-                }
-                case DebugInfoItem.DBG_START_LOCAL:
-                case DebugInfoItem.DBG_START_LOCAL_EXTENDED: {
-                    int registerNum = Leb128.readUnsignedLeb128(inAdapter);
-                    Leb128.writeUnsignedLeb128(outAdapter, registerNum);
-
-                    int nameIndex = adjustStringIndex(Leb128.readUnsignedLeb128p1(inAdapter));
-                    Leb128.writeUnsignedLeb128p1(outAdapter, nameIndex);
-
-                    int typeIndex = adjustTypeIdIndex(Leb128.readUnsignedLeb128p1(inAdapter));
-                    Leb128.writeUnsignedLeb128p1(outAdapter, typeIndex);
-
-                    if (opcode == DebugInfoItem.DBG_START_LOCAL_EXTENDED) {
-                        int sigIndex = adjustStringIndex(Leb128.readUnsignedLeb128p1(inAdapter));
-                        Leb128.writeUnsignedLeb128p1(outAdapter, sigIndex);
+            switch(opcode) {
+                case DebugInfoItem.DBG_END_SEQUENCE:
+                    {
+                        break outside_whileloop;
                     }
-                    break;
-                }
+                case DebugInfoItem.DBG_ADVANCE_PC:
+                    {
+                        int addrDiff = Leb128.readUnsignedLeb128(inAdapter);
+                        Leb128.writeUnsignedLeb128(outAdapter, addrDiff);
+                        break;
+                    }
+                case DebugInfoItem.DBG_ADVANCE_LINE:
+                    {
+                        int lineDiff = Leb128.readSignedLeb128(inAdapter);
+                        Leb128.writeSignedLeb128(outAdapter, lineDiff);
+                        break;
+                    }
+                case DebugInfoItem.DBG_START_LOCAL:
+                case DebugInfoItem.DBG_START_LOCAL_EXTENDED:
+                    {
+                        int registerNum = Leb128.readUnsignedLeb128(inAdapter);
+                        Leb128.writeUnsignedLeb128(outAdapter, registerNum);
+                        int nameIndex = adjustStringIndex(Leb128.readUnsignedLeb128p1(inAdapter));
+                        Leb128.writeUnsignedLeb128p1(outAdapter, nameIndex);
+                        int typeIndex = adjustTypeIdIndex(Leb128.readUnsignedLeb128p1(inAdapter));
+                        Leb128.writeUnsignedLeb128p1(outAdapter, typeIndex);
+                        if (opcode == DebugInfoItem.DBG_START_LOCAL_EXTENDED) {
+                            int sigIndex = adjustStringIndex(Leb128.readUnsignedLeb128p1(inAdapter));
+                            Leb128.writeUnsignedLeb128p1(outAdapter, sigIndex);
+                        }
+                        break;
+                    }
                 case DebugInfoItem.DBG_END_LOCAL:
-                case DebugInfoItem.DBG_RESTART_LOCAL: {
-                    int registerNum = Leb128.readUnsignedLeb128(inAdapter);
-                    Leb128.writeUnsignedLeb128(outAdapter, registerNum);
-                    break;
-                }
-                case DebugInfoItem.DBG_SET_FILE: {
-                    int nameIndex = adjustStringIndex(Leb128.readUnsignedLeb128p1(inAdapter));
-                    Leb128.writeUnsignedLeb128p1(outAdapter, nameIndex);
-                    break;
-                }
+                case DebugInfoItem.DBG_RESTART_LOCAL:
+                    {
+                        int registerNum = Leb128.readUnsignedLeb128(inAdapter);
+                        Leb128.writeUnsignedLeb128(outAdapter, registerNum);
+                        break;
+                    }
+                case DebugInfoItem.DBG_SET_FILE:
+                    {
+                        int nameIndex = adjustStringIndex(Leb128.readUnsignedLeb128p1(inAdapter));
+                        Leb128.writeUnsignedLeb128p1(outAdapter, nameIndex);
+                        break;
+                    }
                 case DebugInfoItem.DBG_SET_PROLOGUE_END:
                 case DebugInfoItem.DBG_SET_EPILOGUE_BEGIN:
-                default: {
-                    break;
-                }
+                default:
+                    {
+                        break;
+                    }
             }
         }
-
         return baos.toByteArray();
     }
 
     public EncodedValue adjust(EncodedValue encodedArray) {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream(encodedArray.data.length);
-        new EncodedValueTransformer(
-                new ByteOutput() {
-                    @Override
-                    public void writeByte(int i) {
-                        baos.write(i);
-                    }
-                }
-        ).transformArray(
-                new EncodedValueReader(encodedArray, EncodedValueReader.ENCODED_ARRAY)
-        );
+        new EncodedValueTransformer(new ByteOutput() {
+
+            @Override
+            public void writeByte(int i) {
+                baos.write(i);
+            }
+        }).transformArray(new EncodedValueReader(encodedArray, EncodedValueReader.ENCODED_ARRAY));
         return new EncodedValue(encodedArray.off, baos.toByteArray());
     }
 
     public Annotation adjust(Annotation annotation) {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream(annotation.encodedAnnotation.data.length);
-        new EncodedValueTransformer(
-                new ByteOutput() {
-                    @Override
-                    public void writeByte(int i) {
-                        baos.write(i);
-                    }
-                }
-        ).transformAnnotation(annotation.getReader());
-        return new Annotation(
-                annotation.off,
-                annotation.visibility,
-                new EncodedValue(annotation.encodedAnnotation.off, baos.toByteArray())
-        );
+        new EncodedValueTransformer(new ByteOutput() {
+
+            @Override
+            public void writeByte(int i) {
+                baos.write(i);
+            }
+        }).transformAnnotation(annotation.getReader());
+        return new Annotation(annotation.off, annotation.visibility, new EncodedValue(annotation.encodedAnnotation.off, baos.toByteArray()));
     }
 
     public AnnotationSet adjust(AnnotationSet annotationSet) {
         int size = annotationSet.annotationOffsets.length;
         int[] adjustedAnnotationOffsets = new int[size];
         for (int i = 0; i < size; ++i) {
-            adjustedAnnotationOffsets[i]
-                    = adjustAnnotationOffset(annotationSet.annotationOffsets[i]);
+            adjustedAnnotationOffsets[i] = adjustAnnotationOffset(annotationSet.annotationOffsets[i]);
         }
         return new AnnotationSet(annotationSet.off, adjustedAnnotationOffsets);
     }
@@ -339,55 +306,36 @@ public abstract class AbstractIndexMap {
         int size = annotationSetRefList.annotationSetRefItems.length;
         int[] adjustedAnnotationSetRefItems = new int[size];
         for (int i = 0; i < size; ++i) {
-            adjustedAnnotationSetRefItems[i]
-                    = adjustAnnotationSetOffset(annotationSetRefList.annotationSetRefItems[i]);
+            adjustedAnnotationSetRefItems[i] = adjustAnnotationSetOffset(annotationSetRefList.annotationSetRefItems[i]);
         }
         return new AnnotationSetRefList(annotationSetRefList.off, adjustedAnnotationSetRefItems);
     }
 
     public AnnotationsDirectory adjust(AnnotationsDirectory annotationsDirectory) {
-        int adjustedClassAnnotationsOffset
-                = adjustAnnotationSetOffset(annotationsDirectory.classAnnotationsOffset);
-
-        int[][] adjustedFieldAnnotations
-                = new int[annotationsDirectory.fieldAnnotations.length][2];
+        int adjustedClassAnnotationsOffset = adjustAnnotationSetOffset(annotationsDirectory.classAnnotationsOffset);
+        int[][] adjustedFieldAnnotations = new int[annotationsDirectory.fieldAnnotations.length][2];
         for (int i = 0; i < adjustedFieldAnnotations.length; ++i) {
-            adjustedFieldAnnotations[i][0]
-                    = adjustFieldIdIndex(annotationsDirectory.fieldAnnotations[i][0]);
-            adjustedFieldAnnotations[i][1]
-                    = adjustAnnotationSetOffset(annotationsDirectory.fieldAnnotations[i][1]);
+            adjustedFieldAnnotations[i][0] = adjustFieldIdIndex(annotationsDirectory.fieldAnnotations[i][0]);
+            adjustedFieldAnnotations[i][1] = adjustAnnotationSetOffset(annotationsDirectory.fieldAnnotations[i][1]);
         }
-
-        int[][] adjustedMethodAnnotations
-                = new int[annotationsDirectory.methodAnnotations.length][2];
+        int[][] adjustedMethodAnnotations = new int[annotationsDirectory.methodAnnotations.length][2];
         for (int i = 0; i < adjustedMethodAnnotations.length; ++i) {
-            adjustedMethodAnnotations[i][0]
-                    = adjustMethodIdIndex(annotationsDirectory.methodAnnotations[i][0]);
-            adjustedMethodAnnotations[i][1]
-                    = adjustAnnotationSetOffset(annotationsDirectory.methodAnnotations[i][1]);
+            adjustedMethodAnnotations[i][0] = adjustMethodIdIndex(annotationsDirectory.methodAnnotations[i][0]);
+            adjustedMethodAnnotations[i][1] = adjustAnnotationSetOffset(annotationsDirectory.methodAnnotations[i][1]);
         }
-
-        int[][] adjustedParameterAnnotations
-                = new int[annotationsDirectory.parameterAnnotations.length][2];
+        int[][] adjustedParameterAnnotations = new int[annotationsDirectory.parameterAnnotations.length][2];
         for (int i = 0; i < adjustedParameterAnnotations.length; ++i) {
-            adjustedParameterAnnotations[i][0]
-                    = adjustMethodIdIndex(annotationsDirectory.parameterAnnotations[i][0]);
-            adjustedParameterAnnotations[i][1]
-                    = adjustAnnotationSetRefListOffset(
-                    annotationsDirectory.parameterAnnotations[i][1]
-            );
+            adjustedParameterAnnotations[i][0] = adjustMethodIdIndex(annotationsDirectory.parameterAnnotations[i][0]);
+            adjustedParameterAnnotations[i][1] = adjustAnnotationSetRefListOffset(annotationsDirectory.parameterAnnotations[i][1]);
         }
-
-        return new AnnotationsDirectory(
-                annotationsDirectory.off, adjustedClassAnnotationsOffset,
-                adjustedFieldAnnotations, adjustedMethodAnnotations, adjustedParameterAnnotations
-        );
+        return new AnnotationsDirectory(annotationsDirectory.off, adjustedClassAnnotationsOffset, adjustedFieldAnnotations, adjustedMethodAnnotations, adjustedParameterAnnotations);
     }
 
     /**
      * Adjust an encoded value or array.
      */
     private final class EncodedValueTransformer {
+
         private final ByteOutput out;
 
         EncodedValueTransformer(ByteOutput out) {
@@ -395,7 +343,7 @@ public abstract class AbstractIndexMap {
         }
 
         public void transform(EncodedValueReader reader) {
-            switch (reader.peek()) {
+            switch(reader.peek()) {
                 case EncodedValueReader.ENCODED_BYTE:
                     EncodedValueCodec.writeSignedIntegralValue(out, EncodedValueReader.ENCODED_BYTE, reader.readByte());
                     break;
@@ -417,28 +365,22 @@ public abstract class AbstractIndexMap {
                     EncodedValueCodec.writeRightZeroExtendedValue(out, EncodedValueReader.ENCODED_FLOAT, longBits);
                     break;
                 case EncodedValueReader.ENCODED_DOUBLE:
-                    EncodedValueCodec.writeRightZeroExtendedValue(
-                            out, EncodedValueReader.ENCODED_DOUBLE, Double.doubleToLongBits(reader.readDouble()));
+                    EncodedValueCodec.writeRightZeroExtendedValue(out, EncodedValueReader.ENCODED_DOUBLE, Double.doubleToLongBits(reader.readDouble()));
                     break;
                 case EncodedValueReader.ENCODED_STRING:
-                    EncodedValueCodec.writeUnsignedIntegralValue(
-                            out, EncodedValueReader.ENCODED_STRING, adjustStringIndex(reader.readString()));
+                    EncodedValueCodec.writeUnsignedIntegralValue(out, EncodedValueReader.ENCODED_STRING, adjustStringIndex(reader.readString()));
                     break;
                 case EncodedValueReader.ENCODED_TYPE:
-                    EncodedValueCodec.writeUnsignedIntegralValue(
-                            out, EncodedValueReader.ENCODED_TYPE, adjustTypeIdIndex(reader.readType()));
+                    EncodedValueCodec.writeUnsignedIntegralValue(out, EncodedValueReader.ENCODED_TYPE, adjustTypeIdIndex(reader.readType()));
                     break;
                 case EncodedValueReader.ENCODED_FIELD:
-                    EncodedValueCodec.writeUnsignedIntegralValue(
-                            out, EncodedValueReader.ENCODED_FIELD, adjustFieldIdIndex(reader.readField()));
+                    EncodedValueCodec.writeUnsignedIntegralValue(out, EncodedValueReader.ENCODED_FIELD, adjustFieldIdIndex(reader.readField()));
                     break;
                 case EncodedValueReader.ENCODED_ENUM:
-                    EncodedValueCodec.writeUnsignedIntegralValue(
-                            out, EncodedValueReader.ENCODED_ENUM, adjustFieldIdIndex(reader.readEnum()));
+                    EncodedValueCodec.writeUnsignedIntegralValue(out, EncodedValueReader.ENCODED_ENUM, adjustFieldIdIndex(reader.readEnum()));
                     break;
                 case EncodedValueReader.ENCODED_METHOD:
-                    EncodedValueCodec.writeUnsignedIntegralValue(
-                            out, EncodedValueReader.ENCODED_METHOD, adjustMethodIdIndex(reader.readMethod()));
+                    EncodedValueCodec.writeUnsignedIntegralValue(out, EncodedValueReader.ENCODED_METHOD, adjustMethodIdIndex(reader.readMethod()));
                     break;
                 case EncodedValueReader.ENCODED_ARRAY:
                     writeTypeAndArg(EncodedValueReader.ENCODED_ARRAY, 0);

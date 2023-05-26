@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.algorithms.patch;
 
 import com.tencent.tinker.android.dex.Dex;
@@ -22,13 +21,13 @@ import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
 import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
-
 import java.util.Arrays;
 
 /**
  * Created by tangyinsheng on 2016/6/29.
  */
 public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
+
     protected final DexPatchFile patchFile;
 
     protected final Dex oldDex;
@@ -126,45 +125,30 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
     public void execute() {
         final int deletedItemCount = patchFile.getBuffer().readUleb128();
         final int[] deletedIndices = readDeltaIndiciesOrOffsets(deletedItemCount);
-
         final int addedItemCount = patchFile.getBuffer().readUleb128();
         final int[] addedIndices = readDeltaIndiciesOrOffsets(addedItemCount);
-
         final int replacedItemCount = patchFile.getBuffer().readUleb128();
         final int[] replacedIndices = readDeltaIndiciesOrOffsets(replacedItemCount);
-
         final TableOfContents.Section tocSec = getTocSection(this.oldDex);
         Dex.Section oldSection = null;
-
         int oldItemCount = 0;
         if (tocSec.exists()) {
             oldSection = this.oldDex.openSection(tocSec);
             oldItemCount = tocSec.size;
         }
-
         // Now rest data are added and replaced items arranged in the order of
         // added indices and replaced indices.
-        doFullPatch(
-                oldSection, oldItemCount, deletedIndices, addedIndices, replacedIndices
-        );
+        doFullPatch(oldSection, oldItemCount, deletedIndices, addedIndices, replacedIndices);
     }
 
-    private void doFullPatch(
-            Dex.Section oldSection,
-            int oldItemCount,
-            int[] deletedIndices,
-            int[] addedIndices,
-            int[] replacedIndices
-    ) {
+    private void doFullPatch(Dex.Section oldSection, int oldItemCount, int[] deletedIndices, int[] addedIndices, int[] replacedIndices) {
         int deletedItemCount = deletedIndices.length;
         int addedItemCount = addedIndices.length;
         int replacedItemCount = replacedIndices.length;
         int newItemCount = oldItemCount + addedItemCount - deletedItemCount;
-
         int deletedItemCounter = 0;
         int addActionCursor = 0;
         int replaceActionCursor = 0;
-
         int oldIndex = 0;
         int patchedIndex = 0;
         while (oldIndex < oldItemCount || patchedIndex < newItemCount) {
@@ -173,66 +157,32 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
                 int patchedOffset = writePatchedItem(addedItem);
                 ++addActionCursor;
                 ++patchedIndex;
-            } else
-            if (replaceActionCursor < replacedItemCount && replacedIndices[replaceActionCursor] == patchedIndex) {
+            } else if (replaceActionCursor < replacedItemCount && replacedIndices[replaceActionCursor] == patchedIndex) {
                 T replacedItem = nextItem(patchFile.getBuffer());
                 int patchedOffset = writePatchedItem(replacedItem);
                 ++replaceActionCursor;
                 ++patchedIndex;
-            } else
-            if (Arrays.binarySearch(deletedIndices, oldIndex) >= 0) {
-                T skippedOldItem = nextItem(oldSection); // skip old item.
-                markDeletedIndexOrOffset(
-                        oldToPatchedIndexMap,
-                        oldIndex,
-                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
-                );
+            } else if (Arrays.binarySearch(deletedIndices, oldIndex) >= 0) {
+                // skip old item.
+                T skippedOldItem = nextItem(oldSection);
+                markDeletedIndexOrOffset(oldToPatchedIndexMap, oldIndex, getItemOffsetOrIndex(oldIndex, skippedOldItem));
                 ++oldIndex;
                 ++deletedItemCounter;
-            } else
-            if (Arrays.binarySearch(replacedIndices, oldIndex) >= 0) {
-                T skippedOldItem = nextItem(oldSection); // skip old item.
-                markDeletedIndexOrOffset(
-                        oldToPatchedIndexMap,
-                        oldIndex,
-                        getItemOffsetOrIndex(oldIndex, skippedOldItem)
-                );
+            } else if (Arrays.binarySearch(replacedIndices, oldIndex) >= 0) {
+                // skip old item.
+                T skippedOldItem = nextItem(oldSection);
+                markDeletedIndexOrOffset(oldToPatchedIndexMap, oldIndex, getItemOffsetOrIndex(oldIndex, skippedOldItem));
                 ++oldIndex;
-            } else
-            if (oldIndex < oldItemCount) {
+            } else if (oldIndex < oldItemCount) {
                 T oldItem = adjustItem(this.oldToPatchedIndexMap, nextItem(oldSection));
-
                 int patchedOffset = writePatchedItem(oldItem);
-
-                updateIndexOrOffset(
-                        this.oldToPatchedIndexMap,
-                        oldIndex,
-                        getItemOffsetOrIndex(oldIndex, oldItem),
-                        patchedIndex,
-                        patchedOffset
-                );
-
+                updateIndexOrOffset(this.oldToPatchedIndexMap, oldIndex, getItemOffsetOrIndex(oldIndex, oldItem), patchedIndex, patchedOffset);
                 ++oldIndex;
                 ++patchedIndex;
             }
         }
-
-        if (addActionCursor != addedItemCount || deletedItemCounter != deletedItemCount
-                || replaceActionCursor != replacedItemCount
-        ) {
-            throw new IllegalStateException(
-                    String.format(
-                            "bad patch operation sequence. addCounter: %d, addCount: %d, "
-                                    + "delCounter: %d, delCount: %d, "
-                                    + "replaceCounter: %d, replaceCount:%d",
-                            addActionCursor,
-                            addedItemCount,
-                            deletedItemCounter,
-                            deletedItemCount,
-                            replaceActionCursor,
-                            replacedItemCount
-                    )
-            );
+        if (addActionCursor != addedItemCount || deletedItemCounter != deletedItemCount || replaceActionCursor != replacedItemCount) {
+            throw new IllegalStateException(String.format("bad patch operation sequence. addCounter: %d, addCount: %d, " + "delCounter: %d, delCount: %d, " + "replaceCounter: %d, replaceCount:%d", addActionCursor, addedItemCount, deletedItemCounter, deletedItemCount, replaceActionCursor, replacedItemCount));
         }
     }
 }

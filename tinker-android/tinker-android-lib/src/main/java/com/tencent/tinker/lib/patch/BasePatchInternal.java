@@ -13,14 +13,12 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.patch;
 
 import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -35,23 +33,34 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/4/12.
  */
 public class BasePatchInternal {
+
     protected static final String TAG = "Tinker.BasePatchInternal";
 
-    protected static final String DEX_PATH             = ShareConstants.DEX_PATH;
-    protected static final String SO_PATH              = ShareConstants.SO_PATH;
-    protected static final String DEX_OPTIMIZE_PATH    = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
-    protected static final int    MAX_EXTRACT_ATTEMPTS = ShareConstants.MAX_EXTRACT_ATTEMPTS;
-    protected static final String DEX_META_FILE        = ShareConstants.DEX_META_FILE;
-    protected static final String SO_META_FILE         = ShareConstants.SO_META_FILE;
-    protected static final String RES_META_FILE        = ShareConstants.RES_META_FILE;
+    protected static final String DEX_PATH = ShareConstants.DEX_PATH;
+
+    protected static final String SO_PATH = ShareConstants.SO_PATH;
+
+    protected static final String DEX_OPTIMIZE_PATH = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
+
+    protected static final int MAX_EXTRACT_ATTEMPTS = ShareConstants.MAX_EXTRACT_ATTEMPTS;
+
+    protected static final String DEX_META_FILE = ShareConstants.DEX_META_FILE;
+
+    protected static final String SO_META_FILE = ShareConstants.SO_META_FILE;
+
+    protected static final String RES_META_FILE = ShareConstants.RES_META_FILE;
+
     protected static final String ARKHOT_META_FILE = ShareConstants.ARKHOT_META_FILE;
 
-    protected static final int TYPE_DEX         = ShareConstants.TYPE_DEX;
-    protected static final int TYPE_LIBRARY     = ShareConstants.TYPE_LIBRARY;
-    protected static final int TYPE_RESOURCE    = ShareConstants.TYPE_RESOURCE;
-    protected static final int TYPE_CLASS_N_DEX = ShareConstants.TYPE_CLASS_N_DEX;
-    protected static final int TYPE_ARKHOT_SO = ShareConstants.TYPE_ARKHOT_SO;
+    protected static final int TYPE_DEX = ShareConstants.TYPE_DEX;
 
+    protected static final int TYPE_LIBRARY = ShareConstants.TYPE_LIBRARY;
+
+    protected static final int TYPE_RESOURCE = ShareConstants.TYPE_RESOURCE;
+
+    protected static final int TYPE_CLASS_N_DEX = ShareConstants.TYPE_CLASS_N_DEX;
+
+    protected static final int TYPE_ARKHOT_SO = ShareConstants.TYPE_ARKHOT_SO;
 
     public static boolean extract(ZipFile zipFile, ZipEntry entryFile, File extractTo, String targetMd5, boolean isDex) throws IOException {
         int numAttempts = 0;
@@ -60,9 +69,7 @@ public class BasePatchInternal {
             numAttempts++;
             InputStream is = null;
             OutputStream os = null;
-
             ShareTinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
-
             try {
                 is = new BufferedInputStream(zipFile.getInputStream(entryFile));
                 os = new BufferedOutputStream(new FileOutputStream(extractTo));
@@ -86,7 +93,6 @@ public class BasePatchInternal {
                 isExtractionSuccessful = true;
             }
             ShareTinkerLog.i(TAG, "isExtractionSuccessful: %b", isExtractionSuccessful);
-
             if (!isExtractionSuccessful) {
                 final boolean succ = extractTo.delete();
                 if (!succ || extractTo.exists()) {
@@ -94,7 +100,6 @@ public class BasePatchInternal {
                 }
             }
         }
-
         return isExtractionSuccessful;
     }
 

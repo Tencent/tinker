@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.apkparser;
 
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.commons.util.IOHelper;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -26,7 +24,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -40,10 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import tinker.net.dongliu.apk.parser.ApkParser;
 import tinker.net.dongliu.apk.parser.bean.ApkMeta;
 import tinker.net.dongliu.apk.parser.exception.ParserException;
@@ -64,20 +59,28 @@ import tinker.net.dongliu.apk.parser.utils.Utils;
  * Created by zhangshaowen on 16/5/5.
  */
 public class AndroidParser {
-    public static final int TYPE_SERVICE            = 1;
-    public static final int TYPE_ACTIVITY           = 2;
+
+    public static final int TYPE_SERVICE = 1;
+
+    public static final int TYPE_ACTIVITY = 2;
+
     public static final int TYPE_BROADCAST_RECEIVER = 3;
-    public static final int TYPE_CONTENT_PROVIDER   = 4;
+
+    public static final int TYPE_CONTENT_PROVIDER = 4;
 
     public final List<String> activities = new ArrayList<>();
-    public final List<String> receivers  = new ArrayList<>();
-    public final List<String> services   = new ArrayList<>();
-    public final List<String> providers  = new ArrayList<>();
+
+    public final List<String> receivers = new ArrayList<>();
+
+    public final List<String> services = new ArrayList<>();
+
+    public final List<String> providers = new ArrayList<>();
+
     public final ApkMeta apkMeta;
-    public final String  xml;
+
+    public final String xml;
 
     public final HashMap<String, String> metaDatas = new HashMap<>();
-
 
     public AndroidParser(ApkMeta apkMeta, String xml) throws ParserException {
         this.apkMeta = apkMeta;
@@ -100,7 +103,6 @@ public class AndroidParser {
         if (!originFile.exists()) {
             throw new RuntimeException("origin resources.arsc is not exist, path:" + originFile.getPath());
         }
-
         if (from.length() != to.length()) {
             throw new RuntimeException("only support the same string length now!");
         }
@@ -123,14 +125,12 @@ public class AndroidParser {
                 if (stringPool.isUtf8()) {
                     tempByte = to.getBytes(ParseUtils.charsetUTF8);
                     if (to.length() != tempByte.length) {
-                        throw new RuntimeException(String.format(
-                            "editResourceTableString length is different, name %d, tempByte %d\n", to.length(), tempByte.length));
+                        throw new RuntimeException(String.format("editResourceTableString length is different, name %d, tempByte %d\n", to.length(), tempByte.length));
                     }
                 } else {
                     tempByte = to.getBytes(ParseUtils.charsetUTF16);
                     if ((to.length() * 2) != tempByte.length) {
-                        throw new RuntimeException(String.format(
-                            "editResourceTableString length is different, name %d, tempByte %d\n", to.length(), tempByte.length));
+                        throw new RuntimeException(String.format("editResourceTableString length is different, name %d, tempByte %d\n", to.length(), tempByte.length));
                     }
                 }
                 System.arraycopy(tempByte, 0, array, (int) offset, tempByte.length);
@@ -139,7 +139,6 @@ public class AndroidParser {
         if (!found) {
             throw new RuntimeException("can't found string:" + from + " in the resources.arsc file's string pool!");
         }
-
         //write array to file
         FileOutputStream fileOutputStream = null;
         try {
@@ -158,7 +157,6 @@ public class AndroidParser {
             final ResourceTableParser resTableParser = new ResourceTableParser(arscData);
             resTableParser.parse();
             final ResourceTable resTable = resTableParser.getResourceTable();
-
             final ByteBuffer manifestData = getZipEntryData(zf, AndroidConstants.MANIFEST_FILE);
             final BinaryXmlParser xmlParser = new BinaryXmlParser(manifestData, resTable);
             final ApkMetaTranslator metaTranslator = new ApkMetaTranslator();
@@ -166,7 +164,6 @@ public class AndroidParser {
             final CompositeXmlStreamer compositeStreamer = new CompositeXmlStreamer(metaTranslator, xmlTranslator);
             xmlParser.setXmlStreamer(compositeStreamer);
             xmlParser.parse();
-
             AndroidParser androidManifest = new AndroidParser(metaTranslator.getApkMeta(), xmlTranslator.getXml());
             return androidManifest;
         } finally {
@@ -244,6 +241,7 @@ public class AndroidParser {
             // Block any external content resolving actions since we don't need them and a report
             // says these actions may cause security problems.
             builder.setEntityResolver(new EntityResolver() {
+
                 @Override
                 public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
                     return new InputSource();
@@ -260,7 +258,7 @@ public class AndroidParser {
                     for (int j = 0; j < children.getLength(); j++) {
                         Node child = children.item(j);
                         String childName = child.getNodeName();
-                        switch (childName) {
+                        switch(childName) {
                             case "service":
                                 services.add(getAndroidComponent(child, TYPE_SERVICE));
                                 break;
