@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.tinker;
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
@@ -34,48 +32,58 @@ import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 
 /**
  * Created by zhangshaowen on 16/3/10.
  */
 public class Tinker {
+
     private static final String TAG = "Tinker.Tinker";
 
     private static Tinker sInstance;
+
     private static boolean sInstalled = false;
 
-    final Context       context;
+    final Context context;
+
     /**
      * data dir, such as /data/data/tinker.sample.android/tinker
      */
-    final File          patchDirectory;
+    final File patchDirectory;
+
     final PatchListener listener;
-    final LoadReporter  loadReporter;
+
+    final LoadReporter loadReporter;
+
     final PatchReporter patchReporter;
-    final File          patchInfoFile;
-    final File          patchInfoLockFile;
-    final boolean       isMainProcess;
-    final boolean       isPatchProcess;
+
+    final File patchInfoFile;
+
+    final File patchInfoLockFile;
+
+    final boolean isMainProcess;
+
+    final boolean isPatchProcess;
+
     /**
      * same with {@code TinkerApplication.tinkerLoadVerifyFlag}
      */
-    final boolean       tinkerLoadVerifyFlag;
+    final boolean tinkerLoadVerifyFlag;
 
     /**
      * same with {@code TinkerApplication.tinkerFlags}
      */
-    int              tinkerFlags;
+    int tinkerFlags;
+
     TinkerLoadResult tinkerLoadResult;
+
     /**
      * whether load patch success
      */
     private boolean loaded = false;
 
-    private Tinker(Context context, int tinkerFlags, LoadReporter loadReporter, PatchReporter patchReporter,
-                   PatchListener listener, File patchDirectory, File patchInfoFile, File patchInfoLockFile,
-                   boolean isInMainProc, boolean isPatchProcess, boolean tinkerLoadVerifyFlag) {
+    private Tinker(Context context, int tinkerFlags, LoadReporter loadReporter, PatchReporter patchReporter, PatchListener listener, File patchDirectory, File patchInfoFile, File patchInfoLockFile, boolean isInMainProc, boolean isPatchProcess, boolean tinkerLoadVerifyFlag) {
         this.context = context;
         this.listener = listener;
         this.loadReporter = loadReporter;
@@ -132,8 +140,7 @@ public class Tinker {
      * @param serviceClass
      * @param upgradePatch
      */
-    public void install(Intent intentResult, Class<? extends AbstractResultService> serviceClass,
-                        AbstractPatch upgradePatch) {
+    public void install(Intent intentResult, Class<? extends AbstractResultService> serviceClass, AbstractPatch upgradePatch) {
         sInstalled = true;
         ShareTinkerLog.e(TAG, "[-] Tinker is disabled since I'm no-op version.");
     }
@@ -144,7 +151,7 @@ public class Tinker {
      * @param id
      */
     public void setPatchServiceNotificationId(int id) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(id);
     }
 
     /**
@@ -183,15 +190,15 @@ public class Tinker {
     }
 
     public boolean isTinkerEnabled() {
-        return false;
+        return deny();
     }
 
     public boolean isTinkerLoaded() {
-        return false;
+        return deny();
     }
 
     public void setTinkerLoaded(boolean isLoaded) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(isLoaded);
     }
 
     public boolean isTinkerLoadVerify() {
@@ -199,15 +206,15 @@ public class Tinker {
     }
 
     public boolean isEnabledForDex() {
-        return false;
+        return deny();
     }
 
     public boolean isEnabledForNativeLib() {
-        return false;
+        return deny();
     }
 
     public boolean isEnabledForResource() {
-        return false;
+        return deny();
     }
 
     public File getPatchDirectory() {
@@ -226,7 +233,6 @@ public class Tinker {
         return listener;
     }
 
-
     public int getTinkerFlags() {
         return tinkerFlags;
     }
@@ -235,22 +241,23 @@ public class Tinker {
      * clean all patch files
      */
     public void cleanPatch() {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        noOpVersionLog();
     }
 
     /**
      * rollback patch should restart all process
      */
     public void rollbackPatch() {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        noOpVersionLog();
     }
+
     /**
      * clean the patch version files, such as tinker/patch-641e634c
      *
      * @param versionName
      */
     public void cleanPatchByVersion(String versionName) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(versionName);
     }
 
     /**
@@ -276,20 +283,29 @@ public class Tinker {
         cleanPatchByVersion(versionName);
     }
 
-
     public static class Builder {
+
         private final Context context;
+
         private final boolean mainProcess;
+
         private final boolean patchProcess;
 
         private int status = -1;
-        private LoadReporter  loadReporter;
+
+        private LoadReporter loadReporter;
+
         private PatchReporter patchReporter;
+
         private PatchListener listener;
-        private File          patchDirectory;
-        private File          patchInfoFile;
-        private File          patchInfoLockFile;
-        private Boolean       tinkerLoadVerifyFlag;
+
+        private File patchDirectory;
+
+        private File patchInfoFile;
+
+        private File patchInfoLockFile;
+
+        private Boolean tinkerLoadVerifyFlag;
 
         /**
          * Start building a new {@link Tinker} instance.
@@ -367,26 +383,39 @@ public class Tinker {
             if (status == -1) {
                 status = ShareConstants.TINKER_ENABLE_ALL;
             }
-
             if (loadReporter == null) {
                 loadReporter = new DefaultLoadReporter(context);
             }
-
             if (patchReporter == null) {
                 patchReporter = new DefaultPatchReporter(context);
             }
-
             if (listener == null) {
                 listener = new DefaultPatchListener(context);
             }
-
             if (tinkerLoadVerifyFlag == null) {
                 tinkerLoadVerifyFlag = false;
             }
-
-            return new Tinker(context, status, loadReporter, patchReporter, listener, patchDirectory,
-                patchInfoFile, patchInfoLockFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
+            return new Tinker(context, status, loadReporter, patchReporter, listener, patchDirectory, patchInfoFile, patchInfoLockFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
         }
     }
 
+    public boolean deny() {
+        return false;
+    }
+
+    /**
+     * set tinkerPatchServiceNotificationId
+     *
+     * @param id
+     */
+    public void logNoOpVersion(int id) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+    }
+
+    /**
+     * clean all patch files
+     */
+    public void noOpVersionLog() {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+    }
 }

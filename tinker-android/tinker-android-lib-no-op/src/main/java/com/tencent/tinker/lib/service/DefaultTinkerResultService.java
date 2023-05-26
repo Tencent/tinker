@@ -13,30 +13,32 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.service;
 
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 
 /**
  * Created by zhangshaowen on 16/3/19.
  */
 public class DefaultTinkerResultService extends AbstractResultService {
+
     private static final String TAG = "Tinker.DefaultTinkerResultService";
 
     @Override
     public void onPatchResult(PatchResult result) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ignoreThisInvocation(result);
     }
 
     public void deleteRawPatchFile(File rawFile) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ignoreThisInvocation(rawFile);
     }
 
     public boolean checkIfNeedKill(PatchResult result) {
         return false;
+    }
+
+    public void ignoreThisInvocation(PatchResult result) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 }

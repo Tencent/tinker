@@ -9,7 +9,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * the BSD 3-Clause License for more details.
  */
-
 package com.tencent.tinker.build.decoder;
 
 import com.tencent.tinker.build.info.InfoWriter;
@@ -17,19 +16,19 @@ import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.MD5;
 import com.tencent.tinker.build.util.TinkerPatchException;
-
 import java.io.File;
 import java.io.IOException;
 
 public class ArkHotDecoder extends BaseDecoder {
+
     private static final String ARKHOT_PATCH_NAME = "patch.apk";
+
     private static final String ARKHOT_PATCH_PATH = "arkHot";
 
     private final InfoWriter metaWriter;
 
     public ArkHotDecoder(Configuration config, String metaPath) throws IOException {
         super(config);
-
         if (metaPath != null) {
             metaWriter = new InfoWriter(config, config.mTempResultDir + File.separator + metaPath);
         } else {
@@ -53,7 +52,6 @@ public class ArkHotDecoder extends BaseDecoder {
             return;
         }
         String md5 = MD5.getMD5(patchFile);
-
         File dest = new File(config.mTempResultDir + "/" + ARKHOT_PATCH_PATH + "/" + ARKHOT_PATCH_NAME);
         FileOperation.copyFileUsingStream(patchFile, dest);
         writeMetaFile(md5);
@@ -68,16 +66,13 @@ public class ArkHotDecoder extends BaseDecoder {
         if (metaWriter == null) {
             return;
         }
-
         if (metaWriter != null) {
             String path = ARKHOT_PATCH_PATH;
             String fileName = ARKHOT_PATCH_NAME;
-
             if (md5 == null) {
                 return;
             }
-
-            String meta = fileName + "," + path  +  "," + md5;
+            String meta = fileName + "," + path + "," + md5;
             metaWriter.writeLineToInfoFile(meta);
         }
     }

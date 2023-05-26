@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.commons.util.IOHelper;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,11 +37,11 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class FileOperation {
+
     public static final boolean deleteFile(String filePath) {
         if (filePath == null) {
             return true;
         }
-
         File file = new File(filePath);
         if (file.exists()) {
             return file.delete();
@@ -129,11 +127,9 @@ public class FileOperation {
             parent.mkdirs();
         }
         InputStream is = null;
-
         try {
             is = FileOperation.class.getResourceAsStream("/" + name);
             os = new FileOutputStream(dest, false);
-
             byte[] buffer = new byte[TypedValue.BUFFER_SIZE];
             int length;
             while ((length = is.read(buffer)) > 0) {
@@ -155,7 +151,6 @@ public class FileOperation {
         try {
             is = new FileInputStream(source);
             os = new FileOutputStream(dest, false);
-
             byte[] buffer = new byte[TypedValue.BUFFER_SIZE];
             int length;
             while ((length = is.read(buffer)) > 0) {
@@ -170,7 +165,6 @@ public class FileOperation {
     public static boolean checkDirectory(String dir) {
         File dirObj = new File(dir);
         deleteDir(dirObj);
-
         if (!dirObj.exists()) {
             dirObj.mkdirs();
         }
@@ -180,7 +174,6 @@ public class FileOperation {
     @SuppressWarnings("rawtypes")
     public static void unZipAPk(String fileName, String filePath) throws IOException {
         checkDirectory(filePath);
-
         ZipFile zipFile = new ZipFile(fileName);
         Enumeration enumeration = zipFile.entries();
         try {
@@ -194,9 +187,7 @@ public class FileOperation {
                     continue;
                 }
                 BufferedInputStream bis = new BufferedInputStream(zipFile.getInputStream(entry));
-
                 File file = new File(filePath + File.separator + entry.getName());
-
                 File parentFile = file.getParentFile();
                 if (parentFile != null && (!parentFile.exists())) {
                     parentFile.mkdirs();
@@ -206,7 +197,6 @@ public class FileOperation {
                 try {
                     fos = new FileOutputStream(file);
                     bos = new BufferedOutputStream(fos, TypedValue.BUFFER_SIZE);
-
                     byte[] buf = new byte[TypedValue.BUFFER_SIZE];
                     int len;
                     while ((len = bis.read(buf, 0, TypedValue.BUFFER_SIZE)) != -1) {
@@ -367,7 +357,6 @@ public class FileOperation {
         for (File f : unzipFiles) {
             collectFiles.add(f);
         }
-
         FileOperation.zipFiles(collectFiles, outputFile, comment);
     }
 
@@ -375,7 +364,6 @@ public class FileOperation {
         String outPath = inputDir.getAbsolutePath();
         String path = outPath + File.separator + "*";
         String cmd = config.mSevenZipPath;
-
         ProcessBuilder pb = new ProcessBuilder(cmd, "a", "-tzip", outputFile.getAbsolutePath(), path, "-mx9");
         pb.redirectErrorStream(true);
         Process pro = null;

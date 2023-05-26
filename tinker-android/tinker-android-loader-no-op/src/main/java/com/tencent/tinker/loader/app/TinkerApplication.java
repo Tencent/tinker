@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.app;
 
 import android.annotation.TargetApi;
@@ -24,32 +23,37 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.SystemClock;
-
 import com.tencent.tinker.anno.Keep;
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
-
 import java.lang.reflect.Constructor;
 
 /**
  * Created by zhangshaowen on 16/3/8.
  */
 public abstract class TinkerApplication extends Application {
-    private static final TinkerApplication[] SELF_HOLDER = {null};
+
+    private static final TinkerApplication[] SELF_HOLDER = { null };
 
     private final int tinkerFlags;
+
     private final boolean tinkerLoadVerifyFlag;
+
     private final String delegateClassName;
+
     private final boolean useDelegateLastClassLoader;
+
     private final boolean useInterpretModeOnSupported32BitSystem;
 
     /**
      * if we have load patch, we should use safe mode
      */
     protected Intent tinkerResultIntent;
+
     protected ClassLoader mCurrentClassLoader = null;
+
     private ApplicationLike mAppLike = null;
 
     protected TinkerApplication(int tinkerFlags) {
@@ -60,9 +64,7 @@ public abstract class TinkerApplication extends Application {
         this(ShareConstants.TINKER_DISABLE, delegateClassName, null, false, false, false);
     }
 
-    protected TinkerApplication(int tinkerFlags, String delegateClassName,
-                                String loaderClassName, boolean tinkerLoadVerifyFlag,
-                                boolean useDelegateLastClassLoader, boolean useInterpretModeOnSupported32BitSystem) {
+    protected TinkerApplication(int tinkerFlags, String delegateClassName, String loaderClassName, boolean tinkerLoadVerifyFlag, boolean useDelegateLastClassLoader, boolean useInterpretModeOnSupported32BitSystem) {
         synchronized (SELF_HOLDER) {
             SELF_HOLDER[0] = this;
         }
@@ -82,21 +84,13 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
-    private ApplicationLike createDelegate(Application app,
-                                           int tinkerFlags,
-                                           String delegateClassName,
-                                           boolean tinkerLoadVerifyFlag,
-                                           long applicationStartElapsedTime,
-                                           long applicationStartMillisTime,
-                                           Intent resultIntent) {
+    private ApplicationLike createDelegate(Application app, int tinkerFlags, String delegateClassName, boolean tinkerLoadVerifyFlag, long applicationStartElapsedTime, long applicationStartMillisTime, Intent resultIntent) {
         try {
             // Use reflection to create the delegate so it doesn't need to go into the primary dex.
             // And we can also patch it
             final Class<?> delegateClass = Class.forName(delegateClassName, false, mCurrentClassLoader);
-            final Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class,
-                    long.class, long.class, Intent.class);
-            return (ApplicationLike) constructor.newInstance(app, tinkerFlags, tinkerLoadVerifyFlag,
-                    applicationStartElapsedTime, applicationStartMillisTime, resultIntent);
+            final Constructor<?> constructor = delegateClass.getConstructor(Application.class, int.class, boolean.class, long.class, long.class, Intent.class);
+            return (ApplicationLike) constructor.newInstance(app, tinkerFlags, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, resultIntent);
         } catch (Throwable thr) {
             throw new TinkerRuntimeException("createDelegate failed", thr);
         }
@@ -107,9 +101,7 @@ public abstract class TinkerApplication extends Application {
             mCurrentClassLoader = base.getClassLoader();
             this.tinkerResultIntent = new Intent();
             ShareIntentUtil.setIntentReturnCode(this.tinkerResultIntent, ShareConstants.ERROR_LOAD_DISABLE);
-            mAppLike = createDelegate(this, tinkerFlags, delegateClassName,
-                    tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime,
-                    tinkerResultIntent);
+            mAppLike = createDelegate(this, tinkerFlags, delegateClassName, tinkerLoadVerifyFlag, applicationStartElapsedTime, applicationStartMillisTime, tinkerResultIntent);
             mAppLike.onBaseContextAttached(base);
         } catch (TinkerRuntimeException e) {
             throw e;

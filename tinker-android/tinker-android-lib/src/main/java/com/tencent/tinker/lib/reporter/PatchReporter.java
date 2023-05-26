@@ -13,16 +13,12 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.reporter;
 
-
 import android.content.Intent;
-
 import com.tencent.tinker.lib.patch.UpgradePatch;
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
-
 import java.io.File;
 import java.util.List;
 
@@ -69,7 +65,6 @@ public interface PatchReporter {
      */
     void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion);
 
-
     /**
      * try to recover file fail
      *
@@ -85,7 +80,6 @@ public interface PatchReporter {
      */
     void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType);
 
-
     /**
      * dex opt failed
      *
@@ -94,7 +88,6 @@ public interface PatchReporter {
      * @param t              throwable
      */
     void onPatchDexOptFail(File patchFile, List<File> dexFiles, Throwable t);
-
 
     /**
      * recover result, we will also send a result to {@link DefaultTinkerResultService}
@@ -124,5 +117,4 @@ public interface PatchReporter {
      * @param newVersion     new patch version
      */
     void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion);
-
 }

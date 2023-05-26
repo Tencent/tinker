@@ -13,15 +13,12 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.reporter;
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.lib.reporter.DefaultPatchReporter;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
-
 import java.io.File;
 import java.util.List;
 
@@ -30,7 +27,9 @@ import java.util.List;
  * Created by zhangshaowen on 16/4/8.
  */
 public class SamplePatchReporter extends DefaultPatchReporter {
+
     private final static String TAG = "Tinker.SamplePatchReporter";
+
     public SamplePatchReporter(Context context) {
         super(context);
     }

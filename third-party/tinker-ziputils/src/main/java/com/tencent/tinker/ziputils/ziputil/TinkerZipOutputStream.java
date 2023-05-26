@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 // import libcore.util.CountingOutputStream;
 // import libcore.util.EmptyArray;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -30,7 +28,6 @@ import java.util.zip.ZipInputStream;
 
 // import java.nio.charset.StandardCharsets;
 // import java.util.Arrays;
-
 /**
  * modify by zhangshaowen on 16/6/7.
  * remove zip64
@@ -70,40 +67,61 @@ import java.util.zip.ZipInputStream;
  * </pre>
  */
 public class TinkerZipOutputStream extends FilterOutputStream implements ZipConstants {
+
     /**
      * Indicates deflated entries.
      */
-    public static final int       DEFLATED                 = 8;
+    public static final int DEFLATED = 8;
+
     /**
      * Indicates uncompressed entries.
      */
-    public static final int       STORED                   = 0;
-    public static final byte[]    BYTE                     = new byte[0];
+    public static final int STORED = 0;
+
+    public static final byte[] BYTE = new byte[0];
+
     //zhangshaowen edit here, we just want the same time and modDate
     //remove random fields
-    final static int              TIME_CONST               = 40691;
-    final static int              MOD_DATE_CONST           = 18698;
-    private static final int      ZIP_VERSION_2_0          = 20; // Zip specification version 2.0.
-    private static final byte[] ZIP64_PLACEHOLDER_BYTES =
-            new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
-    private final HashSet<String> entries                  = new HashSet<String>();
+    final static int TIME_CONST = 40691;
+
+    final static int MOD_DATE_CONST = 18698;
+
+    // Zip specification version 2.0.
+    private static final int ZIP_VERSION_2_0 = 20;
+
+    private static final byte[] ZIP64_PLACEHOLDER_BYTES = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff };
+
+    private final HashSet<String> entries = new HashSet<String>();
+
     /**
      * Whether we force all entries in this archive to have a zip64 extended info record.
      * This of course implies that the {@code currentEntryNeedsZip64} and
      * {@code archiveNeedsZip64EocdRecord} are always {@code true}.
      */
     private final boolean forceZip64;
-    private byte[]                commentBytes             = BYTE;
-    private int                   defaultCompressionMethod = DEFLATED;
+
+    private byte[] commentBytes = BYTE;
+
+    private int defaultCompressionMethod = DEFLATED;
+
     // private int compressionLevel = Deflater.DEFAULT_COMPRESSION;
-    private ByteArrayOutputStream cDir                     = new ByteArrayOutputStream();
+    private ByteArrayOutputStream cDir = new ByteArrayOutputStream();
+
     private TinkerZipEntry currentEntry;
+
     // private final CRC32 crc = new CRC32();
     private long offset = 0;
-    /** The charset-encoded name for the current entry. */
+
+    /**
+     * The charset-encoded name for the current entry.
+     */
     private byte[] nameBytes;
-    /** The charset-encoded comment for the current entry. */
+
+    /**
+     * The charset-encoded comment for the current entry.
+     */
     private byte[] entryCommentBytes;
+
     /**
      * Whether this zip file needs a Zip64 EOCD record / zip64 EOCD record locator. This
      * will be true if we wrote an entry whose size or compressed size was too large for
@@ -111,12 +129,14 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
      * in the standard format.
      */
     private boolean archiveNeedsZip64EocdRecord;
+
     /**
      * Whether the current entry being processed needs a zip64 extended info record. This
      * will be true if the entry is too large for the standard zip format or if the offset
      * to the start of the current entry header is greater than 0xFFFFFFFF.
      */
     private boolean currentEntryNeedsZip64;
+
     /**
      * Constructs a new {@code ZipOutputStream} that writes a zip file to the given
      * {@code OutputStream}.
@@ -124,8 +144,9 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
      * <p>UTF-8 will be used to encode the file comment, entry names and comments.
      */
     public TinkerZipOutputStream(OutputStream os) {
-        this(os, false /* forceZip64 */);
+        this(os, false);
     }
+
     /**
      * @hide for testing only.
      */
@@ -190,6 +211,7 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
             out = null;
         }
     }
+
     /*private void checkAndSetZip64Requirements(ZipEntry entry) {
         final long totalBytesWritten = getBytesWritten();
         final long entriesWritten = entries.size();
@@ -217,7 +239,6 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
             archiveNeedsZip64EocdRecord = true;
         }
     }*/
-
     /**
      * Closes the current {@code ZipEntry}. Any entry terminal data is written
      * to the underlying stream.
@@ -273,8 +294,10 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         // http://code.google.com/p/android/issues/detail?id=20214
         flags |= TinkerZipFile.GPBF_UTF8_FLAG;
         writeLongAsUint32(cDir, CENSIG);
-        writeIntAsUint16(cDir, ZIP_VERSION_2_0); // Version this file was made by.
-        writeIntAsUint16(cDir, ZIP_VERSION_2_0); // Minimum version needed to extract.
+        // Version this file was made by.
+        writeIntAsUint16(cDir, ZIP_VERSION_2_0);
+        // Minimum version needed to extract.
+        writeIntAsUint16(cDir, ZIP_VERSION_2_0);
         writeIntAsUint16(cDir, flags);
         writeIntAsUint16(cDir, currentEntry.getMethod());
         writeIntAsUint16(cDir, currentEntry.time);
@@ -313,10 +336,14 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         } else {
             writeIntAsUint16(cDir, 0);
         }
-        writeIntAsUint16(cDir, entryCommentBytes.length); // Comment length.
-        writeIntAsUint16(cDir, 0); // Disk Start
-        writeIntAsUint16(cDir, 0); // Internal File Attributes
-        writeLongAsUint32(cDir, 0); // External File Attributes
+        // Comment length.
+        writeIntAsUint16(cDir, entryCommentBytes.length);
+        // Disk Start
+        writeIntAsUint16(cDir, 0);
+        // Internal File Attributes
+        writeIntAsUint16(cDir, 0);
+        // External File Attributes
+        writeLongAsUint32(cDir, 0);
         /*if (currentEntryNeedsZip64) {
             writeLongAsUint32(cDir, Zip64.MAX_ZIP_ENTRY_AND_ARCHIVE_SIZE);
         } else {
@@ -338,6 +365,7 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         def.reset();
         done = false;*/
     }
+
     /**
      * Sets the <a href="Deflater.html#compression_level">compression level</a> to be used
      * for writing entry data.
@@ -348,7 +376,6 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         }
         compressionLevel = level;
     }*/
-
     /**
      * Indicates that all entries have been written to the stream. Any terminal
      * information is written to the underlying stream.
@@ -377,20 +404,30 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         }*/
         // Write Central Dir End
         writeLongAsUint32(cDir, ENDSIG);
-        writeIntAsUint16(cDir, 0); // Disk Number
-        writeIntAsUint16(cDir, 0); // Start Disk
+        // Disk Number
+        writeIntAsUint16(cDir, 0);
+        // Start Disk
+        writeIntAsUint16(cDir, 0);
         // Instead of trying to figure out *why* this archive needed a zip64 eocd record,
         // just delegate all these values to the zip64 eocd record.
         if (archiveNeedsZip64EocdRecord) {
-            writeIntAsUint16(cDir, 0xFFFF); // Number of entries
-            writeIntAsUint16(cDir, 0xFFFF); // Number of entries
-            writeLongAsUint32(cDir, 0xFFFFFFFF); // Size of central dir
-            writeLongAsUint32(cDir, 0xFFFFFFFF); // Offset of central dir;
+            // Number of entries
+            writeIntAsUint16(cDir, 0xFFFF);
+            // Number of entries
+            writeIntAsUint16(cDir, 0xFFFF);
+            // Size of central dir
+            writeLongAsUint32(cDir, 0xFFFFFFFF);
+            // Offset of central dir;
+            writeLongAsUint32(cDir, 0xFFFFFFFF);
         } else {
-            writeIntAsUint16(cDir, entries.size()); // Number of entries
-            writeIntAsUint16(cDir, entries.size()); // Number of entries
-            writeLongAsUint32(cDir, cdirEntriesSize); // Size of central dir
-            writeLongAsUint32(cDir, offset); // Offset of central dir
+            // Number of entries
+            writeIntAsUint16(cDir, entries.size());
+            // Number of entries
+            writeIntAsUint16(cDir, entries.size());
+            // Size of central dir
+            writeLongAsUint32(cDir, cdirEntriesSize);
+            // Offset of central dir
+            writeLongAsUint32(cDir, offset);
         }
         writeIntAsUint16(cDir, commentBytes.length);
         if (commentBytes.length > 0) {
@@ -441,13 +478,11 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         }
         checkOpen();
         // checkAndSetZip64Requirements(ze);
-
         //zhangshaowen edit here, we just want the same time and modDate
         ze.comment = null;
         ze.extra = null;
         ze.time = TIME_CONST;
         ze.modDate = MOD_DATE_CONST;
-
         nameBytes = ze.name.getBytes(StandardCharsets.UTF_8);
         checkSizeIsWithinShort("Name", nameBytes);
         entryCommentBytes = BYTE;
@@ -460,7 +495,6 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         // def.setLevel(compressionLevel);
         ze.setMethod(method);
         currentEntry = ze;
-
         currentEntry.localHeaderRelOffset = offset;
         entries.add(currentEntry.name);
         // Local file header.
@@ -469,11 +503,12 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         // Java always outputs UTF-8 filenames. (Before Java 7, the RI didn't set this flag and used
         // modified UTF-8. From Java 7, when using UTF_8 it sets this flag and uses normal UTF-8.)
         flags |= TinkerZipFile.GPBF_UTF8_FLAG;
-        writeLongAsUint32(out, LOCSIG); // Entry header
-        writeIntAsUint16(out, ZIP_VERSION_2_0); // Minimum version needed to extract.
+        // Entry header
+        writeLongAsUint32(out, LOCSIG);
+        // Minimum version needed to extract.
+        writeIntAsUint16(out, ZIP_VERSION_2_0);
         writeIntAsUint16(out, flags);
         writeIntAsUint16(out, method);
-
         // zhangshaowen edit here, we just want the same time and modDate
         // if (currentEntry.getTime() == -1) {
         //     currentEntry.setTime(System.currentTimeMillis());
@@ -556,17 +591,16 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         }
         // crc.update(buffer, offset, byteCount);
     }
+
     private void checkOpen() throws IOException {
         if (cDir == null) {
             throw new IOException("Stream is closed");
         }
     }
+
     private void checkSizeIsWithinShort(String property, byte[] bytes) {
         if (bytes.length > 0xffff) {
-            throw new IllegalArgumentException(property
-                + " too long in UTF-8:"
-                + bytes.length
-                + " bytes");
+            throw new IllegalArgumentException(property + " too long in UTF-8:" + bytes.length + " bytes");
         }
     }
     /*private long getBytesWritten() {

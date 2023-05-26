@@ -9,14 +9,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * the BSD 3-Clause License for more details.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import java.util.ArrayList;
 
 public class ShareArkHotDiffPatchInfo {
+
     public String path;
+
     public String name;
+
     public String patchMd5;
 
     public ShareArkHotDiffPatchInfo(String path, String name, String md5) {
@@ -29,22 +31,18 @@ public class ShareArkHotDiffPatchInfo {
         if (meta == null || diffList == null) {
             return;
         }
-
         String[] lines = meta.split("\n");
         for (final String line : lines) {
             if (line == null || line.length() <= 0) {
                 continue;
             }
-
             final String[] kv = line.split(",", 4);
             if (kv == null || kv.length < 3) {
                 continue;
             }
-
             final String name = kv[0].trim();
             final String path = kv[1].trim();
             final String md5 = kv[2].trim();
-
             ShareArkHotDiffPatchInfo arkDiffInfo = new ShareArkHotDiffPatchInfo(path, name, md5);
             diffList.add(arkDiffInfo);
         }
@@ -70,7 +68,6 @@ public class ShareArkHotDiffPatchInfo {
         sb.append(path);
         sb.append(",");
         sb.append(patchMd5);
-
         return sb.toString();
     }
 }

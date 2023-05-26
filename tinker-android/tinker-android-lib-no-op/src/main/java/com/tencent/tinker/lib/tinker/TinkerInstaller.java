@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.tinker;
 
 import android.content.Context;
-
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
@@ -31,6 +29,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
  * Created by zhangshaowen on 16/3/19.
  */
 public class TinkerInstaller {
+
     private static final String TAG = "Tinker.TinkerInstaller";
 
     /**
@@ -57,17 +56,8 @@ public class TinkerInstaller {
      * @param resultServiceClass
      * @param upgradePatchProcessor
      */
-    public static Tinker install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter,
-                                 PatchListener listener, Class<? extends AbstractResultService> resultServiceClass,
-                                 AbstractPatch upgradePatchProcessor) {
-
-        Tinker tinker = new Tinker.Builder(applicationLike.getApplication())
-            .tinkerFlags(applicationLike.getTinkerFlags())
-            .loadReport(loadReporter)
-            .listener(listener)
-            .patchReporter(patchReporter)
-            .tinkerLoadVerifyFlag(applicationLike.getTinkerLoadVerifyFlag()).build();
-
+    public static Tinker install(ApplicationLike applicationLike, LoadReporter loadReporter, PatchReporter patchReporter, PatchListener listener, Class<? extends AbstractResultService> resultServiceClass, AbstractPatch upgradePatchProcessor) {
+        Tinker tinker = new Tinker.Builder(applicationLike.getApplication()).tinkerFlags(applicationLike.getTinkerFlags()).loadReport(loadReporter).listener(listener).patchReporter(patchReporter).tinkerLoadVerifyFlag(applicationLike.getTinkerLoadVerifyFlag()).build();
         Tinker.create(tinker);
         tinker.install(applicationLike.getTinkerResultIntent(), resultServiceClass, upgradePatchProcessor);
         return tinker;

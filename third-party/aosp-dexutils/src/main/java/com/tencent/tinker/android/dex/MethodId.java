@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
@@ -21,8 +20,11 @@ import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class MethodId extends Item<MethodId> {
+
     public int declaringClassIndex;
+
     public int protoIndex;
+
     public int nameIndex;
 
     public MethodId(int off, int declaringClassIndex, int protoIndex, int nameIndex) {

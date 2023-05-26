@@ -13,16 +13,13 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
-
 import com.tencent.tinker.loader.TinkerRuntimeException;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -38,11 +35,11 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-
 public class SharePatchFileUtil {
+
     private static final String TAG = "Tinker.PatchFileUtil";
 
-    private static char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    private static char[] hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     /**
      * data dir, such as /data/data/tinker.sample.android/tinker
@@ -55,8 +52,7 @@ public class SharePatchFileUtil {
             // Looks like running on a test Context, so just return without patching.
             return null;
         }
-        final String dirName = ("oppo".equalsIgnoreCase(Build.MANUFACTURER) && Build.VERSION.SDK_INT == 22)
-                ? ShareConstants.PATCH_DIRECTORY_NAME_SPEC : ShareConstants.PATCH_DIRECTORY_NAME;
+        final String dirName = ("oppo".equalsIgnoreCase(Build.MANUFACTURER) && Build.VERSION.SDK_INT == 22) ? ShareConstants.PATCH_DIRECTORY_NAME_SPEC : ShareConstants.PATCH_DIRECTORY_NAME;
         return new File(applicationInfo.dataDir, dirName);
     }
 
@@ -66,7 +62,6 @@ public class SharePatchFileUtil {
             // Looks like running on a test Context, so just return without patching.
             return null;
         }
-
         return new File(applicationInfo.dataDir, ShareConstants.PATCH_TEMP_DIRECTORY_NAME);
     }
 
@@ -90,7 +85,6 @@ public class SharePatchFileUtil {
         if (version == null || version.length() != ShareConstants.MD5_LENGTH) {
             return null;
         }
-
         return ShareConstants.PATCH_BASE_NAME + version.substring(0, 8);
     }
 
@@ -98,7 +92,6 @@ public class SharePatchFileUtil {
         if (version == null || version.length() != ShareConstants.MD5_LENGTH) {
             return null;
         }
-
         return getPatchVersionDirectory(version) + ShareConstants.PATCH_SUFFIX;
     }
 
@@ -129,9 +122,7 @@ public class SharePatchFileUtil {
         } finally {
             closeQuietly(in);
         }
-
         return buffer.toString();
-
     }
 
     /**
@@ -139,7 +130,8 @@ public class SharePatchFileUtil {
      */
     @SuppressLint("NewApi")
     public static void closeQuietly(Object obj) {
-        if (obj == null) return;
+        if (obj == null)
+            return;
         if (obj instanceof Closeable) {
             try {
                 ((Closeable) obj).close();
@@ -177,17 +169,9 @@ public class SharePatchFileUtil {
      * @return
      */
     public static final boolean shouldAcceptEvenIfIllegal(File file) {
-        final boolean isSpecialManufacturer =
-                "vivo".equalsIgnoreCase(Build.MANUFACTURER)
-             || "oppo".equalsIgnoreCase(Build.MANUFACTURER);
-
-        final boolean isSpecialOSVer =
-                (Build.VERSION.SDK_INT >= 29)
-             || (Build.VERSION.SDK_INT >= 28 && Build.VERSION.PREVIEW_SDK_INT != 0)
-             || (ShareTinkerInternals.isArkHotRuning());
-
+        final boolean isSpecialManufacturer = "vivo".equalsIgnoreCase(Build.MANUFACTURER) || "oppo".equalsIgnoreCase(Build.MANUFACTURER);
+        final boolean isSpecialOSVer = (Build.VERSION.SDK_INT >= 29) || (Build.VERSION.SDK_INT >= 28 && Build.VERSION.PREVIEW_SDK_INT != 0) || (ShareTinkerInternals.isArkHotRuning());
         final boolean isFileIllegal = !file.exists() || file.length() == 0;
-
         return (isSpecialManufacturer || isSpecialOSVer) && isFileIllegal;
     }
 
@@ -222,10 +206,8 @@ public class SharePatchFileUtil {
         if (file == null) {
             return true;
         }
-
         if (file.exists()) {
             ShareTinkerLog.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());
-
             boolean deleted = file.delete();
             if (!deleted) {
                 ShareTinkerLog.e(TAG, "Failed to delete file, try to delete when exit. path: " + file.getPath());
@@ -241,7 +223,6 @@ public class SharePatchFileUtil {
             return false;
         }
         return deleteDir(new File(dir));
-
     }
 
     public static final boolean deleteDir(File file) {
@@ -262,7 +243,6 @@ public class SharePatchFileUtil {
         return true;
     }
 
-
     /**
      * Returns whether the file is a valid file.
      */
@@ -271,11 +251,9 @@ public class SharePatchFileUtil {
             return false;
         }
         String fileMd5 = getMD5(file);
-
         if (fileMd5 == null) {
             return false;
         }
-
         return md5.equals(fileMd5);
     }
 
@@ -300,7 +278,6 @@ public class SharePatchFileUtil {
         }
         //if it is not the raw dex, we check the stream instead
         String fileMd5 = "";
-
         if (isRawDexFile(file.getName())) {
             fileMd5 = getMD5(file);
         } else {
@@ -329,7 +306,6 @@ public class SharePatchFileUtil {
                 closeZip(dexJar);
             }
         }
-
         return md5.equals(fileMd5);
     }
 
@@ -349,7 +325,6 @@ public class SharePatchFileUtil {
         try {
             is = new FileInputStream(source);
             os = new FileOutputStream(dest, false);
-
             byte[] buffer = new byte[ShareConstants.BUFFER_SIZE];
             int length;
             while ((length = is.read(buffer)) > 0) {
@@ -369,7 +344,6 @@ public class SharePatchFileUtil {
     public static String loadDigestes(JarFile jarFile, JarEntry je) throws Exception {
         InputStream bis = null;
         StringBuilder sb = new StringBuilder();
-
         try {
             InputStream is = jarFile.getInputStream(je);
             byte[] bytes = new byte[ShareConstants.BUFFER_SIZE];
@@ -398,15 +372,12 @@ public class SharePatchFileUtil {
             BufferedInputStream bis = new BufferedInputStream(is);
             MessageDigest md = MessageDigest.getInstance("MD5");
             StringBuilder md5Str = new StringBuilder(32);
-
             byte[] buf = new byte[ShareConstants.MD5_FILE_BUF_LENGTH];
             int readCount;
             while ((readCount = bis.read(buf)) != -1) {
                 md.update(buf, 0, readCount);
             }
-
             byte[] hashValue = md.digest();
-
             for (int i = 0; i < hashValue.length; i++) {
                 md5Str.append(Integer.toString((hashValue[i] & 0xff) + 0x100, 16).substring(1));
             }
@@ -444,7 +415,6 @@ public class SharePatchFileUtil {
         if (file == null || !file.exists()) {
             return null;
         }
-
         FileInputStream fin = null;
         try {
             fin = new FileInputStream(file);
@@ -470,26 +440,21 @@ public class SharePatchFileUtil {
         if (ShareTinkerInternals.isAfterAndroidO()) {
             // dex_location = /foo/bar/baz.jar
             // odex_location = /foo/bar/oat/<isa>/baz.odex
-
             String currentInstructionSet;
             try {
                 currentInstructionSet = ShareTinkerInternals.getCurrentInstructionSet();
             } catch (Exception e) {
                 throw new TinkerRuntimeException("getCurrentInstructionSet fail:", e);
             }
-
             File parentFile = path.getParentFile();
             String fileName = path.getName();
             int index = fileName.lastIndexOf('.');
             if (index > 0) {
                 fileName = fileName.substring(0, index);
             }
-
-            String result = parentFile.getAbsolutePath() + "/oat/"
-                + currentInstructionSet + "/" + fileName + ShareConstants.ODEX_SUFFIX;
+            String result = parentFile.getAbsolutePath() + "/oat/" + currentInstructionSet + "/" + fileName + ShareConstants.ODEX_SUFFIX;
             return result;
         }
-
         String fileName = path.getName();
         if (!fileName.endsWith(ShareConstants.DEX_SUFFIX)) {
             int lastDot = fileName.lastIndexOf(".");
@@ -502,7 +467,6 @@ public class SharePatchFileUtil {
                 fileName = sb.toString();
             }
         }
-
         File result = new File(optimizedDirectory, fileName);
         return result.getPath();
     }
@@ -536,10 +500,8 @@ public class SharePatchFileUtil {
             } finally {
                 closeQuietly(inputStream);
             }
-
         } catch (Throwable e) {
             ShareTinkerLog.i(TAG, "checkResourceArscMd5 throwable:" + e.getMessage());
-
         } finally {
             SharePatchFileUtil.closeZip(resourceZip);
         }
@@ -555,6 +517,4 @@ public class SharePatchFileUtil {
             parentFile.mkdirs();
         }
     }
-
 }
-

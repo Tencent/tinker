@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex.io;
 
 import com.tencent.tinker.android.dex.Annotation;
@@ -37,7 +36,6 @@ import com.tencent.tinker.android.dex.StringData;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.util.ByteInput;
 import com.tencent.tinker.android.dex.util.ByteOutput;
-
 import java.io.ByteArrayOutputStream;
 import java.io.UTFDataFormatException;
 import java.nio.ByteBuffer;
@@ -48,14 +46,19 @@ import java.nio.ByteOrder;
  * Created by tangyinsheng on 2016/6/30.
  */
 public class DexDataBuffer implements ByteInput, ByteOutput {
+
     public static final int DEFAULT_BUFFER_SIZE = 512;
 
     private static final short[] EMPTY_SHORT_ARRAY = new short[0];
+
     private static final Code.Try[] EMPTY_TRY_ARRAY = new Code.Try[0];
+
     private static final Code.CatchHandler[] EMPTY_CATCHHANDLER_ARRAY = new Code.CatchHandler[0];
 
     private ByteBuffer data;
+
     private int dataBound;
+
     private boolean isResizeAllowed;
 
     public DexDataBuffer() {
@@ -93,17 +96,15 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
     }
 
     private void ensureBufferSize(int bytes) {
-        if (this.data.position() + bytes > this.data.limit()) {
-            if (this.isResizeAllowed) {
-                byte[] array = this.data.array();
-                byte[] newArray = new byte[array.length + bytes + (array.length >> 1)];
-                System.arraycopy(array, 0, newArray, 0, this.data.position());
-                int lastPos = this.data.position();
-                this.data = ByteBuffer.wrap(newArray);
-                this.data.order(ByteOrder.LITTLE_ENDIAN);
-                this.data.position(lastPos);
-                this.data.limit(this.data.capacity());
-            }
+        if (this.data.position() + bytes > this.data.limit() && this.isResizeAllowed) {
+            byte[] array = this.data.array();
+            byte[] newArray = new byte[array.length + bytes + (array.length >> 1)];
+            System.arraycopy(array, 0, newArray, 0, this.data.position());
+            int lastPos = this.data.position();
+            this.data = ByteBuffer.wrap(newArray);
+            this.data.order(ByteOrder.LITTLE_ENDIAN);
+            this.data.position(lastPos);
+            this.data.limit(this.data.capacity());
         }
     }
 
@@ -170,8 +171,7 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
             int expectedLength = readUleb128();
             String result = Mutf8.decode(this, new char[expectedLength]);
             if (result.length() != expectedLength) {
-                throw new DexException("Declared length " + expectedLength
-                        + " doesn't match decoded length of " + result.length());
+                throw new DexException("Declared length " + expectedLength + " doesn't match decoded length of " + result.length());
             }
             return new StringData(off, result);
         } catch (UTFDataFormatException e) {
@@ -220,9 +220,7 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         int annotationsOffset = readInt();
         int classDataOffset = readInt();
         int staticValuesOffset = readInt();
-        return new ClassDef(off, type, accessFlags, supertype,
-                interfacesOffset, sourceFileIndex, annotationsOffset, classDataOffset,
-                staticValuesOffset);
+        return new ClassDef(off, type, accessFlags, supertype, interfacesOffset, sourceFileIndex, annotationsOffset, classDataOffset, staticValuesOffset);
     }
 
     public Code readCode() {
@@ -238,9 +236,9 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         Code.CatchHandler[] catchHandlers;
         if (triesSize > 0) {
             if ((instructions.length & 1) == 1) {
-                skip(2); // padding
+                // padding
+                skip(2);
             }
-
             /*
              * We can't read the tries until we've read the catch handlers.
              * Unfortunately they're in the opposite order in the dex file
@@ -257,8 +255,7 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
             tries = EMPTY_TRY_ARRAY;
             catchHandlers = EMPTY_CATCHHANDLER_ARRAY;
         }
-        return new Code(off, registersSize, insSize, outsSize, debugInfoOffset, instructions,
-                tries, catchHandlers);
+        return new Code(off, registersSize, insSize, outsSize, debugInfoOffset, instructions, tries, catchHandlers);
     }
 
     private Code.CatchHandler[] readCatchHandlers() {
@@ -309,48 +306,46 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
 
     public DebugInfoItem readDebugInfoItem() {
         int off = data.position();
-
         int lineStart = readUleb128();
         int parametersSize = readUleb128();
         int[] parameterNames = new int[parametersSize];
         for (int i = 0; i < parametersSize; ++i) {
             parameterNames[i] = readUleb128p1();
         }
-
         ByteArrayOutputStream baos = null;
-
         try {
             baos = new ByteArrayOutputStream(64);
-
             final ByteArrayOutputStream baosRef = baos;
-
             ByteOutput outAdapter = new ByteOutput() {
+
                 @Override
                 public void writeByte(int i) {
                     baosRef.write(i);
                 }
             };
-
-            outside_whileloop:
-                while (true) {
-                    int opcode = readByte();
-                    baos.write(opcode);
-                    switch (opcode) {
-                        case DebugInfoItem.DBG_END_SEQUENCE: {
+            outside_whileloop: while (true) {
+                int opcode = readByte();
+                baos.write(opcode);
+                switch(opcode) {
+                    case DebugInfoItem.DBG_END_SEQUENCE:
+                        {
                             break outside_whileloop;
                         }
-                        case DebugInfoItem.DBG_ADVANCE_PC: {
+                    case DebugInfoItem.DBG_ADVANCE_PC:
+                        {
                             int addrDiff = readUleb128();
                             Leb128.writeUnsignedLeb128(outAdapter, addrDiff);
                             break;
                         }
-                        case DebugInfoItem.DBG_ADVANCE_LINE: {
+                    case DebugInfoItem.DBG_ADVANCE_LINE:
+                        {
                             int lineDiff = readSleb128();
                             Leb128.writeSignedLeb128(outAdapter, lineDiff);
                             break;
                         }
-                        case DebugInfoItem.DBG_START_LOCAL:
-                        case DebugInfoItem.DBG_START_LOCAL_EXTENDED: {
+                    case DebugInfoItem.DBG_START_LOCAL:
+                    case DebugInfoItem.DBG_START_LOCAL_EXTENDED:
+                        {
                             int registerNum = readUleb128();
                             Leb128.writeUnsignedLeb128(outAdapter, registerNum);
                             int nameIndex = readUleb128p1();
@@ -363,25 +358,27 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
                             }
                             break;
                         }
-                        case DebugInfoItem.DBG_END_LOCAL:
-                        case DebugInfoItem.DBG_RESTART_LOCAL: {
+                    case DebugInfoItem.DBG_END_LOCAL:
+                    case DebugInfoItem.DBG_RESTART_LOCAL:
+                        {
                             int registerNum = readUleb128();
                             Leb128.writeUnsignedLeb128(outAdapter, registerNum);
                             break;
                         }
-                        case DebugInfoItem.DBG_SET_FILE: {
+                    case DebugInfoItem.DBG_SET_FILE:
+                        {
                             int nameIndex = readUleb128p1();
                             Leb128.writeUnsignedLeb128p1(outAdapter, nameIndex);
                             break;
                         }
-                        case DebugInfoItem.DBG_SET_PROLOGUE_END:
-                        case DebugInfoItem.DBG_SET_EPILOGUE_BEGIN:
-                        default: {
+                    case DebugInfoItem.DBG_SET_PROLOGUE_END:
+                    case DebugInfoItem.DBG_SET_EPILOGUE_BEGIN:
+                    default:
+                        {
                             break;
                         }
-                    }
                 }
-
+            }
             byte[] infoSTM = baos.toByteArray();
             return new DebugInfoItem(off, lineStart, parameterNames, infoSTM);
         } finally {
@@ -412,7 +409,8 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         ClassData.Field[] result = new ClassData.Field[count];
         int fieldIndex = 0;
         for (int i = 0; i < count; i++) {
-            fieldIndex += readUleb128(); // field index diff
+            // field index diff
+            fieldIndex += readUleb128();
             int accessFlags = readUleb128();
             result[i] = new ClassData.Field(fieldIndex, accessFlags);
         }
@@ -423,7 +421,8 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         ClassData.Method[] result = new ClassData.Method[count];
         int methodIndex = 0;
         for (int i = 0; i < count; i++) {
-            methodIndex += readUleb128(); // method index diff
+            // method index diff
+            methodIndex += readUleb128();
             int accessFlags = readUleb128();
             int codeOff = readUleb128();
             result[i] = new ClassData.Method(methodIndex, accessFlags, codeOff);
@@ -477,7 +476,6 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         int fieldsSize = readInt();
         int methodsSize = readInt();
         int parameterListSize = readInt();
-
         int[][] fieldAnnotations = new int[fieldsSize][2];
         for (int i = 0; i < fieldsSize; ++i) {
             // field index
@@ -485,7 +483,6 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
             // annotations offset
             fieldAnnotations[i][1] = readInt();
         }
-
         int[][] methodAnnotations = new int[methodsSize][2];
         for (int i = 0; i < methodsSize; ++i) {
             // method index
@@ -493,7 +490,6 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
             // annotation set offset
             methodAnnotations[i][1] = readInt();
         }
-
         int[][] parameterAnnotations = new int[parameterListSize][2];
         for (int i = 0; i < parameterListSize; ++i) {
             // method index
@@ -501,7 +497,6 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
             // annotations offset
             parameterAnnotations[i][1] = readInt();
         }
-
         return new AnnotationsDirectory(off, classAnnotationsOffset, fieldAnnotations, methodAnnotations, parameterAnnotations);
     }
 
@@ -711,12 +706,11 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         writeInt(code.debugInfoOffset);
         writeInt(code.instructions.length);
         write(code.instructions);
-
         if (code.tries.length > 0) {
             if ((code.instructions.length & 1) == 1) {
-                writeShort((short) 0); // padding
+                // padding
+                writeShort((short) 0);
             }
-
             /*
              * We can't write the tries until we've written the catch handlers.
              * Unfortunately they're in the opposite order in the dex file so we
@@ -748,18 +742,15 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         int catchAllAddress = catchHandler.catchAllAddress;
         int[] typeIndexes = catchHandler.typeIndexes;
         int[] addresses = catchHandler.addresses;
-
         if (catchAllAddress != -1) {
             writeSleb128(-typeIndexes.length);
         } else {
             writeSleb128(typeIndexes.length);
         }
-
         for (int i = 0; i < typeIndexes.length; i++) {
             writeUleb128(typeIndexes[i]);
             writeUleb128(addresses[i]);
         }
-
         if (catchAllAddress != -1) {
             writeUleb128(catchAllAddress);
         }
@@ -780,19 +771,14 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
      */
     public int writeDebugInfoItem(DebugInfoItem debugInfoItem) {
         int off = data.position();
-
         writeUleb128(debugInfoItem.lineStart);
-
         int parametersSize = debugInfoItem.parameterNames.length;
         writeUleb128(parametersSize);
-
         for (int i = 0; i < parametersSize; ++i) {
             int parameterName = debugInfoItem.parameterNames[i];
             writeUleb128p1(parameterName);
         }
-
         write(debugInfoItem.infoSTM);
-
         return off;
     }
 
@@ -884,17 +870,14 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         writeInt(annotationsDirectory.fieldAnnotations.length);
         writeInt(annotationsDirectory.methodAnnotations.length);
         writeInt(annotationsDirectory.parameterAnnotations.length);
-
         for (int[] fieldAnnotation : annotationsDirectory.fieldAnnotations) {
             writeInt(fieldAnnotation[0]);
             writeInt(fieldAnnotation[1]);
         }
-
         for (int[] methodAnnotation : annotationsDirectory.methodAnnotations) {
             writeInt(methodAnnotation[0]);
             writeInt(methodAnnotation[1]);
         }
-
         for (int[] parameterAnnotation : annotationsDirectory.parameterAnnotations) {
             writeInt(parameterAnnotation[0]);
             writeInt(parameterAnnotation[1]);

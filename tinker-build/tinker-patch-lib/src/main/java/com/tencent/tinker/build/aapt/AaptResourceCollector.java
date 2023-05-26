@@ -13,13 +13,11 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import com.google.common.base.Joiner;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,16 +29,24 @@ import java.util.Set;
 public class AaptResourceCollector {
 
     private final Map<RType, Map<String, Set<ResourceDirectory>>> rTypeResourceDirectoryMap;
+
     // private final Map<RType, List<ResourceDirectory>> rTypeIncreaseResourceDirectoryListMap;
     // private final Map<RType, Map<ResourceDirectory,ResourceDirectory>> rTypeIncreaseResourceDirectoryMap;
-    private final Map<RType, ResourceIdEnumerator>                rTypeEnumeratorMap;
-    private final Map<RDotTxtEntry, RDotTxtEntry>                 originalResourceMap;
-    private final Map<RType, Set<RDotTxtEntry>>                   rTypeResourceMap;
-    private final Map<RType, Set<RDotTxtEntry>>                   rTypeIncreaseResourceMap;
-    private final Map<String, Set<String>>                        duplicateResourceMap;
-    private final Map<RType, HashMap<String, String>>             sanitizeTypeMap;
-    private final Set<String>                                     ignoreIdSet;
-    private       int                                             currentTypeId;
+    private final Map<RType, ResourceIdEnumerator> rTypeEnumeratorMap;
+
+    private final Map<RDotTxtEntry, RDotTxtEntry> originalResourceMap;
+
+    private final Map<RType, Set<RDotTxtEntry>> rTypeResourceMap;
+
+    private final Map<RType, Set<RDotTxtEntry>> rTypeIncreaseResourceMap;
+
+    private final Map<String, Set<String>> duplicateResourceMap;
+
+    private final Map<RType, HashMap<String, String>> sanitizeTypeMap;
+
+    private final Set<String> ignoreIdSet;
+
+    private int currentTypeId;
 
     public AaptResourceCollector() {
         this.rTypeResourceDirectoryMap = new HashMap<RType, Map<String, Set<ResourceDirectory>>>();
@@ -91,7 +97,8 @@ public class AaptResourceCollector {
         }
     }
 
-    public void addIntResourceIfNotPresent(RType rType, String name) { //, ResourceDirectory resourceDirectory) {
+    public void addIntResourceIfNotPresent(RType rType, String name) {
+        //, ResourceDirectory resourceDirectory) {
         if (!rTypeEnumeratorMap.containsKey(rType)) {
             if (rType.equals(RType.ATTR)) {
                 rTypeEnumeratorMap.put(rType, new ResourceIdEnumerator(1));
@@ -99,7 +106,6 @@ public class AaptResourceCollector {
                 rTypeEnumeratorMap.put(rType, new ResourceIdEnumerator(currentTypeId++));
             }
         }
-
         RDotTxtEntry entry = new FakeRDotTxtEntry(IdType.INT, rType, name);
         Set<RDotTxtEntry> resourceSet = null;
         if (this.rTypeResourceMap.containsKey(rType)) {
@@ -110,7 +116,8 @@ public class AaptResourceCollector {
         }
         if (!resourceSet.contains(entry)) {
             String idValue = String.format("0x%08x", rTypeEnumeratorMap.get(rType).next());
-            addResource(rType, IdType.INT, name, idValue); //, resourceDirectory);
+            //, resourceDirectory);
+            addResource(rType, IdType.INT, name, idValue);
         }
     }
 
@@ -187,7 +194,6 @@ public class AaptResourceCollector {
     //         existResourceDirectory.resourceEntrySet.add(new ResourceEntry(name, null));
     //     }
     // }
-
     /**
      * is contain resource
      *
@@ -251,10 +257,8 @@ public class AaptResourceCollector {
         }
         if (!find) {
             for (ResourceDirectory oldResourceDirectory : resourceDirectorySet) {
-                if (oldResourceDirectory.equals(newResourceDirectory)) {
-                    if (!oldResourceDirectory.resourceEntrySet.contains(new ResourceEntry(resourceName, resourceValue))) {
-                        oldResourceDirectory.resourceEntrySet.add(new ResourceEntry(resourceName, resourceValue));
-                    }
+                if (oldResourceDirectory.equals(newResourceDirectory) && !oldResourceDirectory.resourceEntrySet.contains(new ResourceEntry(resourceName, resourceValue))) {
+                    oldResourceDirectory.resourceEntrySet.add(new ResourceEntry(resourceName, resourceValue));
                 }
             }
         }
@@ -322,7 +326,6 @@ public class AaptResourceCollector {
     // public Map<RType, List<ResourceDirectory>> getRTypeIncreaseResourceDirectoryListMap() {
     //     return rTypeIncreaseResourceDirectoryListMap;
     // }
-
     void addIgnoreId(String name) {
         ignoreIdSet.add(name);
     }

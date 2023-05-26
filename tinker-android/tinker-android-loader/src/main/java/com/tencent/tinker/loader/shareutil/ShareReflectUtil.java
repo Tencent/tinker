@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import android.content.Context;
-
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -41,17 +39,14 @@ public class ShareReflectUtil {
         for (Class<?> clazz = instance.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
             try {
                 Field field = clazz.getDeclaredField(name);
-
                 if (!field.isAccessible()) {
                     field.setAccessible(true);
                 }
-
                 return field;
             } catch (NoSuchFieldException e) {
                 // ignore and search next
             }
         }
-
         throw new NoSuchFieldException("Field " + name + " not found in " + instance.getClass());
     }
 
@@ -59,17 +54,14 @@ public class ShareReflectUtil {
         for (Class<?> clazz = originClazz; clazz != null; clazz = clazz.getSuperclass()) {
             try {
                 Field field = clazz.getDeclaredField(name);
-
                 if (!field.isAccessible()) {
                     field.setAccessible(true);
                 }
-
                 return field;
             } catch (NoSuchFieldException e) {
                 // ignore and search next
             }
         }
-
         throw new NoSuchFieldException("Field " + name + " not found in " + originClazz);
     }
 
@@ -82,27 +74,19 @@ public class ShareReflectUtil {
      * @return a method object
      * @throws NoSuchMethodException if the method cannot be located
      */
-    public static Method findMethod(Object instance, String name, Class<?>... parameterTypes)
-        throws NoSuchMethodException {
+    public static Method findMethod(Object instance, String name, Class<?>... parameterTypes) throws NoSuchMethodException {
         for (Class<?> clazz = instance.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
             try {
                 Method method = clazz.getDeclaredMethod(name, parameterTypes);
-
                 if (!method.isAccessible()) {
                     method.setAccessible(true);
                 }
-
                 return method;
             } catch (NoSuchMethodException e) {
                 // ignore and search next
             }
         }
-
-        throw new NoSuchMethodException("Method "
-            + name
-            + " with parameters "
-            + Arrays.asList(parameterTypes)
-            + " not found in " + instance.getClass());
+        throw new NoSuchMethodException("Method " + name + " with parameters " + Arrays.asList(parameterTypes) + " not found in " + instance.getClass());
     }
 
     /**
@@ -114,27 +98,19 @@ public class ShareReflectUtil {
      * @return a method object
      * @throws NoSuchMethodException if the method cannot be located
      */
-    public static Method findMethod(Class<?> clazz, String name, Class<?>... parameterTypes)
-            throws NoSuchMethodException {
+    public static Method findMethod(Class<?> clazz, String name, Class<?>... parameterTypes) throws NoSuchMethodException {
         for (; clazz != null; clazz = clazz.getSuperclass()) {
             try {
                 Method method = clazz.getDeclaredMethod(name, parameterTypes);
-
                 if (!method.isAccessible()) {
                     method.setAccessible(true);
                 }
-
                 return method;
             } catch (NoSuchMethodException e) {
                 // ignore and search next
             }
         }
-
-        throw new NoSuchMethodException("Method "
-                + name
-                + " with parameters "
-                + Arrays.asList(parameterTypes)
-                + " not found in " + clazz);
+        throw new NoSuchMethodException("Method " + name + " with parameters " + Arrays.asList(parameterTypes) + " not found in " + clazz);
     }
 
     /**
@@ -145,8 +121,7 @@ public class ShareReflectUtil {
      * @return a constructor object
      * @throws NoSuchMethodException if the constructor cannot be located
      */
-    public static Constructor<?> findConstructor(Object instance, Class<?>... parameterTypes)
-            throws NoSuchMethodException {
+    public static Constructor<?> findConstructor(Object instance, Class<?>... parameterTypes) throws NoSuchMethodException {
         return findConstructor(instance.getClass(), parameterTypes);
     }
 
@@ -158,26 +133,19 @@ public class ShareReflectUtil {
      * @return a constructor object
      * @throws NoSuchMethodException if the constructor cannot be located
      */
-    public static Constructor<?> findConstructor(Class<?> clazz, Class<?>... parameterTypes)
-            throws NoSuchMethodException {
+    public static Constructor<?> findConstructor(Class<?> clazz, Class<?>... parameterTypes) throws NoSuchMethodException {
         for (Class<?> currClazz = clazz; currClazz != null; currClazz = currClazz.getSuperclass()) {
             try {
                 Constructor<?> ctor = currClazz.getDeclaredConstructor(parameterTypes);
-
                 if (!ctor.isAccessible()) {
                     ctor.setAccessible(true);
                 }
-
                 return ctor;
             } catch (NoSuchMethodException e) {
                 // ignore and search next
             }
         }
-
-        throw new NoSuchMethodException("Constructor"
-                + " with parameters "
-                + Arrays.asList(parameterTypes)
-                + " not found in " + clazz);
+        throw new NoSuchMethodException("Constructor" + " with parameters " + Arrays.asList(parameterTypes) + " not found in " + clazz);
     }
 
     /**
@@ -188,18 +156,13 @@ public class ShareReflectUtil {
      * @param fieldName     the field to modify.
      * @param extraElements elements to append at the end of the array.
      */
-    public static void expandFieldArray(Object instance, String fieldName, Object[] extraElements)
-        throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    public static void expandFieldArray(Object instance, String fieldName, Object[] extraElements) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
         Field jlrField = findField(instance, fieldName);
-
         Object[] original = (Object[]) jlrField.get(instance);
         Object[] combined = (Object[]) Array.newInstance(original.getClass().getComponentType(), original.length + extraElements.length);
-
         // NOTE: changed to copy extraElements first, for patch load first
-
         System.arraycopy(extraElements, 0, combined, 0, extraElements.length);
         System.arraycopy(original, 0, combined, extraElements.length, original.length);
-
         jlrField.set(instance, combined);
     }
 
@@ -210,30 +173,22 @@ public class ShareReflectUtil {
      * @param instance      the instance whose field is to be modified.
      * @param fieldName     the field to modify.
      */
-    public static void reduceFieldArray(Object instance, String fieldName, int reduceSize)
-        throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    public static void reduceFieldArray(Object instance, String fieldName, int reduceSize) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
         if (reduceSize <= 0) {
             return;
         }
-
         Field jlrField = findField(instance, fieldName);
-
         Object[] original = (Object[]) jlrField.get(instance);
         int finalLength = original.length - reduceSize;
-
         if (finalLength <= 0) {
             return;
         }
-
         Object[] combined = (Object[]) Array.newInstance(original.getClass().getComponentType(), finalLength);
-
         System.arraycopy(original, reduceSize, combined, 0, finalLength);
-
         jlrField.set(instance, combined);
     }
 
-    public static Object getActivityThread(Context context,
-                                            Class<?> activityThread) {
+    public static Object getActivityThread(Context context, Class<?> activityThread) {
         try {
             if (activityThread == null) {
                 activityThread = Class.forName("android.app.ActivityThread");

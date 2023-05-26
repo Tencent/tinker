@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import java.io.File;
@@ -111,16 +110,14 @@ public final class FileUtil {
                 if (fileArray != null) {
                     queue.addAll(Arrays.asList(fileArray));
                 }
-            } else if (file.isFile()) {
-                if (file.getName().toLowerCase().endsWith(fileSuffix.toLowerCase())) {
-                    if (isFindMatchFile) {
-                        list.add(file.getAbsolutePath() + somethingAppendToRear);
-                    } else {
-                        String parentPath = file.getParent();
-                        parentPath = parentPath + somethingAppendToRear;
-                        if (!list.contains(parentPath)) {
-                            list.add(parentPath);
-                        }
+            } else if (file.isFile() && file.getName().toLowerCase().endsWith(fileSuffix.toLowerCase())) {
+                if (isFindMatchFile) {
+                    list.add(file.getAbsolutePath() + somethingAppendToRear);
+                } else {
+                    String parentPath = file.getParent();
+                    parentPath = parentPath + somethingAppendToRear;
+                    if (!list.contains(parentPath)) {
+                        list.add(parentPath);
                     }
                 }
             }
@@ -129,11 +126,11 @@ public final class FileUtil {
     }
 
     public static class FileUtilException extends RuntimeException {
+
         private static final long serialVersionUID = 3884649425767533205L;
 
         public FileUtilException(Throwable cause) {
             super(cause);
         }
     }
-
 }

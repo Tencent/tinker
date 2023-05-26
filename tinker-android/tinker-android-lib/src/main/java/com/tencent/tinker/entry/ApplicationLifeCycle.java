@@ -13,14 +13,11 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.entry;
 
 /**
  * Created by zhangshaowen on 16/3/8.
  */
-
-
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;

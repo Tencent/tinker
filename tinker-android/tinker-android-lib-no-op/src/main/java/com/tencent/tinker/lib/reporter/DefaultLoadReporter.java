@@ -13,12 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.reporter;
 
-
 import android.content.Context;
-
 import java.io.File;
 
 /**
@@ -28,6 +25,7 @@ import java.io.File;
  * all is running in the process which loading the patch
  */
 public class DefaultLoadReporter implements LoadReporter {
+
     protected final Context context;
 
     public DefaultLoadReporter(Context context) {

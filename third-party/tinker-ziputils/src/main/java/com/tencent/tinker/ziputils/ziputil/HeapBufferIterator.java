@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 import java.nio.ByteOrder;
@@ -24,11 +23,17 @@ import java.nio.ByteOrder;
  * @hide don't make this public without adding bounds checking.
  */
 public final class HeapBufferIterator extends BufferIterator {
+
     private final byte[] buffer;
+
     private final int offset;
+
     private final int byteCount;
+
     private final ByteOrder order;
+
     private int position;
+
     HeapBufferIterator(byte[] buffer, int offset, int byteCount, ByteOrder order) {
         this.buffer = buffer;
         this.offset = offset;

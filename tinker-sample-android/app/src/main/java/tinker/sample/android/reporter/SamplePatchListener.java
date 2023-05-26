@@ -13,22 +13,18 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.reporter;
 
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-
 import com.tencent.tinker.lib.listener.DefaultPatchListener;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import java.io.File;
 import java.util.Properties;
-
 import tinker.sample.android.app.BuildInfo;
 import tinker.sample.android.crash.SampleUncaughtExceptionHandler;
 import tinker.sample.android.util.Utils;
@@ -40,6 +36,7 @@ import tinker.sample.android.util.Utils;
  * such as we can check rom space or apk channel
  */
 public class SamplePatchListener extends DefaultPatchListener {
+
     private static final String TAG = "Tinker.SamplePatchListener";
 
     protected static final long NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN = 60 * 1024 * 1024;
@@ -65,11 +62,9 @@ public class SamplePatchListener extends DefaultPatchListener {
         File patchFile = new File(path);
         TinkerLog.i(TAG, "receive a patch file: %s, file size:%d", path, SharePatchFileUtil.getFileOrDirectorySize(patchFile));
         int returnCode = super.patchCheck(path, patchMd5);
-
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             returnCode = Utils.checkForPatchRecover(NEW_PATCH_RESTRICTION_SPACE_SIZE_MIN, maxMemory);
         }
-
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             SharedPreferences sp = context.getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
             //optional, only disable this patch file with md5
@@ -93,7 +88,6 @@ public class SamplePatchListener extends DefaultPatchListener {
                 }
             }
         }
-
         SampleTinkerReport.onTryApply(returnCode == ShareConstants.ERROR_PATCH_OK);
         return returnCode;
     }

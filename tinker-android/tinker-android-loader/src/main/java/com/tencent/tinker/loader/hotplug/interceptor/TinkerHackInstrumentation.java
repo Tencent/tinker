@@ -10,24 +10,25 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PersistableBundle;
-
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.hotplug.EnvConsts;
 import com.tencent.tinker.loader.hotplug.IncrementComponentManager;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.lang.reflect.Field;
 
 /**
  * Created by tangyinsheng on 2018/3/9.
  */
 public class TinkerHackInstrumentation extends Instrumentation {
+
     private static final String TAG = "Tinker.Instrumentation";
 
     private final Instrumentation mOriginal;
+
     private final Object mActivityThread;
+
     private final Field mInstrumentationField;
 
     public static TinkerHackInstrumentation create(Context context) {
@@ -125,8 +126,7 @@ public class TinkerHackInstrumentation extends Instrumentation {
         final String oldComponentName = oldComponent.getClassName();
         final ActivityInfo targetAInfo = IncrementComponentManager.queryActivityInfo(oldComponentName);
         if (targetAInfo == null) {
-            ShareTinkerLog.e(TAG, "Failed to query target activity's info,"
-                    + " perhaps the target is not hotpluged component. Target: " + oldComponentName);
+            ShareTinkerLog.e(TAG, "Failed to query target activity's info," + " perhaps the target is not hotpluged component. Target: " + oldComponentName);
             return false;
         }
         intent.setComponent(oldComponent);

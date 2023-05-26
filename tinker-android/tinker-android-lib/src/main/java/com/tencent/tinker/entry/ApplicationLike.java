@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.entry;
 
 import android.app.Application;
@@ -29,16 +28,20 @@ import com.tencent.tinker.anno.Keep;
  */
 @Keep
 public abstract class ApplicationLike implements ApplicationLifeCycle {
+
     private final Application application;
-    private final Intent      tinkerResultIntent;
-    private final long        applicationStartElapsedTime;
-    private final long        applicationStartMillisTime;
-    private final int         tinkerFlags;
-    private final boolean     tinkerLoadVerifyFlag;
 
+    private final Intent tinkerResultIntent;
 
-    public ApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
-                           long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent) {
+    private final long applicationStartElapsedTime;
+
+    private final long applicationStartMillisTime;
+
+    private final int tinkerFlags;
+
+    private final boolean tinkerLoadVerifyFlag;
+
+    public ApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag, long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent) {
         this.application = application;
         this.tinkerFlags = tinkerFlags;
         this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
@@ -73,33 +76,28 @@ public abstract class ApplicationLike implements ApplicationLifeCycle {
 
     @Override
     public void onCreate() {
-
     }
 
     @Override
     public void onLowMemory() {
-
     }
 
     @Override
     public void onTrimMemory(int level) {
-
     }
 
     @Override
     public void onTerminate() {
-
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-
     }
 
     @Override
     public void onBaseContextAttached(Context base) {
-
     }
+
     //some get methods that may be overwrite
     @Keep
     public Resources getResources(Resources resources) {
@@ -113,7 +111,7 @@ public abstract class ApplicationLike implements ApplicationLifeCycle {
 
     @Keep
     public AssetManager getAssets(AssetManager assetManager) {
-       return assetManager;
+        return assetManager;
     }
 
     @Keep
@@ -132,4 +130,3 @@ public abstract class ApplicationLike implements ApplicationLifeCycle {
         return 1;
     }
 }
-

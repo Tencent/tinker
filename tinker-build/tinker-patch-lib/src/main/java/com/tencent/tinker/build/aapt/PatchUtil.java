@@ -13,13 +13,11 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
 import com.tencent.tinker.commons.util.IOHelper;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -126,11 +124,8 @@ public final class PatchUtil {
                     for (RDotTxtEntry rDotTxtEntry : set) {
                         if (rType.equals(RType.ID) && !ignoreIdSet.contains(rDotTxtEntry.name)) {
                             idsWriter.println("<item type=\"" + rType + "\" name=\"" + rDotTxtEntry.name + "\"/>");
-                        } else if (rType.equals(RType.STYLE)) {
-
-                            if (rDotTxtEntry.name.indexOf(Constant.Symbol.UNDERLINE) > 0) {
-                                // idsWriter.println("<item type=\""+rType+"\" name=\""+(rDotTxtEntry.name.replace(Constant.Symbol.UNDERLINE, Constant.Symbol.DOT))+"\"/>");
-                            }
+                        } else if (rType.equals(RType.STYLE) && rDotTxtEntry.name.indexOf(Constant.Symbol.UNDERLINE) > 0) {
+                            // idsWriter.println("<item type=\""+rType+"\" name=\""+(rDotTxtEntry.name.replace(Constant.Symbol.UNDERLINE, Constant.Symbol.DOT))+"\"/>");
                         }
                     }
                 }
@@ -154,7 +149,9 @@ public final class PatchUtil {
     }
 
     public static class PublicResourceEntry {
-        private RType  rType        = null;
+
+        private RType rType = null;
+
         private String resourceName = null;
 
         public PublicResourceEntry(RType rType, String resourceName) {
@@ -171,11 +168,12 @@ public final class PatchUtil {
         }
 
         public int hashCode() {
-            return Arrays.hashCode(new Object[]{this.rType, this.resourceName});
+            return Arrays.hashCode(new Object[] { this.rType, this.resourceName });
         }
     }
 
     public static class PatchUtilException extends RuntimeException {
+
         private static final long serialVersionUID = 5982003304074821184L;
 
         public PatchUtilException(String message) {

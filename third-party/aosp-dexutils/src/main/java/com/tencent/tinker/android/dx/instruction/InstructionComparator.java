@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dx.instruction;
 
 import com.tencent.tinker.android.dex.DexException;
 import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dx.util.Hex;
-
 import java.io.EOFException;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,16 +28,20 @@ import java.util.Set;
  * Created by tangyinsheng on 2016/7/12.
  */
 public abstract class InstructionComparator {
+
     private final InstructionHolder[] insnHolders1;
+
     private final InstructionHolder[] insnHolders2;
+
     private final Set<String> visitedInsnAddrPairs;
+
     private final short[] insns1;
+
     private final short[] insns2;
 
     public InstructionComparator(short[] insns1, short[] insns2) {
         this.insns1 = insns1;
         this.insns2 = insns2;
-
         if (insns1 != null) {
             ShortArrayCodeInput codeIn1 = new ShortArrayCodeInput(insns1);
             this.insnHolders1 = readInstructionsIntoHolders(codeIn1, insns1.length);
@@ -61,6 +63,7 @@ public abstract class InstructionComparator {
         InstructionReader ir = new InstructionReader(in);
         try {
             ir.accept(new InstructionVisitor(null) {
+
                 public void visitZeroRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal) {
                     if (opcode != Opcodes.NOP) {
                         InstructionHolder insnHolder = new InstructionHolder();
@@ -201,15 +204,12 @@ public abstract class InstructionComparator {
 
     public final boolean compare() {
         this.visitedInsnAddrPairs.clear();
-
         if (this.insnHolders1 == null && this.insnHolders2 == null) {
             return true;
         }
-
         if (this.insnHolders1 == null || this.insnHolders2 == null) {
             return false;
         }
-
         int currAddress1 = 0;
         int currAddress2 = 0;
         int insnHolderCount1 = 0;
@@ -278,146 +278,161 @@ public abstract class InstructionComparator {
         }
         int opcode = insnHolder1.opcode;
         int insnFormat = insnHolder1.insnFormat;
-        switch (insnFormat) {
+        switch(insnFormat) {
             case InstructionCodec.INSN_FORMAT_10T:
             case InstructionCodec.INSN_FORMAT_20T:
             case InstructionCodec.INSN_FORMAT_21T:
             case InstructionCodec.INSN_FORMAT_22T:
             case InstructionCodec.INSN_FORMAT_30T:
-            case InstructionCodec.INSN_FORMAT_31T: {
-                final String addrPairStr = insnHolder1.address + "-" + insnHolder2.address;
-                if (this.visitedInsnAddrPairs.add(addrPairStr)) {
-                    // If we haven't compared target insns, following the control flow
-                    // and do further compare.
-                    return isSameInstruction(insnHolder1.target, insnHolder2.target);
-                } else {
-                    // If we have already compared target insns, here we can return
-                    // true directly.
-                    return true;
+            case InstructionCodec.INSN_FORMAT_31T:
+                {
+                    final String addrPairStr = insnHolder1.address + "-" + insnHolder2.address;
+                    if (this.visitedInsnAddrPairs.add(addrPairStr)) {
+                        // If we haven't compared target insns, following the control flow
+                        // and do further compare.
+                        return isSameInstruction(insnHolder1.target, insnHolder2.target);
+                    } else {
+                        // If we have already compared target insns, here we can return
+                        // true directly.
+                        return true;
+                    }
                 }
-            }
             case InstructionCodec.INSN_FORMAT_21C:
             case InstructionCodec.INSN_FORMAT_22C:
             case InstructionCodec.INSN_FORMAT_31C:
             case InstructionCodec.INSN_FORMAT_35C:
-            case InstructionCodec.INSN_FORMAT_3RC: {
-                return compareIndex(opcode, insnHolder1.index, insnHolder2.index);
-            }
-            case InstructionCodec.INSN_FORMAT_PACKED_SWITCH_PAYLOAD: {
-                PackedSwitchPayloadInsntructionHolder specInsnHolder1 = (PackedSwitchPayloadInsntructionHolder) insnHolder1;
-                PackedSwitchPayloadInsntructionHolder specInsnHolder2 = (PackedSwitchPayloadInsntructionHolder) insnHolder2;
-                if (specInsnHolder1.firstKey != specInsnHolder2.firstKey) {
-                    return false;
+            case InstructionCodec.INSN_FORMAT_3RC:
+                {
+                    return compareIndex(opcode, insnHolder1.index, insnHolder2.index);
                 }
-                if (specInsnHolder1.targets.length != specInsnHolder2.targets.length) {
-                    return false;
-                }
-                int targetCount = specInsnHolder1.targets.length;
-                for (int i = 0; i < targetCount; ++i) {
-                    if (!isSameInstruction(specInsnHolder1.targets[i], specInsnHolder2.targets[i])) {
+            case InstructionCodec.INSN_FORMAT_PACKED_SWITCH_PAYLOAD:
+                {
+                    PackedSwitchPayloadInsntructionHolder specInsnHolder1 = (PackedSwitchPayloadInsntructionHolder) insnHolder1;
+                    PackedSwitchPayloadInsntructionHolder specInsnHolder2 = (PackedSwitchPayloadInsntructionHolder) insnHolder2;
+                    if (specInsnHolder1.firstKey != specInsnHolder2.firstKey) {
                         return false;
                     }
-                }
-                return true;
-            }
-            case InstructionCodec.INSN_FORMAT_SPARSE_SWITCH_PAYLOAD: {
-                SparseSwitchPayloadInsntructionHolder specInsnHolder1 = (SparseSwitchPayloadInsntructionHolder) insnHolder1;
-                SparseSwitchPayloadInsntructionHolder specInsnHolder2 = (SparseSwitchPayloadInsntructionHolder) insnHolder2;
-                if (CompareUtils.uArrCompare(specInsnHolder1.keys, specInsnHolder2.keys) != 0) {
-                    return false;
-                }
-                if (specInsnHolder1.targets.length != specInsnHolder2.targets.length) {
-                    return false;
-                }
-                int targetCount = specInsnHolder1.targets.length;
-                for (int i = 0; i < targetCount; ++i) {
-                    if (!isSameInstruction(specInsnHolder1.targets[i], specInsnHolder2.targets[i])) {
+                    if (specInsnHolder1.targets.length != specInsnHolder2.targets.length) {
                         return false;
                     }
-                }
-                return true;
-            }
-            case InstructionCodec.INSN_FORMAT_FILL_ARRAY_DATA_PAYLOAD: {
-                FillArrayDataPayloadInstructionHolder specInsnHolder1 = (FillArrayDataPayloadInstructionHolder) insnHolder1;
-                FillArrayDataPayloadInstructionHolder specInsnHolder2 = (FillArrayDataPayloadInstructionHolder) insnHolder2;
-                if (specInsnHolder1.elementWidth != specInsnHolder2.elementWidth) {
-                    return false;
-                }
-                if (specInsnHolder1.size != specInsnHolder2.size) {
-                    return false;
-                }
-
-                int elementWidth = specInsnHolder1.elementWidth;
-                switch (elementWidth) {
-                    case 1: {
-                        byte[] array1 = (byte[]) specInsnHolder1.data;
-                        byte[] array2 = (byte[]) specInsnHolder2.data;
-                        return CompareUtils.uArrCompare(array1, array2) == 0;
+                    int targetCount = specInsnHolder1.targets.length;
+                    for (int i = 0; i < targetCount; ++i) {
+                        if (!isSameInstruction(specInsnHolder1.targets[i], specInsnHolder2.targets[i])) {
+                            return false;
+                        }
                     }
-                    case 2: {
-                        short[] array1 = (short[]) specInsnHolder1.data;
-                        short[] array2 = (short[]) specInsnHolder2.data;
-                        return CompareUtils.uArrCompare(array1, array2) == 0;
+                    return true;
+                }
+            case InstructionCodec.INSN_FORMAT_SPARSE_SWITCH_PAYLOAD:
+                {
+                    SparseSwitchPayloadInsntructionHolder specInsnHolder1 = (SparseSwitchPayloadInsntructionHolder) insnHolder1;
+                    SparseSwitchPayloadInsntructionHolder specInsnHolder2 = (SparseSwitchPayloadInsntructionHolder) insnHolder2;
+                    if (CompareUtils.uArrCompare(specInsnHolder1.keys, specInsnHolder2.keys) != 0) {
+                        return false;
                     }
-                    case 4: {
-                        int[] array1 = (int[]) specInsnHolder1.data;
-                        int[] array2 = (int[]) specInsnHolder2.data;
-                        return CompareUtils.uArrCompare(array1, array2) == 0;
+                    if (specInsnHolder1.targets.length != specInsnHolder2.targets.length) {
+                        return false;
                     }
-                    case 8: {
-                        long[] array1 = (long[]) specInsnHolder1.data;
-                        long[] array2 = (long[]) specInsnHolder2.data;
-                        return CompareUtils.sArrCompare(array1, array2) == 0;
+                    int targetCount = specInsnHolder1.targets.length;
+                    for (int i = 0; i < targetCount; ++i) {
+                        if (!isSameInstruction(specInsnHolder1.targets[i], specInsnHolder2.targets[i])) {
+                            return false;
+                        }
                     }
-                    default: {
-                        throw new DexException("bogus element_width: " + Hex.u2(elementWidth));
+                    return true;
+                }
+            case InstructionCodec.INSN_FORMAT_FILL_ARRAY_DATA_PAYLOAD:
+                {
+                    FillArrayDataPayloadInstructionHolder specInsnHolder1 = (FillArrayDataPayloadInstructionHolder) insnHolder1;
+                    FillArrayDataPayloadInstructionHolder specInsnHolder2 = (FillArrayDataPayloadInstructionHolder) insnHolder2;
+                    if (specInsnHolder1.elementWidth != specInsnHolder2.elementWidth) {
+                        return false;
+                    }
+                    if (specInsnHolder1.size != specInsnHolder2.size) {
+                        return false;
+                    }
+                    int elementWidth = specInsnHolder1.elementWidth;
+                    switch(elementWidth) {
+                        case 1:
+                            {
+                                byte[] array1 = (byte[]) specInsnHolder1.data;
+                                byte[] array2 = (byte[]) specInsnHolder2.data;
+                                return CompareUtils.uArrCompare(array1, array2) == 0;
+                            }
+                        case 2:
+                            {
+                                short[] array1 = (short[]) specInsnHolder1.data;
+                                short[] array2 = (short[]) specInsnHolder2.data;
+                                return CompareUtils.uArrCompare(array1, array2) == 0;
+                            }
+                        case 4:
+                            {
+                                int[] array1 = (int[]) specInsnHolder1.data;
+                                int[] array2 = (int[]) specInsnHolder2.data;
+                                return CompareUtils.uArrCompare(array1, array2) == 0;
+                            }
+                        case 8:
+                            {
+                                long[] array1 = (long[]) specInsnHolder1.data;
+                                long[] array2 = (long[]) specInsnHolder2.data;
+                                return CompareUtils.sArrCompare(array1, array2) == 0;
+                            }
+                        default:
+                            {
+                                throw new DexException("bogus element_width: " + Hex.u2(elementWidth));
+                            }
                     }
                 }
-            }
-            default: {
-                if (insnHolder1.literal != insnHolder2.literal) {
-                    return false;
+            default:
+                {
+                    if (insnHolder1.literal != insnHolder2.literal) {
+                        return false;
+                    }
+                    if (insnHolder1.registerCount != insnHolder2.registerCount) {
+                        return false;
+                    }
+                    if (insnHolder1.a != insnHolder2.a) {
+                        return false;
+                    }
+                    if (insnHolder1.b != insnHolder2.b) {
+                        return false;
+                    }
+                    if (insnHolder1.c != insnHolder2.c) {
+                        return false;
+                    }
+                    if (insnHolder1.d != insnHolder2.d) {
+                        return false;
+                    }
+                    if (insnHolder1.e != insnHolder2.e) {
+                        return false;
+                    }
+                    return true;
                 }
-                if (insnHolder1.registerCount != insnHolder2.registerCount) {
-                    return false;
-                }
-                if (insnHolder1.a != insnHolder2.a) {
-                    return false;
-                }
-                if (insnHolder1.b != insnHolder2.b) {
-                    return false;
-                }
-                if (insnHolder1.c != insnHolder2.c) {
-                    return false;
-                }
-                if (insnHolder1.d != insnHolder2.d) {
-                    return false;
-                }
-                if (insnHolder1.e != insnHolder2.e) {
-                    return false;
-                }
-                return true;
-            }
         }
     }
 
     private boolean compareIndex(int opcode, int index1, int index2) {
-        switch (InstructionCodec.getInstructionIndexType(opcode)) {
-            case InstructionCodec.INDEX_TYPE_STRING_REF: {
-                return compareString(index1, index2);
-            }
-            case InstructionCodec.INDEX_TYPE_TYPE_REF: {
-                return compareType(index1, index2);
-            }
-            case InstructionCodec.INDEX_TYPE_FIELD_REF: {
-                return compareField(index1, index2);
-            }
-            case InstructionCodec.INDEX_TYPE_METHOD_REF: {
-                return compareMethod(index1, index2);
-            }
-            default: {
-                return index1 == index2;
-            }
+        switch(InstructionCodec.getInstructionIndexType(opcode)) {
+            case InstructionCodec.INDEX_TYPE_STRING_REF:
+                {
+                    return compareString(index1, index2);
+                }
+            case InstructionCodec.INDEX_TYPE_TYPE_REF:
+                {
+                    return compareType(index1, index2);
+                }
+            case InstructionCodec.INDEX_TYPE_FIELD_REF:
+                {
+                    return compareField(index1, index2);
+                }
+            case InstructionCodec.INDEX_TYPE_METHOD_REF:
+                {
+                    return compareMethod(index1, index2);
+                }
+            default:
+                {
+                    return index1 == index2;
+                }
         }
     }
 
@@ -430,33 +445,52 @@ public abstract class InstructionComparator {
     protected abstract boolean compareMethod(int methodIndex1, int methodIndex2);
 
     private static class InstructionHolder {
+
         int insnFormat = InstructionCodec.INSN_FORMAT_UNKNOWN;
+
         int address = -1;
+
         int opcode = -1;
+
         int index = 0;
+
         int target = 0;
+
         long literal = 0L;
+
         int registerCount = 0;
+
         int a = 0;
+
         int b = 0;
+
         int c = 0;
+
         int d = 0;
+
         int e = 0;
     }
 
     private static class SparseSwitchPayloadInsntructionHolder extends InstructionHolder {
+
         int[] keys = null;
+
         int[] targets = null;
     }
 
     private static class PackedSwitchPayloadInsntructionHolder extends InstructionHolder {
+
         int firstKey = 0;
+
         int[] targets = null;
     }
 
     private static class FillArrayDataPayloadInstructionHolder extends InstructionHolder {
+
         Object data = null;
+
         int size = 0;
+
         int elementWidth = 0;
     }
 }

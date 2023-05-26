@@ -13,16 +13,12 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.reporter;
 
-
 import android.content.Intent;
-
 import com.tencent.tinker.lib.patch.UpgradePatch;
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
-
 import java.io.File;
 import java.util.List;
 
@@ -33,6 +29,7 @@ import java.util.List;
  * to do the job
  */
 public interface PatchReporter {
+
     void onPatchServiceStart(Intent intent);
 
     void onPatchPackageCheckFail(File patchFile, int errorCode);

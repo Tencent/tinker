@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 import java.io.IOException;
@@ -37,29 +36,44 @@ import java.util.zip.ZipException;
  * {@link TinkerZipOutputStream} shows how {@code ZipEntry} is used in conjunction with those two classes.
  */
 public class TinkerZipEntry implements ZipConstants, Cloneable {
+
     /**
      * Zip entry state: Deflated.
      */
     public static final int DEFLATED = 8;
+
     /**
      * Zip entry state: Stored.
      */
     public static final int STORED = 0;
+
     String name;
+
     String comment;
-    long crc = -1; // Needs to be a long to distinguish -1 ("not set") from the 0xffffffff CRC32.
+
+    // Needs to be a long to distinguish -1 ("not set") from the 0xffffffff CRC32.
+    long crc = -1;
+
     long compressedSize = -1;
+
     long size = -1;
+
     int compressionMethod = -1;
+
     int time = -1;
+
     int modDate = -1;
+
     byte[] extra;
+
     long localHeaderRelOffset = -1;
+
     long dataOffset = -1;
-    /** @hide - for testing only */
-    public TinkerZipEntry(String name, String comment, long crc, long compressedSize,
-                          long size, int compressionMethod, int time, int modDate, byte[] extra,
-                          long localHeaderRelOffset, long dataOffset) {
+
+    /**
+     * @hide - for testing only
+     */
+    public TinkerZipEntry(String name, String comment, long crc, long compressedSize, long size, int compressionMethod, int time, int modDate, byte[] extra, long localHeaderRelOffset, long dataOffset) {
         this.name = name;
         this.comment = comment;
         this.crc = crc;
@@ -72,6 +86,7 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         this.localHeaderRelOffset = localHeaderRelOffset;
         this.dataOffset = dataOffset;
     }
+
     /**
      * Constructs a new {@code ZipEntry} with the specified name. The name is actually a path,
      * and may contain {@code /} characters.
@@ -86,6 +101,7 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         validateStringLength("Name", name);
         this.name = name;
     }
+
     /**
      * Constructs a new {@code ZipEntry} using the values obtained from {@code
      * ze}.
@@ -120,6 +136,7 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         localHeaderRelOffset = ze.localHeaderRelOffset;
         dataOffset = ze.dataOffset;
     }
+
     /*
      * Internal constructor.  Creates a new ZipEntry by reading the
      * Central Directory Entry (CDE) from "in", which must be positioned
@@ -132,8 +149,7 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
      */
     TinkerZipEntry(byte[] cdeHdrBuf, InputStream cdStream, Charset defaultCharset, boolean isZip64) throws IOException {
         Streams.readFully(cdStream, cdeHdrBuf, 0, cdeHdrBuf.length);
-        BufferIterator it = HeapBufferIterator.iterator(cdeHdrBuf, 0, cdeHdrBuf.length,
-                ByteOrder.LITTLE_ENDIAN);
+        BufferIterator it = HeapBufferIterator.iterator(cdeHdrBuf, 0, cdeHdrBuf.length, ByteOrder.LITTLE_ENDIAN);
         int sig = it.readInt();
         if (sig != CENSIG) {
             TinkerZipFile.throwZipException("unknown", cdStream.available(), "unknown", 0, "Central Directory Entry", sig);
@@ -178,7 +194,9 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
             comment = new String(commentBytes, 0, commentBytes.length, charset);
         }
         /*if (isZip64) {
-            Zip64.parseZip64ExtendedInfo(this, true *//* from central directory *//*);
+            Zip64.parseZip64ExtendedInfo(this, true */
+        /* from central directory */
+        /*);
         }*/
     }
 
@@ -363,9 +381,7 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         if (time != -1) {
             GregorianCalendar cal = new GregorianCalendar();
             cal.set(Calendar.MILLISECOND, 0);
-            cal.set(1980 + ((modDate >> 9) & 0x7f), ((modDate >> 5) & 0xf) - 1,
-                    modDate & 0x1f, (time >> 11) & 0x1f, (time >> 5) & 0x3f,
-                    (time & 0x1f) << 1);
+            cal.set(1980 + ((modDate >> 9) & 0x7f), ((modDate >> 5) & 0xf) - 1, modDate & 0x1f, (time >> 11) & 0x1f, (time >> 5) & 0x3f, (time & 0x1f) << 1);
             return cal.getTime().getTime();
         }
         return -1;
@@ -405,12 +421,16 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
         return name.charAt(name.length() - 1) == '/';
     }
 
-    /** @hide */
+    /**
+     * @hide
+     */
     public long getDataOffset() {
         return dataOffset;
     }
 
-    /** @hide */
+    /**
+     * @hide
+     */
     public void setDataOffset(long value) {
         dataOffset = value;
     }
@@ -440,7 +460,8 @@ public class TinkerZipEntry implements ZipConstants, Cloneable {
     /**
      * Returns a deep copy of this zip entry.
      */
-    @Override public Object clone() {
+    @Override
+    public Object clone() {
         try {
             TinkerZipEntry result = (TinkerZipEntry) super.clone();
             result.extra = extra != null ? extra.clone() : null;

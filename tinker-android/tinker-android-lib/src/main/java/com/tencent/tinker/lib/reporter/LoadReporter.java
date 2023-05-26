@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.reporter;
 
 import com.tencent.tinker.lib.service.TinkerPatchService;
-
 import java.io.File;
 
 /**
@@ -61,6 +59,7 @@ public interface LoadReporter {
      * @param e
      */
     void onLoadInterpret(int type, Throwable e);
+
     /**
      * the load patch process is end, we can see the cost times and the return code
      * return codes are define in {@link com.tencent.tinker.loader.shareutil.ShareConstants}
@@ -145,5 +144,4 @@ public interface LoadReporter {
      *                  {@code ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT}          some patch file type is not supported for current tinkerFlag
      */
     void onLoadPackageCheckFail(File patchFile, int errorCode);
-
 }

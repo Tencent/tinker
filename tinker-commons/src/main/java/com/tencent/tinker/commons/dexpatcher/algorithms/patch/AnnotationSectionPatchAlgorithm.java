@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.algorithms.patch;
 
 import com.tencent.tinker.android.dex.Annotation;
@@ -28,17 +27,13 @@ import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
  * Created by tangyinsheng on 2016/7/4.
  */
 public class AnnotationSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Annotation> {
+
     private TableOfContents.Section patchedAnnotationTocSec = null;
+
     private Dex.Section patchedAnnotationSec = null;
 
-    public AnnotationSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            Dex patchedDex,
-            SparseIndexMap oldToPatchedIndexMap
-    ) {
+    public AnnotationSectionPatchAlgorithm(DexPatchFile patchFile, Dex oldDex, Dex patchedDex, SparseIndexMap oldToPatchedIndexMap) {
         super(patchFile, oldDex, oldToPatchedIndexMap);
-
         if (patchedDex != null) {
             this.patchedAnnotationTocSec = patchedDex.getTableOfContents().annotations;
             this.patchedAnnotationSec = patchedDex.openSection(this.patchedAnnotationTocSec);

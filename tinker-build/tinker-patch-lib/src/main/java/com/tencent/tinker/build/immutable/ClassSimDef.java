@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.immutable;
 
 import org.objectweb.asm.ClassReader;
@@ -21,16 +20,18 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-
 import java.util.HashSet;
-
 
 public class ClassSimDef {
 
     int methodCount;
+
     int fieldCount;
+
     byte[] bytes;
+
     HashSet<String> refFieldSet;
+
     HashSet<String> refMtdSet;
 
     public ClassSimDef(byte[] bytes, HashSet<String> refFieldSet, HashSet<String> refMtdSet) {
@@ -43,9 +44,9 @@ public class ClassSimDef {
     public void init() {
         methodCount = 0;
         fieldCount = 0;
-
         ClassReader cr = new ClassReader(bytes);
         ClassVisitor cv = new ClassVisitor(Opcodes.ASM4) {
+
             String className;
 
             @Override
@@ -56,15 +57,14 @@ public class ClassSimDef {
 
             @Override
             public MethodVisitor visitMethod(int access, String mtdName, String mtdDesc, String mtdSig, String[] exceptions) {
-
                 String defMtd = className + ":" + mtdName + ":" + mtdDesc;
                 if (!refMtdSet.contains(defMtd)) {
                     refMtdSet.add(defMtd);
                     methodCount++;
                 }
-
                 MethodVisitor mv = super.visitMethod(access, mtdName, mtdDesc, mtdSig, exceptions);
                 mv = new MethodVisitor(Opcodes.ASM4, mv) {
+
                     @Override
                     public void visitFieldInsn(int opcode, String owner, String fName, String fDesc) {
                         String invokeField = owner + ":" + fName + ":" + fDesc;

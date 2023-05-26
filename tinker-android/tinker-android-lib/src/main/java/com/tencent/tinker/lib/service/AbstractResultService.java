@@ -13,13 +13,11 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.service;
 
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
@@ -28,6 +26,7 @@ import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
  * Created by zhangshaowen on 16/3/14.
  */
 public abstract class AbstractResultService extends IntentService {
+
     private static final String TAG = "Tinker.AbstractResultService";
 
     private static final String RESULT_EXTRA = "result_extra";
@@ -57,10 +56,8 @@ public abstract class AbstractResultService extends IntentService {
             return;
         }
         PatchResult result = (PatchResult) ShareIntentUtil.getSerializableExtra(intent, RESULT_EXTRA);
-
         onPatchResult(result);
     }
 
     public abstract void onPatchResult(PatchResult result);
-
 }

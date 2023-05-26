@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.util;
 
 import com.tencent.tinker.lib.listener.PatchListener;
@@ -25,7 +24,6 @@ import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.entry.ApplicationLike;
-
 import tinker.sample.android.crash.SampleUncaughtExceptionHandler;
 import tinker.sample.android.reporter.SampleLoadReporter;
 import tinker.sample.android.reporter.SamplePatchListener;
@@ -36,10 +34,13 @@ import tinker.sample.android.service.SampleResultService;
  * Created by zhangshaowen on 16/7/3.
  */
 public class TinkerManager {
+
     private static final String TAG = "Tinker.TinkerManager";
 
-    private static ApplicationLike                applicationLike;
+    private static ApplicationLike applicationLike;
+
     private static SampleUncaughtExceptionHandler uncaughtExceptionHandler;
+
     private static boolean isInstalled = false;
 
     public static void setTinkerApplicationLike(ApplicationLike appLike) {
@@ -61,7 +62,6 @@ public class TinkerManager {
         UpgradePatchRetry.getInstance(applicationLike.getApplication()).setRetryEnable(enable);
     }
 
-
     /**
      * all use default class, simply Tinker install method
      */
@@ -72,7 +72,6 @@ public class TinkerManager {
         }
         TinkerInstaller.install(appLike);
         isInstalled = true;
-
     }
 
     /**
@@ -94,11 +93,7 @@ public class TinkerManager {
         PatchListener patchListener = new SamplePatchListener(appLike.getApplication());
         //you can set your own upgrade patch if you need
         AbstractPatch upgradePatchProcessor = new UpgradePatch();
-
-        TinkerInstaller.install(appLike,
-            loadReporter, patchReporter, patchListener,
-            SampleResultService.class, upgradePatchProcessor);
-
+        TinkerInstaller.install(appLike, loadReporter, patchReporter, patchListener, SampleResultService.class, upgradePatchProcessor);
         isInstalled = true;
     }
 }

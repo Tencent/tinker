@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
@@ -21,8 +20,11 @@ import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class FieldId extends Item<FieldId> {
+
     public int declaringClassIndex;
+
     public int typeIndex;
+
     public int nameIndex;
 
     public FieldId(int off, int declaringClassIndex, int typeIndex, int nameIndex) {
@@ -39,7 +41,8 @@ public final class FieldId extends Item<FieldId> {
         if (nameIndex != other.nameIndex) {
             return CompareUtils.uCompare(nameIndex, other.nameIndex);
         }
-        return CompareUtils.uCompare(typeIndex, other.typeIndex); // should always be 0
+        // should always be 0
+        return CompareUtils.uCompare(typeIndex, other.typeIndex);
     }
 
     @Override

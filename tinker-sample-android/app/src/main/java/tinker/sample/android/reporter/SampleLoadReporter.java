@@ -13,25 +13,22 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.reporter;
 
 import android.content.Context;
 import android.os.Looper;
 import android.os.MessageQueue;
-
 import com.tencent.tinker.lib.reporter.DefaultLoadReporter;
 import com.tencent.tinker.lib.util.UpgradePatchRetry;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
-
 import java.io.File;
-
 
 /**
  * optional, you can just use DefaultLoadReporter
  * Created by zhangshaowen on 16/4/13.
  */
 public class SampleLoadReporter extends DefaultLoadReporter {
+
     private final static String TAG = "Tinker.SampleLoadReporter";
 
     public SampleLoadReporter(Context context) {
@@ -47,12 +44,13 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     @Override
     public void onLoadResult(File patchDirectory, int loadCode, long cost) {
         super.onLoadResult(patchDirectory, loadCode, cost);
-        switch (loadCode) {
+        switch(loadCode) {
             case ShareConstants.ERROR_LOAD_OK:
                 SampleTinkerReport.onLoaded(cost);
                 break;
         }
         Looper.getMainLooper().myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+
             @Override
             public boolean queueIdle() {
                 if (UpgradePatchRetry.getInstance(context).onPatchRetryLoad()) {
@@ -110,5 +108,4 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     public void onLoadPatchVersionChanged(String oldVersion, String newVersion, File patchDirectoryFile, String currentPatchName) {
         super.onLoadPatchVersionChanged(oldVersion, newVersion, patchDirectoryFile, currentPatchName);
     }
-
 }

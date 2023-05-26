@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.service;
 
 import static com.tencent.tinker.lib.util.TinkerServiceInternals.getTinkerPatchServiceName;
-
 import android.app.ActivityManager;
 import android.app.IntentService;
 import android.app.Notification;
@@ -27,7 +25,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
-
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.TinkerRuntimeException;
@@ -35,7 +32,6 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,13 +40,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by zhangshaowen on 16/3/14.
  */
 public class TinkerPatchService extends IntentService {
+
     private static final String TAG = "Tinker.TinkerPatchService";
 
     private static final String PATCH_PATH_EXTRA = "patch_path_extra";
+
     private static final String RESULT_CLASS_EXTRA = "patch_result_class";
 
     private static AbstractPatch upgradePatchProcessor = null;
+
     private static int notificationId = ShareConstants.TINKER_PATCH_SERVICE_NOTIFICATION;
+
     private static Class<? extends AbstractResultService> resultServiceClass = null;
 
     public TinkerPatchService() {
@@ -149,8 +149,7 @@ public class TinkerPatchService extends IntentService {
 
     static void markRunning(Context context) {
         final File tinkerBaseDir = SharePatchFileUtil.getPatchDirectory(context);
-        final File runningMarkerFile = new File(tinkerBaseDir,
-                RUNNING_MARKER_FILE_RELPATH_PREFIX + android.os.Process.myPid());
+        final File runningMarkerFile = new File(tinkerBaseDir, RUNNING_MARKER_FILE_RELPATH_PREFIX + android.os.Process.myPid());
         if (runningMarkerFile.exists()) {
             return;
         }
@@ -176,8 +175,7 @@ public class TinkerPatchService extends IntentService {
 
     static void unmarkRunning(Context context) {
         final File tinkerBaseDir = SharePatchFileUtil.getPatchDirectory(context);
-        final File runningMarkerFile = new File(tinkerBaseDir,
-                RUNNING_MARKER_FILE_RELPATH_PREFIX + android.os.Process.myPid());
+        final File runningMarkerFile = new File(tinkerBaseDir, RUNNING_MARKER_FILE_RELPATH_PREFIX + android.os.Process.myPid());
         if (runningMarkerFile.exists()) {
             runningMarkerFile.delete();
         }
@@ -192,13 +190,10 @@ public class TinkerPatchService extends IntentService {
             ShareTinkerLog.w(TAG, "TinkerPatchService doApplyPatch is running by another runner.");
             return;
         }
-
         try {
             markRunning(context);
-
             Tinker tinker = Tinker.with(context);
             tinker.getPatchReporter().onPatchServiceStart(intent);
-
             if (intent == null) {
                 ShareTinkerLog.e(TAG, "TinkerPatchService received a null intent, ignoring.");
                 return;
@@ -209,12 +204,10 @@ public class TinkerPatchService extends IntentService {
                 return;
             }
             File patchFile = new File(path);
-
             long begin = SystemClock.elapsedRealtime();
             boolean result;
             long cost;
             Throwable e = null;
-
             PatchResult patchResult = new PatchResult();
             try {
                 if (upgradePatchProcessor == null) {
@@ -226,21 +219,15 @@ public class TinkerPatchService extends IntentService {
                 result = false;
                 tinker.getPatchReporter().onPatchException(patchFile, e);
             }
-
             cost = SystemClock.elapsedRealtime() - begin;
-            tinker.getPatchReporter()
-                    .onPatchResult(patchFile, result, cost);
-
+            tinker.getPatchReporter().onPatchResult(patchFile, result, cost);
             patchResult.isSuccess = result;
             patchResult.rawPatchFilePath = path;
             patchResult.totalCostTime = cost;
             patchResult.type = tinker.getCustomPatcher() == null ? PatchResult.PATCH_TYPE_BSDIFF : PatchResult.PATCH_TYPE_CUSTOM;
             patchResult.e = e;
-
-
             unmarkRunning(context);
             sIsPatchApplying.set(false);
-
             AbstractResultService.runResultService(context, patchResult, getPatchResultExtra(intent));
         } finally {
             unmarkRunning(context);
@@ -249,17 +236,13 @@ public class TinkerPatchService extends IntentService {
 
     private void increasingPriority() {
         if (Build.VERSION.SDK_INT >= 26) {
-            ShareTinkerLog.i(TAG, "for system version >= Android O, we just ignore increasingPriority "
-                    + "job to avoid crash or toasts.");
+            ShareTinkerLog.i(TAG, "for system version >= Android O, we just ignore increasingPriority " + "job to avoid crash or toasts.");
             return;
         }
-
         if ("ZUK".equals(Build.MANUFACTURER)) {
-            ShareTinkerLog.i(TAG, "for ZUK device, we just ignore increasingPriority "
-                    + "job to avoid crash.");
+            ShareTinkerLog.i(TAG, "for ZUK device, we just ignore increasingPriority " + "job to avoid crash.");
             return;
         }
-
         ShareTinkerLog.i(TAG, "try to increase patch process priority");
         try {
             Notification notification = new Notification();
@@ -279,6 +262,7 @@ public class TinkerPatchService extends IntentService {
      * I don't want to do this, believe me
      */
     public static class InnerService extends Service {
+
         @Override
         public void onCreate() {
             super.onCreate();
@@ -302,4 +286,3 @@ public class TinkerPatchService extends IntentService {
         }
     }
 }
-

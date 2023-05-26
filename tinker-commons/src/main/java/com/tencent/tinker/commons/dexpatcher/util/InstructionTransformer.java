@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.util;
 
 import com.tencent.tinker.android.dex.DexException;
@@ -24,13 +23,13 @@ import com.tencent.tinker.android.dx.instruction.InstructionVisitor;
 import com.tencent.tinker.android.dx.instruction.InstructionWriter;
 import com.tencent.tinker.android.dx.instruction.ShortArrayCodeInput;
 import com.tencent.tinker.android.dx.instruction.ShortArrayCodeOutput;
-
 import java.io.EOFException;
 
 /**
  * Created by tangyinsheng on 2016/6/29.
  */
 public final class InstructionTransformer {
+
     private final AbstractIndexMap indexMap;
 
     public InstructionTransformer(AbstractIndexMap indexMap) {
@@ -42,21 +41,19 @@ public final class InstructionTransformer {
         InstructionPromoter ipmo = new InstructionPromoter();
         InstructionWriter iw = new InstructionWriter(out, ipmo);
         InstructionReader ir = new InstructionReader(new ShortArrayCodeInput(encodedInstructions));
-
         try {
             // First visit, we collect mappings from original target address to promoted target address.
             ir.accept(new InstructionTransformVisitor(ipmo));
-
             // Then do the real transformation work.
             ir.accept(new InstructionTransformVisitor(iw));
         } catch (EOFException e) {
             throw new DexException(e);
         }
-
         return out.getArray();
     }
 
     private final class InstructionTransformVisitor extends InstructionVisitor {
+
         InstructionTransformVisitor(InstructionVisitor iv) {
             super(iv);
         }
@@ -104,25 +101,28 @@ public final class InstructionTransformer {
         }
 
         private int transformIndexIfNeeded(int index, int indexType) {
-            switch (indexType) {
-                case InstructionCodec.INDEX_TYPE_STRING_REF: {
-                    return indexMap.adjustStringIndex(index);
-                }
-                case InstructionCodec.INDEX_TYPE_TYPE_REF: {
-                    return indexMap.adjustTypeIdIndex(index);
-                }
-                case InstructionCodec.INDEX_TYPE_FIELD_REF: {
-                    return indexMap.adjustFieldIdIndex(index);
-                }
-                case InstructionCodec.INDEX_TYPE_METHOD_REF: {
-                    return indexMap.adjustMethodIdIndex(index);
-                }
-                default: {
-                    return index;
-                }
+            switch(indexType) {
+                case InstructionCodec.INDEX_TYPE_STRING_REF:
+                    {
+                        return indexMap.adjustStringIndex(index);
+                    }
+                case InstructionCodec.INDEX_TYPE_TYPE_REF:
+                    {
+                        return indexMap.adjustTypeIdIndex(index);
+                    }
+                case InstructionCodec.INDEX_TYPE_FIELD_REF:
+                    {
+                        return indexMap.adjustFieldIdIndex(index);
+                    }
+                case InstructionCodec.INDEX_TYPE_METHOD_REF:
+                    {
+                        return indexMap.adjustMethodIdIndex(index);
+                    }
+                default:
+                    {
+                        return index;
+                    }
             }
         }
-
     }
 }
-

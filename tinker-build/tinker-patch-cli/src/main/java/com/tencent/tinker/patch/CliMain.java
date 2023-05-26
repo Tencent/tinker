@@ -13,24 +13,19 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.patch;
-
 
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.patch.Runner;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
-
 import org.xml.sax.SAXException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-
 import javax.xml.parsers.ParserConfigurationException;
 
 /**
@@ -38,11 +33,17 @@ import javax.xml.parsers.ParserConfigurationException;
  * do not use Logger here
  */
 public class CliMain extends Runner {
-    private static final String ARG_HELP   = "--help";
-    private static final String ARG_OUT    = "-out";
+
+    private static final String ARG_HELP = "--help";
+
+    private static final String ARG_OUT = "-out";
+
     private static final String ARG_CONFIG = "-config";
-    private static final String ARG_OLD    = "-old";
-    private static final String ARG_NEW    = "-new";
+
+    private static final String ARG_OLD = "-old";
+
+    private static final String ARG_NEW = "-new";
+
     private static final String ARG_CUSTOM_PATH = "-customPath";
 
     protected static String mRunningLocation;
@@ -74,7 +75,8 @@ public class CliMain extends Runner {
 
     private static void printUsage(PrintStream out) {
         // TODO: Look up launcher script name!
-        String command = "tinker.jar"; //$NON-NLS-1$
+        //$NON-NLS-1$
+        String command = "tinker.jar";
         out.println();
         out.println();
         out.println("Usage: java -jar " + command + " " + ARG_OLD + " old.apk " + ARG_NEW + " new.apk " + ARG_CONFIG + " tinker_config.xml " + ARG_OUT + " output_path " + ARG_CONFIG + " custom_file_cmd_path");
@@ -86,24 +88,20 @@ public class CliMain extends Runner {
             goToError(new IllegalArgumentException("Please provide required arguments."), ERRNO_USAGE);
         }
         try {
-
             ReadArgs readArgs = new ReadArgs(args).invoke();
             File configFile = readArgs.getConfigFile();
             File outputFile = readArgs.getOutputFile();
             File oldApkFile = readArgs.getOldApkFile();
             File newApkFile = readArgs.getNewApkFile();
             String customDiffCmd = readArgs.getCustomDiffCmd();
-
             if (oldApkFile == null || newApkFile == null) {
                 goToError(new IllegalArgumentException("Missing old apk or new apk file argument"), ERRNO_ERRORS);
             } else if (!oldApkFile.exists() || !newApkFile.exists()) {
                 goToError(new IOException("Old apk or new apk file does not exist"), ERRNO_ERRORS);
             }
-
             if (outputFile == null) {
                 outputFile = new File(mRunningLocation, TypedValue.PATH_DEFAULT_OUTPUT);
             }
-
             loadConfigFromXml(configFile, outputFile, oldApkFile, newApkFile);
             if (customDiffCmd != null) {
                 mConfig.mCustomDiffPath = customDiffCmd;
@@ -136,12 +134,18 @@ public class CliMain extends Runner {
     }
 
     private class ReadArgs {
+
         private String[] args;
-        private File     configFile;
-        private File     outputFile;
-        private File     oldApkFile;
-        private File     newApkFile;
-        private String   customDiffCmd;
+
+        private File configFile;
+
+        private File outputFile;
+
+        private File oldApkFile;
+
+        private File newApkFile;
+
+        private String customDiffCmd;
 
         ReadArgs(String[] args) {
             this.args = args;
@@ -214,4 +218,3 @@ public class CliMain extends Runner {
         }
     }
 }
-

@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.entry;
 
 import android.content.Context;
@@ -23,7 +22,6 @@ import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Message;
 import com.tencent.tinker.anno.Keep;
-
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_ASSETS;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_BASE_CONTEXT;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_CLASSLOADER;
@@ -42,6 +40,7 @@ import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_ON_TR
  */
 @Keep
 public final class TinkerApplicationInlineFence extends Handler {
+
     private final ApplicationLike mAppLike;
 
     public TinkerApplicationInlineFence(ApplicationLike appLike) {
@@ -67,59 +66,72 @@ public final class TinkerApplicationInlineFence extends Handler {
     }
 
     private void handleMessageImpl(Message msg) {
-        switch (msg.what) {
-            case ACTION_ON_BASE_CONTEXT_ATTACHED: {
-                mAppLike.onBaseContextAttached((Context) msg.obj);
-                break;
-            }
-            case ACTION_ON_CREATE: {
-                mAppLike.onCreate();
-                break;
-            }
-            case ACTION_ON_CONFIGURATION_CHANGED: {
-                mAppLike.onConfigurationChanged((Configuration) msg.obj);
-                break;
-            }
-            case ACTION_ON_TRIM_MEMORY: {
-                mAppLike.onTrimMemory((Integer) msg.obj);
-                break;
-            }
-            case ACTION_ON_LOW_MEMORY: {
-                mAppLike.onLowMemory();
-                break;
-            }
-            case ACTION_ON_TERMINATE: {
-                mAppLike.onTerminate();
-                break;
-            }
-            case ACTION_GET_CLASSLOADER: {
-                msg.obj = mAppLike.getClassLoader((ClassLoader) msg.obj);
-                break;
-            }
-            case ACTION_GET_BASE_CONTEXT: {
-                msg.obj = mAppLike.getBaseContext((Context) msg.obj);
-                break;
-            }
-            case ACTION_GET_ASSETS: {
-                msg.obj = mAppLike.getAssets((AssetManager) msg.obj);
-                break;
-            }
-            case ACTION_GET_RESOURCES : {
-                msg.obj = mAppLike.getResources((Resources) msg.obj);
-                break;
-            }
-            case ACTION_GET_SYSTEM_SERVICE : {
-                final Object[] params = (Object[]) msg.obj;
-                msg.obj = mAppLike.getSystemService((String) params[0], params[1]);
-                break;
-            }
-            case ACTION_MZ_NIGHTMODE_USE_OF: {
-                msg.obj = mAppLike.mzNightModeUseOf();
-                break;
-            }
-            default: {
-                throw new IllegalStateException("Should not be here.");
-            }
+        switch(msg.what) {
+            case ACTION_ON_BASE_CONTEXT_ATTACHED:
+                {
+                    mAppLike.onBaseContextAttached((Context) msg.obj);
+                    break;
+                }
+            case ACTION_ON_CREATE:
+                {
+                    mAppLike.onCreate();
+                    break;
+                }
+            case ACTION_ON_CONFIGURATION_CHANGED:
+                {
+                    mAppLike.onConfigurationChanged((Configuration) msg.obj);
+                    break;
+                }
+            case ACTION_ON_TRIM_MEMORY:
+                {
+                    mAppLike.onTrimMemory((Integer) msg.obj);
+                    break;
+                }
+            case ACTION_ON_LOW_MEMORY:
+                {
+                    mAppLike.onLowMemory();
+                    break;
+                }
+            case ACTION_ON_TERMINATE:
+                {
+                    mAppLike.onTerminate();
+                    break;
+                }
+            case ACTION_GET_CLASSLOADER:
+                {
+                    msg.obj = mAppLike.getClassLoader((ClassLoader) msg.obj);
+                    break;
+                }
+            case ACTION_GET_BASE_CONTEXT:
+                {
+                    msg.obj = mAppLike.getBaseContext((Context) msg.obj);
+                    break;
+                }
+            case ACTION_GET_ASSETS:
+                {
+                    msg.obj = mAppLike.getAssets((AssetManager) msg.obj);
+                    break;
+                }
+            case ACTION_GET_RESOURCES:
+                {
+                    msg.obj = mAppLike.getResources((Resources) msg.obj);
+                    break;
+                }
+            case ACTION_GET_SYSTEM_SERVICE:
+                {
+                    final Object[] params = (Object[]) msg.obj;
+                    msg.obj = mAppLike.getSystemService((String) params[0], params[1]);
+                    break;
+                }
+            case ACTION_MZ_NIGHTMODE_USE_OF:
+                {
+                    msg.obj = mAppLike.mzNightModeUseOf();
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("Should not be here.");
+                }
         }
     }
 

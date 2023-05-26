@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 import java.io.ByteArrayOutputStream;
@@ -26,14 +25,16 @@ import java.io.StringWriter;
 import java.util.concurrent.atomic.AtomicReference;
 
 //import java.util.Arrays;
-
 /**
  * modify by zhangshaowen on 16/6/7.
  */
 public final class Streams {
+
     private static AtomicReference<byte[]> skipBuffer = new AtomicReference<byte[]>();
+
     private Streams() {
     }
+
     /**
      * Implements InputStream.read(int) in terms of InputStream.read(byte[], int, int).
      * InputStream assumes that you implement InputStream.read(int) and provides default
@@ -44,6 +45,7 @@ public final class Streams {
         int result = in.read(buffer, 0, 1);
         return (result != -1) ? buffer[0] & 0xff : -1;
     }
+
     /**
      * Implements OutputStream.write(int) in terms of OutputStream.write(byte[], int, int).
      * OutputStream assumes that you implement OutputStream.write(int) and provides default
@@ -54,6 +56,7 @@ public final class Streams {
         buffer[0] = (byte) (b & 0xff);
         out.write(buffer);
     }
+
     /**
      * Fills 'dst' with bytes from 'in', throwing EOFException if insufficient bytes are available.
      */
@@ -87,6 +90,7 @@ public final class Streams {
             byteCount -= bytesRead;
         }
     }
+
     /**
      * Returns a byte[] containing the remainder of 'in', closing it when done.
      */
@@ -97,6 +101,7 @@ public final class Streams {
             in.close();
         }
     }
+
     /**
      * Returns a byte[] containing the remainder of 'in'.
      */
@@ -109,6 +114,7 @@ public final class Streams {
         }
         return bytes.toByteArray();
     }
+
     /**
      * Returns the remainder of 'reader' as a string, closing it when done.
      */
@@ -125,11 +131,13 @@ public final class Streams {
             reader.close();
         }
     }
+
     public static void skipAll(InputStream in) throws IOException {
         do {
             in.skip(Long.MAX_VALUE);
         } while (in.read() != -1);
     }
+
     /**
      * Skip <b>at most</b> {@code byteCount} bytes from {@code in} by calling read
      * repeatedly until either the stream is exhausted or we read fewer bytes than
@@ -164,6 +172,7 @@ public final class Streams {
         skipBuffer.set(buffer);
         return skipped;
     }
+
     /**
      * Copies all of the bytes from {@code in} to {@code out}. Neither stream is closed.
      * Returns the total number of bytes transferred.
@@ -178,6 +187,7 @@ public final class Streams {
         }
         return total;
     }
+
     /**
      * Returns the ASCII characters up to but not including the next "\r\n", or
      * "\n".

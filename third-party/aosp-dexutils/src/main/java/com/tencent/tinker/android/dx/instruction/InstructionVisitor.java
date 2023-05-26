@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dx.instruction;
 
 /**
@@ -22,6 +21,7 @@ package com.tencent.tinker.android.dx.instruction;
  * Created by tangyinsheng on 2016/5/26.
  */
 public class InstructionVisitor {
+
     private final InstructionVisitor prevIv;
 
     public InstructionVisitor(InstructionVisitor iv) {

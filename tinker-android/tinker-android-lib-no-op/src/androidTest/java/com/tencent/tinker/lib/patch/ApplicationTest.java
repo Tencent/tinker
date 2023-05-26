@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.patch;
 
 import android.app.Application;
@@ -23,6 +22,7 @@ import android.test.ApplicationTestCase;
  * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
  */
 public class ApplicationTest extends ApplicationTestCase<Application> {
+
     public ApplicationTest() {
         super(Application.class);
     }

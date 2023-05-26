@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.algorithms.patch;
 
 import com.tencent.tinker.android.dex.AnnotationSetRefList;
@@ -28,22 +27,16 @@ import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
  * Created by tangyinsheng on 2016/7/4.
  */
 public class AnnotationSetRefListSectionPatchAlgorithm extends DexSectionPatchAlgorithm<AnnotationSetRefList> {
+
     private TableOfContents.Section patchedAnnotationSetRefListTocSec = null;
+
     private Dex.Section patchedAnnotationSetRefListSec = null;
 
-    public AnnotationSetRefListSectionPatchAlgorithm(
-            DexPatchFile patchFile,
-            Dex oldDex,
-            Dex patchedDex,
-            SparseIndexMap oldToPatchedIndexMap
-    ) {
+    public AnnotationSetRefListSectionPatchAlgorithm(DexPatchFile patchFile, Dex oldDex, Dex patchedDex, SparseIndexMap oldToPatchedIndexMap) {
         super(patchFile, oldDex, oldToPatchedIndexMap);
-
         if (patchedDex != null) {
-            this.patchedAnnotationSetRefListTocSec
-                    = patchedDex.getTableOfContents().annotationSetRefLists;
-            this.patchedAnnotationSetRefListSec
-                    = patchedDex.openSection(this.patchedAnnotationSetRefListTocSec);
+            this.patchedAnnotationSetRefListTocSec = patchedDex.getTableOfContents().annotationSetRefLists;
+            this.patchedAnnotationSetRefListSec = patchedDex.openSection(this.patchedAnnotationSetRefListTocSec);
         }
     }
 

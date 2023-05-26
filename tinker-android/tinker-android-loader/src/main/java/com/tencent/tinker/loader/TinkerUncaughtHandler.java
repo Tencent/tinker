@@ -13,16 +13,13 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader;
 
 import android.content.Context;
 import android.util.Log;
-
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -31,13 +28,14 @@ import java.io.PrintWriter;
 /**
  * Created by zhangshaowen on 16/12/1.
  */
-
 public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
+
     private static final String TAG = "Tinker.UncaughtHandler";
 
-
     private final File crashFile;
+
     private final Context context;
+
     private final Thread.UncaughtExceptionHandler ueh;
 
     public TinkerUncaughtHandler(Context context) {
@@ -50,10 +48,8 @@ public class TinkerUncaughtHandler implements Thread.UncaughtExceptionHandler {
     public void uncaughtException(Thread thread, Throwable ex) {
         ShareTinkerLog.e(TAG, "TinkerUncaughtHandler catch exception:" + Log.getStackTraceString(ex));
         ueh.uncaughtException(thread, ex);
-
         if (crashFile != null) {
             Thread.UncaughtExceptionHandler handler = Thread.getDefaultUncaughtExceptionHandler();
-
             //only catch real uncaught Exception
             if (handler instanceof TinkerUncaughtHandler) {
                 File parentFile = crashFile.getParentFile();

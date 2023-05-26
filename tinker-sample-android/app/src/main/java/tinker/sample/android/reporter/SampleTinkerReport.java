@@ -13,13 +13,11 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.reporter;
 
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import tinker.sample.android.util.Utils;
 
 /**
@@ -27,120 +25,194 @@ import tinker.sample.android.util.Utils;
  * Created by zhangshaowen on 16/9/17.
  */
 public class SampleTinkerReport {
+
     private static final String TAG = "Tinker.SampleTinkerReport";
 
     // KEY - PV
-    public static final int KEY_REQUEST                   = 0;
-    public static final int KEY_DOWNLOAD                  = 1;
-    public static final int KEY_TRY_APPLY                 = 2;
-    public static final int KEY_TRY_APPLY_SUCCESS         = 3;
-    public static final int KEY_APPLIED_START             = 4;
-    public static final int KEY_APPLIED                   = 5;
-    public static final int KEY_LOADED                    = 6;
-    public static final int KEY_CRASH_FAST_PROTECT        = 7;
+    public static final int KEY_REQUEST = 0;
+
+    public static final int KEY_DOWNLOAD = 1;
+
+    public static final int KEY_TRY_APPLY = 2;
+
+    public static final int KEY_TRY_APPLY_SUCCESS = 3;
+
+    public static final int KEY_APPLIED_START = 4;
+
+    public static final int KEY_APPLIED = 5;
+
+    public static final int KEY_LOADED = 6;
+
+    public static final int KEY_CRASH_FAST_PROTECT = 7;
+
     public static final int KEY_CRASH_CAUSE_XPOSED_DALVIK = 8;
-    public static final int KEY_CRASH_CAUSE_XPOSED_ART    = 9;
-    public static final int KEY_APPLY_WITH_RETRY          = 10;
+
+    public static final int KEY_CRASH_CAUSE_XPOSED_ART = 9;
+
+    public static final int KEY_APPLY_WITH_RETRY = 10;
 
     //Key -- try apply detail
-    public static final int KEY_TRY_APPLY_UPGRADE                 = 70;
-    public static final int KEY_TRY_APPLY_DISABLE                 = 71;
-    public static final int KEY_TRY_APPLY_RUNNING                 = 72;
-    public static final int KEY_TRY_APPLY_INSERVICE               = 73;
-    public static final int KEY_TRY_APPLY_NOT_EXIST               = 74;
-    public static final int KEY_TRY_APPLY_GOOGLEPLAY              = 75;
-    public static final int KEY_TRY_APPLY_ROM_SPACE               = 76;
-    public static final int KEY_TRY_APPLY_ALREADY_APPLY           = 77;
-    public static final int KEY_TRY_APPLY_MEMORY_LIMIT            = 78;
-    public static final int KEY_TRY_APPLY_CRASH_LIMIT             = 79;
+    public static final int KEY_TRY_APPLY_UPGRADE = 70;
+
+    public static final int KEY_TRY_APPLY_DISABLE = 71;
+
+    public static final int KEY_TRY_APPLY_RUNNING = 72;
+
+    public static final int KEY_TRY_APPLY_INSERVICE = 73;
+
+    public static final int KEY_TRY_APPLY_NOT_EXIST = 74;
+
+    public static final int KEY_TRY_APPLY_GOOGLEPLAY = 75;
+
+    public static final int KEY_TRY_APPLY_ROM_SPACE = 76;
+
+    public static final int KEY_TRY_APPLY_ALREADY_APPLY = 77;
+
+    public static final int KEY_TRY_APPLY_MEMORY_LIMIT = 78;
+
+    public static final int KEY_TRY_APPLY_CRASH_LIMIT = 79;
+
     public static final int KEY_TRY_APPLY_CONDITION_NOT_SATISFIED = 80;
-    public static final int KEY_TRY_APPLY_JIT                     = 81;
+
+    public static final int KEY_TRY_APPLY_JIT = 81;
 
     //Key -- apply detail
-    public static final int KEY_APPLIED_UPGRADE      = 100;
+    public static final int KEY_APPLIED_UPGRADE = 100;
+
     public static final int KEY_APPLIED_UPGRADE_FAIL = 101;
 
-    public static final int KEY_APPLIED_EXCEPTION                               = 120;
-    public static final int KEY_APPLIED_DEXOPT_OTHER                            = 121;
-    public static final int KEY_APPLIED_DEXOPT_EXIST                            = 122;
-    public static final int KEY_APPLIED_DEXOPT_FORMAT                           = 123;
-    public static final int KEY_APPLIED_INFO_CORRUPTED                          = 124;
+    public static final int KEY_APPLIED_EXCEPTION = 120;
+
+    public static final int KEY_APPLIED_DEXOPT_OTHER = 121;
+
+    public static final int KEY_APPLIED_DEXOPT_EXIST = 122;
+
+    public static final int KEY_APPLIED_DEXOPT_FORMAT = 123;
+
+    public static final int KEY_APPLIED_INFO_CORRUPTED = 124;
+
     //package check
-    public static final int KEY_APPLIED_PACKAGE_CHECK_SIGNATURE                 = 150;
-    public static final int KEY_APPLIED_PACKAGE_CHECK_DEX_META                  = 151;
-    public static final int KEY_APPLIED_PACKAGE_CHECK_LIB_META                  = 152;
-    public static final int KEY_APPLIED_PACKAGE_CHECK_APK_TINKER_ID_NOT_FOUND   = 153;
+    public static final int KEY_APPLIED_PACKAGE_CHECK_SIGNATURE = 150;
+
+    public static final int KEY_APPLIED_PACKAGE_CHECK_DEX_META = 151;
+
+    public static final int KEY_APPLIED_PACKAGE_CHECK_LIB_META = 152;
+
+    public static final int KEY_APPLIED_PACKAGE_CHECK_APK_TINKER_ID_NOT_FOUND = 153;
+
     public static final int KEY_APPLIED_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND = 154;
-    public static final int KEY_APPLIED_PACKAGE_CHECK_META_NOT_FOUND            = 155;
-    public static final int KEY_APPLIED_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL       = 156;
-    public static final int KEY_APPLIED_PACKAGE_CHECK_RES_META                  = 157;
-    public static final int KEY_APPLIED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = 158;
+
+    public static final int KEY_APPLIED_PACKAGE_CHECK_META_NOT_FOUND = 155;
+
+    public static final int KEY_APPLIED_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL = 156;
+
+    public static final int KEY_APPLIED_PACKAGE_CHECK_RES_META = 157;
+
+    public static final int KEY_APPLIED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT = 158;
 
     //version check
-    public static final int KEY_APPLIED_VERSION_CHECK      = 180;
+    public static final int KEY_APPLIED_VERSION_CHECK = 180;
+
     //extract error
     public static final int KEY_APPLIED_PATCH_FILE_EXTRACT = 181;
-    public static final int KEY_APPLIED_DEX_EXTRACT        = 182;
-    public static final int KEY_APPLIED_LIB_EXTRACT        = 183;
-    public static final int KEY_APPLIED_RESOURCE_EXTRACT   = 184;
+
+    public static final int KEY_APPLIED_DEX_EXTRACT = 182;
+
+    public static final int KEY_APPLIED_LIB_EXTRACT = 183;
+
+    public static final int KEY_APPLIED_RESOURCE_EXTRACT = 184;
+
     //cost time
-    public static final int KEY_APPLIED_SUCC_COST_5S_LESS  = 200;
+    public static final int KEY_APPLIED_SUCC_COST_5S_LESS = 200;
+
     public static final int KEY_APPLIED_SUCC_COST_10S_LESS = 201;
+
     public static final int KEY_APPLIED_SUCC_COST_30S_LESS = 202;
+
     public static final int KEY_APPLIED_SUCC_COST_60S_LESS = 203;
-    public static final int KEY_APPLIED_SUCC_COST_OTHER    = 204;
 
-    public static final int KEY_APPLIED_FAIL_COST_5S_LESS  = 205;
+    public static final int KEY_APPLIED_SUCC_COST_OTHER = 204;
+
+    public static final int KEY_APPLIED_FAIL_COST_5S_LESS = 205;
+
     public static final int KEY_APPLIED_FAIL_COST_10S_LESS = 206;
-    public static final int KEY_APPLIED_FAIL_COST_30S_LESS = 207;
-    public static final int KEY_APPLIED_FAIL_COST_60S_LESS = 208;
-    public static final int KEY_APPLIED_FAIL_COST_OTHER    = 209;
 
+    public static final int KEY_APPLIED_FAIL_COST_30S_LESS = 207;
+
+    public static final int KEY_APPLIED_FAIL_COST_60S_LESS = 208;
+
+    public static final int KEY_APPLIED_FAIL_COST_OTHER = 209;
 
     // KEY -- load detail
-    public static final int KEY_LOADED_UNKNOWN_EXCEPTION        = 250;
-    public static final int KEY_LOADED_UNCAUGHT_EXCEPTION       = 251;
-    public static final int KEY_LOADED_EXCEPTION_DEX            = 252;
-    public static final int KEY_LOADED_EXCEPTION_DEX_CHECK      = 253;
-    public static final int KEY_LOADED_EXCEPTION_RESOURCE       = 254;
+    public static final int KEY_LOADED_UNKNOWN_EXCEPTION = 250;
+
+    public static final int KEY_LOADED_UNCAUGHT_EXCEPTION = 251;
+
+    public static final int KEY_LOADED_EXCEPTION_DEX = 252;
+
+    public static final int KEY_LOADED_EXCEPTION_DEX_CHECK = 253;
+
+    public static final int KEY_LOADED_EXCEPTION_RESOURCE = 254;
+
     public static final int KEY_LOADED_EXCEPTION_RESOURCE_CHECK = 255;
 
+    public static final int KEY_LOADED_MISMATCH_DEX = 300;
 
-    public static final int KEY_LOADED_MISMATCH_DEX       = 300;
-    public static final int KEY_LOADED_MISMATCH_LIB       = 301;
-    public static final int KEY_LOADED_MISMATCH_RESOURCE  = 302;
-    public static final int KEY_LOADED_MISSING_DEX        = 303;
-    public static final int KEY_LOADED_MISSING_LIB        = 304;
+    public static final int KEY_LOADED_MISMATCH_LIB = 301;
+
+    public static final int KEY_LOADED_MISMATCH_RESOURCE = 302;
+
+    public static final int KEY_LOADED_MISSING_DEX = 303;
+
+    public static final int KEY_LOADED_MISSING_LIB = 304;
+
     public static final int KEY_LOADED_MISSING_PATCH_FILE = 305;
+
     public static final int KEY_LOADED_MISSING_PATCH_INFO = 306;
-    public static final int KEY_LOADED_MISSING_DEX_OPT    = 307;
-    public static final int KEY_LOADED_MISSING_RES        = 308;
-    public static final int KEY_LOADED_INFO_CORRUPTED     = 309;
+
+    public static final int KEY_LOADED_MISSING_DEX_OPT = 307;
+
+    public static final int KEY_LOADED_MISSING_RES = 308;
+
+    public static final int KEY_LOADED_INFO_CORRUPTED = 309;
 
     //load package check
-    public static final int KEY_LOADED_PACKAGE_CHECK_SIGNATURE                 = 350;
-    public static final int KEY_LOADED_PACKAGE_CHECK_DEX_META                  = 351;
-    public static final int KEY_LOADED_PACKAGE_CHECK_LIB_META                  = 352;
-    public static final int KEY_LOADED_PACKAGE_CHECK_APK_TINKER_ID_NOT_FOUND   = 353;
+    public static final int KEY_LOADED_PACKAGE_CHECK_SIGNATURE = 350;
+
+    public static final int KEY_LOADED_PACKAGE_CHECK_DEX_META = 351;
+
+    public static final int KEY_LOADED_PACKAGE_CHECK_LIB_META = 352;
+
+    public static final int KEY_LOADED_PACKAGE_CHECK_APK_TINKER_ID_NOT_FOUND = 353;
+
     public static final int KEY_LOADED_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND = 354;
-    public static final int KEY_LOADED_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL       = 355;
-    public static final int KEY_LOADED_PACKAGE_CHECK_PACKAGE_META_NOT_FOUND    = 356;
-    public static final int KEY_LOADED_PACKAGE_CHECK_RES_META                  = 357;
-    public static final int KEY_LOADED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT    = 358;
 
+    public static final int KEY_LOADED_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL = 355;
 
-    public static final int KEY_LOADED_SUCC_COST_500_LESS  = 400;
+    public static final int KEY_LOADED_PACKAGE_CHECK_PACKAGE_META_NOT_FOUND = 356;
+
+    public static final int KEY_LOADED_PACKAGE_CHECK_RES_META = 357;
+
+    public static final int KEY_LOADED_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT = 358;
+
+    public static final int KEY_LOADED_SUCC_COST_500_LESS = 400;
+
     public static final int KEY_LOADED_SUCC_COST_1000_LESS = 401;
+
     public static final int KEY_LOADED_SUCC_COST_3000_LESS = 402;
+
     public static final int KEY_LOADED_SUCC_COST_5000_LESS = 403;
-    public static final int KEY_LOADED_SUCC_COST_OTHER     = 404;
+
+    public static final int KEY_LOADED_SUCC_COST_OTHER = 404;
 
     public static final int KEY_LOADED_INTERPRET_GET_INSTRUCTION_SET_ERROR = 450;
-    public static final int KEY_LOADED_INTERPRET_INTERPRET_COMMAND_ERROR   = 451;
-    public static final int KEY_LOADED_INTERPRET_TYPE_INTERPRET_OK         = 452;
 
+    public static final int KEY_LOADED_INTERPRET_INTERPRET_COMMAND_ERROR = 451;
+
+    public static final int KEY_LOADED_INTERPRET_TYPE_INTERPRET_OK = 452;
 
     interface Reporter {
+
         void onReport(int key);
 
         void onReport(String message);
@@ -157,9 +229,7 @@ public class SampleTinkerReport {
             return;
         }
         reporter.onReport(KEY_TRY_APPLY);
-
         reporter.onReport(KEY_TRY_APPLY_UPGRADE);
-
         if (success) {
             reporter.onReport(KEY_TRY_APPLY_SUCCESS);
         }
@@ -169,7 +239,7 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        switch (errorCode) {
+        switch(errorCode) {
             case ShareConstants.ERROR_PATCH_NOTEXIST:
                 reporter.onReport(KEY_TRY_APPLY_NOT_EXIST);
                 break;
@@ -203,7 +273,6 @@ public class SampleTinkerReport {
             case Utils.ERROR_PATCH_CONDITION_NOT_SATISFIED:
                 reporter.onReport(KEY_TRY_APPLY_CONDITION_NOT_SATISFIED);
                 break;
-
         }
     }
 
@@ -211,7 +280,7 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        switch (errorCode) {
+        switch(errorCode) {
             case ShareConstants.ERROR_PACKAGE_CHECK_SIGNATURE_FAIL:
                 reporter.onReport(KEY_LOADED_PACKAGE_CHECK_SIGNATURE);
                 break;
@@ -229,7 +298,6 @@ public class SampleTinkerReport {
                 break;
             case ShareConstants.ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL:
                 reporter.onReport(KEY_LOADED_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL);
-
                 break;
             case ShareConstants.ERROR_PACKAGE_CHECK_PACKAGE_META_NOT_FOUND:
                 reporter.onReport(KEY_LOADED_PACKAGE_CHECK_PACKAGE_META_NOT_FOUND);
@@ -248,12 +316,10 @@ public class SampleTinkerReport {
             return;
         }
         reporter.onReport(KEY_LOADED);
-
         if (cost < 0L) {
             TinkerLog.e(TAG, "hp_report report load cost failed, invalid cost");
             return;
         }
-
         if (cost <= 500) {
             reporter.onReport(KEY_LOADED_SUCC_COST_500_LESS);
         } else if (cost <= 1000) {
@@ -278,7 +344,7 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        switch (fileType) {
+        switch(fileType) {
             case ShareConstants.TYPE_DEX_OPT:
                 reporter.onReport(KEY_LOADED_MISSING_DEX_OPT);
                 break;
@@ -304,7 +370,7 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        switch (type) {
+        switch(type) {
             case ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR:
                 reporter.onReport(KEY_LOADED_INTERPRET_GET_INSTRUCTION_SET_ERROR);
                 reporter.onReport("Tinker Exception:interpret occur exception " + Utils.getExceptionCauseString(e));
@@ -323,7 +389,7 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        switch (fileType) {
+        switch(fileType) {
             case ShareConstants.TYPE_DEX:
                 reporter.onReport(KEY_LOADED_MISMATCH_DEX);
                 break;
@@ -341,7 +407,7 @@ public class SampleTinkerReport {
             return;
         }
         boolean isCheckFail = false;
-        switch (errorCode) {
+        switch(errorCode) {
             case ShareConstants.ERROR_LOAD_EXCEPTION_DEX:
                 if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
                     reporter.onReport(KEY_LOADED_EXCEPTION_DEX_CHECK);
@@ -414,7 +480,7 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        switch (fileType) {
+        switch(fileType) {
             case ShareConstants.TYPE_DEX:
                 reporter.onReport(KEY_APPLIED_DEX_EXTRACT);
                 break;
@@ -437,20 +503,16 @@ public class SampleTinkerReport {
         if (success) {
             reporter.onReport(KEY_APPLIED);
         }
-
         if (success) {
             reporter.onReport(KEY_APPLIED_UPGRADE);
         } else {
             reporter.onReport(KEY_APPLIED_UPGRADE_FAIL);
         }
-
         TinkerLog.i(TAG, "hp_report report apply cost = %d", cost);
-
         if (cost < 0L) {
             TinkerLog.e(TAG, "hp_report report apply cost failed, invalid cost");
             return;
         }
-
         if (cost <= 5000) {
             if (success) {
                 reporter.onReport(KEY_APPLIED_SUCC_COST_5S_LESS);
@@ -489,8 +551,7 @@ public class SampleTinkerReport {
             return;
         }
         TinkerLog.i(TAG, "hp_report package check failed, error = %d", errorCode);
-
-        switch (errorCode) {
+        switch(errorCode) {
             case ShareConstants.ERROR_PACKAGE_CHECK_SIGNATURE_FAIL:
                 reporter.onReport(KEY_APPLIED_PACKAGE_CHECK_SIGNATURE);
                 break;
@@ -553,5 +614,4 @@ public class SampleTinkerReport {
         }
         reporter.onReport(KEY_APPLY_WITH_RETRY);
     }
-
 }

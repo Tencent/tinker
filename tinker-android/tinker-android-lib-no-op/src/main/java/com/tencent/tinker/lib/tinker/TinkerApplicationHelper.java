@@ -13,13 +13,11 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.tinker;
 
 import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.loader.TinkerRuntimeException;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 import java.util.HashMap;
 
@@ -29,46 +27,47 @@ import java.util.HashMap;
  * Created by zhangshaowen on 16/6/28.
  */
 public class TinkerApplicationHelper {
+
     private static final String TAG = "Tinker.TinkerApplicationHelper";
 
     public static boolean isTinkerEnableAll(ApplicationLike applicationLike) {
-        return false;
+        return fakeIsValid(applicationLike);
     }
 
     public static boolean isTinkerEnableForDex(ApplicationLike applicationLike) {
-        return false;
+        return fakeIsValid(applicationLike);
     }
 
     public static boolean isTinkerEnableForNativeLib(ApplicationLike applicationLike) {
-        return false;
+        return fakeIsValid(applicationLike);
     }
 
     public static boolean isTinkerEnableForResource(ApplicationLike applicationLike) {
-        return false;
+        return fakeIsValid(applicationLike);
     }
 
     public static File getTinkerPatchDirectory(ApplicationLike applicationLike) {
-        return null;
+        return isEmptyOrNull(applicationLike);
     }
 
     public static boolean isTinkerLoadSuccess(ApplicationLike applicationLike) {
-        return false;
+        return fakeIsValid(applicationLike);
     }
 
     public static HashMap<String, String> getLoadDexesAndMd5(ApplicationLike applicationLike) {
-        return null;
+        return isEmptyOrNull(applicationLike);
     }
 
     public static HashMap<String, String> getLoadLibraryAndMd5(ApplicationLike applicationLike) {
-        return null;
+        return isEmptyOrNull(applicationLike);
     }
 
     public static HashMap<String, String> getPackageConfigs(ApplicationLike applicationLike) {
-        return null;
+        return isEmptyOrNull(applicationLike);
     }
 
     public static String getCurrentVersion(ApplicationLike applicationLike) {
-        return null;
+        return isEmptyOrNull(applicationLike);
     }
 
     public static void cleanPatch(ApplicationLike applicationLike) {
@@ -83,11 +82,18 @@ public class TinkerApplicationHelper {
         if (libName == null || libName.isEmpty() || applicationLike == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-
         System.loadLibrary(libName);
     }
 
     public static boolean loadLibraryFromTinker(ApplicationLike applicationLike, String relativePath, String libname) throws UnsatisfiedLinkError {
         return false;
+    }
+
+    public static boolean fakeIsValid(ApplicationLike applicationLike) {
+        return false;
+    }
+
+    public static File isEmptyOrNull(ApplicationLike applicationLike) {
+        return null;
     }
 }

@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.dexpatcher.algorithms.diff;
 
 import com.tencent.tinker.android.dex.ClassDef;
@@ -23,7 +22,6 @@ import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
 import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,6 +30,7 @@ import java.util.Set;
  * Created by tangyinsheng on 2016/6/30.
  */
 public class ClassDefSectionDiffAlgorithm extends DexSectionDiffAlgorithm<ClassDef> {
+
     private Set<Integer> typeIdOfClassDefToRemoveSet = new HashSet<>();
 
     public ClassDefSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {

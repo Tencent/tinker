@@ -13,14 +13,15 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader;
 
 /**
  * Created by zhangshaowen on 16/7/8.
  */
 public class TinkerRuntimeException extends RuntimeException {
+
     private static final String TINKER_RUNTIME_EXCEPTION_PREFIX = "Tinker Exception:";
+
     private static final long serialVersionUID = 1L;
 
     public TinkerRuntimeException(String detailMessage) {
@@ -30,5 +31,4 @@ public class TinkerRuntimeException extends RuntimeException {
     public TinkerRuntimeException(String detailMessage, Throwable throwable) {
         super(TINKER_RUNTIME_EXCEPTION_PREFIX + detailMessage, throwable);
     }
-
 }

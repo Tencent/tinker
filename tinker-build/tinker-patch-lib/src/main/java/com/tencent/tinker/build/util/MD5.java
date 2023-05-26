@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.commons.util.IOHelper;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -32,7 +30,6 @@ import java.security.MessageDigest;
 public final class MD5 {
 
     private MD5() {
-
     }
 
     /**
@@ -42,7 +39,7 @@ public final class MD5 {
      * @return md5 result in string format
      */
     public static String getMessageDigest(byte[] buffer) {
-        char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        char[] hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
         try {
             MessageDigest mdTemp = MessageDigest.getInstance("MD5");
             mdTemp.update(buffer);
@@ -72,7 +69,6 @@ public final class MD5 {
             MessageDigest mdTemp = MessageDigest.getInstance("MD5");
             mdTemp.update(buffer);
             return mdTemp.digest();
-
         } catch (Exception e) {
             return null;
         }
@@ -106,13 +102,12 @@ public final class MD5 {
         }
         try {
             long skipLen = is.skip(offset);
-            if (skipLen < offset) { // reach the end
+            if (skipLen < offset) {
+                // reach the end
                 return null;
             }
-
             MessageDigest md = MessageDigest.getInstance("MD5");
             StringBuilder md5Str = new StringBuilder(32);
-
             byte[] buf = new byte[bufLen];
             int readCount = 0;
             int totalRead = 0;
@@ -120,7 +115,6 @@ public final class MD5 {
                 if (totalRead + readCount <= length) {
                     md.update(buf, 0, readCount);
                     totalRead += readCount;
-
                 } else {
                     md.update(buf, 0, length - totalRead);
                     totalRead = length;
@@ -129,9 +123,7 @@ public final class MD5 {
             if (extendBytes != null && extendBytes.length > 0) {
                 md.update(extendBytes);
             }
-
             byte[] hashValue = md.digest();
-
             for (int i = 0; i < hashValue.length; i++) {
                 md5Str.append(Integer.toString((hashValue[i] & 0xff) + 0x100, 16).substring(1));
             }
@@ -156,15 +148,12 @@ public final class MD5 {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             StringBuilder md5Str = new StringBuilder(32);
-
             byte[] buf = new byte[bufLen];
             int readCount = 0;
             while ((readCount = is.read(buf)) != -1) {
                 md.update(buf, 0, readCount);
             }
-
             byte[] hashValue = md.digest();
-
             for (int i = 0; i < hashValue.length; i++) {
                 md5Str.append(Integer.toString((hashValue[i] & 0xff) + 0x100, 16).substring(1));
             }
@@ -181,7 +170,6 @@ public final class MD5 {
         if (file == null) {
             return null;
         }
-
         File f = new File(file);
         if (f.exists()) {
             return getMD5(f, 1024 * 100);
@@ -207,17 +195,14 @@ public final class MD5 {
         if (file == null || bufLen <= 0 || !file.exists()) {
             return null;
         }
-
         FileInputStream fin = null;
         try {
             fin = new FileInputStream(file);
             String md5 = MD5.getMD5(fin, (int) (bufLen <= file.length() ? bufLen : file.length()));
             fin.close();
             return md5;
-
         } catch (Exception e) {
             return null;
-
         } finally {
             IOHelper.closeQuietly(fin);
         }
@@ -230,7 +215,6 @@ public final class MD5 {
         if (file == null) {
             return null;
         }
-
         File f = new File(file);
         if (f.exists()) {
             return getMD5(f, offset, length);
@@ -245,17 +229,14 @@ public final class MD5 {
         if (file == null || !file.exists() || offset < 0 || length <= 0) {
             return null;
         }
-
         FileInputStream fin = null;
         try {
             fin = new FileInputStream(file);
             String md5 = MD5.getMD5(fin, 1024 * 100, offset, length);
             fin.close();
             return md5;
-
         } catch (Exception e) {
             return null;
-
         } finally {
             IOHelper.closeQuietly(fin);
         }
@@ -265,17 +246,14 @@ public final class MD5 {
         if (file == null || !file.exists() || offset < 0 || length <= 0) {
             return null;
         }
-
         FileInputStream fin = null;
         try {
             fin = new FileInputStream(file);
             String md5 = MD5.getMD5ExtendBytes(fin, 1024 * 100, offset, length, extend);
             fin.close();
             return md5;
-
         } catch (Exception e) {
             return null;
-
         } finally {
             IOHelper.closeQuietly(fin);
         }

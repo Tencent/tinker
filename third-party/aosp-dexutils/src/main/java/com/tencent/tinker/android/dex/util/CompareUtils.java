@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex.util;
 
 import java.util.Comparator;
@@ -23,7 +22,9 @@ import java.util.Comparator;
  * Created by tangyinsheng on 2016/6/28.
  */
 public final class CompareUtils {
-    private CompareUtils() { }
+
+    private CompareUtils() {
+    }
 
     public static int uCompare(byte ubyteA, byte ubyteB) {
         if (ubyteA == ubyteB) {
@@ -57,8 +58,7 @@ public final class CompareUtils {
         int lenB = ubyteArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -76,8 +76,7 @@ public final class CompareUtils {
         int lenB = ushortArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -95,8 +94,7 @@ public final class CompareUtils {
         int lenB = uintArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -142,8 +140,7 @@ public final class CompareUtils {
         int lenB = sbyteArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -161,8 +158,7 @@ public final class CompareUtils {
         int lenB = sshortArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -180,8 +176,7 @@ public final class CompareUtils {
         int lenB = sintArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -199,8 +194,7 @@ public final class CompareUtils {
         int lenB = slongArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -218,8 +212,7 @@ public final class CompareUtils {
         int lenB = aArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {
@@ -237,8 +230,7 @@ public final class CompareUtils {
         int lenB = aArrB.length;
         if (lenA < lenB) {
             return -1;
-        } else
-        if (lenA > lenB) {
+        } else if (lenA > lenB) {
             return 1;
         } else {
             for (int i = 0; i < lenA; ++i) {

@@ -13,21 +13,24 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
-
 import java.util.ArrayList;
 
 /**
  * Created by zhangshaowen on 16/4/11.
  */
 public class ShareDexDiffPatchInfo {
+
     public final String rawName;
+
     public final String destMd5InDvm;
+
     public final String destMd5InArt;
+
     public final String oldDexCrC;
+
     public final String newOrPatchedDexCrC;
 
     public final String dexDiffMd5;
@@ -43,9 +46,7 @@ public class ShareDexDiffPatchInfo {
      */
     public final String realName;
 
-
-    public ShareDexDiffPatchInfo(String name, String path, String destMd5InDvm, String destMd5InArt,
-                                 String dexDiffMd5, String oldDexCrc, String newOrPatchedDexCrC, String dexMode) {
+    public ShareDexDiffPatchInfo(String name, String path, String destMd5InDvm, String destMd5InArt, String dexDiffMd5, String oldDexCrc, String newOrPatchedDexCrC, String dexMode) {
         // TODO Auto-generated constructor stub
         this.rawName = name;
         this.path = path;
@@ -83,7 +84,6 @@ public class ShareDexDiffPatchInfo {
             if (kv == null || kv.length < 8) {
                 continue;
             }
-
             // key
             final String name = kv[0].trim();
             final String path = kv[1].trim();
@@ -92,14 +92,10 @@ public class ShareDexDiffPatchInfo {
             final String dexDiffMd5 = kv[4].trim();
             final String oldDexCrc = kv[5].trim();
             final String newDexCrc = kv[6].trim();
-
             final String dexMode = kv[7].trim();
-
-            ShareDexDiffPatchInfo dexInfo = new ShareDexDiffPatchInfo(name, path, destMd5InDvm, destMd5InArt,
-                dexDiffMd5, oldDexCrc, newDexCrc, dexMode);
+            ShareDexDiffPatchInfo dexInfo = new ShareDexDiffPatchInfo(name, path, destMd5InDvm, destMd5InArt, dexDiffMd5, oldDexCrc, newDexCrc, dexMode);
             dexList.add(dexInfo);
         }
-
     }
 
     public static boolean checkDexDiffPatchInfo(ShareDexDiffPatchInfo info) {

@@ -9,14 +9,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * the BSD 3-Clause License for more details.
  */
-
 package com.tencent.tinker.loader;
 
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
-
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.shareutil.ShareArkHotDiffPatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -25,13 +23,11 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import dalvik.system.PathClassLoader;
 
 /**
@@ -40,9 +36,11 @@ import dalvik.system.PathClassLoader;
  * pre-load patch dex files
  */
 public class TinkerArkHotLoader {
+
     private static final String TAG = "Tinker.TinkerArkHotLoader";
 
     private static final String ARK_MEAT_FILE = ShareConstants.ARKHOT_META_FILE;
+
     private static final String ARKHOT_PATH = ShareConstants.ARKHOTFIX_PATH;
 
     // private static File testOptDexFile;
@@ -65,38 +63,31 @@ public class TinkerArkHotLoader {
             ShareTinkerLog.w(TAG, "there is no apk to load");
             return true;
         }
-
         PathClassLoader classLoader = (PathClassLoader) TinkerArkHotLoader.class.getClassLoader();
         if (classLoader != null) {
             ShareTinkerLog.i(TAG, "classloader: " + classLoader.toString());
         } else {
             ShareTinkerLog.e(TAG, "classloader is null");
-            ShareIntentUtil.setIntentReturnCode(intentResult,
-                    ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL);
+            ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_CLASSLOADER_NULL);
             return false;
         }
         String apkPath = directory + "/" + ARKHOT_PATH + "/";
-
         ArrayList<File> legalFiles = new ArrayList<>();
-
         // verify merge classN.apk
         if (isArkHotRuning && !arkHotApkInfo.isEmpty()) {
             File classNFile = null;
             classNFile = new File(apkPath + ShareConstants.ARKHOT_PATCH_NAME);
             legalFiles.add(classNFile);
         }
-
         try {
             // 加载Apk
             SystemClassLoaderAdder.installApk(classLoader, legalFiles);
         } catch (Throwable e) {
             ShareTinkerLog.e(TAG, "install dexes failed");
             intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_EXCEPTION, e);
-            ShareIntentUtil.setIntentReturnCode(intentResult,
-                    ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
+            ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_LOAD_EXCEPTION);
             return false;
         }
-
         return true;
     }
 
@@ -112,21 +103,16 @@ public class TinkerArkHotLoader {
             return true;
         }
         arkHotApkInfo.clear();
-
         ArrayList<ShareArkHotDiffPatchInfo> allDexInfo = new ArrayList<>();
         ShareArkHotDiffPatchInfo.parseDiffPatchInfo(meta, allDexInfo);
-
         if (allDexInfo.isEmpty()) {
             return true;
         }
-
         HashMap<String, String> apks = new HashMap<>(1);
-
         for (ShareArkHotDiffPatchInfo info : allDexInfo) {
             // for dalvik, ignore art support dex
             if (!ShareArkHotDiffPatchInfo.checkDiffPatchInfo(info)) {
-                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_PACKAGE_PATCH_CHECK,
-                        ShareConstants.ERROR_PACKAGE_CHECK_DEX_META_CORRUPTED);
+                intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_PACKAGE_PATCH_CHECK, ShareConstants.ERROR_PACKAGE_CHECK_DEX_META_CORRUPTED);
                 ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_PACKAGE_CHECK_FAIL);
                 return false;
             }
@@ -134,37 +120,28 @@ public class TinkerArkHotLoader {
                 arkHotApkInfo.add(info);
             }
         }
-
-        if (isArkHotRuning
-                && !arkHotApkInfo.isEmpty()) {
+        if (isArkHotRuning && !arkHotApkInfo.isEmpty()) {
             apks.put(ShareConstants.ARKHOT_PATCH_NAME, "");
         }
         String apkDirectory = directory + "/" + ARKHOT_PATH + "/";
-
         File dexDir = new File(apkDirectory);
-
         if (!dexDir.exists() || !dexDir.isDirectory()) {
-            ShareIntentUtil.setIntentReturnCode(intentResult,
-                    ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST);
+            ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_DIRECTORY_NOT_EXIST);
             return false;
         }
-
         // fast check whether there is any dex files missing
         for (String name : apks.keySet()) {
             File apkFile = new File(apkDirectory + name);
-
             if (!SharePatchFileUtil.isLegalFile(apkFile)) {
                 try {
                     intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, apkFile.getCanonicalPath());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                ShareIntentUtil.setIntentReturnCode(intentResult,
-                        ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
+                ShareIntentUtil.setIntentReturnCode(intentResult, ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
                 return false;
             }
         }
-
         // if is ok, add to result intent
         intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_DEXES_PATH, apks);
         return true;

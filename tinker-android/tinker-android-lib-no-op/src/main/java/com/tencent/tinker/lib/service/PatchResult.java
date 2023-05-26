@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.service;
 
 import java.io.Serializable;
@@ -22,6 +21,7 @@ import java.io.Serializable;
  * Created by zhangshaowen on 16/3/19.
  */
 public class PatchResult implements Serializable {
+
     public boolean isSuccess;
 
     public String rawPatchFilePath;
@@ -49,7 +49,6 @@ public class PatchResult implements Serializable {
         if (patchVersion != null) {
             sb.append("patchVersion:" + patchVersion + "\n");
         }
-
         if (e != null) {
             sb.append("Throwable:" + e.getMessage() + "\n");
         }

@@ -13,17 +13,18 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 /**
  * modify by zhangshaowen on 16/6/7.
  */
 public abstract class BufferIterator {
+
     /**
      * Seeks to the absolute position {@code offset}, measured in bytes from the start.
      */
     public abstract void seek(int offset);
+
     /**
      * Skips forwards or backwards {@code byteCount} bytes from the current position.
      */

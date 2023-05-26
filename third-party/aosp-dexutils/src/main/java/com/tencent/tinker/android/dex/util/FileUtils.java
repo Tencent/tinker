@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex.util;
 
 import java.io.BufferedInputStream;
@@ -28,6 +27,7 @@ import java.io.InputStream;
  * File I/O utilities.
  */
 public final class FileUtils {
+
     private FileUtils() {
     }
 
@@ -55,23 +55,18 @@ public final class FileUtils {
         if (!file.exists()) {
             throw new RuntimeException(file + ": file not found");
         }
-
         if (!file.isFile()) {
             throw new RuntimeException(file + ": not a file");
         }
-
         if (!file.canRead()) {
             throw new RuntimeException(file + ": file not readable");
         }
-
         long longLength = file.length();
         int length = (int) longLength;
         if (length != longLength) {
             throw new RuntimeException(file + ": file too long");
         }
-
         ByteArrayOutputStream baos = new ByteArrayOutputStream(length);
-
         InputStream in = null;
         try {
             in = new BufferedInputStream(new FileInputStream(file));
@@ -89,7 +84,6 @@ public final class FileUtils {
                 }
             }
         }
-
         return baos.toByteArray();
     }
 
@@ -114,8 +108,6 @@ public final class FileUtils {
      * Returns true if {@code fileName} names a .zip, .jar, or .apk.
      */
     public static boolean hasArchiveSuffix(String fileName) {
-        return fileName.endsWith(".zip")
-                || fileName.endsWith(".jar")
-                || fileName.endsWith(".apk");
+        return fileName.endsWith(".zip") || fileName.endsWith(".jar") || fileName.endsWith(".apk");
     }
 }

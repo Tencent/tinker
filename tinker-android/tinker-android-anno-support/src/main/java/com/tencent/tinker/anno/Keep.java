@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
  * Created by tangyinsheng on 2020-03-27.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target({ElementType.PACKAGE, ElementType.TYPE, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.FIELD})
+@Target({ ElementType.PACKAGE, ElementType.TYPE, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.FIELD })
 public @interface Keep {
 }

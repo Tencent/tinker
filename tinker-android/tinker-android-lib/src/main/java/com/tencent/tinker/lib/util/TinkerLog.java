@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.util;
 
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
@@ -25,6 +24,7 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
  */
 @Deprecated
 public class TinkerLog {
+
     private static final String TAG = "Tinker.TinkerLog";
 
     public static void setTinkerLogImp(TinkerLogImp imp) {
@@ -36,23 +36,23 @@ public class TinkerLog {
     }
 
     public static void v(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logWithShareTinker(tag, msg, obj);
     }
 
     public static void e(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logWithShareTinker(tag, msg, obj);
     }
 
     public static void w(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logWithShareTinker(tag, msg, obj);
     }
 
     public static void i(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logWithShareTinker(tag, msg, obj);
     }
 
     public static void d(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logWithShareTinker(tag, msg, obj);
     }
 
     public static void printErrStackTrace(String tag, Throwable tr, final String format, final Object... obj) {
@@ -63,5 +63,10 @@ public class TinkerLog {
         ShareTinkerLog.printPendingLogs();
     }
 
-    public interface TinkerLogImp extends ShareTinkerLog.TinkerLogImp {}
+    public interface TinkerLogImp extends ShareTinkerLog.TinkerLogImp {
+    }
+
+    public static void logWithShareTinker(final String tag, final String msg, final Object... obj) {
+        ShareTinkerLog.v(tag, msg, obj);
+    }
 }

@@ -13,16 +13,13 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-
 import com.tencent.tinker.loader.TinkerRuntimeException;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -36,15 +33,19 @@ import java.util.jar.JarFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareSecurityCheck {
-    private static final String TAG           = "Tinker.SecurityCheck";
+
+    private static final String TAG = "Tinker.SecurityCheck";
+
     /**
      * static to faster
      * public key
      */
-    private static       String mPublicKeyMd5 = null;
+    private static String mPublicKeyMd5 = null;
 
-    private final Context                 mContext;
+    private final Context mContext;
+
     private final HashMap<String, String> metaContentMap;
+
     private final HashMap<String, String> packageProperties;
 
     public ShareSecurityCheck(Context context) {
@@ -69,13 +70,10 @@ public class ShareSecurityCheck {
         if (!packageProperties.isEmpty()) {
             return packageProperties;
         }
-
         String property = metaContentMap.get(ShareConstants.PACKAGE_META_FILE);
-
         if (property == null) {
             return null;
         }
-
         String[] lines = property.split("\n");
         for (final String line : lines) {
             if (line == null || line.length() <= 0) {
@@ -89,7 +87,6 @@ public class ShareSecurityCheck {
             if (kv == null || kv.length < 2) {
                 continue;
             }
-
             packageProperties.put(kv[0].trim(), kv[1].trim());
         }
         return packageProperties;
@@ -109,7 +106,6 @@ public class ShareSecurityCheck {
                 if (jarEntry == null) {
                     continue;
                 }
-
                 final String name = jarEntry.getName();
                 if (name.startsWith("META-INF/")) {
                     continue;
@@ -121,14 +117,12 @@ public class ShareSecurityCheck {
                 }
                 metaContentMap.put(name, SharePatchFileUtil.loadDigestes(jarFile, jarEntry));
                 Certificate[] certs = jarEntry.getCertificates();
-
                 if (certs == null || !check(path, certs)) {
                     return false;
                 }
             }
         } catch (Exception e) {
-            throw new TinkerRuntimeException(
-                String.format("ShareSecurityCheck file %s, size %d verifyPatchMetaSignature fail", path.getAbsolutePath(), path.length()), e);
+            throw new TinkerRuntimeException(String.format("ShareSecurityCheck file %s, size %d verifyPatchMetaSignature fail", path.getAbsolutePath(), path.length()), e);
         } finally {
             try {
                 if (jarFile != null) {
@@ -140,7 +134,6 @@ public class ShareSecurityCheck {
         }
         return true;
     }
-
 
     // verify the signature of the Apk
     private boolean check(File path, Certificate[] certs) {

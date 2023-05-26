@@ -3,7 +3,6 @@ package com.tencent.tinker.loader.hotplug;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
-
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.hotplug.handler.AMSInterceptHandler;
 import com.tencent.tinker.loader.hotplug.handler.MHMessageHandler;
@@ -14,20 +13,23 @@ import com.tencent.tinker.loader.hotplug.interceptor.TinkerHackInstrumentation;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
 import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.lang.reflect.Field;
 
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
-
 public final class ComponentHotplug {
+
     private static final String TAG = "Tinker.ComponentHotplug";
 
     private static volatile boolean sInstalled = false;
+
     private static ServiceBinderInterceptor sAMSInterceptor;
+
     private static ServiceBinderInterceptor sPMSInterceptor;
+
     private static HandlerMessageInterceptor sMHMessageInterceptor;
+
     private static TinkerHackInstrumentation sTinkerHackInstrumentation;
 
     public synchronized static void install(TinkerApplication app, ShareSecurityCheck checker) throws UnsupportedEnvironmentException {
@@ -38,7 +40,6 @@ public final class ComponentHotplug {
                     sPMSInterceptor = new ServiceBinderInterceptor(app, EnvConsts.PACKAGE_MANAGER_SRVNAME, new PMSInterceptHandler());
                     sAMSInterceptor.install();
                     sPMSInterceptor.install();
-
                     if (Build.VERSION.SDK_INT < 27) {
                         final Handler mH = fetchMHInstance(app);
                         sMHMessageInterceptor = new HandlerMessageInterceptor(mH, new MHMessageHandler(app));
@@ -47,9 +48,7 @@ public final class ComponentHotplug {
                         sTinkerHackInstrumentation = TinkerHackInstrumentation.create(app);
                         sTinkerHackInstrumentation.install();
                     }
-
                     sInstalled = true;
-
                     ShareTinkerLog.i(TAG, "installed successfully.");
                 }
             } catch (Throwable thr) {
@@ -94,7 +93,7 @@ public final class ComponentHotplug {
         }
     }
 
-    public synchronized static void uninstall()  {
+    public synchronized static void uninstall() {
         if (sInstalled) {
             try {
                 sAMSInterceptor.uninstall();
@@ -107,7 +106,6 @@ public final class ComponentHotplug {
             } catch (Throwable thr) {
                 ShareTinkerLog.e(TAG, "exception when uninstall.", thr);
             }
-
             sInstalled = false;
         }
     }

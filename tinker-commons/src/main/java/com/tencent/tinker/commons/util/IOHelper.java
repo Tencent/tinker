@@ -9,8 +9,8 @@ import java.util.zip.ZipFile;
 /**
  * Created by tangyinsheng on 2017/11/16.
  */
-
 public final class IOHelper {
+
     public static void copyStream(InputStream is, OutputStream os) throws IOException {
         final byte[] buffer = new byte[4096];
         int bytesRead = 0;
@@ -25,7 +25,8 @@ public final class IOHelper {
      */
     @SuppressWarnings("NewApi")
     public static void closeQuietly(Object obj) {
-        if (obj == null) return;
+        if (obj == null)
+            return;
         try {
             if (obj instanceof Closeable) {
                 ((Closeable) obj).close();

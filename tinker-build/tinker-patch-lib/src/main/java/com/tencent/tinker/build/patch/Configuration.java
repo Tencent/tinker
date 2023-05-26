@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.patch;
 
 import com.tencent.tinker.build.util.FileOperation;
@@ -21,7 +20,6 @@ import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.util.IOHelper;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -29,7 +27,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,7 +34,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Pattern;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -49,112 +45,168 @@ import javax.xml.parsers.ParserConfigurationException;
 public class Configuration {
 
     protected static final String TAG_ISSUE = "issue";
+
     protected static final String DEX_ISSUE = "dex";
-    protected static final String SO_ISSUE  = "lib";
+
+    protected static final String SO_ISSUE = "lib";
+
     protected static final String RES_ISSUE = "resource";
+
     protected static final String ARKHOT_ISSUE = "arkHot";
 
-    protected static final String SIGN_ISSUE           = "sign";
+    protected static final String SIGN_ISSUE = "sign";
+
     protected static final String PACKAGE_CONFIG_ISSUE = "packageConfig";
-    protected static final String PROPERTY_ISSUE       = "property";
 
-    protected static final String ATTR_ID    = "id";
+    protected static final String PROPERTY_ISSUE = "property";
+
+    protected static final String ATTR_ID = "id";
+
     protected static final String ATTR_VALUE = "value";
-    protected static final String ATTR_NAME  = "name";
 
-    protected static final String ATTR_IGNORE_WARNING            = "ignoreWarning";
-    protected static final String ATTR_ALLOW_LOADER_IN_ANY_DEX   = "allowLoaderInAnyDex";
+    protected static final String ATTR_NAME = "name";
+
+    protected static final String ATTR_IGNORE_WARNING = "ignoreWarning";
+
+    protected static final String ATTR_ALLOW_LOADER_IN_ANY_DEX = "allowLoaderInAnyDex";
+
     protected static final String ATTR_REMOVE_LOADER_FOR_ALL_DEX = "removeLoaderForAllDex";
-    protected static final String ATTR_IS_PROTECTED_APP          = "isProtectedApp";
+
+    protected static final String ATTR_IS_PROTECTED_APP = "isProtectedApp";
+
     protected static final String ATTR_SUPPORT_HOTPLUG_COMPONENT = "supportHotplugComponent";
-    protected static final String ATTR_USE_SIGN                  = "useSign";
-    protected static final String ATTR_SEVEN_ZIP_PATH            = "sevenZipPath";
-    protected static final String ATTR_CUSTOM_DIFF_PATH          = "customPath";
-    protected static final String ATTR_CUSTOM_DIFF_PATH_ARGS     = "customPathArgs";
-    protected static final String ATTR_DEX_MODE                  = "dexMode";
-    protected static final String ATTR_PATTERN                   = "pattern";
-    protected static final String ATTR_IGNORE_CHANGE             = "ignoreChange";
-    protected static final String ATTR_IGNORE_CHANGE_WARNING     = "ignoreChangeWarning";
-    protected static final String ATTR_RES_LARGE_MOD             = "largeModSize";
+
+    protected static final String ATTR_USE_SIGN = "useSign";
+
+    protected static final String ATTR_SEVEN_ZIP_PATH = "sevenZipPath";
+
+    protected static final String ATTR_CUSTOM_DIFF_PATH = "customPath";
+
+    protected static final String ATTR_CUSTOM_DIFF_PATH_ARGS = "customPathArgs";
+
+    protected static final String ATTR_DEX_MODE = "dexMode";
+
+    protected static final String ATTR_PATTERN = "pattern";
+
+    protected static final String ATTR_IGNORE_CHANGE = "ignoreChange";
+
+    protected static final String ATTR_IGNORE_CHANGE_WARNING = "ignoreChangeWarning";
+
+    protected static final String ATTR_RES_LARGE_MOD = "largeModSize";
 
     protected static final String ATTR_ARKHOT_PATH = "path";
+
     protected static final String ATTR_ARKHOT_NAME = "name";
 
-    protected static final String ATTR_LOADER       = "loader";
+    protected static final String ATTR_LOADER = "loader";
+
     protected static final String ATTR_CONFIG_FIELD = "configField";
 
-    protected static final String ATTR_SIGN_FILE_PATH      = "path";
-    protected static final String ATTR_SIGN_FILE_KEYPASS   = "keypass";
+    protected static final String ATTR_SIGN_FILE_PATH = "path";
+
+    protected static final String ATTR_SIGN_FILE_KEYPASS = "keypass";
+
     protected static final String ATTR_SIGN_FILE_STOREPASS = "storepass";
-    protected static final String ATTR_SIGN_FILE_ALIAS     = "alias";
+
+    protected static final String ATTR_SIGN_FILE_ALIAS = "alias";
+
     /**
      * base config data
      */
-    public String  mOldApkPath;
-    public String  mNewApkPath;
-    public String  mOutFolder;
-    public File    mOldApkFile;
-    public File    mNewApkFile;
+    public String mOldApkPath;
+
+    public String mNewApkPath;
+
+    public String mOutFolder;
+
+    public File mOldApkFile;
+
+    public File mNewApkFile;
+
     public boolean mIgnoreWarning;
+
     public boolean mAllowLoaderInAnyDex;
+
     public boolean mIsProtectedApp;
+
     public boolean mRemoveLoaderForAllDex;
+
     public boolean mSupportHotplugComponent;
+
     /**
      * lib config
      */
     public HashSet<Pattern> mSoFilePattern;
+
     /**
      * dex config
      */
     public HashSet<Pattern> mDexFilePattern;
-    public HashSet<String>  mDexLoaderPattern;
-    public HashSet<String>  mDexIgnoreWarningLoaderPattern;
 
-    public boolean          mDexRaw;
+    public HashSet<String> mDexLoaderPattern;
+
+    public HashSet<String> mDexIgnoreWarningLoaderPattern;
+
+    public boolean mDexRaw;
+
     /**
      * resource config
      */
     public HashSet<Pattern> mResFilePattern;
+
     public HashSet<Pattern> mResIgnoreChangePattern;
+
     public HashSet<Pattern> mResIgnoreChangeWarningPattern;
-    public HashSet<String>  mResRawPattern;
-    public int              mLargeModSize;
+
+    public HashSet<String> mResRawPattern;
+
+    public int mLargeModSize;
+
     /**
      * only gradle have the param
      */
-    public boolean          mUseApplyResource;
+    public boolean mUseApplyResource;
 
     /**
      * package file config
      */
     public HashMap<String, String> mPackageFields;
+
     /**
      * sevenZip path config
      */
-    public String                  mSevenZipPath;
+    public String mSevenZipPath;
+
     /**
      * custom diff path config
      */
     public String mCustomDiffPath;
+
     /**
      * custom diff path config
      */
     public String mCustomDiffPathArgs;
+
     /**
      * sign data
      */
-    public boolean                 mUseSignAPk;
-    public File                    mSignatureFile;
-    public String                  mKeyPass;
-    public String                  mStoreAlias;
-    public String                  mStorePass;
+    public boolean mUseSignAPk;
+
+    public File mSignatureFile;
+
+    public String mKeyPass;
+
+    public String mStoreAlias;
+
+    public String mStorePass;
 
     /**
      * temp files
      */
     public File mTempResultDir;
+
     public File mTempUnzipOldDir;
+
     public File mTempUnzipNewDir;
 
     public boolean mUsingGradle;
@@ -163,31 +215,27 @@ public class Configuration {
      * ark patch
      */
     public String mArkHotPatchPath;
+
     public String mArkHotPatchName;
 
     /**
      * use by command line with xml config
      */
-    public Configuration(File config, File outputFile, File oldApkFile, File newApkFile)
-        throws IOException, ParserConfigurationException, SAXException, TinkerPatchException {
+    public Configuration(File config, File outputFile, File oldApkFile, File newApkFile) throws IOException, ParserConfigurationException, SAXException, TinkerPatchException {
         mUsingGradle = false;
         mSoFilePattern = new HashSet<>();
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
         mDexIgnoreWarningLoaderPattern = new HashSet<>();
-
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
         mResIgnoreChangePattern = new HashSet<>();
         mResIgnoreChangeWarningPattern = new HashSet<>();
-
         mPackageFields = new HashMap<>();
         mOutFolder = outputFile.getAbsolutePath();
         FileOperation.cleanDir(outputFile);
-
         mOldApkFile = oldApkFile;
         mOldApkPath = oldApkFile.getAbsolutePath();
-
         mNewApkFile = newApkFile;
         mNewApkPath = newApkFile.getAbsolutePath();
         mLargeModSize = 100;
@@ -195,7 +243,6 @@ public class Configuration {
         createTempDirectory();
         checkInputPatternParameter();
     }
-
 
     /**
      * use by gradle
@@ -206,76 +253,55 @@ public class Configuration {
         mDexFilePattern = new HashSet<>();
         mDexLoaderPattern = new HashSet<>();
         mDexIgnoreWarningLoaderPattern = new HashSet<>();
-
         mResFilePattern = new HashSet<>();
         mResRawPattern = new HashSet<>();
         mResIgnoreChangePattern = new HashSet<>();
         mResIgnoreChangeWarningPattern = new HashSet<>();
-
         mPackageFields = new HashMap<>();
-
         for (String item : param.soFilePattern) {
             addToPatterns(item, mSoFilePattern);
         }
-
         for (String item : param.dexFilePattern) {
             addToPatterns(item, mDexFilePattern);
         }
-
         for (String item : param.resourceFilePattern) {
             mResRawPattern.add(item);
             addToPatterns(item, mResFilePattern);
         }
-
         for (String item : param.resourceIgnoreChangePattern) {
             addToPatterns(item, mResIgnoreChangePattern);
         }
-
         for (String item : param.resourceIgnoreChangeWarningPattern) {
             addToPatterns(item, mResIgnoreChangeWarningPattern);
         }
         mLargeModSize = param.largeModSize;
         //only gradle have the param
         mUseApplyResource = param.useApplyResource;
-
         mDexLoaderPattern.addAll(param.dexLoaderPattern);
         mDexIgnoreWarningLoaderPattern.addAll(param.dexIgnoreWarningLoaderPattern);
         //can be only raw or jar
         if (param.dexMode.equals("raw")) {
             mDexRaw = true;
         }
-
         mOldApkPath = param.oldApk;
         mOldApkFile = new File(mOldApkPath);
-
         mNewApkPath = param.newApk;
         mNewApkFile = new File(mNewApkPath);
-
         mOutFolder = param.outFolder;
-
         mIgnoreWarning = param.ignoreWarning;
-
         mAllowLoaderInAnyDex = param.allowLoaderInAnyDex;
-
-        mRemoveLoaderForAllDex= param.removeLoaderForAllDex;
-
+        mRemoveLoaderForAllDex = param.removeLoaderForAllDex;
         mIsProtectedApp = param.isProtectedApp;
-
         mSupportHotplugComponent = param.supportHotplugComponent;
-
         mSevenZipPath = param.sevenZipPath;
         mPackageFields = param.configFields;
-
         mUseSignAPk = param.useSign;
         mCustomDiffPath = param.customDiffPath;
         mCustomDiffPathArgs = param.customDiffPathArgs;
         setSignData(param.signFile, param.keypass, param.storealias, param.storepass);
-
         FileOperation.cleanDir(new File(mOutFolder));
-
         createTempDirectory();
         checkInputPatternParameter();
-
         mArkHotPatchName = param.arkHotPatchName;
         mArkHotPatchPath = param.arkHotPatchPath;
     }
@@ -293,13 +319,10 @@ public class Configuration {
         sb.append("isProtectedApp:" + mIsProtectedApp + "\n");
         sb.append("7-ZipPath:" + mSevenZipPath + "\n");
         sb.append("useSignAPk:" + mUseSignAPk + "\n");
-
         sb.append("package meta fields: \n");
-
         for (String name : mPackageFields.keySet()) {
             sb.append("filed name:" + name + ", filed value:" + mPackageFields.get(name) + "\n");
         }
-
         sb.append("dex configs: \n");
         if (mDexRaw) {
             sb.append("dexMode: raw" + "\n");
@@ -315,12 +338,10 @@ public class Configuration {
         for (String name : mDexIgnoreWarningLoaderPattern) {
             sb.append("dex ignore warning loader:" + name.toString() + "\n");
         }
-
         sb.append("lib configs: \n");
         for (Pattern name : mSoFilePattern) {
             sb.append("libPattern:" + name.toString() + "\n");
         }
-
         sb.append("resource configs: \n");
         for (Pattern name : mResFilePattern) {
             sb.append("resPattern:" + name.toString() + "\n");
@@ -333,7 +354,7 @@ public class Configuration {
         }
         sb.append("largeModSize:" + mLargeModSize + "kb\n");
         sb.append("useApplyResource:" + mUseApplyResource + "\n");
-        sb.append("ArkHot: "  + mArkHotPatchPath + " / " + mArkHotPatchName + "\n");
+        sb.append("ArkHot: " + mArkHotPatchPath + " / " + mArkHotPatchName + "\n");
         return sb.toString();
     }
 
@@ -343,32 +364,21 @@ public class Configuration {
         if (!mTempResultDir.exists()) {
             mTempResultDir.mkdir();
         }
-
         String oldApkName = mOldApkFile.getName();
         if (!oldApkName.endsWith(TypedValue.FILE_APK)) {
-            throw new TinkerPatchException(
-                String.format("input apk file path must end with .apk, yours %s\n", oldApkName)
-            );
+            throw new TinkerPatchException(String.format("input apk file path must end with .apk, yours %s\n", oldApkName));
         }
-
         String newApkName = mNewApkFile.getName();
         if (!newApkName.endsWith(TypedValue.FILE_APK)) {
-            throw new TinkerPatchException(
-                String.format("input apk file path must end with .apk, yours %s\n", newApkName)
-            );
+            throw new TinkerPatchException(String.format("input apk file path must end with .apk, yours %s\n", newApkName));
         }
-
         String tempOldName = oldApkName.substring(0, oldApkName.indexOf(TypedValue.FILE_APK));
-
-
         String tempNewName = newApkName.substring(0, newApkName.indexOf(TypedValue.FILE_APK));
-
         // Bugfix: For windows user, filename is case-insensitive.
         if (tempNewName.equalsIgnoreCase(tempOldName)) {
             tempOldName += "-old";
             tempNewName += "-new";
         }
-
         mTempUnzipOldDir = new File(mOutFolder, tempOldName);
         mTempUnzipNewDir = new File(mOutFolder, tempNewName);
     }
@@ -377,9 +387,7 @@ public class Configuration {
         if (mUseSignAPk) {
             mSignatureFile = signatureFile;
             if (!mSignatureFile.exists()) {
-                throw new IOException(
-                    String.format("the signature file do not exit, raw path= %s\n", mSignatureFile.getAbsolutePath())
-                );
+                throw new IOException(String.format("the signature file do not exit, raw path= %s\n", mSignatureFile.getAbsolutePath()));
             }
             mKeyPass = keypass;
             mStoreAlias = storealias;
@@ -394,18 +402,15 @@ public class Configuration {
         if (mLargeModSize <= 0) {
             throw new TinkerPatchException("largeModSize must be larger than 0");
         }
-
     }
 
     /**
      * read args from xml
-     **/
-    void readXmlConfig(File xmlConfigFile)
-        throws IOException, ParserConfigurationException, SAXException {
+     */
+    void readXmlConfig(File xmlConfigFile) throws IOException, ParserConfigurationException, SAXException {
         if (!xmlConfigFile.exists()) {
             return;
         }
-
         System.out.printf("reading config file, %s\n", xmlConfigFile.getAbsolutePath());
         BufferedInputStream input = null;
         try {
@@ -418,6 +423,7 @@ public class Configuration {
             // Block any external content resolving actions since we don't need them and a report
             // says these actions may cause security problems.
             builder.setEntityResolver(new EntityResolver() {
+
                 @Override
                 public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
                     return new InputSource();
@@ -427,7 +433,6 @@ public class Configuration {
             NodeList issues = document.getElementsByTagName(TAG_ISSUE);
             for (int i = 0, count = issues.getLength(); i < count; i++) {
                 Node node = issues.item(i);
-
                 Element element = (Element) node;
                 String id = element.getAttribute(ATTR_ID);
                 if (id.length() == 0) {
@@ -492,10 +497,9 @@ public class Configuration {
                         }
                     } else if (tagName.equals(ATTR_CUSTOM_DIFF_PATH)) {
                         mCustomDiffPath = value;
-                    }  else if (tagName.equals(ATTR_CUSTOM_DIFF_PATH_ARGS)) {
+                    } else if (tagName.equals(ATTR_CUSTOM_DIFF_PATH_ARGS)) {
                         mCustomDiffPathArgs = value;
-                    }
-                    else {
+                    } else {
                         System.err.println("unknown property tag " + tagName);
                     }
                 }
@@ -511,7 +515,6 @@ public class Configuration {
                 if (child.getNodeType() == Node.ELEMENT_NODE) {
                     Element check = (Element) child;
                     String tagName = check.getTagName();
-
                     String value = check.getAttribute(ATTR_VALUE);
                     if (tagName.equals(ATTR_ARKHOT_PATH)) {
                         mArkHotPatchPath = value;
@@ -541,17 +544,12 @@ public class Configuration {
                     String tagName = check.getTagName();
                     String value = check.getAttribute(ATTR_VALUE);
                     if (value.length() == 0) {
-                        throw new IOException(
-                            String.format("Invalid config file: Tag:%s Missing required attribute %s\n",tagName, ATTR_VALUE)
-                        );
+                        throw new IOException(String.format("Invalid config file: Tag:%s Missing required attribute %s\n", tagName, ATTR_VALUE));
                     }
-
                     if (tagName.equals(ATTR_SIGN_FILE_PATH)) {
                         mSignatureFile = new File(value);
                         if (!mSignatureFile.exists()) {
-                            throw new IOException(
-                                String.format("the signature file do not exit, raw path= %s\n", mSignatureFile.getAbsolutePath())
-                            );
+                            throw new IOException(String.format("the signature file do not exit, raw path= %s\n", mSignatureFile.getAbsolutePath()));
                         }
                     } else if (tagName.equals(ATTR_SIGN_FILE_STOREPASS)) {
                         mStorePass = value;
@@ -568,7 +566,6 @@ public class Configuration {
                 }
             }
         }
-
     }
 
     private void readDexPatternsFromXml(Node node) throws IOException {
@@ -579,7 +576,6 @@ public class Configuration {
                 if (child.getNodeType() == Node.ELEMENT_NODE) {
                     Element check = (Element) child;
                     String tagName = check.getTagName();
-
                     String value = check.getAttribute(ATTR_VALUE);
                     if (tagName.equals(ATTR_DEX_MODE)) {
                         if (value.equals("raw")) {
@@ -607,7 +603,6 @@ public class Configuration {
                 if (child.getNodeType() == Node.ELEMENT_NODE) {
                     Element check = (Element) child;
                     String tagName = check.getTagName();
-
                     String value = check.getAttribute(ATTR_VALUE);
                     if (tagName.equals(ATTR_PATTERN)) {
                         addToPatterns(value, mSoFilePattern);
@@ -627,7 +622,6 @@ public class Configuration {
                 if (child.getNodeType() == Node.ELEMENT_NODE) {
                     Element check = (Element) child;
                     String tagName = check.getTagName();
-
                     String value = check.getAttribute(ATTR_VALUE);
                     if (tagName.equals(ATTR_PATTERN)) {
                         mResRawPattern.add(value);
@@ -658,10 +652,8 @@ public class Configuration {
                 if (child.getNodeType() == Node.ELEMENT_NODE) {
                     Element check = (Element) child;
                     String tagName = check.getTagName();
-
                     String value = check.getAttribute(ATTR_VALUE);
                     String name = check.getAttribute(ATTR_NAME);
-
                     if (tagName.equals(ATTR_CONFIG_FIELD)) {
                         mPackageFields.put(name, value);
                     } else {
@@ -674,13 +666,10 @@ public class Configuration {
 
     private void addToPatterns(String value, HashSet<Pattern> patterns) throws IOException {
         if (value.length() == 0) {
-            throw new IOException(
-                String.format("Invalid config file: Missing required attribute %s\n", ATTR_VALUE)
-            );
+            throw new IOException(String.format("Invalid config file: Missing required attribute %s\n", ATTR_VALUE));
         }
         value = Utils.convertToPatternString(value);
         Pattern pattern = Pattern.compile(value);
         patterns.add(pattern);
     }
-
 }

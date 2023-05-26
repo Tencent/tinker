@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section;
 import com.tencent.tinker.android.dex.util.CompareUtils;
-
 import java.util.Arrays;
 
 /**
@@ -27,6 +25,7 @@ import java.util.Arrays;
  * Structure of AnnotationSet element in Dex file.
  */
 public class AnnotationSet extends Section.Item<AnnotationSet> {
+
     public int[] annotationOffsets;
 
     public AnnotationSet(int off, int[] annotationOffsets) {
@@ -38,17 +37,14 @@ public class AnnotationSet extends Section.Item<AnnotationSet> {
     public int compareTo(AnnotationSet other) {
         int size = annotationOffsets.length;
         int oSize = other.annotationOffsets.length;
-
         if (size != oSize) {
             return CompareUtils.uCompare(size, oSize);
         }
-
         for (int i = 0; i < size; ++i) {
             if (annotationOffsets[i] != other.annotationOffsets[i]) {
                 return CompareUtils.uCompare(annotationOffsets[i], other.annotationOffsets[i]);
             }
         }
-
         return 0;
     }
 

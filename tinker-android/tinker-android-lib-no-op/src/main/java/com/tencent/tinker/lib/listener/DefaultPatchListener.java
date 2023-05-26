@@ -13,24 +13,22 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.listener;
 
 import android.content.Context;
-
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
-
 import java.io.File;
 
 /**
  * Created by zhangshaowen on 16/3/14.
  */
 public class DefaultPatchListener implements PatchListener {
+
     protected final Context context;
 
     public DefaultPatchListener(Context context) {
-       this.context = context;
+        this.context = context;
     }
 
     @Override

@@ -13,14 +13,12 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.struct;
 
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.FileUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,29 +29,54 @@ import java.util.Arrays;
  * Created by tangyinsheng on 2016/7/1.
  */
 public final class DexPatchFile {
-    public static final byte[] MAGIC = {0x44, 0x58, 0x44, 0x49, 0x46, 0x46}; // DXDIFF
+
+    // DXDIFF
+    public static final byte[] MAGIC = { 0x44, 0x58, 0x44, 0x49, 0x46, 0x46 };
+
     public static final short CURRENT_VERSION = 0x0002;
+
     private final DexDataBuffer buffer;
+
     private short version;
+
     private int patchedDexSize;
+
     private int firstChunkOffset;
+
     private int patchedStringIdSectionOffset;
+
     private int patchedTypeIdSectionOffset;
+
     private int patchedProtoIdSectionOffset;
+
     private int patchedFieldIdSectionOffset;
+
     private int patchedMethodIdSectionOffset;
+
     private int patchedClassDefSectionOffset;
+
     private int patchedMapListSectionOffset;
+
     private int patchedTypeListSectionOffset;
+
     private int patchedAnnotationSetRefListSectionOffset;
+
     private int patchedAnnotationSetSectionOffset;
+
     private int patchedClassDataSectionOffset;
+
     private int patchedCodeSectionOffset;
+
     private int patchedStringDataSectionOffset;
+
     private int patchedDebugInfoSectionOffset;
+
     private int patchedAnnotationSectionOffset;
+
     private int patchedEncodedArraySectionOffset;
+
     private int patchedAnnotationsDirectorySectionOffset;
+
     private byte[] oldDexSignature;
 
     public DexPatchFile(File file) throws IOException {
@@ -71,12 +94,10 @@ public final class DexPatchFile {
         if (CompareUtils.uArrCompare(magic, MAGIC) != 0) {
             throw new IllegalStateException("bad dex patch file magic: " + Arrays.toString(magic));
         }
-
         this.version = this.buffer.readShort();
         if (CompareUtils.uCompare(this.version, CURRENT_VERSION) != 0) {
             throw new IllegalStateException("bad dex patch file version: " + this.version + ", expected: " + CURRENT_VERSION);
         }
-
         this.patchedDexSize = this.buffer.readInt();
         this.firstChunkOffset = this.buffer.readInt();
         this.patchedStringIdSectionOffset = this.buffer.readInt();
@@ -97,7 +118,6 @@ public final class DexPatchFile {
         this.patchedEncodedArraySectionOffset = this.buffer.readInt();
         this.patchedAnnotationsDirectorySectionOffset = this.buffer.readInt();
         this.oldDexSignature = this.buffer.readByteArray(SizeOf.SIGNATURE);
-
         this.buffer.position(firstChunkOffset);
     }
 

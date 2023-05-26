@@ -2,19 +2,17 @@ package com.tencent.tinker.loader.hotplug.handler;
 
 import android.content.ComponentName;
 import android.content.Intent;
-
 import com.tencent.tinker.loader.hotplug.IncrementComponentManager;
 import com.tencent.tinker.loader.hotplug.interceptor.ServiceBinderInterceptor;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
  * Created by tangyinsheng on 2017/7/31.
  */
-
 public class PMSInterceptHandler implements ServiceBinderInterceptor.BinderInvocationHandler {
+
     private static final String TAG = "Tinker.PMSIntrcptHndlr";
 
     @Override
@@ -49,8 +47,7 @@ public class PMSInterceptHandler implements ServiceBinderInterceptor.BinderInvoc
                 if (componentName != null) {
                     return IncrementComponentManager.queryActivityInfo(componentName.getClassName());
                 } else {
-                    ShareTinkerLog.w(TAG, "failed to locate componentName field of " + method.getName()
-                            + ", notice any crashes or mistakes after resolve works.");
+                    ShareTinkerLog.w(TAG, "failed to locate componentName field of " + method.getName() + ", notice any crashes or mistakes after resolve works.");
                     return null;
                 }
             }
@@ -89,8 +86,7 @@ public class PMSInterceptHandler implements ServiceBinderInterceptor.BinderInvoc
                 if (intent != null) {
                     return IncrementComponentManager.resolveIntent(intent);
                 } else {
-                    ShareTinkerLog.w(TAG, "failed to locate intent field of " + method.getName()
-                            + ", notice any crashes or mistakes after resolve works.");
+                    ShareTinkerLog.w(TAG, "failed to locate intent field of " + method.getName() + ", notice any crashes or mistakes after resolve works.");
                     return null;
                 }
             }

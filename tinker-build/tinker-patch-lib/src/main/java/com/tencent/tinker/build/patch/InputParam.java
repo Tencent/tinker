@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.patch;
 
 import java.io.File;
@@ -24,106 +23,99 @@ import java.util.HashMap;
  * Created by zhangshaowen on 1/9/16.
  */
 public class InputParam {
+
     /**
      * tinkerPatch
      */
-    public final String  oldApk;
-    public final String  newApk;
-    public final String  outFolder;
-    public final File    signFile;
-    public final String  keypass;
-    public final String  storealias;
-    public final String  storepass;
+    public final String oldApk;
+
+    public final String newApk;
+
+    public final String outFolder;
+
+    public final File signFile;
+
+    public final String keypass;
+
+    public final String storealias;
+
+    public final String storepass;
+
     public final String customDiffPath;
+
     public final String customDiffPathArgs;
+
     public final boolean ignoreWarning;
+
     public final boolean allowLoaderInAnyDex;
+
     public final boolean removeLoaderForAllDex;
+
     public final boolean isProtectedApp;
+
     public final boolean supportHotplugComponent;
+
     public final boolean useSign;
 
     /**
      * tinkerPatch.dex
      */
     public final ArrayList<String> dexFilePattern;
+
     public final ArrayList<String> dexLoaderPattern;
+
     public final ArrayList<String> dexIgnoreWarningLoaderPattern;
 
-    public final String                  dexMode;
+    public final String dexMode;
+
     /**
      * tinkerPatch.lib
      */
-    public final ArrayList<String>       soFilePattern;
+    public final ArrayList<String> soFilePattern;
+
     /**
      * tinkerPatch.resource pattern
      */
-    public final ArrayList<String>       resourceFilePattern;
+    public final ArrayList<String> resourceFilePattern;
+
     /**
      * tinkerPath.resource ignoreChange
      */
-    public final ArrayList<String>       resourceIgnoreChangePattern;
+    public final ArrayList<String> resourceIgnoreChangePattern;
+
     /**
      * tinkerPatch.resource ignoreChangeWarning
      */
-    public final ArrayList<String>       resourceIgnoreChangeWarningPattern;
+    public final ArrayList<String> resourceIgnoreChangeWarningPattern;
+
     /**
      * tinkerPath.resource largeModSize
      */
-    public final int                     largeModSize;
+    public final int largeModSize;
+
     /**
      * tinkerPath.buildConfig applyResourceMapping
      */
-    public final boolean                 useApplyResource;
+    public final boolean useApplyResource;
+
     /**
      * tinkerPatch.packageConfig
      */
     public final HashMap<String, String> configFields;
+
     /**
      * tinkerPatch.sevenZip
      */
-    public final String                  sevenZipPath;
+    public final String sevenZipPath;
 
     /**
      * TinkerPatch ark
      */
     public final String arkHotPatchPath;
+
     public final String arkHotPatchName;
 
-    private InputParam(
-            String oldApk,
-            String newApk,
-            String outFolder,
-            File signFile,
-            String keypass,
-            String storealias,
-            String storepass,
-            String customDiffPath,
-            String customDiffPathArgs,
-            boolean ignoreWarning,
-            boolean allowLoaderInAnyDex,
-            boolean removeLoaderForAllDex,
-            boolean isProtectedApp,
-            boolean supportHotplugComponent,
-            boolean useSign,
-
-            ArrayList<String> dexFilePattern,
-            ArrayList<String> dexLoaderPattern,
-            ArrayList<String> dexIgnoreChangeLoaderPattern,
-
-            String dexMode,
-            ArrayList<String> soFilePattern,
-            ArrayList<String> resourceFilePattern,
-            ArrayList<String> resourceIgnoreChangePattern,
-            ArrayList<String> resourceIgnoreChangeWarningPattern,
-            int largeModSize,
-            boolean useApplyResource,
-            HashMap<String, String> configFields,
-
-        String sevenZipPath,
-        String arkHotPatchPath,
-        String arkHotPatchName
-    ) {
+    private InputParam(String oldApk, String newApk, String outFolder, File signFile, String keypass, String storealias, String storepass, String customDiffPath, String customDiffPathArgs, boolean ignoreWarning, boolean allowLoaderInAnyDex, boolean removeLoaderForAllDex, boolean isProtectedApp, boolean supportHotplugComponent, boolean useSign, ArrayList<String> dexFilePattern, ArrayList<String> dexLoaderPattern, ArrayList<String> dexIgnoreChangeLoaderPattern, String dexMode, ArrayList<String> soFilePattern, ArrayList<String> resourceFilePattern, ArrayList<String> resourceIgnoreChangePattern, ArrayList<String> resourceIgnoreChangeWarningPattern, int largeModSize, boolean useApplyResource, HashMap<String, String> configFields, String sevenZipPath, String arkHotPatchPath, String arkHotPatchName) {
         this.oldApk = oldApk;
         this.newApk = newApk;
         this.outFolder = outFolder;
@@ -139,93 +131,114 @@ public class InputParam {
         this.isProtectedApp = isProtectedApp;
         this.supportHotplugComponent = supportHotplugComponent;
         this.useSign = useSign;
-
         this.dexFilePattern = dexFilePattern;
         this.dexLoaderPattern = dexLoaderPattern;
         this.dexIgnoreWarningLoaderPattern = dexIgnoreChangeLoaderPattern;
         this.dexMode = dexMode;
-
         this.soFilePattern = soFilePattern;
         this.resourceFilePattern = resourceFilePattern;
         this.resourceIgnoreChangePattern = resourceIgnoreChangePattern;
         this.resourceIgnoreChangeWarningPattern = resourceIgnoreChangeWarningPattern;
         this.largeModSize = largeModSize;
         this.useApplyResource = useApplyResource;
-
         this.configFields = configFields;
-
         this.sevenZipPath = sevenZipPath;
         this.arkHotPatchPath = arkHotPatchPath;
         this.arkHotPatchName = arkHotPatchName;
     }
 
     public static class Builder {
+
         /**
          * tinkerPatch
          */
-        private String  oldApk;
-        private String  newApk;
-        private String  outFolder;
-        private File    signFile;
-        private String  keypass;
-        private String  storealias;
-        private String  storepass;
-        private String  customDiffPath;
-        private String  customDiffPathArgs;
+        private String oldApk;
+
+        private String newApk;
+
+        private String outFolder;
+
+        private File signFile;
+
+        private String keypass;
+
+        private String storealias;
+
+        private String storepass;
+
+        private String customDiffPath;
+
+        private String customDiffPathArgs;
+
         private boolean ignoreWarning;
+
         private boolean allowLoaderInAnyDex;
+
         private boolean removeLoaderForAllDex;
+
         private boolean isProtectedApp;
+
         private boolean isComponentHotplugSupported;
+
         private boolean useSign;
 
         /**
          * tinkerPatch.dex
          */
         private ArrayList<String> dexFilePattern;
+
         private ArrayList<String> dexLoaderPattern;
+
         private ArrayList<String> dexIgnoreWarningLoaderPattern;
 
-        private String                  dexMode;
+        private String dexMode;
+
         /**
          * tinkerPatch.lib
          */
-        private ArrayList<String>       soFilePattern;
+        private ArrayList<String> soFilePattern;
+
         /**
          * tinkerPath.resource pattern
          */
-        private ArrayList<String>       resourceFilePattern;
+        private ArrayList<String> resourceFilePattern;
+
         /**
          * tinkerPath.resource ignoreChange
          */
-        private ArrayList<String>       resourceIgnoreChangePattern;
+        private ArrayList<String> resourceIgnoreChangePattern;
+
         /**
          * tinkerPatch.resource ignoreChangeWarning
          */
-        private ArrayList<String>       resourceIgnoreChangeWarningPattern;
+        private ArrayList<String> resourceIgnoreChangeWarningPattern;
+
         /**
          * tinkerPath.resource largeModSize
          */
-        private  int                    largeModSize;
+        private int largeModSize;
+
         /**
          * tinkerPath.buildConfig applyResourceMapping
          */
-        private boolean                 useApplyResource;
+        private boolean useApplyResource;
+
         /**
          * tinkerPatch.packageConfig
          */
         private HashMap<String, String> configFields;
+
         /**
          * tinkerPatch.sevenZip
          */
-        private String                  sevenZipPath;
+        private String sevenZipPath;
 
         /**
          * tinkerPatch ark
          */
         private String arkHotPatchPath;
-        private String arkHotPatchName;
 
+        private String arkHotPatchName;
 
         public Builder() {
         }
@@ -320,7 +333,7 @@ public class InputParam {
             return this;
         }
 
-        public Builder setRemoveLoaderForAllDex(boolean removeLoaderForAllDex){
+        public Builder setRemoveLoaderForAllDex(boolean removeLoaderForAllDex) {
             this.removeLoaderForAllDex = removeLoaderForAllDex;
             return this;
         }
@@ -376,37 +389,7 @@ public class InputParam {
         }
 
         public InputParam create() {
-            return new InputParam(
-                    oldApk,
-                    newApk,
-                    outFolder,
-                    signFile,
-                    keypass,
-                    storealias,
-                    storepass,
-                    customDiffPath,
-                    customDiffPathArgs,
-                    ignoreWarning,
-                    allowLoaderInAnyDex,
-                    removeLoaderForAllDex,
-                    isProtectedApp,
-                    isComponentHotplugSupported,
-                    useSign,
-                    dexFilePattern,
-                    dexLoaderPattern,
-                    dexIgnoreWarningLoaderPattern,
-                    dexMode,
-                    soFilePattern,
-                    resourceFilePattern,
-                    resourceIgnoreChangePattern,
-                    resourceIgnoreChangeWarningPattern,
-                    largeModSize,
-                    useApplyResource,
-                    configFields,
-                    sevenZipPath,
-                    arkHotPatchPath,
-                    arkHotPatchName
-            );
+            return new InputParam(oldApk, newApk, outFolder, signFile, keypass, storealias, storepass, customDiffPath, customDiffPathArgs, ignoreWarning, allowLoaderInAnyDex, removeLoaderForAllDex, isProtectedApp, isComponentHotplugSupported, useSign, dexFilePattern, dexLoaderPattern, dexIgnoreWarningLoaderPattern, dexMode, soFilePattern, resourceFilePattern, resourceIgnoreChangePattern, resourceIgnoreChangeWarningPattern, largeModSize, useApplyResource, configFields, sevenZipPath, arkHotPatchPath, arkHotPatchName);
         }
     }
 }

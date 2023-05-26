@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.util.CompareUtils;
@@ -23,21 +22,28 @@ import com.tencent.tinker.android.dex.util.HashCodeHelper;
  * A type definition.
  */
 public final class ClassDef extends TableOfContents.Section.Item<ClassDef> {
+
     public static final int NO_INDEX = -1;
+
     public static final int NO_OFFSET = 0;
 
     public int typeIndex;
+
     public int accessFlags;
+
     public int supertypeIndex;
+
     public int interfacesOffset;
+
     public int sourceFileIndex;
+
     public int annotationsOffset;
+
     public int classDataOffset;
+
     public int staticValuesOffset;
 
-    public ClassDef(int off, int typeIndex, int accessFlags,
-            int supertypeIndex, int interfacesOffset, int sourceFileIndex,
-            int annotationsOffset, int classDataOffset, int staticValuesOffset) {
+    public ClassDef(int off, int typeIndex, int accessFlags, int supertypeIndex, int interfacesOffset, int sourceFileIndex, int annotationsOffset, int classDataOffset, int staticValuesOffset) {
         super(off);
         this.typeIndex = typeIndex;
         this.accessFlags = accessFlags;
@@ -84,8 +90,7 @@ public final class ClassDef extends TableOfContents.Section.Item<ClassDef> {
 
     @Override
     public int hashCode() {
-        return HashCodeHelper.hash(typeIndex, accessFlags, supertypeIndex, interfacesOffset,
-                sourceFileIndex, annotationsOffset, classDataOffset, staticValuesOffset);
+        return HashCodeHelper.hash(typeIndex, accessFlags, supertypeIndex, interfacesOffset, sourceFileIndex, annotationsOffset, classDataOffset, staticValuesOffset);
     }
 
     @Override

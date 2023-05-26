@@ -13,12 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.reporter;
 
-
 import android.content.Context;
-
 import com.tencent.tinker.lib.service.TinkerPatchService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
@@ -27,7 +24,6 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 import java.io.File;
 
 /**
@@ -37,7 +33,9 @@ import java.io.File;
  * all is running in the process which loading the patch
  */
 public class DefaultLoadReporter implements LoadReporter {
+
     private static final String TAG = "Tinker.DefaultLoadReporter";
+
     protected final Context context;
 
     public DefaultLoadReporter(Context context) {
@@ -58,10 +56,8 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPatchListenerReceiveFail(File patchFile, int errorCode) {
-        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail: %s, code: %d",
-            patchFile.getAbsolutePath(), errorCode);
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchListenerReceiveFail: patch receive fail: %s, code: %d", patchFile.getAbsolutePath(), errorCode);
     }
-
 
     /**
      * we can only handle patch version change in the main process,
@@ -77,27 +73,22 @@ public class DefaultLoadReporter implements LoadReporter {
     @Override
     public void onLoadPatchVersionChanged(String oldVersion, String newVersion, File patchDirectoryFile, String currentPatchName) {
         ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchVersionChanged: patch version change from " + oldVersion + " to " + newVersion);
-
         if (oldVersion == null || newVersion == null) {
             return;
         }
         if (oldVersion.equals(newVersion)) {
             return;
         }
-
         //check main process
         if (!Tinker.with(context).isMainProcess()) {
             return;
         }
-
         // // Unnecessary now. Since other processes are killed in TinkerLoader.
         // ShareTinkerLog.i(TAG, "onLoadPatchVersionChanged, try kill all other process");
         // // kill all other process to ensure that all process's code is the same.
         // ShareTinkerInternals.killAllOtherProcess(context);
-
         // reset retry count to 1, for interpret retry
         UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(newVersion);
-
         // delete old patch files
         File[] files = patchDirectoryFile.listFiles();
         if (files != null) {
@@ -121,9 +112,8 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadInterpret(int type, Throwable e) {
-        ShareTinkerLog.i(TAG, "patch loadReporter onLoadInterpret: type: %d, throwable: %s",
-            type, e);
-        switch (type) {
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadInterpret: type: %d, throwable: %s", type, e);
+        switch(type) {
             case ShareConstants.TYPE_INTERPRET_GET_INSTRUCTION_SET_ERROR:
                 ShareTinkerLog.e(TAG, "patch loadReporter onLoadInterpret fail, can get instruction set from existed oat file");
                 break;
@@ -136,7 +126,6 @@ public class DefaultLoadReporter implements LoadReporter {
             default:
                 break;
         }
-
         retryPatch();
     }
 
@@ -156,9 +145,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadFileNotFound(File file, int fileType, boolean isDirectory) {
-        ShareTinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType: %d, isDirectory: %b",
-            file.getAbsolutePath(), fileType, isDirectory);
-
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadFileNotFound: patch file not found: %s, fileType: %d, isDirectory: %b", file.getAbsolutePath(), fileType, isDirectory);
         // only try to recover opt file
         // check dex opt file at last, some phone such as VIVO/OPPO like to change dex2oat to interpreted
         if (fileType == ShareConstants.TYPE_DEX_OPT) {
@@ -198,9 +185,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPatchInfoCorrupted(String oldVersion, String newVersion, File patchInfoFile) {
-        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchInfoCorrupted: patch info file damage: %s, from version: %s to version: %s",
-            patchInfoFile.getAbsolutePath(), oldVersion, newVersion);
-
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPatchInfoCorrupted: patch info file damage: %s, from version: %s to version: %s", patchInfoFile.getAbsolutePath(), oldVersion, newVersion);
         checkAndCleanPatch();
     }
 
@@ -234,7 +219,7 @@ public class DefaultLoadReporter implements LoadReporter {
     @Override
     public void onLoadException(Throwable e, int errorCode) {
         //for unCaught or dex exception, disable tinker all the time with sp
-        switch (errorCode) {
+        switch(errorCode) {
             case ShareConstants.ERROR_LOAD_EXCEPTION_DEX:
                 if (e.getMessage().contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
                     ShareTinkerLog.e(TAG, "patch loadReporter onLoadException: tinker dex check fail:" + e.getMessage());
@@ -257,7 +242,6 @@ public class DefaultLoadReporter implements LoadReporter {
                 ShareTinkerLog.i(TAG, "patch loadReporter onLoadException: patch load unCatch exception: %s", e);
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
                 ShareTinkerLog.i(TAG, "unCaught exception disable tinker forever with sp");
-
                 String uncaughtString = SharePatchFileUtil.checkTinkerLastUncaughtCrash(context);
                 if (!ShareTinkerInternals.isNullOrNil(uncaughtString)) {
                     File laseCrashFile = SharePatchFileUtil.getPatchLastCrashFile(context);
@@ -275,10 +259,10 @@ public class DefaultLoadReporter implements LoadReporter {
         }
         ShareTinkerLog.e(TAG, "tinker load exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
         ShareTinkerLog.printErrStackTrace(TAG, e, "tinker load exception");
-
         Tinker.with(context).setTinkerDisable();
         checkAndCleanPatch();
     }
+
     /**
      * check patch signature, TINKER_ID and meta files
      *
@@ -297,8 +281,7 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadPackageCheckFail(File patchFile, int errorCode) {
-        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPackageCheckFail: "
-            + "load patch package check fail file path: %s, errorCode: %d", patchFile.getAbsolutePath(), errorCode);
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadPackageCheckFail: " + "load patch package check fail file path: %s, errorCode: %d", patchFile.getAbsolutePath(), errorCode);
         checkAndCleanPatch();
     }
 
@@ -312,20 +295,12 @@ public class DefaultLoadReporter implements LoadReporter {
         if (!tinker.isMainProcess()) {
             return false;
         }
-
         File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
-        if (patchVersionFile != null) {
-            if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
-                ShareTinkerLog.i(TAG, "try to repair oat file on patch process");
-                TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
-                return true;
-            }
-            // else {
-            //       ShareTinkerLog.i(TAG, "repair retry exceed must max time, just clean");
-            //       checkAndCleanPatch();
-            // }
+        if (patchVersionFile != null && UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
+            ShareTinkerLog.i(TAG, "try to repair oat file on patch process");
+            TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
+            return true;
         }
-
         return false;
     }
 }

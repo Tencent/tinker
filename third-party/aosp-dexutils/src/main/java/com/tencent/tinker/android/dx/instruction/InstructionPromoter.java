@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dx.instruction;
 
 import com.tencent.tinker.android.dex.DexException;
@@ -26,6 +25,7 @@ import com.tencent.tinker.android.utils.SparseIntArray;
  * Created by tangyinsheng on 2016/8/11.
  */
 public final class InstructionPromoter extends InstructionVisitor {
+
     private final SparseIntArray addressMap = new SparseIntArray();
 
     // Notice that the unit of currentPromotedAddress is not 'byte'
@@ -58,70 +58,78 @@ public final class InstructionPromoter extends InstructionVisitor {
     @Override
     public void visitZeroRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal) {
         mapAddressIfNeeded(currentAddress);
-        switch (opcode) {
+        switch(opcode) {
             case Opcodes.SPECIAL_FORMAT:
             case Opcodes.NOP:
-            case Opcodes.RETURN_VOID: {
-                this.currentPromotedAddress += 1;
-                break;
-            }
-            case Opcodes.GOTO: {
-                int relativeTarget = InstructionCodec.getTarget(target, this.currentPromotedAddress);
-                if (relativeTarget != (byte) relativeTarget) {
+            case Opcodes.RETURN_VOID:
+                {
+                    this.currentPromotedAddress += 1;
+                    break;
+                }
+            case Opcodes.GOTO:
+                {
+                    int relativeTarget = InstructionCodec.getTarget(target, this.currentPromotedAddress);
+                    if (relativeTarget != (byte) relativeTarget) {
+                        if (relativeTarget != (short) relativeTarget) {
+                            this.currentPromotedAddress += 3;
+                        } else {
+                            this.currentPromotedAddress += 2;
+                        }
+                    } else {
+                        this.currentPromotedAddress += 1;
+                    }
+                    break;
+                }
+            case Opcodes.GOTO_16:
+                {
+                    int relativeTarget = InstructionCodec.getTarget(target, this.currentPromotedAddress);
                     if (relativeTarget != (short) relativeTarget) {
                         this.currentPromotedAddress += 3;
                     } else {
                         this.currentPromotedAddress += 2;
                     }
-                } else {
-                    this.currentPromotedAddress += 1;
+                    break;
                 }
-                break;
-            }
-            case Opcodes.GOTO_16: {
-                int relativeTarget = InstructionCodec.getTarget(target, this.currentPromotedAddress);
-                if (relativeTarget != (short) relativeTarget) {
+            case Opcodes.GOTO_32:
+                {
                     this.currentPromotedAddress += 3;
-                } else {
-                    this.currentPromotedAddress += 2;
+                    break;
                 }
-                break;
-            }
-            case Opcodes.GOTO_32: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
             case Opcodes.FILLED_NEW_ARRAY:
             case Opcodes.INVOKE_VIRTUAL:
             case Opcodes.INVOKE_SUPER:
             case Opcodes.INVOKE_DIRECT:
             case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
-            default: {
-                throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
-            }
+            case Opcodes.INVOKE_INTERFACE:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+                }
         }
     }
 
     @Override
     public void visitOneRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a) {
         mapAddressIfNeeded(currentAddress);
-        switch (opcode) {
-            case Opcodes.CONST_STRING: {
-                if (index > 0xFFFF) {
-                    this.currentPromotedAddress += 3;
-                } else {
-                    this.currentPromotedAddress += 2;
+        switch(opcode) {
+            case Opcodes.CONST_STRING:
+                {
+                    if (index > 0xFFFF) {
+                        this.currentPromotedAddress += 3;
+                    } else {
+                        this.currentPromotedAddress += 2;
+                    }
+                    break;
                 }
-                break;
-            }
-            case Opcodes.CONST_STRING_JUMBO: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
+            case Opcodes.CONST_STRING_JUMBO:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
             case Opcodes.CONST_4:
             case Opcodes.MOVE_RESULT:
             case Opcodes.MOVE_RESULT_WIDE:
@@ -132,10 +140,11 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.RETURN_OBJECT:
             case Opcodes.MONITOR_ENTER:
             case Opcodes.MONITOR_EXIT:
-            case Opcodes.THROW: {
-                this.currentPromotedAddress += 1;
-                break;
-            }
+            case Opcodes.THROW:
+                {
+                    this.currentPromotedAddress += 1;
+                    break;
+                }
             case Opcodes.IF_EQZ:
             case Opcodes.IF_NEZ:
             case Opcodes.IF_LTZ:
@@ -162,10 +171,11 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.SPUT_BOOLEAN:
             case Opcodes.SPUT_BYTE:
             case Opcodes.SPUT_CHAR:
-            case Opcodes.SPUT_SHORT: {
-                this.currentPromotedAddress += 2;
-                break;
-            }
+            case Opcodes.SPUT_SHORT:
+                {
+                    this.currentPromotedAddress += 2;
+                    break;
+                }
             case Opcodes.CONST:
             case Opcodes.CONST_WIDE_32:
             case Opcodes.FILL_ARRAY_DATA:
@@ -176,24 +186,27 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.INVOKE_SUPER:
             case Opcodes.INVOKE_DIRECT:
             case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
-            case Opcodes.CONST_WIDE: {
-                this.currentPromotedAddress += 5;
-                break;
-            }
-            default: {
-                throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
-            }
+            case Opcodes.INVOKE_INTERFACE:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
+            case Opcodes.CONST_WIDE:
+                {
+                    this.currentPromotedAddress += 5;
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+                }
         }
     }
 
     @Override
     public void visitTwoRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b) {
         mapAddressIfNeeded(currentAddress);
-        switch (opcode) {
+        switch(opcode) {
             case Opcodes.MOVE:
             case Opcodes.MOVE_WIDE:
             case Opcodes.MOVE_OBJECT:
@@ -250,16 +263,18 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.SUB_DOUBLE_2ADDR:
             case Opcodes.MUL_DOUBLE_2ADDR:
             case Opcodes.DIV_DOUBLE_2ADDR:
-            case Opcodes.REM_DOUBLE_2ADDR: {
-                this.currentPromotedAddress += 1;
-                break;
-            }
+            case Opcodes.REM_DOUBLE_2ADDR:
+                {
+                    this.currentPromotedAddress += 1;
+                    break;
+                }
             case Opcodes.MOVE_FROM16:
             case Opcodes.MOVE_WIDE_FROM16:
-            case Opcodes.MOVE_OBJECT_FROM16: {
-                this.currentPromotedAddress += 2;
-                break;
-            }
+            case Opcodes.MOVE_OBJECT_FROM16:
+                {
+                    this.currentPromotedAddress += 2;
+                    break;
+                }
             case Opcodes.ADD_INT_LIT8:
             case Opcodes.RSUB_INT_LIT8:
             case Opcodes.MUL_INT_LIT8:
@@ -300,10 +315,11 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.IPUT_BOOLEAN:
             case Opcodes.IPUT_BYTE:
             case Opcodes.IPUT_CHAR:
-            case Opcodes.IPUT_SHORT: {
-                this.currentPromotedAddress += 2;
-                break;
-            }
+            case Opcodes.IPUT_SHORT:
+                {
+                    this.currentPromotedAddress += 2;
+                    break;
+                }
             case Opcodes.MOVE_16:
             case Opcodes.MOVE_WIDE_16:
             case Opcodes.MOVE_OBJECT_16:
@@ -312,20 +328,22 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.INVOKE_SUPER:
             case Opcodes.INVOKE_DIRECT:
             case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
-            default: {
-                throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
-            }
+            case Opcodes.INVOKE_INTERFACE:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+                }
         }
     }
 
     @Override
     public void visitThreeRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b, int c) {
         mapAddressIfNeeded(currentAddress);
-        switch (opcode) {
+        switch(opcode) {
             case Opcodes.CMPL_FLOAT:
             case Opcodes.CMPG_FLOAT:
             case Opcodes.CMPL_DOUBLE:
@@ -376,129 +394,136 @@ public final class InstructionPromoter extends InstructionVisitor {
             case Opcodes.SUB_DOUBLE:
             case Opcodes.MUL_DOUBLE:
             case Opcodes.DIV_DOUBLE:
-            case Opcodes.REM_DOUBLE: {
-                this.currentPromotedAddress += 2;
-                break;
-            }
+            case Opcodes.REM_DOUBLE:
+                {
+                    this.currentPromotedAddress += 2;
+                    break;
+                }
             case Opcodes.FILLED_NEW_ARRAY:
             case Opcodes.INVOKE_VIRTUAL:
             case Opcodes.INVOKE_SUPER:
             case Opcodes.INVOKE_DIRECT:
             case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
-            default: {
-                throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
-            }
+            case Opcodes.INVOKE_INTERFACE:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+                }
         }
     }
 
     @Override
     public void visitFourRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b, int c, int d) {
         mapAddressIfNeeded(currentAddress);
-        switch (opcode) {
+        switch(opcode) {
             case Opcodes.FILLED_NEW_ARRAY:
             case Opcodes.INVOKE_VIRTUAL:
             case Opcodes.INVOKE_SUPER:
             case Opcodes.INVOKE_DIRECT:
             case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
-            default: {
-                throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
-            }
+            case Opcodes.INVOKE_INTERFACE:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+                }
         }
     }
 
     @Override
     public void visitFiveRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b, int c, int d, int e) {
         mapAddressIfNeeded(currentAddress);
-        switch (opcode) {
+        switch(opcode) {
             case Opcodes.FILLED_NEW_ARRAY:
             case Opcodes.INVOKE_VIRTUAL:
             case Opcodes.INVOKE_SUPER:
             case Opcodes.INVOKE_DIRECT:
             case Opcodes.INVOKE_STATIC:
-            case Opcodes.INVOKE_INTERFACE: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
-            default: {
-                throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
-            }
+            case Opcodes.INVOKE_INTERFACE:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+                }
         }
     }
 
     @Override
     public void visitRegisterRangeInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int registerCount) {
         mapAddressIfNeeded(currentAddress);
-        switch (opcode) {
+        switch(opcode) {
             case Opcodes.FILLED_NEW_ARRAY_RANGE:
             case Opcodes.INVOKE_VIRTUAL_RANGE:
             case Opcodes.INVOKE_SUPER_RANGE:
             case Opcodes.INVOKE_DIRECT_RANGE:
             case Opcodes.INVOKE_STATIC_RANGE:
-            case Opcodes.INVOKE_INTERFACE_RANGE: {
-                this.currentPromotedAddress += 3;
-                break;
-            }
-            default: {
-                throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
-            }
+            case Opcodes.INVOKE_INTERFACE_RANGE:
+                {
+                    this.currentPromotedAddress += 3;
+                    break;
+                }
+            default:
+                {
+                    throw new IllegalStateException("unexpected opcode: " + Hex.u2or4(opcode));
+                }
         }
     }
 
     @Override
     public void visitSparseSwitchPayloadInsn(int currentAddress, int opcode, int[] keys, int[] targets) {
         mapAddressIfNeeded(currentAddress);
-
         this.currentPromotedAddress += 2;
-
         this.currentPromotedAddress += keys.length * 2;
-
         this.currentPromotedAddress += targets.length * 2;
     }
 
     @Override
     public void visitPackedSwitchPayloadInsn(int currentAddress, int opcode, int firstKey, int[] targets) {
         mapAddressIfNeeded(currentAddress);
-
         this.currentPromotedAddress += 2 + 2;
-
         this.currentPromotedAddress += targets.length * 2;
     }
 
     @Override
     public void visitFillArrayDataPayloadInsn(int currentAddress, int opcode, Object data, int size, int elementWidth) {
         mapAddressIfNeeded(currentAddress);
-
         this.currentPromotedAddress += 2 + 2;
-
-        switch (elementWidth) {
-            case 1: {
-                int length = ((byte[]) data).length;
-                this.currentPromotedAddress += (length >> 1) + (length & 1);
-                break;
-            }
-            case 2: {
-                this.currentPromotedAddress += ((short[]) data).length * 1;
-                break;
-            }
-            case 4: {
-                this.currentPromotedAddress += ((int[]) data).length * 2;
-                break;
-            }
-            case 8: {
-                this.currentPromotedAddress += ((long[]) data).length * 4;
-                break;
-            }
-            default: {
-                throw new DexException("bogus element_width: " + Hex.u2(elementWidth));
-            }
+        switch(elementWidth) {
+            case 1:
+                {
+                    int length = ((byte[]) data).length;
+                    this.currentPromotedAddress += (length >> 1) + (length & 1);
+                    break;
+                }
+            case 2:
+                {
+                    this.currentPromotedAddress += ((short[]) data).length * 1;
+                    break;
+                }
+            case 4:
+                {
+                    this.currentPromotedAddress += ((int[]) data).length * 2;
+                    break;
+                }
+            case 8:
+                {
+                    this.currentPromotedAddress += ((long[]) data).length * 4;
+                    break;
+                }
+            default:
+                {
+                    throw new DexException("bogus element_width: " + Hex.u2(elementWidth));
+                }
         }
     }
 }

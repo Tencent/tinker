@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import com.tencent.tinker.loader.TinkerRuntimeException;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,16 +27,22 @@ import java.util.regex.Pattern;
  * Created by zhangshaowen on 16/8/9.
  */
 public class ShareResPatchInfo {
+
     public String arscBaseCrc = null;
 
-    public String                resArscMd5 = null;
-    public ArrayList<String>     addRes     = new ArrayList<>();
-    public ArrayList<String>     deleteRes  = new ArrayList<>();
-    public ArrayList<String>     modRes     = new ArrayList<>();
-    public HashMap<String, File> storeRes   = new HashMap<>();
+    public String resArscMd5 = null;
+
+    public ArrayList<String> addRes = new ArrayList<>();
+
+    public ArrayList<String> deleteRes = new ArrayList<>();
+
+    public ArrayList<String> modRes = new ArrayList<>();
+
+    public HashMap<String, File> storeRes = new HashMap<>();
 
     //use linkHashMap instead?
-    public ArrayList<String>              largeModRes = new ArrayList<>();
+    public ArrayList<String> largeModRes = new ArrayList<>();
+
     public HashMap<String, LargeModeInfo> largeModMap = new HashMap<>();
 
     public HashSet<Pattern> patterns = new HashSet<>();
@@ -108,12 +112,11 @@ public class ShareResPatchInfo {
                 }
             }
         }
-
     }
 
     public static boolean checkFileInPattern(HashSet<Pattern> patterns, String key) {
         if (!patterns.isEmpty()) {
-            for (Iterator<Pattern> it = patterns.iterator(); it.hasNext();) {
+            for (Iterator<Pattern> it = patterns.iterator(); it.hasNext(); ) {
                 Pattern p = it.next();
                 if (p.matcher(key).matches()) {
                     return true;
@@ -170,7 +173,6 @@ public class ShareResPatchInfo {
         StringBuffer sb = new StringBuffer();
         sb.append("resArscMd5:" + resArscMd5 + "\n");
         sb.append("arscBaseCrc:" + arscBaseCrc + "\n");
-
         for (Pattern pattern : patterns) {
             sb.append("pattern:" + pattern + "\n");
         }
@@ -193,9 +195,11 @@ public class ShareResPatchInfo {
     }
 
     public static class LargeModeInfo {
+
         public String md5 = null;
+
         public long crc;
+
         public File file = null;
     }
-
 }

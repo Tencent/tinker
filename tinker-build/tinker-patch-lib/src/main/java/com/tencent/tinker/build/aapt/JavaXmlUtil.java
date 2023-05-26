@@ -13,22 +13,18 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 package com.tencent.tinker.build.aapt;
 
 import com.tencent.tinker.commons.util.IOHelper;
-
 import org.w3c.dom.Document;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -52,6 +48,7 @@ public final class JavaXmlUtil {
             // Block any external content resolving actions since we don't need them and a report
             // says these actions may cause security problems.
             documentBuilder.setEntityResolver(new EntityResolver() {
+
                 @Override
                 public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
                     return new InputSource();
@@ -135,6 +132,7 @@ public final class JavaXmlUtil {
     }
 
     public static class JavaXmlUtilException extends RuntimeException {
+
         private static final long serialVersionUID = 4669527982017700891L;
 
         public JavaXmlUtilException(Throwable cause) {

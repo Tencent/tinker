@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.util;
 
 import android.app.Application;
@@ -23,6 +22,8 @@ import android.content.Context;
  * Created by zhangshaowen on 16/8/9.
  */
 public class SampleApplicationContext {
+
     public static Application application = null;
+
     public static Context context = null;
 }

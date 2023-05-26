@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.anno;
 
 import java.io.IOException;
@@ -23,7 +22,6 @@ import java.io.Writer;
 import java.util.LinkedHashSet;
 import java.util.Scanner;
 import java.util.Set;
-
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -33,7 +31,6 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-
 /**
  * Tinker Annotations Processor
  *
@@ -42,15 +39,14 @@ import javax.tools.JavaFileObject;
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class AnnotationProcessor extends AbstractProcessor {
 
-    private static final String SUFFIX                    = "$$DefaultLifeCycle";
+    private static final String SUFFIX = "$$DefaultLifeCycle";
+
     private static final String APPLICATION_TEMPLATE_PATH = "/TinkerAnnoApplication.tmpl";
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         final Set<String> supportedAnnotationTypes = new LinkedHashSet<>();
-
         supportedAnnotationTypes.add(DefaultLifeCycle.class.getName());
-
         return supportedAnnotationTypes;
     }
 
@@ -60,41 +56,27 @@ public class AnnotationProcessor extends AbstractProcessor {
         return true;
     }
 
-
     private void processDefaultLifeCycle(Set<? extends Element> elements) {
         // DefaultLifeCycle
         for (Element e : elements) {
             DefaultLifeCycle ca = e.getAnnotation(DefaultLifeCycle.class);
-
             String lifeCycleClassName = ((TypeElement) e).getQualifiedName().toString();
             String lifeCyclePackageName = lifeCycleClassName.substring(0, lifeCycleClassName.lastIndexOf('.'));
             lifeCycleClassName = lifeCycleClassName.substring(lifeCycleClassName.lastIndexOf('.') + 1);
-
             String applicationClassName = ca.application();
             if (applicationClassName.startsWith(".")) {
                 applicationClassName = lifeCyclePackageName + applicationClassName;
             }
             String applicationPackageName = applicationClassName.substring(0, applicationClassName.lastIndexOf('.'));
             applicationClassName = applicationClassName.substring(applicationClassName.lastIndexOf('.') + 1);
-
             String loaderClassName = ca.loaderClass();
             if (loaderClassName.startsWith(".")) {
                 loaderClassName = lifeCyclePackageName + loaderClassName;
             }
-
             final InputStream is = AnnotationProcessor.class.getResourceAsStream(APPLICATION_TEMPLATE_PATH);
             final Scanner scanner = new Scanner(is);
             final String template = scanner.useDelimiter("\\A").next();
-            final String fileContent = template
-                .replaceAll("%PACKAGE%", applicationPackageName)
-                .replaceAll("%APPLICATION%", applicationClassName)
-                .replaceAll("%APPLICATION_LIFE_CYCLE%", lifeCyclePackageName + "." + lifeCycleClassName)
-                .replaceAll("%TINKER_FLAGS%", "" + ca.flags())
-                .replaceAll("%TINKER_LOADER_CLASS%", "" + loaderClassName)
-                .replaceAll("%TINKER_LOAD_VERIFY_FLAG%", "" + ca.loadVerifyFlag())
-                .replaceAll("%TINKER_USE_DLC%", "" + ca.useDelegateLastClassLoader())
-                .replaceAll("%TINKER_USE_INTERPRET_MODE_ON_SUPPORTED_32BIT_SYSTEM%", "" + ca.useInterpretModeOnSupported32BitSystem());
-
+            final String fileContent = template.replaceAll("%PACKAGE%", applicationPackageName).replaceAll("%APPLICATION%", applicationClassName).replaceAll("%APPLICATION_LIFE_CYCLE%", lifeCyclePackageName + "." + lifeCycleClassName).replaceAll("%TINKER_FLAGS%", "" + ca.flags()).replaceAll("%TINKER_LOADER_CLASS%", "" + loaderClassName).replaceAll("%TINKER_LOAD_VERIFY_FLAG%", "" + ca.loadVerifyFlag()).replaceAll("%TINKER_USE_DLC%", "" + ca.useDelegateLastClassLoader()).replaceAll("%TINKER_USE_INTERPRET_MODE_ON_SUPPORTED_32BIT_SYSTEM%", "" + ca.useInterpretModeOnSupported32BitSystem());
             try {
                 JavaFileObject fileObject = processingEnv.getFiler().createSourceFile(applicationPackageName + "." + applicationClassName);
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Creating " + fileObject.toUri());
@@ -103,7 +85,6 @@ public class AnnotationProcessor extends AbstractProcessor {
                     PrintWriter pw = new PrintWriter(writer);
                     pw.print(fileContent);
                     pw.flush();
-
                 } finally {
                     writer.close();
                 }

@@ -13,17 +13,15 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader;
 
 import android.content.Intent;
-
 import com.tencent.tinker.loader.app.TinkerApplication;
-
 
 /**
  * Created by zhangshaowen on 16/4/30.
  */
 public abstract class AbstractTinkerLoader {
+
     abstract public Intent tryLoad(TinkerApplication app);
 }

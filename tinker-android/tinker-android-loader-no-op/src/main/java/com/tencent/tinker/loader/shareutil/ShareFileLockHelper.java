@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import java.io.Closeable;
@@ -26,15 +25,19 @@ import java.nio.channels.FileLock;
  * Created by zhangshaowen on 16/6/3.
  */
 public class ShareFileLockHelper implements Closeable {
-    public static final int MAX_LOCK_ATTEMPTS   = 3;
+
+    public static final int MAX_LOCK_ATTEMPTS = 3;
+
     public static final int LOCK_WAIT_EACH_TIME = 10;
+
     private static final String TAG = "Tinker.FileLockHelper";
+
     private final FileOutputStream outputStream;
-    private final FileLock         fileLock;
+
+    private final FileLock fileLock;
 
     private ShareFileLockHelper(File lockFile) throws IOException {
         outputStream = new FileOutputStream(lockFile);
-
         int numAttempts = 0;
         boolean isGetLockSuccess;
         FileLock localFileLock = null;
@@ -48,12 +51,10 @@ public class ShareFileLockHelper implements Closeable {
                 if (isGetLockSuccess) {
                     break;
                 }
-
             } catch (Exception e) {
                 saveException = e;
                 ShareTinkerLog.e(TAG, "getInfoLock Thread failed time:" + LOCK_WAIT_EACH_TIME);
             }
-
             //it can just sleep 0, afraid of cpu scheduling
             try {
                 Thread.sleep(LOCK_WAIT_EACH_TIME);
@@ -61,7 +62,6 @@ public class ShareFileLockHelper implements Closeable {
                 ShareTinkerLog.e(TAG, "getInfoLock Thread sleep exception", ignore);
             }
         }
-
         if (localFileLock == null) {
             throw new IOException("Tinker Exception:FileLockHelper lock file failed: " + lockFile.getAbsolutePath(), saveException);
         }

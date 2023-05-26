@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.android.dex;
 
 import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
@@ -21,15 +20,17 @@ import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dex.util.HashCodeHelper;
 
 public final class ClassData extends Item<ClassData> {
+
     public Field[] staticFields;
+
     public Field[] instanceFields;
+
     public Method[] directMethods;
+
     public Method[] virtualMethods;
 
-    public ClassData(int off, Field[] staticFields, Field[] instanceFields,
-            Method[] directMethods, Method[] virtualMethods) {
+    public ClassData(int off, Field[] staticFields, Field[] instanceFields, Method[] directMethods, Method[] virtualMethods) {
         super(off);
-
         this.staticFields = staticFields;
         this.instanceFields = instanceFields;
         this.directMethods = directMethods;
@@ -96,15 +97,15 @@ public final class ClassData extends Item<ClassData> {
         for (Method method : methods) {
             int methodIndexDelta = method.methodIndex - prevMethodIndex;
             prevMethodIndex = method.methodIndex;
-            res += Leb128.unsignedLeb128Size(methodIndexDelta)
-                 + Leb128.unsignedLeb128Size(method.accessFlags)
-                 + Leb128.unsignedLeb128Size(method.codeOffset);
+            res += Leb128.unsignedLeb128Size(methodIndexDelta) + Leb128.unsignedLeb128Size(method.accessFlags) + Leb128.unsignedLeb128Size(method.codeOffset);
         }
         return res;
     }
 
     public static class Field implements Comparable<Field> {
+
         public int fieldIndex;
+
         public int accessFlags;
 
         public Field(int fieldIndex, int accessFlags) {
@@ -136,8 +137,11 @@ public final class ClassData extends Item<ClassData> {
     }
 
     public static class Method implements Comparable<Method> {
+
         public int methodIndex;
+
         public int accessFlags;
+
         public int codeOffset;
 
         public Method(int methodIndex, int accessFlags, int codeOffset) {

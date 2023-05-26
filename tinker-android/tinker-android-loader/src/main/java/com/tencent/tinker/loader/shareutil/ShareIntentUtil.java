@@ -13,11 +13,9 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import android.content.Intent;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,28 +24,45 @@ import java.util.HashMap;
  * Created by zhangshaowen on 16/3/18.
  */
 public class ShareIntentUtil {
+
     //intent
-    public static final  String INTENT_RETURN_CODE               = "intent_return_code";
-    public static final  String INTENT_PATCH_OLD_VERSION         = "intent_patch_old_version";
-    public static final  String INTENT_PATCH_NEW_VERSION         = "intent_patch_new_version";
-    public static final  String INTENT_IS_PROTECTED_APP          = "intent_is_protected_app";
-    public static final  String INTENT_USE_CUSTOM_PATCH          = "intent_use_custom_patch";
-    public static final  String INTENT_PATCH_MISMATCH_DEX_PATH   = "intent_patch_mismatch_dex_path";
-    public static final  String INTENT_PATCH_MISSING_DEX_PATH    = "intent_patch_missing_dex_path";
-    public static final  String INTENT_PATCH_DEXES_PATH          = "intent_patch_dexes_path";
-    public static final  String INTENT_PATCH_MISMATCH_LIB_PATH   = "intent_patch_mismatch_lib_path";
-    public static final  String INTENT_PATCH_MISSING_LIB_PATH    = "intent_patch_missing_lib_path";
-    public static final  String INTENT_PATCH_LIBS_PATH           = "intent_patch_libs_path";
-    public static final  String INTENT_PATCH_COST_TIME           = "intent_patch_cost_time";
-    public static final  String INTENT_PATCH_EXCEPTION           = "intent_patch_exception";
-    public static final  String INTENT_PATCH_PACKAGE_PATCH_CHECK = "intent_patch_package_patch_check";
-    public static final  String INTENT_PATCH_PACKAGE_CONFIG      = "intent_patch_package_config";
-    public static final  String INTENT_PATCH_SYSTEM_OTA          = "intent_patch_system_ota";
-    public static final  String INTENT_PATCH_OAT_DIR             = "intent_patch_oat_dir";
-    public static final  String INTENT_PATCH_INTERPRET_EXCEPTION = "intent_patch_interpret_exception";
+    public static final String INTENT_RETURN_CODE = "intent_return_code";
 
+    public static final String INTENT_PATCH_OLD_VERSION = "intent_patch_old_version";
 
-    private static final String TAG                              = "ShareIntentUtil";
+    public static final String INTENT_PATCH_NEW_VERSION = "intent_patch_new_version";
+
+    public static final String INTENT_IS_PROTECTED_APP = "intent_is_protected_app";
+
+    public static final String INTENT_USE_CUSTOM_PATCH = "intent_use_custom_patch";
+
+    public static final String INTENT_PATCH_MISMATCH_DEX_PATH = "intent_patch_mismatch_dex_path";
+
+    public static final String INTENT_PATCH_MISSING_DEX_PATH = "intent_patch_missing_dex_path";
+
+    public static final String INTENT_PATCH_DEXES_PATH = "intent_patch_dexes_path";
+
+    public static final String INTENT_PATCH_MISMATCH_LIB_PATH = "intent_patch_mismatch_lib_path";
+
+    public static final String INTENT_PATCH_MISSING_LIB_PATH = "intent_patch_missing_lib_path";
+
+    public static final String INTENT_PATCH_LIBS_PATH = "intent_patch_libs_path";
+
+    public static final String INTENT_PATCH_COST_TIME = "intent_patch_cost_time";
+
+    public static final String INTENT_PATCH_EXCEPTION = "intent_patch_exception";
+
+    public static final String INTENT_PATCH_PACKAGE_PATCH_CHECK = "intent_patch_package_patch_check";
+
+    public static final String INTENT_PATCH_PACKAGE_CONFIG = "intent_patch_package_config";
+
+    public static final String INTENT_PATCH_SYSTEM_OTA = "intent_patch_system_ota";
+
+    public static final String INTENT_PATCH_OAT_DIR = "intent_patch_oat_dir";
+
+    public static final String INTENT_PATCH_INTERPRET_EXCEPTION = "intent_patch_interpret_exception";
+
+    private static final String TAG = "ShareIntentUtil";
 
     public static void setIntentReturnCode(Intent intent, int code) {
         intent.putExtra(INTENT_RETURN_CODE, code);
@@ -105,7 +120,6 @@ public class ShareIntentUtil {
         return null;
     }
 
-
     public static ArrayList<String> getStringArrayListExtra(Intent intent, String name) {
         if (null == intent) {
             return null;
@@ -119,7 +133,6 @@ public class ShareIntentUtil {
         }
         return ret;
     }
-
 
     public static String getStringExtra(Intent intent, String name) {
         if (null == intent) {
@@ -162,7 +175,6 @@ public class ShareIntentUtil {
         }
         return ret;
     }
-
 
     public static boolean getBooleanExtra(Intent intent, String name, boolean defaultValue) {
         if (null == intent) {

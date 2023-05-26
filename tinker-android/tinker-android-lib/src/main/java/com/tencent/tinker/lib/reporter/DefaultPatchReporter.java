@@ -13,13 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.reporter;
-
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.lib.service.DefaultTinkerResultService;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
@@ -28,7 +25,6 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchInfo;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
-
 import java.io.File;
 import java.util.List;
 
@@ -39,15 +35,20 @@ import java.util.List;
  * all is running in the :patch process
  */
 public class DefaultPatchReporter implements PatchReporter {
+
     private static final String TAG = "Tinker.DefaultPatchReporter";
+
     private static boolean shouldRetry = false;
+
     protected final Context context;
 
     public DefaultPatchReporter(Context context) {
         this.context = context;
     }
 
-    /************************************ :patch process below ***************************************/
+    /**
+     * ********************************* :patch process below **************************************
+     */
     /**
      * use for report or some work at the beginning of TinkerPatchService
      * {@code TinkerPatchService.onHandleIntent} begin
@@ -59,7 +60,6 @@ public class DefaultPatchReporter implements PatchReporter {
         ShareTinkerLog.i(TAG, "patchReporter onPatchServiceStart: patch service start");
         shouldRetry = false;
         UpgradePatchRetry.getInstance(context).onPatchServiceStart(intent);
-
     }
 
     /**
@@ -80,12 +80,9 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchPackageCheckFail(File patchFile, int errorCode) {
-        ShareTinkerLog.i(TAG, "patchReporter onPatchPackageCheckFail: package check failed. path: %s, code: %d",
-            patchFile.getAbsolutePath(), errorCode);
+        ShareTinkerLog.i(TAG, "patchReporter onPatchPackageCheckFail: package check failed. path: %s, code: %d", patchFile.getAbsolutePath(), errorCode);
         //only meta corrupted, need to delete temp files. others is just in the check time!
-        if (errorCode == ShareConstants.ERROR_PACKAGE_CHECK_DEX_META_CORRUPTED
-            || errorCode == ShareConstants.ERROR_PACKAGE_CHECK_LIB_META_CORRUPTED
-            || errorCode == ShareConstants.ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED) {
+        if (errorCode == ShareConstants.ERROR_PACKAGE_CHECK_DEX_META_CORRUPTED || errorCode == ShareConstants.ERROR_PACKAGE_CHECK_LIB_META_CORRUPTED || errorCode == ShareConstants.ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED) {
             //delete temp files
             Tinker.with(context).cleanPatchByPatchApk(patchFile);
         }
@@ -101,8 +98,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchVersionCheckFail(File patchFile, SharePatchInfo oldPatchInfo, String patchFileVersion) {
-        ShareTinkerLog.i(TAG, "patchReporter onPatchVersionCheckFail: patch version exist. path: %s, version: %s",
-            patchFile.getAbsolutePath(), patchFileVersion);
+        ShareTinkerLog.i(TAG, "patchReporter onPatchVersionCheckFail: patch version exist. path: %s, version: %s", patchFile.getAbsolutePath(), patchFileVersion);
         //no need to delete temp files, because it is only in the check time!
     }
 
@@ -121,8 +117,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchTypeExtractFail(File patchFile, File extractTo, String filename, int fileType) {
-        ShareTinkerLog.i(TAG, "patchReporter onPatchTypeExtractFail: file extract fail type: %s, path: %s, extractTo: %s, filename: %s",
-            ShareTinkerInternals.getTypeString(fileType), patchFile.getPath(), extractTo.getPath(), filename);
+        ShareTinkerLog.i(TAG, "patchReporter onPatchTypeExtractFail: file extract fail type: %s, path: %s, extractTo: %s, filename: %s", ShareTinkerInternals.getTypeString(fileType), patchFile.getPath(), extractTo.getPath(), filename);
         //delete temp files
         Tinker.with(context).cleanPatchByPatchApk(patchFile);
     }
@@ -136,14 +131,11 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchDexOptFail(File patchFile, List<File> dexFiles, Throwable t) {
-        ShareTinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path: %s, dex size: %d",
-            patchFile.getAbsolutePath(), dexFiles.size());
+        ShareTinkerLog.i(TAG, "patchReporter onPatchDexOptFail: dex opt fail path: %s, dex size: %d", patchFile.getAbsolutePath(), dexFiles.size());
         ShareTinkerLog.printErrStackTrace(TAG, t, "onPatchDexOptFail:");
-
         // some phone such as VIVO/OPPO like to change dex2oat to interpreted may go here
         // check oat file if it is elf format
-        if (t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)
-            || t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
+        if (t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL) || t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
             shouldRetry = true;
             deleteOptFiles(dexFiles);
         } else {
@@ -160,8 +152,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchResult(File patchFile, boolean success, long cost) {
-        ShareTinkerLog.i(TAG, "patchReporter onPatchResult: patch all result path: %s, success: %b, cost: %d",
-            patchFile.getAbsolutePath(), success, cost);
+        ShareTinkerLog.i(TAG, "patchReporter onPatchResult: patch all result path: %s, success: %b, cost: %d", patchFile.getAbsolutePath(), success, cost);
         // if should retry don't delete the temp file
         if (!shouldRetry) {
             UpgradePatchRetry.getInstance(context).onPatchServiceResult();
@@ -178,8 +169,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchInfoCorrupted(File patchFile, String oldVersion, String newVersion) {
-        ShareTinkerLog.i(TAG, "patchReporter onPatchInfoCorrupted: patch info is corrupted. old: %s, new: %s",
-            oldVersion, newVersion);
+        ShareTinkerLog.i(TAG, "patchReporter onPatchInfoCorrupted: patch info is corrupted. old: %s, new: %s", oldVersion, newVersion);
         //patch.info is corrupted, just clean all patch
         Tinker.with(context).cleanPatch();
     }
@@ -194,8 +184,7 @@ public class DefaultPatchReporter implements PatchReporter {
      */
     @Override
     public void onPatchException(File patchFile, Throwable e) {
-        ShareTinkerLog.i(TAG, "patchReporter onPatchException: patch exception path: %s, throwable: %s",
-            patchFile.getAbsolutePath(), e.getMessage());
+        ShareTinkerLog.i(TAG, "patchReporter onPatchException: patch exception path: %s, throwable: %s", patchFile.getAbsolutePath(), e.getMessage());
         ShareTinkerLog.e(TAG, "tinker patch exception, welcome to submit issue to us: https://github.com/Tencent/tinker/issues");
         // if (e.getMessage().contains(ShareConstants.CHECK_VM_PROPERTY_FAIL)) {
         //     ShareTinkerInternals.setTinkerDisableWithSharedPreferences(context);
@@ -213,5 +202,4 @@ public class DefaultPatchReporter implements PatchReporter {
             SharePatchFileUtil.safeDeleteFile(file);
         }
     }
-
 }

@@ -13,19 +13,23 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.commons.dexpatcher.struct;
 
 /**
  * Created by tangyinsheng on 2016/6/29.
  */
 public final class PatchOperation<T> {
+
     public static final int OP_DEL = 0;
+
     public static final int OP_ADD = 1;
+
     public static final int OP_REPLACE = 2;
 
     public int op;
+
     public int index;
+
     public T newItem;
 
     public PatchOperation(int op, int index) {
@@ -39,7 +43,7 @@ public final class PatchOperation<T> {
     }
 
     public static String translateOpToString(int op) {
-        switch (op) {
+        switch(op) {
             case OP_DEL:
                 return "OP_DEL";
             case OP_ADD:

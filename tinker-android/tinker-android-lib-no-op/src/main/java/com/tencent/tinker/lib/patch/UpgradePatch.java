@@ -13,21 +13,19 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.patch;
 
 import android.content.Context;
-
 import com.tencent.tinker.lib.service.PatchResult;
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
-
 
 /**
  * generate new patch, you can implement your own patch processor class
  * Created by zhangshaowen on 16/3/14.
  */
 public class UpgradePatch extends AbstractPatch {
+
     private static final String TAG = "Tinker.UpgradePatch";
 
     @Override

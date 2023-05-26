@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tinker.sample.android.util;
 
 import android.content.BroadcastReceiver;
@@ -22,10 +21,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Environment;
 import android.os.StatFs;
-
 import com.tencent.tinker.lib.util.TinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -35,16 +32,21 @@ import java.io.PrintStream;
  * Created by zhangshaowen on 16/4/7.
  */
 public class Utils {
+
     private static final String TAG = "Tinker.Utils";
 
     /**
      * the error code define by myself
      * should after {@code ShareConstants.ERROR_PATCH_INSERVICE
      */
-    public static final int ERROR_PATCH_GOOGLEPLAY_CHANNEL      = -20;
-    public static final int ERROR_PATCH_ROM_SPACE               = -21;
-    public static final int ERROR_PATCH_MEMORY_LIMIT            = -22;
-    public static final int ERROR_PATCH_CRASH_LIMIT             = -23;
+    public static final int ERROR_PATCH_GOOGLEPLAY_CHANNEL = -20;
+
+    public static final int ERROR_PATCH_ROM_SPACE = -21;
+
+    public static final int ERROR_PATCH_MEMORY_LIMIT = -22;
+
+    public static final int ERROR_PATCH_CRASH_LIMIT = -23;
+
     public static final int ERROR_PATCH_CONDITION_NOT_SATISFIED = -24;
 
     public static final String PLATFORM = "platform";
@@ -76,7 +78,6 @@ public class Utils {
         if (!checkRomSpaceEnough(roomSize)) {
             return Utils.ERROR_PATCH_ROM_SPACE;
         }
-
         return ShareConstants.ERROR_PATCH_OK;
     }
 
@@ -103,7 +104,6 @@ public class Utils {
         } catch (Exception e) {
             allSize = 0;
         }
-
         if (allSize != 0 && availableSize > limitSize) {
             return true;
         }
@@ -113,7 +113,6 @@ public class Utils {
     public static String getExceptionCauseString(final Throwable ex) {
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final PrintStream ps = new PrintStream(bos);
-
         try {
             // print directly
             Throwable t = ex;
@@ -133,16 +132,13 @@ public class Utils {
 
     private static String toVisualString(String src) {
         boolean cutFlg = false;
-
         if (null == src) {
             return null;
         }
-
         char[] chr = src.toCharArray();
         if (null == chr) {
             return null;
         }
-
         int i = 0;
         for (; i < chr.length; i++) {
             if (chr[i] > 127) {
@@ -151,7 +147,6 @@ public class Utils {
                 break;
             }
         }
-
         if (cutFlg) {
             return new String(chr, 0, i);
         } else {
@@ -160,24 +155,23 @@ public class Utils {
     }
 
     public static class ScreenState {
+
         public interface IOnScreenOff {
+
             void onScreenOff();
         }
 
         public ScreenState(final Context context, final IOnScreenOff onScreenOffInterface) {
             IntentFilter filter = new IntentFilter();
             filter.addAction(Intent.ACTION_SCREEN_OFF);
-
             context.registerReceiver(new BroadcastReceiver() {
 
                 @Override
                 public void onReceive(Context context, Intent in) {
                     String action = in == null ? "" : in.getAction();
                     TinkerLog.i(TAG, "ScreenReceiver action [%s] ", action);
-                    if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-                        if (onScreenOffInterface != null) {
-                            onScreenOffInterface.onScreenOff();
-                        }
+                    if (Intent.ACTION_SCREEN_OFF.equals(action) && onScreenOffInterface != null) {
+                        onScreenOffInterface.onScreenOff();
                     }
                     context.unregisterReceiver(this);
                 }

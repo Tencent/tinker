@@ -13,12 +13,10 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -26,6 +24,7 @@ import java.io.IOException;
  * Created by zhangshaowen on 16/4/7.
  */
 public class Logger {
+
     private static InfoWriter logWriter;
 
     public static void initLogger(Configuration config) throws IOException {
@@ -44,14 +43,12 @@ public class Logger {
     }
 
     public static void d(final String format, final Object... obj) {
-
         String log = obj.length == 0 ? format : String.format(format, obj);
         if (log == null) {
             log = "";
         }
         System.out.println(log);
         System.out.flush();
-
         logWriter.writeLineToInfoFile(log);
     }
 
@@ -66,8 +63,6 @@ public class Logger {
         }
         System.err.println(log);
         System.err.flush();
-
         logWriter.writeLineToInfoFile(log);
     }
-
 }

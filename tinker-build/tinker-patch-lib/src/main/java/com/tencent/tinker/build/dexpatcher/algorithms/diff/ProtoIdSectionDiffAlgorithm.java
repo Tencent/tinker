@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.dexpatcher.algorithms.diff;
 
 import com.tencent.tinker.android.dex.Dex;
@@ -28,6 +27,7 @@ import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
  * Created by tangyinsheng on 2016/6/30.
  */
 public class ProtoIdSectionDiffAlgorithm extends DexSectionDiffAlgorithm<ProtoId> {
+
     public ProtoIdSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {
         super(oldDex, newDex, oldToNewIndexMap, oldToPatchedIndexMap, newToPatchedIndexMap, selfIndexMapForSkip);
     }

@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.loader.shareutil;
 
 import android.annotation.SuppressLint;
@@ -27,9 +26,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Build.VERSION;
 import android.text.TextUtils;
-
 import com.tencent.tinker.loader.TinkerRuntimeException;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -57,19 +54,27 @@ import java.util.zip.ZipFile;
  * Created by zhangshaowen on 16/3/10.
  */
 public class ShareTinkerInternals {
-    private static final String  TAG                   = "Tinker.TinkerInternals";
-    private static final boolean VM_IS_ART             = isVmArt(System.getProperty("java.vm.version"));
-    private static final boolean VM_IS_JIT             = isVmJitInternal();
-    private static final String  PATCH_PROCESS_NAME    = ":patch";
 
-    private static       Boolean isPatchProcess        = null;
-    private static       Boolean isARKHotRunning       = null;
+    private static final String TAG = "Tinker.TinkerInternals";
+
+    private static final boolean VM_IS_ART = isVmArt(System.getProperty("java.vm.version"));
+
+    private static final boolean VM_IS_JIT = isVmJitInternal();
+
+    private static final String PATCH_PROCESS_NAME = ":patch";
+
+    private static Boolean isPatchProcess = null;
+
+    private static Boolean isARKHotRunning = null;
+
     /**
      * or you may just hardcode them in your app
      */
-    private static final String[]  processName           = {null};
-    private static       String    tinkerID              = null;
-    private static       String    currentInstructionSet = null;
+    private static final String[] processName = { null };
+
+    private static String tinkerID = null;
+
+    private static String currentInstructionSet = null;
 
     public static boolean isVmArt() {
         return VM_IS_ART || Build.VERSION.SDK_INT >= 21;
@@ -86,8 +91,7 @@ public class ShareTinkerInternals {
         isARKHotRunning = false;
         Class<?> arkApplicationInfo = null;
         try {
-            arkApplicationInfo = ClassLoader.getSystemClassLoader()
-                .getParent().loadClass("com.huawei.ark.app.ArkApplicationInfo");
+            arkApplicationInfo = ClassLoader.getSystemClassLoader().getParent().loadClass("com.huawei.ark.app.ArkApplicationInfo");
             Method isRunningInArkHot = null;
             isRunningInArkHot = arkApplicationInfo.getDeclaredMethod("isRunningInArk");
             isRunningInArkHot.setAccessible(true);
@@ -116,14 +120,13 @@ public class ShareTinkerInternals {
         if (currentInstructionSet != null) {
             return currentInstructionSet;
         }
-
         try {
             Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
             Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
             currentGet.setAccessible(true);
             currentInstructionSet = (String) currentGet.invoke(null);
         } catch (Throwable ignored) {
-            switch (Build.CPU_ABI) {
+            switch(Build.CPU_ABI) {
                 case "armeabi":
                 case "armeabi-v7a":
                     currentInstructionSet = "arm";
@@ -158,10 +161,7 @@ public class ShareTinkerInternals {
 
     public static boolean isSystemOTA(String lastFingerPrint) {
         String currentFingerprint = Build.FINGERPRINT;
-        if (lastFingerPrint == null
-            || lastFingerPrint.equals("")
-            || currentFingerprint == null
-            || currentFingerprint.equals("")) {
+        if (lastFingerPrint == null || lastFingerPrint.equals("") || currentFingerprint == null || currentFingerprint.equals("")) {
             ShareTinkerLog.d(TAG, "fingerprint empty:" + lastFingerPrint + ",current:" + currentFingerprint);
             return false;
         } else {
@@ -183,10 +183,8 @@ public class ShareTinkerInternals {
             } else {
                 newName = "classes.dex";
             }
-            return new ShareDexDiffPatchInfo(newName, rawDexInfo.path, rawDexInfo.destMd5InDvm, rawDexInfo.destMd5InArt,
-                rawDexInfo.dexDiffMd5, rawDexInfo.oldDexCrC, rawDexInfo.newOrPatchedDexCrC, rawDexInfo.dexMode);
+            return new ShareDexDiffPatchInfo(newName, rawDexInfo.path, rawDexInfo.destMd5InDvm, rawDexInfo.destMd5InArt, rawDexInfo.dexDiffMd5, rawDexInfo.oldDexCrC, rawDexInfo.newOrPatchedDexCrC, rawDexInfo.dexMode);
         }
-
         return null;
     }
 
@@ -226,30 +224,24 @@ public class ShareTinkerInternals {
         if (!securityCheck.verifyPatchMetaSignature(patchFile)) {
             return ShareConstants.ERROR_PACKAGE_CHECK_SIGNATURE_FAIL;
         }
-
         String oldTinkerId = getManifestTinkerID(context);
         if (oldTinkerId == null) {
             return ShareConstants.ERROR_PACKAGE_CHECK_APK_TINKER_ID_NOT_FOUND;
         }
-
         HashMap<String, String> properties = securityCheck.getPackagePropertiesIfPresent();
-
         if (properties == null) {
             return ShareConstants.ERROR_PACKAGE_CHECK_PACKAGE_META_NOT_FOUND;
         }
-
         String patchTinkerId = properties.get(ShareConstants.TINKER_ID);
         if (patchTinkerId == null) {
             return ShareConstants.ERROR_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND;
         }
         if (!oldTinkerId.equals(patchTinkerId)) {
-            ShareTinkerLog.e(TAG, "tinkerId in patch is not matched with the one in base pack, base: %s, patch: %s.",
-                    oldTinkerId, patchTinkerId);
+            ShareTinkerLog.e(TAG, "tinkerId in patch is not matched with the one in base pack, base: %s, patch: %s.", oldTinkerId, patchTinkerId);
             return ShareConstants.ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL;
         }
         return ShareConstants.ERROR_PACKAGE_CHECK_OK;
     }
-
 
     public static int checkPackageAndTinkerFlag(ShareSecurityCheck securityCheck, int tinkerFlag) {
         if (isTinkerEnabledAll(tinkerFlag)) {
@@ -271,7 +263,6 @@ public class ShareTinkerInternals {
         if (!resEnable && metaContentMap.containsKey(ShareConstants.RES_META_FILE)) {
             return ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT;
         }
-
         return ShareConstants.ERROR_PACKAGE_CHECK_OK;
     }
 
@@ -317,10 +308,7 @@ public class ShareTinkerInternals {
             return tinkerID;
         }
         try {
-            ApplicationInfo appInfo = context.getPackageManager()
-                .getApplicationInfo(context.getPackageName(),
-                    PackageManager.GET_META_DATA);
-
+            ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
             Object object = appInfo.metaData.get(ShareConstants.TINKER_ID);
             if (object != null) {
                 tinkerID = String.valueOf(object);
@@ -352,7 +340,7 @@ public class ShareTinkerInternals {
     }
 
     public static String getTypeString(int type) {
-        switch (type) {
+        switch(type) {
             case ShareConstants.TYPE_DEX:
                 return "dex";
             case ShareConstants.TYPE_DEX_OPT:
@@ -472,7 +460,6 @@ public class ShareTinkerInternals {
         if (processName == null || processName.length() == 0) {
             processName = "";
         }
-
         return mainProcessName.equals(processName);
     }
 
@@ -480,7 +467,6 @@ public class ShareTinkerInternals {
         if (isPatchProcess != null) {
             return isPatchProcess;
         }
-
         isPatchProcess = getProcessName(context).endsWith(PATCH_PROCESS_NAME);
         return isPatchProcess;
     }
@@ -501,9 +487,7 @@ public class ShareTinkerInternals {
         if (am == null) {
             return;
         }
-        List<ActivityManager.RunningAppProcessInfo> appProcessList = am
-            .getRunningAppProcesses();
-
+        List<ActivityManager.RunningAppProcessInfo> appProcessList = am.getRunningAppProcesses();
         if (appProcessList == null) {
             return;
         }
@@ -515,7 +499,6 @@ public class ShareTinkerInternals {
                 android.os.Process.killProcess(ai.pid);
             }
         }
-
     }
 
     public static void killProcessExceptMain(Context context) {
@@ -564,7 +547,6 @@ public class ShareTinkerInternals {
                 return result;
             }
         }
-
         // The 'currentProcess' method only exists on api 18 and newer systems.
         if (isNewerOrEqualThanVersion(18, true)) {
             try {
@@ -579,7 +561,6 @@ public class ShareTinkerInternals {
                 ShareTinkerLog.e(TAG, "getProcessNameInternal reflect activity thread exception:" + thr.getMessage());
             }
         }
-
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/self/cmdline"), StandardCharsets.US_ASCII));
@@ -595,7 +576,6 @@ public class ShareTinkerInternals {
         } finally {
             SharePatchFileUtil.closeQuietly(br);
         }
-
         if (context != null) {
             try {
                 final int myPid = android.os.Process.myPid();
@@ -615,7 +595,6 @@ public class ShareTinkerInternals {
                 ShareTinkerLog.e(TAG, "getProcessNameInternal getRunningAppProcesses exception:" + thr.getMessage());
             }
         }
-
         return null;
     }
 
@@ -632,9 +611,7 @@ public class ShareTinkerInternals {
                 try {
                     int major = Integer.parseInt(matcher.group(1));
                     int minor = Integer.parseInt(matcher.group(2));
-                    isArt = (major > 2)
-                        || ((major == 2)
-                        && (minor >= 1));
+                    isArt = (major > 2) || ((major == 2) && (minor >= 1));
                 } catch (NumberFormatException e) {
                     // let isMultidexCapable be false
                 }
@@ -647,10 +624,8 @@ public class ShareTinkerInternals {
         try {
             Class<?> clazz = Class.forName("android.os.SystemProperties");
             Method mthGet = clazz.getDeclaredMethod("get", String.class);
-
             String jit = (String) mthGet.invoke(null, "dalvik.vm.usejit");
             String jitProfile = (String) mthGet.invoke(null, "dalvik.vm.usejitprofiles");
-
             //usejit is true and usejitprofiles is null
             if (!isNullOrNil(jit) && isNullOrNil(jitProfile) && jit.equals("true")) {
                 return true;
@@ -663,8 +638,7 @@ public class ShareTinkerInternals {
 
     public static boolean isNewerOrEqualThanVersion(int apiLevel, boolean includePreviewVer) {
         if (includePreviewVer && Build.VERSION.SDK_INT >= 23) {
-            return Build.VERSION.SDK_INT >= apiLevel
-                    || ((Build.VERSION.SDK_INT == apiLevel - 1) && Build.VERSION.PREVIEW_SDK_INT > 0);
+            return Build.VERSION.SDK_INT >= apiLevel || ((Build.VERSION.SDK_INT == apiLevel - 1) && Build.VERSION.PREVIEW_SDK_INT > 0);
         } else {
             return Build.VERSION.SDK_INT >= apiLevel;
         }
@@ -672,8 +646,7 @@ public class ShareTinkerInternals {
 
     public static boolean isOlderOrEqualThanVersion(int apiLevel, boolean includePreviewVer) {
         if (includePreviewVer && Build.VERSION.SDK_INT >= 23) {
-            return Build.VERSION.SDK_INT <= apiLevel
-                    || ((Build.VERSION.SDK_INT == apiLevel - 1) && Build.VERSION.PREVIEW_SDK_INT > 0);
+            return Build.VERSION.SDK_INT <= apiLevel || ((Build.VERSION.SDK_INT == apiLevel - 1) && Build.VERSION.PREVIEW_SDK_INT > 0);
         } else {
             return Build.VERSION.SDK_INT <= apiLevel;
         }
@@ -683,16 +656,14 @@ public class ShareTinkerInternals {
      * @return true if system version is in range [lowApiLevel, hiApiLevel].
      */
     public static boolean isVersionInRange(int lowApiLevel, int hiApiLevel, boolean includePreviewVer) {
-        return isNewerOrEqualThanVersion(lowApiLevel, includePreviewVer) &&
-                isOlderOrEqualThanVersion(hiApiLevel, includePreviewVer);
+        return isNewerOrEqualThanVersion(lowApiLevel, includePreviewVer) && isOlderOrEqualThanVersion(hiApiLevel, includePreviewVer);
     }
 
     public static String getExceptionCauseString(final Throwable ex) {
-        if (ex == null) return "";
-
+        if (ex == null)
+            return "";
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final PrintStream ps = new PrintStream(bos);
-
         try {
             // print directly
             Throwable t = ex;
@@ -727,7 +698,6 @@ public class ShareTinkerInternals {
                 break;
             }
         }
-
         if (cutFlg) {
             return new String(chr, 0, i);
         } else {
@@ -741,7 +711,7 @@ public class ShareTinkerInternals {
         }
         final File tinkerDir = SharePatchFileUtil.getPatchDirectory(context);
         if (!tinkerDir.exists()) {
-            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(),"try to clean patch while there're not any applied patches.");
+            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "try to clean patch while there're not any applied patches.");
             return;
         }
         final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(tinkerDir.getAbsolutePath());

@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.ziputils.ziputil;
 
 import java.nio.charset.Charset;
@@ -22,6 +21,7 @@ import java.nio.charset.Charset;
  * modify by zhangshaowen on 16/6/7.
  */
 public final class StandardCharsets {
+
     public static final Charset UTF_8 = Charset.forName("UTF-8");
 
     private StandardCharsets() {

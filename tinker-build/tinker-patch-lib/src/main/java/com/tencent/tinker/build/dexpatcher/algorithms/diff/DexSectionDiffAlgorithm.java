@@ -13,7 +13,6 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.build.dexpatcher.algorithms.diff;
 
 import com.tencent.tinker.android.dex.Dex;
@@ -25,7 +24,6 @@ import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.commons.dexpatcher.struct.PatchOperation;
 import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
 import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,49 +38,67 @@ import java.util.Map;
  * Created by tangyinsheng on 2016/6/29.
  */
 public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
+
     private static final AbstractMap.SimpleEntry[] EMPTY_ENTRY_ARRAY = new AbstractMap.SimpleEntry[0];
+
     protected final Dex oldDex;
+
     protected final Dex newDex;
+
     /**
      * SparseIndexMap for mapping items between old dex and new dex.
      * e.g. item.oldIndex => item.newIndex
      */
     private final SparseIndexMap oldToNewIndexMap;
+
     /**
      * SparseIndexMap for mapping items between old dex and patched dex.
      * e.g. item.oldIndex => item.patchedIndex
      */
     private final SparseIndexMap oldToPatchedIndexMap;
+
     /**
      * SparseIndexMap for mapping items between new dex and patched dex.
      * e.g. item.newIndex => item.newIndexInPatchedDex
      */
     private final SparseIndexMap newToPatchedIndexMap;
+
     /**
      * SparseIndexMap for mapping items in new dex when skip items.
      */
     private final SparseIndexMap selfIndexMapForSkip;
+
     private final List<PatchOperation<T>> patchOperationList;
+
     private final Map<Integer, PatchOperation<T>> indexToDelOperationMap = new HashMap<>();
+
     private final Map<Integer, PatchOperation<T>> indexToAddOperationMap = new HashMap<>();
+
     private final Map<Integer, PatchOperation<T>> indexToReplaceOperationMap = new HashMap<>();
+
     private final Map<Integer, Integer> oldIndexToNewIndexMap = new HashMap<>();
+
     private final Map<Integer, Integer> oldOffsetToNewOffsetMap = new HashMap<>();
+
     private int patchedSectionSize;
+
     private Comparator<AbstractMap.SimpleEntry<Integer, T>> comparatorForItemDiff = new Comparator<AbstractMap.SimpleEntry<Integer, T>>() {
+
         @Override
         public int compare(AbstractMap.SimpleEntry<Integer, T> o1, AbstractMap.SimpleEntry<Integer, T> o2) {
             return o1.getValue().compareTo(o2.getValue());
         }
     };
+
     private Comparator<PatchOperation<T>> comparatorForPatchOperationOpt = new Comparator<PatchOperation<T>>() {
+
         @Override
         public int compare(PatchOperation<T> o1, PatchOperation<T> o2) {
             if (o1.index != o2.index) {
                 return CompareUtils.sCompare(o1.index, o2.index);
             }
             int o1OrderId;
-            switch (o1.op) {
+            switch(o1.op) {
                 case PatchOperation.OP_DEL:
                     o1OrderId = 0;
                     break;
@@ -96,7 +112,7 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
                     throw new IllegalStateException("unexpected patch operation code: " + o1.op);
             }
             int o2OrderId;
-            switch (o2.op) {
+            switch(o2.op) {
                 case PatchOperation.OP_DEL:
                     o2OrderId = 0;
                     break;
@@ -112,18 +128,14 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
             return CompareUtils.sCompare(o1OrderId, o2OrderId);
         }
     };
+
     private AbstractMap.SimpleEntry<Integer, T>[] adjustedOldIndexedItemsWithOrigOrder = null;
+
     private int oldItemCount = 0;
+
     private int newItemCount = 0;
 
-    public DexSectionDiffAlgorithm(
-            Dex oldDex,
-            Dex newDex,
-            SparseIndexMap oldToNewIndexMap,
-            SparseIndexMap oldToPatchedIndexMap,
-            SparseIndexMap newToPatchedIndexMap,
-            SparseIndexMap selfIndexMapForSkip
-    ) {
+    public DexSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap, SparseIndexMap oldToPatchedIndexMap, SparseIndexMap newToPatchedIndexMap, SparseIndexMap selfIndexMapForSkip) {
         this.oldDex = oldDex;
         this.newDex = newDex;
         this.oldToNewIndexMap = oldToNewIndexMap;
@@ -256,18 +268,14 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
 
     public void execute() {
         this.patchOperationList.clear();
-
         this.adjustedOldIndexedItemsWithOrigOrder = collectSectionItems(this.oldDex, true);
         this.oldItemCount = this.adjustedOldIndexedItemsWithOrigOrder.length;
-
         AbstractMap.SimpleEntry<Integer, T>[] adjustedOldIndexedItems = new AbstractMap.SimpleEntry[this.oldItemCount];
         System.arraycopy(this.adjustedOldIndexedItemsWithOrigOrder, 0, adjustedOldIndexedItems, 0, this.oldItemCount);
         Arrays.sort(adjustedOldIndexedItems, this.comparatorForItemDiff);
-
         AbstractMap.SimpleEntry<Integer, T>[] adjustedNewIndexedItems = collectSectionItems(this.newDex, false);
         this.newItemCount = adjustedNewIndexedItems.length;
         Arrays.sort(adjustedNewIndexedItems, this.comparatorForItemDiff);
-
         int oldCursor = 0;
         int newCursor = 0;
         while (oldCursor < this.oldItemCount || newCursor < this.newItemCount) {
@@ -277,8 +285,7 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
                     AbstractMap.SimpleEntry<Integer, T> newIndexedItem = adjustedNewIndexedItems[newCursor++];
                     this.patchOperationList.add(new PatchOperation<>(PatchOperation.OP_ADD, newIndexedItem.getKey(), newIndexedItem.getValue()));
                 }
-            } else
-            if (newCursor >= newItemCount) {
+            } else if (newCursor >= newItemCount) {
                 // rest item are all oldItem.
                 while (oldCursor < oldItemCount) {
                     AbstractMap.SimpleEntry<Integer, T> oldIndexedItem = adjustedOldIndexedItems[oldCursor++];
@@ -297,8 +304,7 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
                     this.patchOperationList.add(new PatchOperation<T>(PatchOperation.OP_DEL, deletedIndex));
                     markDeletedIndexOrOffset(this.oldToPatchedIndexMap, deletedIndex, deletedOffset);
                     ++oldCursor;
-                } else
-                if (cmpRes > 0) {
+                } else if (cmpRes > 0) {
                     this.patchOperationList.add(new PatchOperation<>(PatchOperation.OP_ADD, newIndexedItem.getKey(), newIndexedItem.getValue()));
                     ++newCursor;
                 } else {
@@ -306,34 +312,26 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
                     int newIndex = newIndexedItem.getKey();
                     int oldOffset = getItemOffsetOrIndex(oldIndexedItem.getKey(), oldIndexedItem.getValue());
                     int newOffset = getItemOffsetOrIndex(newIndexedItem.getKey(), newIndexedItem.getValue());
-
                     if (oldIndex != newIndex) {
                         this.oldIndexToNewIndexMap.put(oldIndex, newIndex);
                     }
-
                     if (oldOffset != newOffset) {
                         this.oldOffsetToNewOffsetMap.put(oldOffset, newOffset);
                     }
-
                     ++oldCursor;
                     ++newCursor;
                 }
             }
         }
-
         // So far all diff works are done. Then we perform some optimize works.
         // detail: {OP_DEL idx} followed by {OP_ADD the_same_idx newItem}
         // will be replaced by {OP_REPLACE idx newItem}
         Collections.sort(this.patchOperationList, comparatorForPatchOperationOpt);
-
         Iterator<PatchOperation<T>> patchOperationIt = this.patchOperationList.iterator();
         PatchOperation<T> prevPatchOperation = null;
         while (patchOperationIt.hasNext()) {
             PatchOperation<T> patchOperation = patchOperationIt.next();
-            if (prevPatchOperation != null
-                && prevPatchOperation.op == PatchOperation.OP_DEL
-                && patchOperation.op == PatchOperation.OP_ADD
-            ) {
+            if (prevPatchOperation != null && prevPatchOperation.op == PatchOperation.OP_DEL && patchOperation.op == PatchOperation.OP_ADD) {
                 if (prevPatchOperation.index == patchOperation.index) {
                     prevPatchOperation.op = PatchOperation.OP_REPLACE;
                     prevPatchOperation.newItem = patchOperation.newItem;
@@ -346,27 +344,30 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
                 prevPatchOperation = patchOperation;
             }
         }
-
         // Finally we record some information for the final calculations.
         patchOperationIt = this.patchOperationList.iterator();
         while (patchOperationIt.hasNext()) {
             PatchOperation<T> patchOperation = patchOperationIt.next();
-            switch (patchOperation.op) {
-                case PatchOperation.OP_DEL: {
-                    indexToDelOperationMap.put(patchOperation.index, patchOperation);
-                    break;
-                }
-                case PatchOperation.OP_ADD: {
-                    indexToAddOperationMap.put(patchOperation.index, patchOperation);
-                    break;
-                }
-                case PatchOperation.OP_REPLACE: {
-                    indexToReplaceOperationMap.put(patchOperation.index, patchOperation);
-                    break;
-                }
-                default: {
-                    break;
-                }
+            switch(patchOperation.op) {
+                case PatchOperation.OP_DEL:
+                    {
+                        indexToDelOperationMap.put(patchOperation.index, patchOperation);
+                        break;
+                    }
+                case PatchOperation.OP_ADD:
+                    {
+                        indexToAddOperationMap.put(patchOperation.index, patchOperation);
+                        break;
+                    }
+                case PatchOperation.OP_REPLACE:
+                    {
+                        indexToReplaceOperationMap.put(patchOperation.index, patchOperation);
+                        break;
+                    }
+                default:
+                    {
+                        break;
+                    }
             }
         }
     }
@@ -384,81 +385,45 @@ public abstract class DexSectionDiffAlgorithm<T extends Comparable<T>> {
                 }
                 T newItem = patchOperation.newItem;
                 int itemSize = getItemSize(newItem);
-                updateIndexOrOffset(
-                        this.newToPatchedIndexMap,
-                        0,
-                        getItemOffsetOrIndex(patchOperation.index, newItem),
-                        0,
-                        patchedOffset
-                );
+                updateIndexOrOffset(this.newToPatchedIndexMap, 0, getItemOffsetOrIndex(patchOperation.index, newItem), 0, patchedOffset);
                 ++patchedIndex;
                 patchedOffset += itemSize;
-            } else
-            if (this.indexToReplaceOperationMap.containsKey(patchedIndex)) {
+            } else if (this.indexToReplaceOperationMap.containsKey(patchedIndex)) {
                 PatchOperation<T> patchOperation = this.indexToReplaceOperationMap.get(patchedIndex);
                 if (isNeedToMakeAlign) {
                     patchedOffset = SizeOf.roundToTimesOfFour(patchedOffset);
                 }
                 T newItem = patchOperation.newItem;
                 int itemSize = getItemSize(newItem);
-                updateIndexOrOffset(
-                        this.newToPatchedIndexMap,
-                        0,
-                        getItemOffsetOrIndex(patchOperation.index, newItem),
-                        0,
-                        patchedOffset
-                );
+                updateIndexOrOffset(this.newToPatchedIndexMap, 0, getItemOffsetOrIndex(patchOperation.index, newItem), 0, patchedOffset);
                 ++patchedIndex;
                 patchedOffset += itemSize;
-            } else
-            if (this.indexToDelOperationMap.containsKey(oldIndex)) {
+            } else if (this.indexToDelOperationMap.containsKey(oldIndex)) {
                 ++oldIndex;
-            } else
-            if (this.indexToReplaceOperationMap.containsKey(oldIndex)) {
+            } else if (this.indexToReplaceOperationMap.containsKey(oldIndex)) {
                 ++oldIndex;
-            } else
-            if (oldIndex < this.oldItemCount) {
+            } else if (oldIndex < this.oldItemCount) {
                 if (isNeedToMakeAlign) {
                     patchedOffset = SizeOf.roundToTimesOfFour(patchedOffset);
                 }
-
                 T oldItem = this.adjustedOldIndexedItemsWithOrigOrder[oldIndex].getValue();
                 int itemSize = getItemSize(oldItem);
-
                 int oldOffset = getItemOffsetOrIndex(oldIndex, oldItem);
-
-                updateIndexOrOffset(
-                        this.oldToPatchedIndexMap,
-                        oldIndex,
-                        oldOffset,
-                        patchedIndex,
-                        patchedOffset
-                );
-
+                updateIndexOrOffset(this.oldToPatchedIndexMap, oldIndex, oldOffset, patchedIndex, patchedOffset);
                 int newIndex = oldIndex;
                 if (this.oldIndexToNewIndexMap.containsKey(oldIndex)) {
                     newIndex = this.oldIndexToNewIndexMap.get(oldIndex);
                 }
-
                 int newOffset = oldOffset;
                 if (this.oldOffsetToNewOffsetMap.containsKey(oldOffset)) {
                     newOffset = this.oldOffsetToNewOffsetMap.get(oldOffset);
                 }
-
-                updateIndexOrOffset(
-                        this.newToPatchedIndexMap,
-                        newIndex,
-                        newOffset,
-                        patchedIndex,
-                        patchedOffset
-                );
-
+                updateIndexOrOffset(this.newToPatchedIndexMap, newIndex, newOffset, patchedIndex, patchedOffset);
                 ++oldIndex;
                 ++patchedIndex;
                 patchedOffset += itemSize;
             }
         }
-
         this.patchedSectionSize = SizeOf.roundToTimesOfFour(patchedOffset - baseOffset);
     }
 }

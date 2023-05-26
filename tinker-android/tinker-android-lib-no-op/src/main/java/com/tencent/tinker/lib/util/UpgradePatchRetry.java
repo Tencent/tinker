@@ -13,18 +13,17 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tencent.tinker.lib.util;
 
 import android.content.Context;
 import android.content.Intent;
-
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 /**
  * Created by zhangshaowen on 16/7/3.
  */
 public class UpgradePatchRetry {
+
     private static final String TAG = "Tinker.UpgradePatchRetry";
 
     private static UpgradePatchRetry sInstance;
@@ -41,11 +40,11 @@ public class UpgradePatchRetry {
     }
 
     public void setRetryEnable(boolean enable) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(enable);
     }
 
     public void setMaxRetryCount(int count) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(count);
     }
 
     public boolean onPatchRetryLoad() {
@@ -54,18 +53,26 @@ public class UpgradePatchRetry {
     }
 
     public void onPatchServiceStart(Intent intent) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(intent);
     }
 
     public boolean onPatchListenerCheck(String md5) {
-        return true;
+        return isValid(md5);
     }
 
     public boolean onPatchResetMaxCheck(String md5) {
-        return true;
+        return isValid(md5);
     }
 
     public void onPatchServiceResult() {
         ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+    }
+
+    public void logNoOpVersion(boolean enable) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+    }
+
+    public boolean isValid(String md5) {
+        return true;
     }
 }
