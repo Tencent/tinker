@@ -329,10 +329,8 @@ public final class Dex {
      * signature.
      */
     public byte[] computeSignature(boolean forceRecompute) {
-        if (this.signature != null) {
-            if (!forceRecompute) {
-                return this.signature;
-            }
+        if (this.signature != null && !forceRecompute) {
+            return this.signature;
         }
         MessageDigest digest;
         try {

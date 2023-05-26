@@ -170,10 +170,8 @@ public class Utils {
                 public void onReceive(Context context, Intent in) {
                     String action = in == null ? "" : in.getAction();
                     TinkerLog.i(TAG, "ScreenReceiver action [%s] ", action);
-                    if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-                        if (onScreenOffInterface != null) {
-                            onScreenOffInterface.onScreenOff();
-                        }
+                    if (Intent.ACTION_SCREEN_OFF.equals(action) && onScreenOffInterface != null) {
+                        onScreenOffInterface.onScreenOff();
                     }
                     context.unregisterReceiver(this);
                 }

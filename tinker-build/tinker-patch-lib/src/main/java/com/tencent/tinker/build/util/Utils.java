@@ -135,11 +135,8 @@ public class Utils {
                 if (!TinkerZipUtil.validateZipEntryName(output.getParentFile(), name)) {
                     throw new IOException("Bad ZipEntry name: " + name);
                 }
-                if (Utils.checkFileInPattern(config.mResFilePattern, name)) {
-                    //won't contain in add set.
-                    if (!deletedSet.contains(name) && !modifiedSet.contains(name) && !largeModifiedSet.contains(name) && !name.equals(TypedValue.RES_MANIFEST)) {
-                        TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
-                    }
+                if (Utils.checkFileInPattern(config.mResFilePattern, name) && !deletedSet.contains(name) && !modifiedSet.contains(name) && !largeModifiedSet.contains(name) && !name.equals(TypedValue.RES_MANIFEST)) {
+                    TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
                 }
             }
             //process manifest

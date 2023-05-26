@@ -55,10 +55,8 @@ public class TinkerLoadLibrary {
             throw new TinkerRuntimeException("libName or context is null!");
         }
         Tinker tinker = Tinker.with(context);
-        if (tinker.isEnabledForNativeLib()) {
-            if (TinkerLoadLibrary.loadLibraryFromTinker(context, "lib/armeabi", libName)) {
-                return;
-            }
+        if (tinker.isEnabledForNativeLib() && TinkerLoadLibrary.loadLibraryFromTinker(context, "lib/armeabi", libName)) {
+            return;
         }
         System.loadLibrary(libName);
     }
@@ -73,10 +71,8 @@ public class TinkerLoadLibrary {
         if (libName == null || libName.isEmpty() || appLike == null) {
             throw new TinkerRuntimeException("libName or appLike is null!");
         }
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(appLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(appLike, "lib/armeabi", libName)) {
-                return;
-            }
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(appLike) && TinkerApplicationHelper.loadLibraryFromTinker(appLike, "lib/armeabi", libName)) {
+            return;
         }
         System.loadLibrary(libName);
     }
@@ -92,10 +88,8 @@ public class TinkerLoadLibrary {
             throw new TinkerRuntimeException("libName or context is null!");
         }
         Tinker tinker = Tinker.with(context);
-        if (tinker.isEnabledForNativeLib()) {
-            if (TinkerLoadLibrary.loadLibraryFromTinker(context, "lib/armeabi-v7a", libName)) {
-                return;
-            }
+        if (tinker.isEnabledForNativeLib() && TinkerLoadLibrary.loadLibraryFromTinker(context, "lib/armeabi-v7a", libName)) {
+            return;
         }
         System.loadLibrary(libName);
     }
@@ -110,10 +104,8 @@ public class TinkerLoadLibrary {
         if (libName == null || libName.isEmpty() || appLike == null) {
             throw new TinkerRuntimeException("libName or appLike is null!");
         }
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(appLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(appLike, "lib/armeabi-v7a", libName)) {
-                return;
-            }
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(appLike) && TinkerApplicationHelper.loadLibraryFromTinker(appLike, "lib/armeabi-v7a", libName)) {
+            return;
         }
         System.loadLibrary(libName);
     }

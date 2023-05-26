@@ -131,12 +131,9 @@ public class ResDiffPatchInternal extends BasePatchInternal {
                     if (name.contains("../")) {
                         continue;
                     }
-                    if (ShareResPatchInfo.checkFileInPattern(resPatchInfo.patterns, name)) {
-                        //won't contain in add set.
-                        if (!resPatchInfo.deleteRes.contains(name) && !resPatchInfo.modRes.contains(name) && !resPatchInfo.largeModRes.contains(name) && !name.equals(ShareConstants.RES_MANIFEST)) {
-                            TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
-                            totalEntryCount++;
-                        }
+                    if (ShareResPatchInfo.checkFileInPattern(resPatchInfo.patterns, name) && !resPatchInfo.deleteRes.contains(name) && !resPatchInfo.modRes.contains(name) && !resPatchInfo.largeModRes.contains(name) && !name.equals(ShareConstants.RES_MANIFEST)) {
+                        TinkerZipUtil.extractTinkerEntry(oldApk, zipEntry, out);
+                        totalEntryCount++;
                     }
                 }
                 //process manifest

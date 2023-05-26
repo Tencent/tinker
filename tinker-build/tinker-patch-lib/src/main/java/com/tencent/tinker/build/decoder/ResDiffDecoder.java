@@ -205,11 +205,9 @@ public class ResDiffDecoder extends BaseDecoder {
             Logger.d("found modify resource: " + name + ", but it is AndroidManifest.xml, just ignore!");
             return false;
         }
-        if (name.equals(TypedValue.RES_ARSC)) {
-            if (AndroidParser.resourceTableLogicalChange(config)) {
-                Logger.d("found modify resource: " + name + ", but it is logically the same as original new resources.arsc, just ignore!");
-                return false;
-            }
+        if (name.equals(TypedValue.RES_ARSC) && AndroidParser.resourceTableLogicalChange(config)) {
+            Logger.d("found modify resource: " + name + ", but it is logically the same as original new resources.arsc, just ignore!");
+            return false;
         }
         dealWithModifyFile(name, newMd5, oldFile, newFile, outputFile);
         return true;

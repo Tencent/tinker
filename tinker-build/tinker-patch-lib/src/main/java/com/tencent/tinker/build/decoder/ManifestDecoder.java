@@ -86,12 +86,10 @@ public class ManifestDecoder extends BaseDecoder {
             AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(newFile);
             //check minSdkVersion
             int minSdkVersion = Integer.parseInt(oldAndroidManifest.apkMeta.getMinSdkVersion());
-            if (minSdkVersion < TypedValue.ANDROID_40_API_LEVEL) {
-                if (config.mDexRaw) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append("your old apk's minSdkVersion ").append(minSdkVersion).append(" is below 14, you should set the dexMode to 'jar', ").append("otherwise, it will crash at some time");
-                    announceWarningOrException(sb.toString());
-                }
+            if (minSdkVersion < TypedValue.ANDROID_40_API_LEVEL && config.mDexRaw) {
+                final StringBuilder sb = new StringBuilder();
+                sb.append("your old apk's minSdkVersion ").append(minSdkVersion).append(" is below 14, you should set the dexMode to 'jar', ").append("otherwise, it will crash at some time");
+                announceWarningOrException(sb.toString());
             }
             final String oldXml = oldAndroidManifest.xml.trim();
             final String newXml = newAndroidManifest.xml.trim();

@@ -176,10 +176,8 @@ public final class DexClassesComparator {
             int classDefIndex = 0;
             for (ClassDef oldClassDef : oldDex.classDefs()) {
                 String desc = oldDex.typeNames().get(oldClassDef.typeIndex);
-                if (Utils.isStringMatchesPatterns(desc, patternsOfClassDescToCheck)) {
-                    if (!oldDescriptorOfClassesToCheck.add(desc)) {
-                        throw new IllegalStateException(String.format("duplicate class descriptor [%s] in different old dexes.", desc));
-                    }
+                if (Utils.isStringMatchesPatterns(desc, patternsOfClassDescToCheck) && !oldDescriptorOfClassesToCheck.add(desc)) {
+                    throw new IllegalStateException(String.format("duplicate class descriptor [%s] in different old dexes.", desc));
                 }
                 DexClassInfo classInfo = new DexClassInfo(desc, classDefIndex, oldClassDef, oldDex);
                 ++classDefIndex;
@@ -192,10 +190,8 @@ public final class DexClassesComparator {
             int classDefIndex = 0;
             for (ClassDef newClassDef : newDex.classDefs()) {
                 String desc = newDex.typeNames().get(newClassDef.typeIndex);
-                if (Utils.isStringMatchesPatterns(desc, patternsOfClassDescToCheck)) {
-                    if (!newDescriptorOfClassesToCheck.add(desc)) {
-                        throw new IllegalStateException(String.format("duplicate class descriptor [%s] in different new dexes.", desc));
-                    }
+                if (Utils.isStringMatchesPatterns(desc, patternsOfClassDescToCheck) && !newDescriptorOfClassesToCheck.add(desc)) {
+                    throw new IllegalStateException(String.format("duplicate class descriptor [%s] in different new dexes.", desc));
                 }
                 DexClassInfo classInfo = new DexClassInfo(desc, classDefIndex, newClassDef, newDex);
                 ++classDefIndex;
@@ -953,10 +949,8 @@ public final class DexClassesComparator {
         while (!isEnd && oldDbgInfoBuffer.available() > 0 && newDbgInfoBuffer.available() > 0) {
             int oldOpCode = oldDbgInfoBuffer.readUnsignedByte();
             int newOpCode = newDbgInfoBuffer.readUnsignedByte();
-            if (oldOpCode != newOpCode) {
-                if (oldOpCode < DBG_FIRST_SPECIAL || newOpCode < DBG_FIRST_SPECIAL) {
-                    return false;
-                }
+            if (oldOpCode != newOpCode && oldOpCode < DBG_FIRST_SPECIAL || newOpCode < DBG_FIRST_SPECIAL) {
+                return false;
             }
             int currOpCode = oldOpCode;
             switch(currOpCode) {

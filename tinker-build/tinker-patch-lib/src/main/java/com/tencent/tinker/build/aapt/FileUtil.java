@@ -110,16 +110,14 @@ public final class FileUtil {
                 if (fileArray != null) {
                     queue.addAll(Arrays.asList(fileArray));
                 }
-            } else if (file.isFile()) {
-                if (file.getName().toLowerCase().endsWith(fileSuffix.toLowerCase())) {
-                    if (isFindMatchFile) {
-                        list.add(file.getAbsolutePath() + somethingAppendToRear);
-                    } else {
-                        String parentPath = file.getParent();
-                        parentPath = parentPath + somethingAppendToRear;
-                        if (!list.contains(parentPath)) {
-                            list.add(parentPath);
-                        }
+            } else if (file.isFile() && file.getName().toLowerCase().endsWith(fileSuffix.toLowerCase())) {
+                if (isFindMatchFile) {
+                    list.add(file.getAbsolutePath() + somethingAppendToRear);
+                } else {
+                    String parentPath = file.getParent();
+                    parentPath = parentPath + somethingAppendToRear;
+                    if (!list.contains(parentPath)) {
+                        list.add(parentPath);
                     }
                 }
             }

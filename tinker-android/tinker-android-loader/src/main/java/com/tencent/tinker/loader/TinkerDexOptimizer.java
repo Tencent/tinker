@@ -143,11 +143,9 @@ public final class TinkerDexOptimizer {
 
         boolean run() {
             try {
-                if (!SharePatchFileUtil.isLegalFile(dexFile)) {
-                    if (callback != null) {
-                        callback.onFailed(dexFile, optimizedDir, new IOException("dex file " + dexFile.getAbsolutePath() + " is not exist!"));
-                        return false;
-                    }
+                if (!SharePatchFileUtil.isLegalFile(dexFile) && callback != null) {
+                    callback.onFailed(dexFile, optimizedDir, new IOException("dex file " + dexFile.getAbsolutePath() + " is not exist!"));
+                    return false;
                 }
                 if (callback != null) {
                     callback.onStart(dexFile, optimizedDir);

@@ -96,17 +96,15 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
     }
 
     private void ensureBufferSize(int bytes) {
-        if (this.data.position() + bytes > this.data.limit()) {
-            if (this.isResizeAllowed) {
-                byte[] array = this.data.array();
-                byte[] newArray = new byte[array.length + bytes + (array.length >> 1)];
-                System.arraycopy(array, 0, newArray, 0, this.data.position());
-                int lastPos = this.data.position();
-                this.data = ByteBuffer.wrap(newArray);
-                this.data.order(ByteOrder.LITTLE_ENDIAN);
-                this.data.position(lastPos);
-                this.data.limit(this.data.capacity());
-            }
+        if (this.data.position() + bytes > this.data.limit() && this.isResizeAllowed) {
+            byte[] array = this.data.array();
+            byte[] newArray = new byte[array.length + bytes + (array.length >> 1)];
+            System.arraycopy(array, 0, newArray, 0, this.data.position());
+            int lastPos = this.data.position();
+            this.data = ByteBuffer.wrap(newArray);
+            this.data.order(ByteOrder.LITTLE_ENDIAN);
+            this.data.position(lastPos);
+            this.data.limit(this.data.capacity());
         }
     }
 

@@ -237,10 +237,8 @@ public class TinkerApplicationHelper {
         if (libName == null || libName.isEmpty() || applicationLike == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi-v7a", libName)) {
-                return;
-            }
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike) && TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi-v7a", libName)) {
+            return;
         }
         System.loadLibrary(libName);
     }
@@ -254,10 +252,8 @@ public class TinkerApplicationHelper {
         if (libName == null || libName.isEmpty() || applicationLike == null) {
             throw new TinkerRuntimeException("libName or context is null!");
         }
-        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike)) {
-            if (TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi", libName)) {
-                return;
-            }
+        if (TinkerApplicationHelper.isTinkerEnableForNativeLib(applicationLike) && TinkerApplicationHelper.loadLibraryFromTinker(applicationLike, "lib/armeabi", libName)) {
+            return;
         }
         System.loadLibrary(libName);
     }

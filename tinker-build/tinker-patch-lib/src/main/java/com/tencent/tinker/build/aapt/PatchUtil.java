@@ -124,10 +124,8 @@ public final class PatchUtil {
                     for (RDotTxtEntry rDotTxtEntry : set) {
                         if (rType.equals(RType.ID) && !ignoreIdSet.contains(rDotTxtEntry.name)) {
                             idsWriter.println("<item type=\"" + rType + "\" name=\"" + rDotTxtEntry.name + "\"/>");
-                        } else if (rType.equals(RType.STYLE)) {
-                            if (rDotTxtEntry.name.indexOf(Constant.Symbol.UNDERLINE) > 0) {
-                                // idsWriter.println("<item type=\""+rType+"\" name=\""+(rDotTxtEntry.name.replace(Constant.Symbol.UNDERLINE, Constant.Symbol.DOT))+"\"/>");
-                            }
+                        } else if (rType.equals(RType.STYLE) && rDotTxtEntry.name.indexOf(Constant.Symbol.UNDERLINE) > 0) {
+                            // idsWriter.println("<item type=\""+rType+"\" name=\""+(rDotTxtEntry.name.replace(Constant.Symbol.UNDERLINE, Constant.Symbol.DOT))+"\"/>");
                         }
                     }
                 }

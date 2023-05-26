@@ -789,10 +789,8 @@ public class DexDiffDecoder extends BaseDecoder {
     }
 
     private void ensureDirectoryExist(File dir) {
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) {
-                throw new TinkerPatchException("failed to create directory: " + dir);
-            }
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new TinkerPatchException("failed to create directory: " + dir);
         }
     }
 

@@ -296,16 +296,10 @@ public class DefaultLoadReporter implements LoadReporter {
             return false;
         }
         File patchVersionFile = tinker.getTinkerLoadResultIfPresent().patchVersionFile;
-        if (patchVersionFile != null) {
-            if (UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
-                ShareTinkerLog.i(TAG, "try to repair oat file on patch process");
-                TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
-                return true;
-            }
-            // else {
-            //       ShareTinkerLog.i(TAG, "repair retry exceed must max time, just clean");
-            //       checkAndCleanPatch();
-            // }
+        if (patchVersionFile != null && UpgradePatchRetry.getInstance(context).onPatchListenerCheck(SharePatchFileUtil.getMD5(patchVersionFile))) {
+            ShareTinkerLog.i(TAG, "try to repair oat file on patch process");
+            TinkerInstaller.onReceiveUpgradePatch(context, patchVersionFile.getAbsolutePath());
+            return true;
         }
         return false;
     }

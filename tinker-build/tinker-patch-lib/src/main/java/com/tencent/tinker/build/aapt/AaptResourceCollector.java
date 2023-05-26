@@ -257,10 +257,8 @@ public class AaptResourceCollector {
         }
         if (!find) {
             for (ResourceDirectory oldResourceDirectory : resourceDirectorySet) {
-                if (oldResourceDirectory.equals(newResourceDirectory)) {
-                    if (!oldResourceDirectory.resourceEntrySet.contains(new ResourceEntry(resourceName, resourceValue))) {
-                        oldResourceDirectory.resourceEntrySet.add(new ResourceEntry(resourceName, resourceValue));
-                    }
+                if (oldResourceDirectory.equals(newResourceDirectory) && !oldResourceDirectory.resourceEntrySet.contains(new ResourceEntry(resourceName, resourceValue))) {
+                    oldResourceDirectory.resourceEntrySet.add(new ResourceEntry(resourceName, resourceValue));
                 }
             }
         }
