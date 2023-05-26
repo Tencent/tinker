@@ -40,11 +40,11 @@ public class UpgradePatchRetry {
     }
 
     public void setRetryEnable(boolean enable) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(enable);
     }
 
     public void setMaxRetryCount(int count) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(count);
     }
 
     public boolean onPatchRetryLoad() {
@@ -53,18 +53,26 @@ public class UpgradePatchRetry {
     }
 
     public void onPatchServiceStart(Intent intent) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(intent);
     }
 
     public boolean onPatchListenerCheck(String md5) {
-        return true;
+        return isValid(md5);
     }
 
     public boolean onPatchResetMaxCheck(String md5) {
-        return true;
+        return isValid(md5);
     }
 
     public void onPatchServiceResult() {
         ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+    }
+
+    public void logNoOpVersion(boolean enable) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+    }
+
+    public boolean isValid(String md5) {
+        return true;
     }
 }

@@ -26,31 +26,19 @@ import com.tencent.tinker.loader.TinkerRuntimeException;
 public class TinkerLoadLibrary {
 
     public static void loadArmLibrary(Context context, String libName) {
-        if (libName == null || libName.isEmpty() || context == null) {
-            throw new TinkerRuntimeException("libName or context is null!");
-        }
-        System.loadLibrary(libName);
+        load(context, libName);
     }
 
     public static void loadArmLibraryWithoutTinkerInstalled(ApplicationLike appLike, String libName) {
-        if (libName == null || libName.isEmpty() || appLike == null) {
-            throw new TinkerRuntimeException("libName or appLike is null!");
-        }
-        System.loadLibrary(libName);
+        loadLibraryIfValidInputs(appLike, libName);
     }
 
     public static void loadArmV7Library(Context context, String libName) {
-        if (libName == null || libName.isEmpty() || context == null) {
-            throw new TinkerRuntimeException("libName or context is null!");
-        }
-        System.loadLibrary(libName);
+        load(context, libName);
     }
 
     public static void loadArmV7LibraryWithoutTinkerInstalled(ApplicationLike appLike, String libName) {
-        if (libName == null || libName.isEmpty() || appLike == null) {
-            throw new TinkerRuntimeException("libName or appLike is null!");
-        }
-        System.loadLibrary(libName);
+        loadLibraryIfValidInputs(appLike, libName);
     }
 
     public static boolean loadLibraryFromTinker(Context context, String relativePath, String libName) throws UnsatisfiedLinkError {
@@ -58,10 +46,28 @@ public class TinkerLoadLibrary {
     }
 
     public static boolean installNavitveLibraryABI(Context context, String currentABI) {
-        return false;
+        return cancelOrder(context, currentABI);
     }
 
     public static boolean installNativeLibraryABIWithoutTinkerInstalled(ApplicationLike appLike, String currentABI) {
+        return cancelOrder(appLike, currentABI);
+    }
+
+    public static void load(Context context, String libName) {
+        if (libName == null || libName.isEmpty() || context == null) {
+            throw new TinkerRuntimeException("libName or context is null!");
+        }
+        System.loadLibrary(libName);
+    }
+
+    public static void loadLibraryIfValidInputs(ApplicationLike appLike, String libName) {
+        if (libName == null || libName.isEmpty() || appLike == null) {
+            throw new TinkerRuntimeException("libName or appLike is null!");
+        }
+        System.loadLibrary(libName);
+    }
+
+    public static boolean cancelOrder(Context context, String currentABI) {
         return false;
     }
 }

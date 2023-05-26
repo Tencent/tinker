@@ -162,19 +162,19 @@ public final class InstructionCodec {
     }
 
     public static short unit0(int value) {
-        return (short) value;
+        return convertToShort(value);
     }
 
     public static short unit1(int value) {
-        return (short) (value >> 16);
+        return extract(value);
     }
 
     public static short unit0(long value) {
-        return (short) value;
+        return convertToShort(value);
     }
 
     public static short unit1(long value) {
-        return (short) (value >> 16);
+        return extract(value);
     }
 
     public static short unit2(long value) {
@@ -838,5 +838,13 @@ public final class InstructionCodec {
                     return INSN_FORMAT_UNKNOWN;
                 }
         }
+    }
+
+    public static short convertToShort(int value) {
+        return (short) value;
+    }
+
+    public static short extract(int value) {
+        return (short) (value >> 16);
     }
 }

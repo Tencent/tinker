@@ -836,26 +836,30 @@ public class DexDiffDecoder extends BaseDecoder {
 
         @Override
         public void v(String msg) {
-            this.logWriter.writeLineToInfoFile(msg);
+            writeInfoLine(msg);
         }
 
         @Override
         public void d(String msg) {
-            this.logWriter.writeLineToInfoFile(msg);
+            writeInfoLine(msg);
         }
 
         @Override
         public void i(String msg) {
-            this.logWriter.writeLineToInfoFile(msg);
+            writeInfoLine(msg);
         }
 
         @Override
         public void w(String msg) {
-            this.logWriter.writeLineToInfoFile(msg);
+            writeInfoLine(msg);
         }
 
         @Override
         public void e(String msg) {
+            writeInfoLine(msg);
+        }
+
+        public void writeInfoLine(String msg) {
             this.logWriter.writeLineToInfoFile(msg);
         }
     }

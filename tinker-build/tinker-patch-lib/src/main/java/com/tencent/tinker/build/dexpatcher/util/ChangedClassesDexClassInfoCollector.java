@@ -168,7 +168,7 @@ public class ChangedClassesDexClassInfoCollector {
 
         @Override
         public void visitTwoRegisterInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b) {
-            processIndexByType(index, indexType);
+            indexByType(currentAddress, opcode, index, indexType, target, literal, a, b);
         }
 
         @Override
@@ -188,7 +188,7 @@ public class ChangedClassesDexClassInfoCollector {
 
         @Override
         public void visitRegisterRangeInsn(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int registerCount) {
-            processIndexByType(index, indexType);
+            indexByType(currentAddress, opcode, index, indexType, target, literal, a, registerCount);
         }
 
         private void processIndexByType(int index, int indexType) {
@@ -238,6 +238,10 @@ public class ChangedClassesDexClassInfoCollector {
             }
             strBuilder.append(')').append(owner.typeNames().get(protoId.returnTypeIndex));
             return strBuilder.toString();
+        }
+
+        public void indexByType(int currentAddress, int opcode, int index, int indexType, int target, long literal, int a, int b) {
+            processIndexByType(index, indexType);
         }
     }
 }

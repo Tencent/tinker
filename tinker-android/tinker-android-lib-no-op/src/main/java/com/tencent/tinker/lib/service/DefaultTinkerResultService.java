@@ -27,14 +27,18 @@ public class DefaultTinkerResultService extends AbstractResultService {
 
     @Override
     public void onPatchResult(PatchResult result) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ignoreThisInvocation(result);
     }
 
     public void deleteRawPatchFile(File rawFile) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        ignoreThisInvocation(rawFile);
     }
 
     public boolean checkIfNeedKill(PatchResult result) {
         return false;
+    }
+
+    public void ignoreThisInvocation(PatchResult result) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 }

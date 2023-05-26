@@ -151,7 +151,7 @@ public class Tinker {
      * @param id
      */
     public void setPatchServiceNotificationId(int id) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(id);
     }
 
     /**
@@ -190,15 +190,15 @@ public class Tinker {
     }
 
     public boolean isTinkerEnabled() {
-        return false;
+        return deny();
     }
 
     public boolean isTinkerLoaded() {
-        return false;
+        return deny();
     }
 
     public void setTinkerLoaded(boolean isLoaded) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(isLoaded);
     }
 
     public boolean isTinkerLoadVerify() {
@@ -206,15 +206,15 @@ public class Tinker {
     }
 
     public boolean isEnabledForDex() {
-        return false;
+        return deny();
     }
 
     public boolean isEnabledForNativeLib() {
-        return false;
+        return deny();
     }
 
     public boolean isEnabledForResource() {
-        return false;
+        return deny();
     }
 
     public File getPatchDirectory() {
@@ -241,14 +241,14 @@ public class Tinker {
      * clean all patch files
      */
     public void cleanPatch() {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        noOpVersionLog();
     }
 
     /**
      * rollback patch should restart all process
      */
     public void rollbackPatch() {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        noOpVersionLog();
     }
 
     /**
@@ -257,7 +257,7 @@ public class Tinker {
      * @param versionName
      */
     public void cleanPatchByVersion(String versionName) {
-        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        logNoOpVersion(versionName);
     }
 
     /**
@@ -397,5 +397,25 @@ public class Tinker {
             }
             return new Tinker(context, status, loadReporter, patchReporter, listener, patchDirectory, patchInfoFile, patchInfoLockFile, mainProcess, patchProcess, tinkerLoadVerifyFlag);
         }
+    }
+
+    public boolean deny() {
+        return false;
+    }
+
+    /**
+     * set tinkerPatchServiceNotificationId
+     *
+     * @param id
+     */
+    public void logNoOpVersion(int id) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+    }
+
+    /**
+     * clean all patch files
+     */
+    public void noOpVersionLog() {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
     }
 }

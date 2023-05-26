@@ -31,7 +31,7 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
     }
 
     public static boolean isTinkerPatchServiceRunning(Context context) {
-        return false;
+        return denied(context);
     }
 
     public static String getTinkerPatchServiceName(final Context context) {
@@ -39,6 +39,10 @@ public class TinkerServiceInternals extends ShareTinkerInternals {
     }
 
     public static boolean isInTinkerPatchServiceProcess(Context context) {
+        return denied(context);
+    }
+
+    public static boolean denied(Context context) {
         return false;
     }
 }

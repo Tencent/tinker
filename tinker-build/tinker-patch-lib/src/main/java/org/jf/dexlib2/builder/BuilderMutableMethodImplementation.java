@@ -279,11 +279,11 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
     }
 
     public void addCatch(@Nullable TypeReference type, @Nonnull Label from, @Nonnull Label to, @Nonnull Label handler) {
-        tryBlocks.add(new BuilderTryBlock(from, to, type, handler));
+        add(type, from, to, handler);
     }
 
     public void addCatch(@Nullable String type, @Nonnull Label from, @Nonnull Label to, @Nonnull Label handler) {
-        tryBlocks.add(new BuilderTryBlock(from, to, type, handler));
+        add(type, from, to, handler);
     }
 
     public void addCatch(@Nonnull Label from, @Nonnull Label to, @Nonnull Label handler) {
@@ -956,5 +956,9 @@ public class BuilderMutableMethodImplementation implements MethodImplementation 
             default:
                 throw new ExceptionWithContext("Invalid debug item type: " + debugItem.getDebugItemType());
         }
+    }
+
+    public void add(@Nullable TypeReference type, @Nonnull Label from, @Nonnull Label to, @Nonnull Label handler) {
+        tryBlocks.add(new BuilderTryBlock(from, to, type, handler));
     }
 }

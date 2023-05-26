@@ -115,17 +115,11 @@ public final class DexClassesComparator {
     }
 
     public void setIgnoredRemovedClassDescPattern(String... patternStringsOfLoaderClassDesc) {
-        patternsOfIgnoredRemovedClassDesc.clear();
-        for (String patternStr : patternStringsOfLoaderClassDesc) {
-            patternsOfIgnoredRemovedClassDesc.add(Pattern.compile(PatternUtils.dotClassNamePatternToDescriptorRegEx(patternStr)));
-        }
+        clearAndAddPatterns(patternStringsOfLoaderClassDesc);
     }
 
     public void setIgnoredRemovedClassDescPattern(Collection<String> patternStringsOfLoaderClassDesc) {
-        patternsOfIgnoredRemovedClassDesc.clear();
-        for (String patternStr : patternStringsOfLoaderClassDesc) {
-            patternsOfIgnoredRemovedClassDesc.add(Pattern.compile(PatternUtils.dotClassNamePatternToDescriptorRegEx(patternStr)));
-        }
+        clearAndAddPatterns(patternStringsOfLoaderClassDesc);
     }
 
     public void setCompareMode(int mode) {
@@ -1208,6 +1202,13 @@ public final class DexClassesComparator {
                 }
             }
             return new HashSet<>(classDescToInfoMap.values());
+        }
+    }
+
+    public void clearAndAddPatterns(String... patternStringsOfLoaderClassDesc) {
+        patternsOfIgnoredRemovedClassDesc.clear();
+        for (String patternStr : patternStringsOfLoaderClassDesc) {
+            patternsOfIgnoredRemovedClassDesc.add(Pattern.compile(PatternUtils.dotClassNamePatternToDescriptorRegEx(patternStr)));
         }
     }
 }

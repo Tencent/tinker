@@ -36,23 +36,23 @@ public class TinkerLog {
     }
 
     public static void v(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logShareTinker(tag, msg, obj);
     }
 
     public static void e(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logShareTinker(tag, msg, obj);
     }
 
     public static void w(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logShareTinker(tag, msg, obj);
     }
 
     public static void i(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logShareTinker(tag, msg, obj);
     }
 
     public static void d(final String tag, final String msg, final Object... obj) {
-        ShareTinkerLog.v(tag, msg, obj);
+        logShareTinker(tag, msg, obj);
     }
 
     public static void printErrStackTrace(String tag, Throwable tr, final String format, final Object... obj) {
@@ -64,5 +64,9 @@ public class TinkerLog {
     }
 
     public interface TinkerLogImp extends ShareTinkerLog.TinkerLogImp {
+    }
+
+    public static void logShareTinker(final String tag, final String msg, final Object... obj) {
+        ShareTinkerLog.v(tag, msg, obj);
     }
 }

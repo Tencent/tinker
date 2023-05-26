@@ -275,7 +275,7 @@ public abstract class AbstractIndexMap {
 
             @Override
             public void writeByte(int i) {
-                baos.write(i);
+                writeToStream(i);
             }
         }).transformArray(new EncodedValueReader(encodedArray, EncodedValueReader.ENCODED_ARRAY));
         return new EncodedValue(encodedArray.off, baos.toByteArray());
@@ -287,7 +287,7 @@ public abstract class AbstractIndexMap {
 
             @Override
             public void writeByte(int i) {
-                baos.write(i);
+                writeToStream(i);
             }
         }).transformAnnotation(annotation.getReader());
         return new Annotation(annotation.off, annotation.visibility, new EncodedValue(annotation.encodedAnnotation.off, baos.toByteArray()));
@@ -424,5 +424,9 @@ public abstract class AbstractIndexMap {
         private void writeTypeAndArg(int type, int arg) {
             out.writeByte((arg << 5) | type);
         }
+    }
+
+    public void writeToStream(int i) {
+        baos.write(i);
     }
 }
