@@ -79,14 +79,14 @@ public final class TinkerDexOptimizer {
      * @return If all dexes are optimized successfully, return true. Otherwise return false.
      */
     public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir,
-                                      boolean useDLC, ResultCallback cb) {
+                                      boolean useDLC, boolean useEmergencyMode, ResultCallback cb) {
         final String targetISA = ShareTinkerInternals.getCurrentInstructionSet();
-        return optimizeAll(context, dexFiles, optimizedDir, false, useDLC, targetISA, cb);
+        return optimizeAll(context, dexFiles, optimizedDir, false, useDLC, targetISA, useEmergencyMode, cb);
     }
 
     public static boolean optimizeAll(Context context, Collection<File> dexFiles, File optimizedDir,
                                       boolean useInterpretMode, boolean useDLC,
-                                      String targetISA, ResultCallback cb) {
+                                      String targetISA, boolean useEmergencyMode, ResultCallback cb) {
         ArrayList<File> sortList = new ArrayList<>(dexFiles);
         // sort input dexFiles with its file length in reverse order.
         Collections.sort(sortList, new Comparator<File>() {
@@ -105,7 +105,7 @@ public final class TinkerDexOptimizer {
         });
         for (File dexFile : sortList) {
             OptimizeWorker worker = new OptimizeWorker(context, dexFile, optimizedDir, useInterpretMode,
-                  useDLC, targetISA, cb);
+                  useDLC, targetISA, useEmergencyMode, cb);
             if (!worker.run()) {
                 return false;
             }
@@ -129,10 +129,11 @@ public final class TinkerDexOptimizer {
         private final File optimizedDir;
         private final boolean useInterpretMode;
         private final boolean useDLC;
+        private final boolean useEmergencyMode;
         private final ResultCallback callback;
 
         OptimizeWorker(Context context, File dexFile, File optimizedDir, boolean useInterpretMode,
-                       boolean useDLC, String targetISA, ResultCallback cb) {
+                       boolean useDLC, String targetISA, boolean useEmergencyMode, ResultCallback cb) {
             this.context = context;
             this.dexFile = dexFile;
             this.optimizedDir = optimizedDir;
@@ -140,6 +141,7 @@ public final class TinkerDexOptimizer {
             this.useDLC = useDLC;
             this.callback = cb;
             this.targetISA = targetISA;
+            this.useEmergencyMode = useEmergencyMode;
         }
 
         boolean run() {
@@ -177,15 +179,27 @@ public final class TinkerDexOptimizer {
                             createFakeODexPathStructureOnDemand(optimizedPath);
                             patchClassLoaderStrongRef = NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir,
                                     useDLC, dexFile.getAbsolutePath());
-                            try {
-                                triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);
-                            } catch (Throwable thr) {
-                                ShareTinkerLog.printErrStackTrace(TAG, thr,
-                                        "Fail to call triggerPMDexOptAsyncOnDemand.");
-                            } finally {
-                                final String vdexPath = optimizedPath.substring(0,
-                                        optimizedPath.lastIndexOf(ODEX_SUFFIX)) + VDEX_SUFFIX;
-                                waitUntilFileGeneratedOrTimeout(context, vdexPath);
+                            final Runnable task = new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        triggerPMDexOptOnDemand(context, dexFile.getAbsolutePath(), optimizedPath);
+                                    } catch (Throwable thr) {
+                                        ShareTinkerLog.printErrStackTrace(TAG, thr,
+                                                "Fail to call triggerPMDexOptAsyncOnDemand.");
+                                    } finally {
+                                        if (!useEmergencyMode) {
+                                            final String vdexPath = optimizedPath.substring(0,
+                                                    optimizedPath.lastIndexOf(ODEX_SUFFIX)) + VDEX_SUFFIX;
+                                            waitUntilFileGeneratedOrTimeout(context, vdexPath);
+                                        }
+                                    }
+                                }
+                            };
+                            if (useEmergencyMode) {
+                                new Thread(task, "TinkerDex2oatTrigger").start();
+                            } else {
+                                task.run();
                             }
                         } else {
                             patchClassLoaderStrongRef = NewClassLoaderInjector.triggerDex2Oat(context, optimizedDir,

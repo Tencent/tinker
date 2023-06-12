@@ -31,7 +31,7 @@ public class UpgradePatch extends AbstractPatch {
     private static final String TAG = "Tinker.UpgradePatch";
 
     @Override
-    public boolean tryPatch(Context context, String tempPatchPath, PatchResult patchResult) {
+    public boolean tryPatch(Context context, String tempPatchPath, boolean useEmergencyMode, PatchResult patchResult) {
         ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
         return false;
     }

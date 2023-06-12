@@ -139,18 +139,19 @@ final class NewClassLoaderInjector {
         final Object basePackageInfo = findField(baseContext.getClass(), "mPackageInfo").get(baseContext);
         findField(basePackageInfo.getClass(), "mClassLoader").set(basePackageInfo, classLoader);
 
-        if (Build.VERSION.SDK_INT < 27) {
-            final Resources res = app.getResources();
-            try {
-                findField(res.getClass(), "mClassLoader").set(res, classLoader);
-
-                final Object drawableInflater = findField(res.getClass(), "mDrawableInflater").get(res);
-                if (drawableInflater != null) {
-                    findField(drawableInflater.getClass(), "mClassLoader").set(drawableInflater, classLoader);
-                }
-            } catch (Throwable ignored) {
-                // Ignored.
+        final Resources res = app.getResources();
+        try {
+            findField(res.getClass(), "mClassLoader").set(res, classLoader);
+        } catch (Throwable ignored) {
+            // Ignored.
+        }
+        try {
+            final Object drawableInflater = findField(res.getClass(), "mDrawableInflater").get(res);
+            if (drawableInflater != null) {
+                findField(drawableInflater.getClass(), "mClassLoader").set(drawableInflater, classLoader);
             }
+        } catch (Throwable ignored) {
+            // Ignored.
         }
     }
 

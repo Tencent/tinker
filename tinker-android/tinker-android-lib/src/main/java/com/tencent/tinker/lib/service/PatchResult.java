@@ -30,6 +30,8 @@ public class PatchResult implements Serializable {
 
     public String rawPatchFilePath;
 
+    public boolean useEmergencyMode;
+
     public long totalCostTime;
 
     public long dexCostTime;
@@ -55,6 +57,7 @@ public class PatchResult implements Serializable {
         sb.append("\nPatchResult: \n");
         sb.append("isSuccess:" + isSuccess + "\n");
         sb.append("rawPatchFilePath:" + rawPatchFilePath + "\n");
+        sb.append("useEmergencyMode:" + useEmergencyMode + "\n");
         sb.append("costTime:" + totalCostTime + "\n");
         sb.append("dexoptTriggerTime:" + dexoptTriggerTime + "\n");
         sb.append("isOatGenerated:" + isOatGenerated + "\n");

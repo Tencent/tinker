@@ -47,6 +47,7 @@ public class TinkerPatchService extends IntentService {
     private static final String TAG = "Tinker.TinkerPatchService";
 
     private static final String PATCH_PATH_EXTRA = "patch_path_extra";
+    private static final String PATCH_USE_EMERGENCY_MODE = "patch_use_emergency_mode";
     private static final String RESULT_CLASS_EXTRA = "patch_result_class";
 
     private static AbstractPatch upgradePatchProcessor = null;
@@ -59,9 +60,14 @@ public class TinkerPatchService extends IntentService {
     }
 
     public static void runPatchService(final Context context, final String path) {
+        runPatchService(context, path, false);
+    }
+
+    public static void runPatchService(final Context context, final String path, boolean useEmergencyMode) {
         ShareTinkerLog.i(TAG, "run patch service...");
         Intent intent = new Intent(context, TinkerPatchService.class);
         intent.putExtra(PATCH_PATH_EXTRA, path);
+        intent.putExtra(PATCH_USE_EMERGENCY_MODE, useEmergencyMode);
         intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
         try {
             context.startService(intent);
@@ -86,6 +92,13 @@ public class TinkerPatchService extends IntentService {
             throw new TinkerRuntimeException("getPatchPathExtra, but intent is null");
         }
         return ShareIntentUtil.getStringExtra(intent, PATCH_PATH_EXTRA);
+    }
+
+    public static boolean getPatchUseEmergencyMode(Intent intent) {
+        if (intent == null) {
+            throw new TinkerRuntimeException("getPatchUseEmergencyMode, but intent is null");
+        }
+        return ShareIntentUtil.getBooleanExtra(intent, PATCH_USE_EMERGENCY_MODE, false);
     }
 
     public static String getPatchResultExtra(Intent intent) {
@@ -210,6 +223,8 @@ public class TinkerPatchService extends IntentService {
             }
             File patchFile = new File(path);
 
+            final boolean useEmergencyMode = getPatchUseEmergencyMode(intent);
+
             long begin = SystemClock.elapsedRealtime();
             boolean result;
             long cost;
@@ -220,7 +235,7 @@ public class TinkerPatchService extends IntentService {
                 if (upgradePatchProcessor == null) {
                     throw new TinkerRuntimeException("upgradePatchProcessor is null.");
                 }
-                result = upgradePatchProcessor.tryPatch(context, path, patchResult);
+                result = upgradePatchProcessor.tryPatch(context, path, useEmergencyMode, patchResult);
             } catch (Throwable throwable) {
                 e = throwable;
                 result = false;
@@ -233,6 +248,7 @@ public class TinkerPatchService extends IntentService {
 
             patchResult.isSuccess = result;
             patchResult.rawPatchFilePath = path;
+            patchResult.useEmergencyMode = useEmergencyMode;
             patchResult.totalCostTime = cost;
             patchResult.type = tinker.getCustomPatcher() == null ? PatchResult.PATCH_TYPE_BSDIFF : PatchResult.PATCH_TYPE_CUSTOM;
             patchResult.e = e;
