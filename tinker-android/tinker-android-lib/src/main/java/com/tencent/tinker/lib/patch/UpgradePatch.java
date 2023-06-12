@@ -42,7 +42,7 @@ public class UpgradePatch extends AbstractPatch {
     private static final String TAG = "Tinker.UpgradePatch";
 
     @Override
-    public boolean tryPatch(Context context, String tempPatchPath, PatchResult patchResult) {
+    public boolean tryPatch(Context context, String tempPatchPath, boolean useEmergencyMode, PatchResult patchResult) {
         Tinker manager = Tinker.with(context);
 
         final File patchFile = new File(tempPatchPath);
@@ -169,7 +169,7 @@ public class UpgradePatch extends AbstractPatch {
         }
 
         //we use destPatchFile instead of patchFile, because patchFile may be deleted during the patch process
-        if (!DexDiffPatchInternal.tryRecoverDexFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile, patchResult)) {
+        if (!DexDiffPatchInternal.tryRecoverDexFiles(manager, signatureCheck, context, patchVersionDirectory, destPatchFile, useEmergencyMode, patchResult)) {
             ShareTinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, try patch dex failed");
             return false;
         }

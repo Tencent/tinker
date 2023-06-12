@@ -35,6 +35,10 @@ public class DefaultPatchListener implements PatchListener {
 
     @Override
     public int onPatchReceived(String path) {
+        return checkPackageAndRunPatchService(path, false);
+    }
+
+    protected int checkPackageAndRunPatchService(String path, boolean useEmergencyMode) {
         final int returnCode = patchCheck(path, null);
         Tinker.with(context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode);
         return returnCode;

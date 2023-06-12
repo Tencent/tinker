@@ -58,18 +58,33 @@ public class DefaultPatchListener implements PatchListener {
      */
     @Override
     public int onPatchReceived(String path) {
+        return checkPackageAndRunPatchService(path, false);
+    }
+
+    /**
+     * Check patch package then start patch service to generate patched artifacts.
+     * @param path
+     *   Path to your patch package.
+     * @param useEmergencyMode
+     *   true for using emergency mode, otherwise false.
+     *
+     *   By using emergency mode, dex2oat triggering procedure will be done asynchronously on Android Q and newer
+     *   system to save costs. If your app lives too short to wait for generating patch artifacts, this mode should
+     *   help. **However, the performance of your patched app will become terribly worse since odex of patched dex(es)
+     *   may not be generated before loading patched artifacts in this mode.**
+     */
+    protected int checkPackageAndRunPatchService(String path, boolean useEmergencyMode) {
         final File patchFile = new File(path);
         final String patchMD5 = SharePatchFileUtil.getMD5(patchFile);
         final int returnCode = patchCheck(path, patchMD5);
         if (returnCode == ShareConstants.ERROR_PATCH_OK) {
             runForgService();
-            TinkerPatchService.runPatchService(context, path);
+            TinkerPatchService.runPatchService(context, path, useEmergencyMode);
         } else {
             Tinker.with(context).getLoadReporter().onLoadPatchListenerReceiveFail(new File(path), returnCode);
         }
         return returnCode;
     }
-
 
     private void runForgService() {
         try {
@@ -156,5 +171,4 @@ public class DefaultPatchListener implements PatchListener {
 
         return ShareConstants.ERROR_PATCH_OK;
     }
-
 }

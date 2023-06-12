@@ -153,7 +153,7 @@ public class TinkerDexLoader {
 
             TinkerDexOptimizer.optimizeAll(
                   application, legalFiles, optimizeDir, true,
-                  application.isUseDelegateLastClassLoader(), targetISA,
+                  application.isUseDelegateLastClassLoader(), targetISA, false,
                   new TinkerDexOptimizer.ResultCallback() {
                       long start;
 

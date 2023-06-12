@@ -25,5 +25,5 @@ import com.tencent.tinker.lib.service.PatchResult;
  */
 public abstract class AbstractPatch {
 
-    public abstract boolean tryPatch(Context context, String tempPatchPath, PatchResult patchResult);
+    public abstract boolean tryPatch(Context context, String tempPatchPath, boolean useEmergencyMode, PatchResult patchResult);
 }
