@@ -73,7 +73,6 @@ class TinkerResourcePatcher {
     private static Field assetsFiled = null;
     private static Field resourcesImplFiled = null;
     private static Field resDir = null;
-    private static Field resources = null;
     private static Field packagesFiled = null;
     private static Field resourcePackagesFiled = null;
     private static Field publicSourceDirField = null;
@@ -104,12 +103,6 @@ class TinkerResourcePatcher {
         }
 
         resDir = findField(loadedApkClass, "mResDir");
-        try {
-            resources = findField(loadedApkClass, "mResources");
-        } catch (Throwable thr) {
-            ShareTinkerLog.printErrStackTrace(TAG, thr, "Fail to get LoadedApk.mResources field.");
-            resources = null;
-        }
         packagesFiled = findField(activityThread, "mPackages");
         try {
             resourcePackagesFiled = findField(activityThread, "mResourcePackages");
@@ -229,9 +222,6 @@ class TinkerResourcePatcher {
                 final String resDirPath = (String) resDir.get(loadedApk);
                 if (appInfo.sourceDir.equals(resDirPath)) {
                     resDir.set(loadedApk, externalResourceFile);
-                    if (resources != null) {
-                        resources.set(loadedApk, null);
-                    }
                 }
             }
         }
