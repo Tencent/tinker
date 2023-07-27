@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 
@@ -117,6 +118,11 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
      * to the start of the current entry header is greater than 0xFFFFFFFF.
      */
     private boolean currentEntryNeedsZip64;
+
+    private final int alignBytes;
+
+    private int padding = 0;
+
     /**
      * Constructs a new {@code ZipOutputStream} that writes a zip file to the given
      * {@code OutputStream}.
@@ -130,8 +136,13 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
      * @hide for testing only.
      */
     public TinkerZipOutputStream(OutputStream os, boolean forceZip64) {
+        this(os, forceZip64, 4);
+    }
+
+    public TinkerZipOutputStream(OutputStream os, boolean forceZip64, int alignBytes) {
         super(os);
         this.forceZip64 = forceZip64;
+        this.alignBytes = alignBytes;
     }
 
     /**
@@ -328,7 +339,8 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         if (currentEntry.extra != null) {
             cDir.write(currentEntry.extra);
         }
-        offset += curOffset;
+        offset += curOffset + padding;
+        padding = 0;
         if (entryCommentBytes.length > 0) {
             cDir.write(entryCommentBytes);
             entryCommentBytes = BYTE;
@@ -390,7 +402,7 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
             writeIntAsUint16(cDir, entries.size()); // Number of entries
             writeIntAsUint16(cDir, entries.size()); // Number of entries
             writeLongAsUint32(cDir, cdirEntriesSize); // Size of central dir
-            writeLongAsUint32(cDir, offset); // Offset of central dir
+            writeLongAsUint32(cDir, offset + padding); // Offset of central dir
         }
         writeIntAsUint16(cDir, commentBytes.length);
         if (commentBytes.length > 0) {
@@ -399,6 +411,22 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
         // Write the central directory.
         cDir.writeTo(out);
         cDir = null;
+    }
+
+    private int getPaddingByteCount(TinkerZipEntry entry, long entryFileOffset) {
+        if (entry.getMethod() != ZipEntry.STORED || alignBytes == 0) {
+            return 0;
+        }
+        return (int) ((alignBytes - (entryFileOffset % alignBytes)) % alignBytes);
+    }
+
+    private void makePaddingToStream(OutputStream os, long padding) throws IOException {
+        if (padding <= 0) {
+            return;
+        }
+        while (padding-- > 0) {
+            os.write(0);
+        }
     }
 
     /**
@@ -502,19 +530,23 @@ public class TinkerZipOutputStream extends FilterOutputStream implements ZipCons
             writeLongAsUint32(out, 0);
             writeLongAsUint32(out, 0);
         }
-        writeIntAsUint16(out, nameBytes.length);
+        final int nameLength = nameBytes.length;
+        writeIntAsUint16(out, nameLength);
+        final long currDataOffset = offset + LOCHDR + nameLength + (currentEntry.getExtra() != null ? currentEntry.getExtra().length : 0);
+        padding = getPaddingByteCount(currentEntry, currDataOffset);
         /*if (currentEntryNeedsZip64) {
             Zip64.insertZip64ExtendedInfoToExtras(currentEntry);
         }*/
         if (currentEntry.extra != null) {
-            writeIntAsUint16(out, currentEntry.extra.length);
+            writeIntAsUint16(out, currentEntry.extra.length + padding);
         } else {
-            writeIntAsUint16(out, 0);
+            writeIntAsUint16(out, padding);
         }
         out.write(nameBytes);
         if (currentEntry.extra != null) {
             out.write(currentEntry.extra);
         }
+        makePaddingToStream(out, padding);
     }
 
     /**
