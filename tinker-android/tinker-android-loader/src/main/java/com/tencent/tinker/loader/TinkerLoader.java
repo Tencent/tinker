@@ -388,12 +388,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
             ComponentHotplug.install(app, securityCheck);
         }
 
-        if (!AppInfoChangedBlocker.tryStart(app)) {
-            ShareTinkerLog.w(TAG, "tryLoadPatchFiles:AppInfoChangedBlocker install fail.");
-            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_BAIL_HACK_FAILURE);
-            return;
-        }
-
         // Before successfully exit, we should update stored version info and kill other process
         // to make them load latest patch when we first applied newer one.
         if (mainProcess && (versionChanged || oatModeChanged)) {
