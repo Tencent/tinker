@@ -22,6 +22,7 @@ import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findConstruct
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findField;
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findMethod;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
@@ -56,7 +57,6 @@ class TinkerResourcePatcher {
 
     private static Map<Object, WeakReference<Object>> resourceImpls = null;
     private static Object currentActivityThread = null;
-    private static AssetManager newAssetManager = null;
 
     // method
     private static Constructor<?> newAssetManagerCtor = null;
@@ -66,8 +66,11 @@ class TinkerResourcePatcher {
 
     // field
     private static Field assetsFiled = null;
-    private static Field resourcesImplFiled = null;
+    private static Field resourcesImplField = null;
     private static Field resDir = null;
+    private static Field resources = null;
+    private static Field application = null;
+    private static Field classloader = null;
     private static Field packagesFiled = null;
     private static Field resourcePackagesFiled = null;
     private static Field publicSourceDirField = null;
@@ -98,6 +101,9 @@ class TinkerResourcePatcher {
         }
 
         resDir = findField(loadedApkClass, "mResDir");
+        resources = findField(loadedApkClass, "mResources");
+        application = findField(loadedApkClass, "mApplication");
+        classloader = findField(loadedApkClass, "mClassLoader");
         packagesFiled = findField(activityThread, "mPackages");
         try {
             resourcePackagesFiled = findField(activityThread, "mResourcePackages");
@@ -169,7 +175,7 @@ class TinkerResourcePatcher {
         if (SDK_INT >= 24) {
             try {
                 // N moved the mAssets inside an mResourcesImpl field
-                resourcesImplFiled = findField(resources, "mResourcesImpl");
+                resourcesImplField = findField(resources, "mResourcesImpl");
             } catch (Throwable ignore) {
                 // for safety
                 assetsFiled = findField(resources, "mAssets");
@@ -186,21 +192,32 @@ class TinkerResourcePatcher {
     }
 
     /**
-     * @param context
+     * @param app
      * @param externalResourceFile
      * @throws Throwable
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    public static void monkeyPatchExistingResources(Context context, String externalResourceFile, boolean isReInject) throws Throwable {
+    public static void monkeyPatchExistingResources(Application app, String externalResourceFile, boolean isReInject) throws Throwable {
         if (externalResourceFile == null) {
             return;
         }
 
-        final ApplicationInfo appInfo = context.getApplicationInfo();
+        final ApplicationInfo appInfo = app.getApplicationInfo();
 
-        // Prevent cached LoadedApk being recycled.
-        packageContext = context.createPackageContext(context.getPackageName(), Context.CONTEXT_INCLUDE_CODE);
-        packageResContext = context.createPackageContext(context.getPackageName(), 0);
+        // Ensure mPackages and mResourcePackages cache contains LoadedApk instance related to this app.
+        packageContext = app.createPackageContext(app.getPackageName(), Context.CONTEXT_INCLUDE_CODE);
+        packageResContext = app.createPackageContext(app.getPackageName(), 0);
+
+        final Resources oldResources = packageResContext.getResources();
+        Field implAssetsField = null;
+        Object appAssetManager = null;
+        if (resourcesImplField != null) {
+            final Object appResourcesImpl = resourcesImplField.get(oldResources);
+            implAssetsField = findField(appResourcesImpl, "mAssets");
+            appAssetManager = implAssetsField.get(appResourcesImpl);
+        } else {
+            appAssetManager = assetsFiled.get(oldResources);
+        }
 
         final Field[] packagesFields = new Field[]{packagesFiled, resourcePackagesFiled};
         for (Field field : packagesFields) {
@@ -218,35 +235,29 @@ class TinkerResourcePatcher {
                 final String resDirPath = (String) resDir.get(loadedApk);
                 if (appInfo.sourceDir.equals(resDirPath)) {
                     resDir.set(loadedApk, externalResourceFile);
+                    if (isReInject) {
+                        application.set(loadedApk, app);
+                        classloader.set(loadedApk, SystemClassLoaderAdder.getInjectedClassLoader());
+                    }
+                    resources.set(loadedApk, null);
                 }
             }
         }
 
-        if (isReInject) {
-            ShareTinkerLog.i(TAG, "Re-injecting, skip rest logic.");
-            PatchedResourcesInsuranceLogic.recordCurrentPatchedResModifiedTime(externalResourceFile);
-            return;
-        }
-
-        newAssetManager = (AssetManager) newAssetManagerCtor.newInstance();
-        // Create a new AssetManager instance and point it to the resources installed under
-        if (((Integer) addAssetPathMethod.invoke(newAssetManager, externalResourceFile)) == 0) {
-            throw new IllegalStateException("Could not create new AssetManager");
-        }
+        // Let modified resDir take effect and use it to create new Context instance.
+        packageContext = app.createPackageContext(app.getPackageName(), Context.CONTEXT_INCLUDE_CODE);
+        packageResContext = app.createPackageContext(app.getPackageName(), 0);
         PatchedResourcesInsuranceLogic.recordCurrentPatchedResModifiedTime(externalResourceFile);
 
-        // Add SharedLibraries to AssetManager for resolve system resources not found issue
-        // This influence SharedLibrary Package ID
-        if (shouldAddSharedLibraryAssets(appInfo)) {
-            for (String sharedLibrary : appInfo.sharedLibraryFiles) {
-                if (!sharedLibrary.endsWith(".apk")) {
-                    continue;
-                }
-                if (((Integer) addAssetPathAsSharedLibraryMethod.invoke(newAssetManager, sharedLibrary)) == 0) {
-                    throw new IllegalStateException("AssetManager add SharedLibrary Fail");
-                }
-                ShareTinkerLog.i(TAG, "addAssetPathAsSharedLibrary " + sharedLibrary);
-            }
+        final Resources newResources = packageResContext.getResources();
+        Object newAssetManager = null;
+        if (resourcesImplField != null) {
+            // N
+            final Object resourceImpl = resourcesImplField.get(newResources);
+            newAssetManager = implAssetsField.get(resourceImpl);
+        } else {
+            //pre-N
+            newAssetManager = assetsFiled.get(newResources);
         }
 
         // Kitkat needs this method call, Lollipop doesn't. However, it doesn't seem to cause any harm
@@ -262,34 +273,44 @@ class TinkerResourcePatcher {
                 continue;
             }
             // Set the AssetManager of the Resources instance to our brand new one
-            try {
-                //pre-N
-                assetsFiled.set(resources, newAssetManager);
-            } catch (Throwable ignore) {
+            if (resourcesImplField != null) {
                 // N
-                final Object resourceImpl = resourcesImplFiled.get(resources);
-                // for Huawei HwResourcesImpl
-                final Field implAssets = findField(resourceImpl, "mAssets");
-                implAssets.set(resourceImpl, newAssetManager);
+                final Object resourcesImpl = resourcesImplField.get(resources);
+                final Object assetManager = implAssetsField.get(resourcesImpl);
+                if (assetManager == appAssetManager) {
+                    implAssetsField.set(resourcesImpl, newAssetManager);
+                }
+            } else {
+                //pre-N
+                final Object assetManager = assetsFiled.get(resources);
+                if (assetManager == appAssetManager) {
+                    assetsFiled.set(resources, newAssetManager);
+                }
             }
 
             clearPreloadTypedArrayIssue(resources);
-
             resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
         }
 
         try {
             if (resourceImpls != null) {
                 for (WeakReference<Object> wr : resourceImpls.values()) {
-                    final Object resourceImpl = wr.get();
-                    if (resourceImpl != null) {
-                        final Field implAssets = findField(resourceImpl, "mAssets");
-                        implAssets.set(resourceImpl, newAssetManager);
+                    final Object resourcesImpl = wr.get();
+                    if (resourcesImpl != null) {
+                        final Object assetManager = implAssetsField.get(resourcesImpl);
+                        if (assetManager == appAssetManager) {
+                            implAssetsField.set(resourcesImpl, newAssetManager);
+                        }
                     }
                 }
             }
         } catch (Throwable ignored) {
             // Ignored.
+        }
+
+        if (isReInject) {
+            ShareTinkerLog.i(TAG, "Re-injecting, skip rest logic.");
+            return;
         }
 
         // Handle issues caused by WebView on Android N.
@@ -299,18 +320,18 @@ class TinkerResourcePatcher {
         if (Build.VERSION.SDK_INT >= 24) {
             try {
                 if (publicSourceDirField != null) {
-                    publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
+                    publicSourceDirField.set(app.getApplicationInfo(), externalResourceFile);
                 }
             } catch (Throwable ignore) {
                 // Ignored.
             }
         }
 
-        if (!checkResUpdate(context)) {
+        if (!checkResUpdate(app)) {
             throw new TinkerRuntimeException(ShareConstants.CHECK_RES_INSTALL_FAIL);
         }
 
-        if (!PatchedResourcesInsuranceLogic.install(context, externalResourceFile)) {
+        if (!PatchedResourcesInsuranceLogic.install(app, externalResourceFile)) {
             ShareTinkerLog.w(TAG, "tryLoadPatchFiles:PatchedResourcesInsuranceLogic install fail.");
             throw new TinkerRuntimeException("fail to install PatchedResourcesInsuranceLogic.");
         }

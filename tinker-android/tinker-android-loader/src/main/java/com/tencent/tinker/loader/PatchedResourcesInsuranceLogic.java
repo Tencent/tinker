@@ -1,5 +1,6 @@
 package com.tencent.tinker.loader;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Handler;
@@ -32,10 +33,10 @@ public final class PatchedResourcesInsuranceLogic {
 
     private static long sStoredPatchedResModifiedTime = 0L;
 
-    public static boolean install(Context context, String newResourcesApkPath) {
+    public static boolean install(Application application, String newResourcesApkPath) {
         try {
             ShareTinkerLog.i(TAG, "install called.");
-            interceptHandler(context, fetchMHObject(context), newResourcesApkPath);
+            interceptHandler(application, fetchMHObject(application), newResourcesApkPath);
             ShareTinkerLog.i(TAG, "install done.");
             return true;
         } catch (Throwable e) {
@@ -76,11 +77,11 @@ public final class PatchedResourcesInsuranceLogic {
         return (Handler) mHField.get(activityThread);
     }
 
-    private static void interceptHandler(Context context, Handler mH, String newResourcesApkPath) throws Exception {
+    private static void interceptHandler(Application application, Handler mH, String newResourcesApkPath) throws Exception {
         final Field mCallbackField = ShareReflectUtil.findField(Handler.class, "mCallback");
         final Handler.Callback originCallback = (Handler.Callback) mCallbackField.get(mH);
         if (!(originCallback instanceof HackerCallback)) {
-            HackerCallback hackerCallback = new HackerCallback(context, originCallback, mH.getClass(), newResourcesApkPath);
+            HackerCallback hackerCallback = new HackerCallback(application, originCallback, mH.getClass(), newResourcesApkPath);
             mCallbackField.set(mH, hackerCallback);
         } else {
             ShareTinkerLog.w(TAG, "Already intercepted, skip rest logic.");
@@ -90,23 +91,31 @@ public final class PatchedResourcesInsuranceLogic {
     private static class HackerCallback implements Handler.Callback {
         private final int LAUNCH_ACTIVITY;
         private final int RELAUNCH_ACTIVITY;
+        private final int RECEIVER;
+        private final int CREATE_SERVICE;
+        private final int SERVICE_ARGS;
+        private final int BIND_SERVICE;
+        private final int INSTALL_PROVIDER;
         private final int EXECUTE_TRANSACTION;
 
-        private final Context mContext;
-
+        private final Application mApplication;
         private Method mGetCallbacksMethod = null;
-
         private boolean mSkipInterceptExecuteTransaction = false;
         private final Handler.Callback mOriginalCallback;
-
         private final String mNewResourcesApkPath;
+        private boolean mAvoidInfiniteLoop = false;
 
-        HackerCallback(Context context, Handler.Callback originalCallback, Class<?> mhClazz, String newResourcesApkPath) {
-            mContext = context;
+        HackerCallback(Application application, Handler.Callback originalCallback, Class<?> mhClazz, String newResourcesApkPath) {
+            mApplication = application;
             mOriginalCallback = originalCallback;
             mNewResourcesApkPath = newResourcesApkPath;
             LAUNCH_ACTIVITY = fetchMessageId(mhClazz, "LAUNCH_ACTIVITY", 100);
             RELAUNCH_ACTIVITY = fetchMessageId(mhClazz, "RELAUNCH_ACTIVITY", 126);
+            RECEIVER = fetchMessageId(mhClazz, "RECEIVER", 113);
+            CREATE_SERVICE = fetchMessageId(mhClazz, "CREATE_SERVICE", 114);
+            SERVICE_ARGS = fetchMessageId(mhClazz, "SERVICE_ARGS", 115);
+            BIND_SERVICE = fetchMessageId(mhClazz, "BIND_SERVICE", 121);
+            INSTALL_PROVIDER = fetchMessageId(mhClazz, "INSTALL_PROVIDER", 145);
             if (ShareTinkerInternals.isNewerOrEqualThanVersion(28, true)) {
                 EXECUTE_TRANSACTION = fetchMessageId(mhClazz, "EXECUTE_TRANSACTION ", 159);
             } else {
@@ -126,11 +135,17 @@ public final class PatchedResourcesInsuranceLogic {
 
         @Override
         public boolean handleMessage(Message msg) {
+            if (mAvoidInfiniteLoop) {
+                ShareTinkerLog.w(TAG, "found a loop invocation to handleMessage.");
+                return false;
+            }
             boolean consume = false;
             if (hackMessage(msg)) {
                 consume = true;
             } else if (mOriginalCallback != null) {
+                mAvoidInfiniteLoop = true;
                 consume = mOriginalCallback.handleMessage(msg);
+                mAvoidInfiniteLoop = false;
             }
             return consume;
         }
@@ -138,7 +153,7 @@ public final class PatchedResourcesInsuranceLogic {
         @SuppressWarnings("unchecked")
         private boolean hackMessage(Message msg) {
             if (msg.obj instanceof ApplicationInfo) {
-                ShareTinkerLog.w(TAG, "Intercepted APPLICATION_INFO_CHANGED, update sourceDir and " +
+                ShareTinkerLog.w(TAG, "intercepted APPLICATION_INFO_CHANGED, update sourceDir and " +
                         "publicSourceDir before dispatching back to system.");
                 final ApplicationInfo appInfo = ((ApplicationInfo) msg.obj);
                 appInfo.sourceDir = appInfo.publicSourceDir = mNewResourcesApkPath;
@@ -147,6 +162,11 @@ public final class PatchedResourcesInsuranceLogic {
 
             if (msg.what == LAUNCH_ACTIVITY ||
                     msg.what == RELAUNCH_ACTIVITY ||
+                    msg.what == RECEIVER ||
+                    msg.what == CREATE_SERVICE ||
+                    msg.what == SERVICE_ARGS ||
+                    msg.what == BIND_SERVICE ||
+                    msg.what == INSTALL_PROVIDER ||
                     (EXECUTE_TRANSACTION != -1 && msg.what == EXECUTE_TRANSACTION)
             ) {
                 if (!isPatchedResModifiedAfterLastLoad(mNewResourcesApkPath)) {
@@ -187,11 +207,13 @@ public final class PatchedResourcesInsuranceLogic {
                     } catch (Throwable thr) {
                         ShareTinkerLog.printErrStackTrace(TAG, thr, "fail to call getLifecycleStateRequest " +
                                 "method, skip rest insurance logic.");
+                        return false;
                     }
                 }
 
                 try {
-                    TinkerResourcePatcher.monkeyPatchExistingResources(mContext, mNewResourcesApkPath, true);
+                    ShareTinkerLog.i(TAG, "re-inject patched resources since its backed APK file was updated.");
+                    TinkerResourcePatcher.monkeyPatchExistingResources(mApplication, mNewResourcesApkPath, true);
                 } catch (Throwable thr) {
                     ShareTinkerLog.printErrStackTrace(TAG, thr, "fail to ensure patched resources available " +
                             "after it's modified.");
