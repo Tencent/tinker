@@ -105,7 +105,7 @@ public class ShareConstants {
     public static final String PATCH_TEMP_DIRECTORY_NAME  = "tinker_temp";
     public static final String PATCH_TEMP_LAST_CRASH_NAME = "tinker_last_crash";
 
-    public static final String PATCH_INFO_NAME      = "patch.info";
+    public static final String PATCH_INFO_NAME      = "patch_meta.info";
     public static final String PATCH_INFO_LOCK_NAME = "info.lock";
 
     public static final String META_SUFFIX = "meta.txt";
