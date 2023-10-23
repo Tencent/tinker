@@ -51,6 +51,8 @@ public class SystemClassLoaderAdder {
     private static final String TAG = "Tinker.ClassLoaderAdder";
     private static int sPatchDexCount = 0;
 
+    private static ClassLoader sInjectedClassLoader = null;
+
     public static void installDexes(Application application, ClassLoader loader, File dexOptDir, List<File> files,
                                     boolean isProtectedApp, boolean useDLC) throws Throwable {
         ShareTinkerLog.i(TAG, "installDexes dexOptDir: " + dexOptDir.getAbsolutePath() + ", dex size:" + files.size());
@@ -63,6 +65,7 @@ public class SystemClassLoaderAdder {
             } else {
                 injectDexesInternal(classLoader, files, dexOptDir);
             }
+            sInjectedClassLoader = classLoader;
             //install done
             sPatchDexCount = files.size();
             ShareTinkerLog.i(TAG, "after loaded classloader: " + classLoader + ", dex size:" + sPatchDexCount);
@@ -73,6 +76,13 @@ public class SystemClassLoaderAdder {
                 throw new TinkerRuntimeException(ShareConstants.CHECK_DEX_INSTALL_FAIL);
             }
         }
+    }
+
+    static ClassLoader getInjectedClassLoader() {
+        if (sInjectedClassLoader == null) {
+            throw new TinkerRuntimeException("Please call installDexes() first.");
+        }
+        return sInjectedClassLoader;
     }
 
     static void injectDexesInternal(ClassLoader cl, List<File> dexFiles, File optimizeDir) throws Throwable {

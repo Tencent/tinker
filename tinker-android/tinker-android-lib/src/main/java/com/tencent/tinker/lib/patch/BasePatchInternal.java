@@ -17,6 +17,7 @@
 package com.tencent.tinker.lib.patch;
 
 import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -66,6 +67,7 @@ public class BasePatchInternal {
             try {
                 is = new BufferedInputStream(zipFile.getInputStream(entryFile));
                 os = new BufferedOutputStream(new FileOutputStream(extractTo));
+                extractTo.setReadOnly();
                 byte[] buffer = new byte[ShareConstants.BUFFER_SIZE];
                 int length = 0;
                 while ((length = is.read(buffer)) > 0) {

@@ -280,6 +280,7 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         AlignedZipOutputStream out = null;
         try {
             out = new AlignedZipOutputStream(new BufferedOutputStream(new FileOutputStream(classNFile)));
+            classNFile.setReadOnly();
             for (ShareDexDiffPatchInfo info : classNDexInfo.keySet()) {
                 File dexFile = classNDexInfo.get(info);
                 if (info.isJarMode) {
@@ -648,6 +649,10 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             try {
                 zos = new ZipOutputStream(new
                     BufferedOutputStream(new FileOutputStream(extractTo)));
+                if (ShareTinkerInternals.isNewerOrEqualThanVersion(33, true)) {
+                    extractTo.setReadOnly();
+                }
+
                 bis = new BufferedInputStream(zipFile.getInputStream(entryFile));
 
                 byte[] buffer = new byte[ShareConstants.BUFFER_SIZE];
@@ -719,6 +724,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         try {
             oldDexStream = new BufferedInputStream(baseApk.getInputStream(oldDexEntry));
             patchFileStream = (patchFileEntry != null ? new BufferedInputStream(patchPkg.getInputStream(patchFileEntry)) : null);
+            if (ShareTinkerInternals.isNewerOrEqualThanVersion(33, true)) {
+                patchedDexFile.setReadOnly();
+            }
 
             final boolean isRawDexFile = SharePatchFileUtil.isRawDexFile(patchInfo.rawName);
             if (!isRawDexFile || patchInfo.isJarMode) {

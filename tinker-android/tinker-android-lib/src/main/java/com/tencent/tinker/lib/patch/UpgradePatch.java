@@ -126,9 +126,15 @@ public class UpgradePatch extends AbstractPatch {
             // if it is interpret now, use changing flag to wait main process
             final String finalOatDir = usingInterpret ? ShareConstants.CHANING_DEX_OPTIMIZE_PATH : oldInfo.oatDir;
             if (!patchMd5.equals(oldInfo.newVersion) && !oldInfo.newVersion.equals(oldInfo.oldVersion)) {
+                // Mark previous new version to old one before delete current new version so that all processes can stay at the
+                // same version after restart but before the latest new version finish applying.
+                final String lastNewVersion = oldInfo.newVersion;
+                oldInfo.newVersion = oldInfo.oldVersion;
+                SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, oldInfo, patchInfoLockFile);
+
                 // Currently applied patch is not the same as last applied one and the last applied one is not loaded,
                 // so we can delete the last applied patch to avoid patch artifacts accumulating.
-                final String patchName = SharePatchFileUtil.getPatchVersionDirectory(oldInfo.newVersion);
+                final String patchName = SharePatchFileUtil.getPatchVersionDirectory(lastNewVersion);
                 SharePatchFileUtil.deleteDir(new File(patchDirectory, patchName));
             }
             final String versionToRemove;
