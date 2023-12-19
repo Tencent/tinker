@@ -181,7 +181,13 @@ public final class ExcludedClassModifiedChecker {
                     throw new TinkerPatchException("new primary dex is missing.");
                 }
                 case STMCODE_ERROR_LOADER_CLASS_NOT_IN_PRIMARY_OLD_DEX: {
-                    throw new TinkerPatchException("all loader classes don't appear in old primary dex.");
+                    final String msg = "all loader classes don't appear in old primary dex.";
+                    if (config.mAllowLoaderInAnyDex) {
+                        Logger.d(msg);
+                        return;
+                    } else {
+                        throw new TinkerPatchException(msg);
+                    }
                 }
                 case STMCODE_ERROR_LOADER_CLASS_IN_PRIMARY_DEX_MISMATCH: {
                     throw new TinkerPatchException(
