@@ -11,7 +11,7 @@ dependencies {
     implementation localGroovy()
 //    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':tinker-build:tinker-patch-lib')
-    implementation 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
+    implementation 'com.google.gradle:osdetector-gradle-plugin:1.7.0'
     implementation 'commons-codec:commons-codec:1.10'
     compileOnly 'com.android.tools.build:gradle:4.2.0'
 }
