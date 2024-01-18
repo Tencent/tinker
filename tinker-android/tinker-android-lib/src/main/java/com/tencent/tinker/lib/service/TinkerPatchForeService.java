@@ -12,6 +12,14 @@ public class TinkerPatchForeService extends Service {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        super.onStartCommand(intent, flags, startId);
+        // It's unwelcome to restart owner process of this service automatically for users.
+        // So return START_NOT_STICKY here to prevent this behavior.
+        return START_NOT_STICKY;
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         return new IForeService.Stub() {
             @Override
