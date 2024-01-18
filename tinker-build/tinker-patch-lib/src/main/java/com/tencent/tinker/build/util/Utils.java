@@ -139,6 +139,7 @@ public class Utils {
                     );
                 }
                 String name = zipEntry.getName();
+                name = CaseSensitive.getOriginalEntryName(name);
                 if (!TinkerZipUtil.validateZipEntryName(output.getParentFile(), name)) {
                     throw new IOException("Bad ZipEntry name: " + name);
                 }
@@ -162,6 +163,7 @@ public class Utils {
             TinkerZipUtil.extractTinkerEntry(oldApk, manifestZipEntry, out);
 
             for (String name : largeModifiedSet) {
+                name = CaseSensitive.getOriginalEntryName(name);
                 TinkerZipEntry largeZipEntry = oldApk.getEntry(name);
                 if (largeZipEntry == null) {
                     throw new TinkerPatchException(
@@ -173,6 +175,7 @@ public class Utils {
             }
 
             for (String name : addedSet) {
+                name = CaseSensitive.getOriginalEntryName(name);
                 TinkerZipEntry addZipEntry = newApk.getEntry(name);
                 if (addZipEntry == null) {
                     throw new TinkerPatchException(
@@ -183,6 +186,7 @@ public class Utils {
             }
 
             for (String name : modifiedSet) {
+                name = CaseSensitive.getOriginalEntryName(name);
                 TinkerZipEntry modZipEntry = newApk.getEntry(name);
                 if (modZipEntry == null) {
                     throw new TinkerPatchException(
