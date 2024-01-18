@@ -47,7 +47,7 @@ public class ShareIntentUtil {
     public static final  String INTENT_PATCH_INTERPRET_EXCEPTION = "intent_patch_interpret_exception";
 
 
-    private static final String TAG                              = "ShareIntentUtil";
+    private static final String TAG                              = "Tinker.ShareIntentUtil";
 
     public static void setIntentReturnCode(Intent intent, int code) {
         intent.putExtra(INTENT_RETURN_CODE, code);
@@ -196,7 +196,7 @@ public class ShareIntentUtil {
         try {
             intent.setExtrasClassLoader(cl);
         } catch (Throwable thr) {
-            thr.printStackTrace();
+            ShareTinkerLog.e(TAG, "fixIntentClassLoader exception:", thr);
         }
     }
 }
