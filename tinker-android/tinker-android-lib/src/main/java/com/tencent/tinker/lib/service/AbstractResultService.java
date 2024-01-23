@@ -51,14 +51,6 @@ public abstract class AbstractResultService extends IntentService {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        super.onStartCommand(intent, flags, startId);
-        // It's unwelcome to restart owner process of this service automatically for users.
-        // So return START_NOT_STICKY here to prevent this behavior.
-        return START_NOT_STICKY;
-    }
-
-    @Override
     protected void onHandleIntent(Intent intent) {
         if (intent == null) {
             ShareTinkerLog.e(TAG, "AbstractResultService received a null intent, ignoring.");
