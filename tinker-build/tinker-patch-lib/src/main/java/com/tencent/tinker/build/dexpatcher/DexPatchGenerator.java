@@ -74,7 +74,7 @@ import java.util.regex.Pattern;
  * Created by tangyinsheng on 2016/6/30.
  */
 public class DexPatchGenerator {
-    private static final String TAG = "DexPatchGenerator";
+    private static final String TAG = "Tinker.DexPatchGenerator";
 
     private final Dex oldDex;
     private final Dex newDex;

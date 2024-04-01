@@ -157,7 +157,7 @@ public class TinkerArkHotLoader {
                 try {
                     intentResult.putExtra(ShareIntentUtil.INTENT_PATCH_MISSING_DEX_PATH, apkFile.getCanonicalPath());
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    ShareTinkerLog.e(TAG, "checkComplete apkFile getCanonicalPath exception:", e);
                 }
                 ShareIntentUtil.setIntentReturnCode(intentResult,
                         ShareConstants.ERROR_LOAD_PATCH_VERSION_DEX_FILE_NOT_EXIST);
