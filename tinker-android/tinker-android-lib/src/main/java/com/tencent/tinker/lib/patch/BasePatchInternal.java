@@ -65,9 +65,14 @@ public class BasePatchInternal {
             ShareTinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
 
             try {
+                if (extractTo.exists()) {
+                    extractTo.delete();
+                }
                 is = new BufferedInputStream(zipFile.getInputStream(entryFile));
                 os = new BufferedOutputStream(new FileOutputStream(extractTo));
-                extractTo.setReadOnly();
+                if (ShareTinkerInternals.isNewerOrEqualThanVersion(33, true)) {
+                    extractTo.setReadOnly();
+                }
                 byte[] buffer = new byte[ShareConstants.BUFFER_SIZE];
                 int length = 0;
                 while ((length = is.read(buffer)) > 0) {

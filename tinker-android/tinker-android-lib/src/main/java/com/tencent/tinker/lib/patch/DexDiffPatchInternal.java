@@ -279,8 +279,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
         boolean result = true;
         AlignedZipOutputStream out = null;
         try {
+            if (classNFile.exists()) {
+                classNFile.delete();
+            }
             out = new AlignedZipOutputStream(new BufferedOutputStream(new FileOutputStream(classNFile)));
-            classNFile.setReadOnly();
+            if (ShareTinkerInternals.isNewerOrEqualThanVersion(33, true)) {
+                classNFile.setReadOnly();
+            }
             for (ShareDexDiffPatchInfo info : classNDexInfo.keySet()) {
                 File dexFile = classNDexInfo.get(info);
                 if (info.isJarMode) {
@@ -647,6 +652,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
             ShareTinkerLog.i(TAG, "try Extracting " + extractTo.getPath());
             try {
+                if (extractTo.exists()) {
+                    extractTo.delete();
+                }
                 zos = new ZipOutputStream(new
                     BufferedOutputStream(new FileOutputStream(extractTo)));
                 if (ShareTinkerInternals.isNewerOrEqualThanVersion(33, true)) {
@@ -732,6 +740,9 @@ public class DexDiffPatchInternal extends BasePatchInternal {
             if (!isRawDexFile || patchInfo.isJarMode) {
                 ZipOutputStream zos = null;
                 try {
+                    if (patchedDexFile.exists()) {
+                        patchedDexFile.delete();
+                    }
                     zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(patchedDexFile)));
                     zos.putNextEntry(new ZipEntry(ShareConstants.DEX_IN_JAR));
                     // Old dex is not a raw dex file.

@@ -134,8 +134,13 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             TinkerZipFile newApk = null;
             int totalEntryCount = 0;
             try {
+                if (resOutput.exists()) {
+                    resOutput.delete();
+                }
                 out = new TinkerZipOutputStream(new BufferedOutputStream(new FileOutputStream(resOutput)));
-                resOutput.setReadOnly();
+                if (ShareTinkerInternals.isNewerOrEqualThanVersion(33, true)) {
+                    resOutput.setReadOnly();
+                }
                 oldApk = new TinkerZipFile(apkPath);
                 newApk = new TinkerZipFile(patchFile);
                 final Enumeration<? extends TinkerZipEntry> entries = oldApk.entries();
