@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.res.Resources.Theme;
 import android.os.Handler;
 import android.os.Message;
 
@@ -39,6 +40,7 @@ public final class TinkerInlineFenceAction {
     public static final int ACTION_GET_RESOURCES = 10;
     public static final int ACTION_GET_SYSTEM_SERVICE = 11;
     public static final int ACTION_MZ_NIGHTMODE_USE_OF = 12;
+    public static final int ACTION_GET_THEME = 13;
 
     static void callOnBaseContextAttached(Handler inlineFence, Context context) {
         Message msg = null;
@@ -150,6 +152,17 @@ public final class TinkerInlineFenceAction {
             msg = Message.obtain(inlineFence, ACTION_GET_SYSTEM_SERVICE, new Object[]{name, service});
             inlineFence.handleMessage(msg);
             return msg.obj;
+        } finally {
+            msg.recycle();
+        }
+    }
+
+    static Theme callGetTheme(Handler inlineFence, Theme theme) {
+        Message msg = null;
+        try {
+            msg = Message.obtain(inlineFence, ACTION_GET_THEME, theme);
+            inlineFence.handleMessage(msg);
+            return (Theme) msg.obj;
         } finally {
             msg.recycle();
         }

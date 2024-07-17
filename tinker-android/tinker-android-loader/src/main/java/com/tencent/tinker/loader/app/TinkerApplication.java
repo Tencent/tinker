@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.res.Resources.Theme;
 import android.os.Handler;
 import android.os.SystemClock;
 
@@ -275,6 +276,15 @@ public abstract class TinkerApplication extends Application {
             return base;
         }
         return TinkerInlineFenceAction.callGetBaseContext(mInlineFence, base);
+    }
+
+    @Override
+    public Theme getTheme() {
+        final Theme theme = super.getTheme();
+        if (mInlineFence == null) {
+            return theme;
+        }
+        return TinkerInlineFenceAction.callGetTheme(mInlineFence, theme);
     }
 
     @Keep

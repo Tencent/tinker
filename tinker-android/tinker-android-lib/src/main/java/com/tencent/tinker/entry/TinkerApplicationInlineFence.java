@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.res.Resources.Theme;
 import android.os.Handler;
 import android.os.Message;
 import com.tencent.tinker.anno.Keep;
@@ -29,6 +30,7 @@ import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_B
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_CLASSLOADER;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_RESOURCES;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_SYSTEM_SERVICE;
+import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_GET_THEME;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_MZ_NIGHTMODE_USE_OF;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_ON_BASE_CONTEXT_ATTACHED;
 import static com.tencent.tinker.loader.app.TinkerInlineFenceAction.ACTION_ON_CONFIGURATION_CHANGED;
@@ -104,13 +106,17 @@ public final class TinkerApplicationInlineFence extends Handler {
                 msg.obj = mAppLike.getAssets((AssetManager) msg.obj);
                 break;
             }
-            case ACTION_GET_RESOURCES : {
+            case ACTION_GET_RESOURCES: {
                 msg.obj = mAppLike.getResources((Resources) msg.obj);
                 break;
             }
-            case ACTION_GET_SYSTEM_SERVICE : {
+            case ACTION_GET_SYSTEM_SERVICE: {
                 final Object[] params = (Object[]) msg.obj;
                 msg.obj = mAppLike.getSystemService((String) params[0], params[1]);
+                break;
+            }
+            case ACTION_GET_THEME: {
+                msg.obj = mAppLike.getTheme((Theme) msg.obj);
                 break;
             }
             case ACTION_MZ_NIGHTMODE_USE_OF: {

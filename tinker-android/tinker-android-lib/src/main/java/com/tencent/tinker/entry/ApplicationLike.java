@@ -22,6 +22,8 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.res.Resources.Theme;
+
 import com.tencent.tinker.anno.Keep;
 
 /**
@@ -125,6 +127,9 @@ public abstract class ApplicationLike implements ApplicationLifeCycle {
     public Context getBaseContext(Context base) {
         return base;
     }
+
+    @Keep
+    public Theme getTheme(Theme theme) { return theme; }
 
     @Keep
     public int mzNightModeUseOf() {

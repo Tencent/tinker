@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.res.Resources.Theme;
 import android.os.SystemClock;
 
 import com.tencent.tinker.anno.Keep;
@@ -215,6 +216,15 @@ public abstract class TinkerApplication extends Application {
         } else {
             return base;
         }
+    }
+
+    @Override
+    public Theme getTheme() {
+        final Theme theme = super.getTheme();
+        if (mAppLike != null) {
+            return mAppLike.getTheme(theme);
+        }
+        return theme;
     }
 
     @Keep
