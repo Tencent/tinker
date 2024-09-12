@@ -1,0 +1,15 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+}
+
+def sdkPath = android.sdkComponents.getSdkDirectory().get().asFile.absolutePath
+def androidJarPath = new File(sdkPath, "platforms/${android.compileSdkVersion}/android.jar")
+
+if (!androidJarPath.exists()) {
+    println("File $androidJarPath not exists!")
+    throw new RuntimeException("Android SDK ${android.compileSdkVersion} not installed.")
+}
+
+ext.set('androidJarPath', androidJarPath)
