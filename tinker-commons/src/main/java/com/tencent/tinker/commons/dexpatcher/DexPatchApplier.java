@@ -20,6 +20,7 @@ import com.tencent.tinker.android.dex.Annotation;
 import com.tencent.tinker.android.dex.AnnotationSet;
 import com.tencent.tinker.android.dex.AnnotationSetRefList;
 import com.tencent.tinker.android.dex.AnnotationsDirectory;
+import com.tencent.tinker.android.dex.CallSiteId;
 import com.tencent.tinker.android.dex.ClassData;
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Code;
@@ -27,6 +28,7 @@ import com.tencent.tinker.android.dex.DebugInfoItem;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.EncodedValue;
 import com.tencent.tinker.android.dex.FieldId;
+import com.tencent.tinker.android.dex.MethodHandle;
 import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.StringData;
@@ -37,12 +39,14 @@ import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSectionP
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSetRefListSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationSetSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.AnnotationsDirectorySectionPatchAlgorithm;
+import com.tencent.tinker.commons.dexpatcher.algorithms.patch.CallSiteIdSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.ClassDataSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.ClassDefSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.CodeSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.DebugInfoItemSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.DexSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.FieldIdSectionPatchAlgorithm;
+import com.tencent.tinker.commons.dexpatcher.algorithms.patch.MethodHandleSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.MethodIdSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.ProtoIdSectionPatchAlgorithm;
 import com.tencent.tinker.commons.dexpatcher.algorithms.patch.StaticValueSectionPatchAlgorithm;
@@ -77,6 +81,8 @@ public class DexPatchApplier {
     private DexSectionPatchAlgorithm<ProtoId> protoIdSectionPatchAlg;
     private DexSectionPatchAlgorithm<FieldId> fieldIdSectionPatchAlg;
     private DexSectionPatchAlgorithm<MethodId> methodIdSectionPatchAlg;
+    private DexSectionPatchAlgorithm<CallSiteId> callsiteIdSectionPatchAlg;
+    private DexSectionPatchAlgorithm<MethodHandle> methodHandleSectionPatchAlg;
     private DexSectionPatchAlgorithm<ClassDef> classDefSectionPatchAlg;
     private DexSectionPatchAlgorithm<TypeList> typeListSectionPatchAlg;
     private DexSectionPatchAlgorithm<AnnotationSetRefList> annotationSetRefListSectionPatchAlg;
@@ -109,12 +115,20 @@ public class DexPatchApplier {
     public void executeAndSaveTo(OutputStream out) throws IOException {
         // Before executing, we should check if this patch can be applied to
         // old dex we passed in.
+        if (this.patchFile == null) {
+            throw new IllegalArgumentException("patch file is null.");
+        }
+        if (this.patchFile.getVersion() > DexPatchFile.VERSION_02) {
+            final int oldDexAPI = this.oldDex.getTableOfContents().api;
+            final int expectedOldDexAPI = this.patchFile.getOldDexAPI();
+            if (oldDexAPI != expectedOldDexAPI) {
+                throw new IOException("old dex version mismatch! expetced: "
+                        + expectedOldDexAPI + ", actual: " + oldDexAPI);
+            }
+        }
         byte[] oldDexSign = this.oldDex.computeSignature(false);
         if (oldDexSign == null) {
             throw new IOException("failed to compute old dex's signature.");
-        }
-        if (this.patchFile == null) {
-            throw new IllegalArgumentException("patch file is null.");
         }
         byte[] oldDexSignInPatchFile = this.patchFile.getOldDexSignature();
         if (CompareUtils.uArrCompare(oldDexSign, oldDexSignInPatchFile) != 0) {
@@ -131,6 +145,7 @@ public class DexPatchApplier {
         // the dex lib of aosp can calculate section size.
         TableOfContents patchedToc = this.patchedDex.getTableOfContents();
 
+        patchedToc.api = patchFile.getPatchedDexAPI();
         patchedToc.header.off = 0;
         patchedToc.header.size = 1;
         patchedToc.mapList.size = 1;
@@ -147,6 +162,12 @@ public class DexPatchApplier {
                 = this.patchFile.getPatchedFieldIdSectionOffset();
         patchedToc.methodIds.off
                 = this.patchFile.getPatchedMethodIdSectionOffset();
+        if (patchFile.getVersion() > DexPatchFile.VERSION_02) {
+            patchedToc.callSiteIds.off
+                    = this.patchFile.getPatchedCallSiteIdSectionOffset();
+            patchedToc.methodHandles.off
+                    = this.patchFile.getPatchedMethodHandlesSectionOffset();
+        }
         patchedToc.classDefs.off
                 = this.patchFile.getPatchedClassDefSectionOffset();
         patchedToc.mapList.off
@@ -192,6 +213,14 @@ public class DexPatchApplier {
         this.methodIdSectionPatchAlg = new MethodIdSectionPatchAlgorithm(
                 patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
+        if (patchFile.getVersion() > DexPatchFile.VERSION_02) {
+            this.callsiteIdSectionPatchAlg = new CallSiteIdSectionPatchAlgorithm(
+                    patchFile, oldDex, patchedDex, oldToPatchedIndexMap
+            );
+            this.methodHandleSectionPatchAlg = new MethodHandleSectionPatchAlgorithm(
+                    patchFile, oldDex, patchedDex, oldToPatchedIndexMap
+            );
+        }
         this.classDefSectionPatchAlg = new ClassDefSectionPatchAlgorithm(
                 patchFile, oldDex, patchedDex, oldToPatchedIndexMap
         );
@@ -229,6 +258,9 @@ public class DexPatchApplier {
         this.protoIdSectionPatchAlg.execute();
         this.fieldIdSectionPatchAlg.execute();
         this.methodIdSectionPatchAlg.execute();
+        if (patchFile.getVersion() > DexPatchFile.VERSION_02) {
+            this.methodHandleSectionPatchAlg.execute();
+        }
         this.annotationSectionPatchAlg.execute();
         this.annotationSetSectionPatchAlg.execute();
         this.annotationSetRefListSectionPatchAlg.execute();
@@ -237,6 +269,9 @@ public class DexPatchApplier {
         this.codeSectionPatchAlg.execute();
         this.classDataSectionPatchAlg.execute();
         this.encodedArraySectionPatchAlg.execute();
+        if (patchFile.getVersion() > DexPatchFile.VERSION_02) {
+            this.callsiteIdSectionPatchAlg.execute();
+        }
         this.classDefSectionPatchAlg.execute();
 
         // Thirdly, write header, mapList. Calculate and write patched dex's sign and checksum.

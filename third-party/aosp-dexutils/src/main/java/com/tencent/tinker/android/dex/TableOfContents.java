@@ -31,6 +31,8 @@ public final class TableOfContents {
     public static final short SECTION_TYPE_FIELDIDS = 0x0004;
     public static final short SECTION_TYPE_METHODIDS = 0x0005;
     public static final short SECTION_TYPE_CLASSDEFS = 0x0006;
+    public static final short SECTION_TYPE_CALLSITEIDS = 0x0007;
+    public static final short SECTION_TYPE_METHODHANDLES = 0x0008;
     public static final short SECTION_TYPE_MAPLIST = 0x1000;
     public static final short SECTION_TYPE_TYPELISTS = 0x1001;
     public static final short SECTION_TYPE_ANNOTATIONSETREFLISTS = 0x1002;
@@ -50,6 +52,8 @@ public final class TableOfContents {
     public final Section fieldIds = new Section(SECTION_TYPE_FIELDIDS, true);
     public final Section methodIds = new Section(SECTION_TYPE_METHODIDS, true);
     public final Section classDefs = new Section(SECTION_TYPE_CLASSDEFS, true);
+    public final Section callSiteIds = new Section(SECTION_TYPE_CALLSITEIDS, true);
+    public final Section methodHandles = new Section(SECTION_TYPE_METHODHANDLES, true);
     public final Section mapList = new Section(SECTION_TYPE_MAPLIST, true);
     public final Section typeLists = new Section(SECTION_TYPE_TYPELISTS, true);
     public final Section annotationSetRefLists = new Section(SECTION_TYPE_ANNOTATIONSETREFLISTS, true);
@@ -63,10 +67,11 @@ public final class TableOfContents {
     public final Section annotationsDirectories = new Section(SECTION_TYPE_ANNOTATIONSDIRECTORIES, true);
     public final Section[] sections = {
             header, stringIds, typeIds, protoIds, fieldIds, methodIds, classDefs, mapList,
-            typeLists, annotationSetRefLists, annotationSets, classDatas, codes, stringDatas,
-            debugInfos, annotations, encodedArrays, annotationsDirectories
+            callSiteIds, methodHandles, typeLists, annotationSetRefLists, annotationSets, classDatas, codes,
+            stringDatas, debugInfos, annotations, encodedArrays, annotationsDirectories
     };
 
+    public int api = DexFormat.API_NO_EXTENDED_OPCODES; /* DEX035 */
     public int checksum;
     public byte[] signature;
     public int fileSize;
@@ -107,6 +112,12 @@ public final class TableOfContents {
             }
             case SECTION_TYPE_TYPELISTS: {
                 return typeLists;
+            }
+            case SECTION_TYPE_CALLSITEIDS: {
+                return callSiteIds;
+            }
+            case SECTION_TYPE_METHODHANDLES: {
+                return methodHandles;
             }
             case SECTION_TYPE_ANNOTATIONSETREFLISTS: {
                 return annotationSetRefLists;
@@ -153,9 +164,9 @@ public final class TableOfContents {
 
     private void readHeader(Dex.Section headerIn) throws UnsupportedEncodingException {
         byte[] magic = headerIn.readByteArray(8);
-        int apiTarget = DexFormat.magicToApi(magic);
+        api = DexFormat.magicToApi(magic);
 
-        if (apiTarget != DexFormat.API_NO_EXTENDED_OPCODES) {
+        if (api == -1) {
             throw new DexException("Unexpected magic: " + Arrays.toString(magic));
         }
 
@@ -264,7 +275,7 @@ public final class TableOfContents {
     }
 
     public void writeHeader(Dex.Section out) throws IOException {
-        out.write(DexFormat.apiToMagic(DexFormat.API_NO_EXTENDED_OPCODES).getBytes("UTF-8"));
+        out.write(DexFormat.apiToMagic(api).getBytes("UTF-8"));
         out.writeInt(checksum);
         out.write(signature);
         out.writeInt(fileSize);
@@ -354,41 +365,47 @@ public final class TableOfContents {
                 case SECTION_TYPE_METHODIDS: {
                     return 5;
                 }
-                case SECTION_TYPE_CLASSDEFS: {
+                case SECTION_TYPE_METHODHANDLES: {
                     return 6;
                 }
-                case SECTION_TYPE_STRINGDATAS: {
+                case SECTION_TYPE_CLASSDEFS: {
                     return 7;
                 }
-                case SECTION_TYPE_TYPELISTS: {
+                case SECTION_TYPE_STRINGDATAS: {
                     return 8;
                 }
-                case SECTION_TYPE_ANNOTATIONS: {
+                case SECTION_TYPE_TYPELISTS: {
                     return 9;
                 }
-                case SECTION_TYPE_ANNOTATIONSETS: {
+                case SECTION_TYPE_ANNOTATIONS: {
                     return 10;
                 }
-                case SECTION_TYPE_ANNOTATIONSETREFLISTS: {
+                case SECTION_TYPE_ANNOTATIONSETS: {
                     return 11;
                 }
-                case SECTION_TYPE_ANNOTATIONSDIRECTORIES: {
+                case SECTION_TYPE_ANNOTATIONSETREFLISTS: {
                     return 12;
                 }
-                case SECTION_TYPE_DEBUGINFOS: {
+                case SECTION_TYPE_ANNOTATIONSDIRECTORIES: {
                     return 13;
                 }
-                case SECTION_TYPE_CODES: {
+                case SECTION_TYPE_DEBUGINFOS: {
                     return 14;
                 }
-                case SECTION_TYPE_CLASSDATA: {
+                case SECTION_TYPE_CODES: {
                     return 15;
                 }
-                case SECTION_TYPE_ENCODEDARRAYS: {
+                case SECTION_TYPE_CLASSDATA: {
                     return 16;
                 }
-                case SECTION_TYPE_MAPLIST: {
+                case SECTION_TYPE_ENCODEDARRAYS: {
                     return 17;
+                }
+                case SECTION_TYPE_CALLSITEIDS: {
+                    return 18;
+                }
+                case SECTION_TYPE_MAPLIST: {
+                    return 19;
                 }
                 default: {
                     throw new IllegalArgumentException("unknown section type: " + type);
@@ -413,7 +430,7 @@ public final class TableOfContents {
 
         @Override
         public String toString() {
-            return String.format("Section[type=%#x,off=%#x,size=%#x]", type, off, size);
+            return String.format("Section[type=%#x,off=%#x,size=%#x,byteCount=%#x]", type, off, size, byteCount);
         }
 
         public static abstract class Item<T> implements Comparable<T> {

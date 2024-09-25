@@ -59,6 +59,8 @@ public final class Dex {
     private final ProtoIdTable protoIds = new ProtoIdTable();
     private final FieldIdTable fieldIds = new FieldIdTable();
     private final MethodIdTable methodIds = new MethodIdTable();
+    private final CallSiteIdTable callsiteIds = new CallSiteIdTable();
+    private final MethodHandleTable methodHandles = new MethodHandleTable();
     private final ClassDefTable classDefs = new ClassDefTable();
     private ByteBuffer data;
     private int nextSectionStart = 0;
@@ -286,6 +288,14 @@ public final class Dex {
 
     public List<MethodId> methodIds() {
         return methodIds;
+    }
+
+    public List<CallSiteId> callsiteIds() {
+        return callsiteIds;
+    }
+
+    public List<MethodHandle> methodHandles() {
+        return methodHandles;
     }
 
     public List<ClassDef> classDefs() {
@@ -939,6 +949,34 @@ public final class Dex {
         }
         @Override public int size() {
             return tableOfContents.methodIds.size;
+        }
+    }
+
+    private final class CallSiteIdTable extends AbstractList<CallSiteId> implements RandomAccess {
+        @Override
+        public CallSiteId get(int index) {
+            checkBounds(index, tableOfContents.callSiteIds.size);
+            return openSection(tableOfContents.callSiteIds.off + (SizeOf.CALLSITE_ID_ITEM * index))
+                    .readCallSiteId();
+        }
+
+        @Override
+        public int size() {
+            return tableOfContents.callSiteIds.size;
+        }
+    }
+
+    private final class MethodHandleTable extends AbstractList<MethodHandle> implements RandomAccess {
+        @Override
+        public MethodHandle get(int index) {
+            checkBounds(index, tableOfContents.methodHandles.size);
+            return openSection(tableOfContents.methodHandles.off + (SizeOf.METHOD_HANDLE_ITEM * index))
+                    .readMethodHandle();
+        }
+
+        @Override
+        public int size() {
+            return tableOfContents.methodHandles.size;
         }
     }
 

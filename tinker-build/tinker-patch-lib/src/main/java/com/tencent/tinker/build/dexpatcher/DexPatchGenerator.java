@@ -20,6 +20,7 @@ import com.tencent.tinker.android.dex.Annotation;
 import com.tencent.tinker.android.dex.AnnotationSet;
 import com.tencent.tinker.android.dex.AnnotationSetRefList;
 import com.tencent.tinker.android.dex.AnnotationsDirectory;
+import com.tencent.tinker.android.dex.CallSiteId;
 import com.tencent.tinker.android.dex.ClassData;
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Code;
@@ -27,6 +28,7 @@ import com.tencent.tinker.android.dex.DebugInfoItem;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.EncodedValue;
 import com.tencent.tinker.android.dex.FieldId;
+import com.tencent.tinker.android.dex.MethodHandle;
 import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.SizeOf;
@@ -37,12 +39,14 @@ import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationSectionDiff
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationSetRefListSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationSetSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationsDirectorySectionDiffAlgorithm;
+import com.tencent.tinker.build.dexpatcher.algorithms.diff.CallSiteIdSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.ClassDataSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.ClassDefSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.CodeSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.DebugInfoItemSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.DexSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.FieldIdSectionDiffAlgorithm;
+import com.tencent.tinker.build.dexpatcher.algorithms.diff.MethodHandleSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.MethodIdSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.ProtoIdSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.StaticValueSectionDiffAlgorithm;
@@ -84,6 +88,8 @@ public class DexPatchGenerator {
     private DexSectionDiffAlgorithm<ProtoId> protoIdSectionDiffAlg;
     private DexSectionDiffAlgorithm<FieldId> fieldIdSectionDiffAlg;
     private DexSectionDiffAlgorithm<MethodId> methodIdSectionDiffAlg;
+    private DexSectionDiffAlgorithm<CallSiteId> callsiteIdSectionDiffAlg;
+    private DexSectionDiffAlgorithm<MethodHandle> methodHandleSectionDiffAlg;
     private DexSectionDiffAlgorithm<ClassDef> classDefSectionDiffAlg;
     private DexSectionDiffAlgorithm<TypeList> typeListSectionDiffAlg;
     private DexSectionDiffAlgorithm<AnnotationSetRefList> annotationSetRefListSectionDiffAlg;
@@ -101,6 +107,8 @@ public class DexPatchGenerator {
     private int patchedProtoIdsOffset = 0;
     private int patchedFieldIdsOffset = 0;
     private int patchedMethodIdsOffset = 0;
+    private int patchedCallSiteIdsOffset = 0;
+    private int patchedMethodHandlesOffset = 0;
     private int patchedClassDefsOffset = 0;
     private int patchedTypeListsOffset = 0;
     private int patchedAnnotationItemsOffset = 0;
@@ -173,6 +181,20 @@ public class DexPatchGenerator {
                 selfIndexMapForSkip
         );
         this.methodIdSectionDiffAlg = new MethodIdSectionDiffAlgorithm(
+                oldDex, newDex,
+                oldToNewIndexMap,
+                oldToPatchedIndexMap,
+                newToPatchedIndexMap,
+                selfIndexMapForSkip
+        );
+        this.callsiteIdSectionDiffAlg = new CallSiteIdSectionDiffAlgorithm(
+                oldDex, newDex,
+                oldToNewIndexMap,
+                oldToPatchedIndexMap,
+                newToPatchedIndexMap,
+                selfIndexMapForSkip
+        );
+        this.methodHandleSectionDiffAlg = new MethodHandleSectionDiffAlgorithm(
                 oldDex, newDex,
                 oldToNewIndexMap,
                 oldToPatchedIndexMap,
@@ -329,6 +351,8 @@ public class DexPatchGenerator {
 
         int patchedFieldIdsSize = newDex.getTableOfContents().fieldIds.size * SizeOf.MEMBER_ID_ITEM;
         int patchedMethodIdsSize = newDex.getTableOfContents().methodIds.size * SizeOf.MEMBER_ID_ITEM;
+        int patchedCallSiteIdsSize = newDex.getTableOfContents().callSiteIds.size * SizeOf.CALLSITE_ID_ITEM;
+        int patchedMethodHandlesSize = newDex.getTableOfContents().callSiteIds.size * SizeOf.METHOD_HANDLE_ITEM;
         int patchedClassDefsSize = newDex.getTableOfContents().classDefs.size * SizeOf.CLASS_DEF_ITEM;
 
         int patchedIdSectionSize =
@@ -337,6 +361,8 @@ public class DexPatchGenerator {
                         + patchedProtoIdsSize
                         + patchedFieldIdsSize
                         + patchedMethodIdsSize
+                        + patchedCallSiteIdsSize
+                        + patchedMethodHandlesSize
                         + patchedClassDefsSize;
 
         this.patchedHeaderOffset = 0;
@@ -402,6 +428,13 @@ public class DexPatchGenerator {
             this.patchedMethodIdsOffset = SizeOf.roundToTimesOfFour(this.patchedMethodIdsOffset);
         }
         this.methodIdSectionDiffAlg.simulatePatchOperation(this.patchedMethodIdsOffset);
+
+        this.methodHandleSectionDiffAlg.execute();
+        this.patchedMethodHandlesOffset = this.patchedMethodIdsOffset + patchedMethodIdsSize;
+        if (this.oldDex.getTableOfContents().methodHandles.isElementFourByteAligned) {
+            this.patchedMethodHandlesOffset = SizeOf.roundToTimesOfFour(this.patchedMethodHandlesOffset);
+        }
+        this.methodHandleSectionDiffAlg.simulatePatchOperation(this.patchedMethodHandlesOffset);
 
         this.annotationSectionDiffAlg.execute();
         this.patchedAnnotationItemsOffset
@@ -488,8 +521,17 @@ public class DexPatchGenerator {
         }
         this.encodedArraySectionDiffAlg.simulatePatchOperation(this.patchedEncodedArrayItemsOffset);
 
+        this.callsiteIdSectionDiffAlg.execute();
+        this.patchedCallSiteIdsOffset
+                = this.patchedEncodedArrayItemsOffset
+                + this.encodedArraySectionDiffAlg.getPatchedSectionSize();
+        if (this.oldDex.getTableOfContents().callSiteIds.isElementFourByteAligned) {
+            this.patchedCallSiteIdsOffset = SizeOf.roundToTimesOfFour(this.patchedCallSiteIdsOffset);
+        }
+        this.callsiteIdSectionDiffAlg.simulatePatchOperation(this.patchedCallSiteIdsOffset);
+
         this.classDefSectionDiffAlg.execute();
-        this.patchedClassDefsOffset = this.patchedMethodIdsOffset + patchedMethodIdsSize;
+        this.patchedClassDefsOffset = this.patchedMethodHandlesOffset + patchedMethodHandlesSize;
         if (this.oldDex.getTableOfContents().classDefs.isElementFourByteAligned) {
             this.patchedClassDefsOffset = SizeOf.roundToTimesOfFour(this.patchedClassDefsOffset);
         }
@@ -515,6 +557,8 @@ public class DexPatchGenerator {
         DexDataBuffer buffer = new DexDataBuffer();
         buffer.write(DexPatchFile.MAGIC);
         buffer.writeShort(DexPatchFile.CURRENT_VERSION);
+        buffer.writeInt(oldDex.getTableOfContents().api);
+        buffer.writeInt(newDex.getTableOfContents().api);
         buffer.writeInt(this.patchedDexSize);
         // we will return here to write firstChunkOffset later.
         int posOfFirstChunkOffsetField = buffer.position();
@@ -524,6 +568,8 @@ public class DexPatchGenerator {
         buffer.writeInt(this.patchedProtoIdsOffset);
         buffer.writeInt(this.patchedFieldIdsOffset);
         buffer.writeInt(this.patchedMethodIdsOffset);
+        buffer.writeInt(this.patchedCallSiteIdsOffset);
+        buffer.writeInt(this.patchedMethodHandlesOffset);
         buffer.writeInt(this.patchedClassDefsOffset);
         buffer.writeInt(this.patchedMapListOffset);
         buffer.writeInt(this.patchedTypeListsOffset);
@@ -548,6 +594,7 @@ public class DexPatchGenerator {
         writePatchOperations(buffer, this.protoIdSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.fieldIdSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.methodIdSectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.methodHandleSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.annotationSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.annotationSetSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.annotationSetRefListSectionDiffAlg.getPatchOperationList());
@@ -556,6 +603,7 @@ public class DexPatchGenerator {
         writePatchOperations(buffer, this.codeSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.classDataSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.encodedArraySectionDiffAlg.getPatchOperationList());
+        writePatchOperations(buffer, this.callsiteIdSectionDiffAlg.getPatchOperationList());
         writePatchOperations(buffer, this.classDefSectionDiffAlg.getPatchOperationList());
 
         byte[] bufferData = buffer.array();
@@ -633,6 +681,12 @@ public class DexPatchGenerator {
             if (newItem instanceof MethodId) {
                 buffer.writeMethodId((MethodId) newItem);
             } else
+            if (newItem instanceof CallSiteId) {
+                buffer.writeCallSiteId((CallSiteId) newItem);
+            } else
+            if (newItem instanceof MethodHandle) {
+                buffer.writeMethodHandle((MethodHandle) newItem);
+            } else
             if (newItem instanceof Annotation) {
                 buffer.writeAnnotation((Annotation) newItem);
             } else
@@ -640,14 +694,10 @@ public class DexPatchGenerator {
                 buffer.writeAnnotationSet((AnnotationSet) newItem);
             } else
             if (newItem instanceof AnnotationSetRefList) {
-                buffer.writeAnnotationSetRefList(
-                        (AnnotationSetRefList) newItem
-                );
+                buffer.writeAnnotationSetRefList((AnnotationSetRefList) newItem);
             } else
             if (newItem instanceof AnnotationsDirectory) {
-                buffer.writeAnnotationsDirectory(
-                        (AnnotationsDirectory) newItem
-                );
+                buffer.writeAnnotationsDirectory((AnnotationsDirectory) newItem);
             } else
             if (newItem instanceof DebugInfoItem) {
                 buffer.writeDebugInfoItem((DebugInfoItem) newItem);

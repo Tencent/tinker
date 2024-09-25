@@ -29,6 +29,8 @@ public final class EncodedValueReader {
     public static final int ENCODED_LONG = 0x06;
     public static final int ENCODED_FLOAT = 0x10;
     public static final int ENCODED_DOUBLE = 0x11;
+    public static final int ENCODED_METHOD_TYPE = 0x15;
+    public static final int ENCODED_METHOD_HANDLE = 0x16;
     public static final int ENCODED_STRING = 0x17;
     public static final int ENCODED_TYPE = 0x18;
     public static final int ENCODED_FIELD = 0x19;
@@ -173,6 +175,18 @@ public final class EncodedValueReader {
         return Double.longBitsToDouble(EncodedValueCodec.readUnsignedLong(in, arg, true));
     }
 
+    public int readMethodType() {
+        checkType(ENCODED_METHOD_TYPE);
+        type = MUST_READ;
+        return EncodedValueCodec.readUnsignedInt(in, arg, false);
+    }
+
+    public int readMethodHandle() {
+        checkType(ENCODED_METHOD_HANDLE);
+        type = MUST_READ;
+        return EncodedValueCodec.readUnsignedInt(in, arg, false);
+    }
+
     public int readString() {
         checkType(ENCODED_STRING);
         type = MUST_READ;
@@ -240,6 +254,12 @@ public final class EncodedValueReader {
             break;
         case ENCODED_DOUBLE:
             readDouble();
+            break;
+        case ENCODED_METHOD_TYPE:
+            readMethodType();
+            break;
+        case ENCODED_METHOD_HANDLE:
+            readMethodHandle();
             break;
         case ENCODED_STRING:
             readString();

@@ -21,6 +21,7 @@ import com.tencent.tinker.android.dex.util.CompareUtils;
 import com.tencent.tinker.android.dx.util.Hex;
 
 import java.io.EOFException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -162,6 +163,32 @@ public abstract class InstructionComparator {
                     result[currentAddress] = insnHolder;
                 }
 
+                @Override
+                public void visitInvokePolymorphicInstruction(int currentAddress, int opcode, int methodIndex, int indexType, int protoIndex, int[] registers) {
+                    InstructionHolder insnHolder = new InstructionHolder();
+                    insnHolder.insnFormat = InstructionCodec.getInstructionFormat(opcode);
+                    insnHolder.address = currentAddress;
+                    insnHolder.opcode = opcode;
+                    insnHolder.index = methodIndex;
+                    insnHolder.registerCount = registers.length;
+                    insnHolder.protoIndex = protoIndex;
+                    insnHolder.registers = registers;
+                    result[currentAddress] = insnHolder;
+                }
+
+                @Override
+                public void visitInvokePolymorphicRangeInstruction(int currentAddress, int opcode, int methodIndex, int indexType, int c, int registerCount, int protoIndex) {
+                    InstructionHolder insnHolder = new InstructionHolder();
+                    insnHolder.insnFormat = InstructionCodec.getInstructionFormat(opcode);
+                    insnHolder.address = currentAddress;
+                    insnHolder.opcode = opcode;
+                    insnHolder.index = methodIndex;
+                    insnHolder.c = c;
+                    insnHolder.registerCount = registerCount;
+                    insnHolder.protoIndex = protoIndex;
+                    result[currentAddress] = insnHolder;
+                }
+
                 public void visitSparseSwitchPayloadInsn(int currentAddress, int opcode, int[] keys, int[] targets) {
                     SparseSwitchPayloadInsntructionHolder insnHolder = new SparseSwitchPayloadInsntructionHolder();
                     insnHolder.insnFormat = InstructionCodec.getInstructionFormat(opcode);
@@ -200,54 +227,56 @@ public abstract class InstructionComparator {
     }
 
     public final boolean compare() {
-        this.visitedInsnAddrPairs.clear();
+        try {
+            if (this.insnHolders1 == null && this.insnHolders2 == null) {
+                return true;
+            }
 
-        if (this.insnHolders1 == null && this.insnHolders2 == null) {
-            return true;
-        }
-
-        if (this.insnHolders1 == null || this.insnHolders2 == null) {
-            return false;
-        }
-
-        int currAddress1 = 0;
-        int currAddress2 = 0;
-        int insnHolderCount1 = 0;
-        int insnHolderCount2 = 0;
-        while (currAddress1 < insnHolders1.length && currAddress2 < insnHolders2.length) {
-            InstructionHolder insnHolder1 = null;
-            InstructionHolder insnHolder2 = null;
-            while (currAddress1 < insnHolders1.length && insnHolder1 == null) {
-                insnHolder1 = insnHolders1[currAddress1++];
-            }
-            if (insnHolder1 != null) {
-                ++insnHolderCount1;
-            } else {
-                break;
-            }
-            while (currAddress2 < insnHolders2.length && insnHolder2 == null) {
-                insnHolder2 = insnHolders2[currAddress2++];
-            }
-            if (insnHolder2 != null) {
-                ++insnHolderCount2;
-            } else {
-                break;
-            }
-            if (!isSameInstruction(insnHolder1, insnHolder2)) {
+            if (this.insnHolders1 == null || this.insnHolders2 == null) {
                 return false;
             }
-        }
-        while (currAddress1 < insnHolders1.length) {
-            if (insnHolders1[currAddress1++] != null) {
-                return false;
+
+            int currAddress1 = 0;
+            int currAddress2 = 0;
+            int insnHolderCount1 = 0;
+            int insnHolderCount2 = 0;
+            while (currAddress1 < insnHolders1.length && currAddress2 < insnHolders2.length) {
+                InstructionHolder insnHolder1 = null;
+                InstructionHolder insnHolder2 = null;
+                while (currAddress1 < insnHolders1.length && insnHolder1 == null) {
+                    insnHolder1 = insnHolders1[currAddress1++];
+                }
+                if (insnHolder1 != null) {
+                    ++insnHolderCount1;
+                } else {
+                    break;
+                }
+                while (currAddress2 < insnHolders2.length && insnHolder2 == null) {
+                    insnHolder2 = insnHolders2[currAddress2++];
+                }
+                if (insnHolder2 != null) {
+                    ++insnHolderCount2;
+                } else {
+                    break;
+                }
+                if (!isSameInstruction(insnHolder1, insnHolder2)) {
+                    return false;
+                }
             }
-        }
-        while (currAddress2 < insnHolders2.length) {
-            if (insnHolders2[currAddress2++] != null) {
-                return false;
+            while (currAddress1 < insnHolders1.length) {
+                if (insnHolders1[currAddress1++] != null) {
+                    return false;
+                }
             }
+            while (currAddress2 < insnHolders2.length) {
+                if (insnHolders2[currAddress2++] != null) {
+                    return false;
+                }
+            }
+            return insnHolderCount1 == insnHolderCount2;
+        } finally {
+            this.visitedInsnAddrPairs.clear();
         }
-        return insnHolderCount1 == insnHolderCount2;
     }
 
     private int getPromotedOpCodeOnDemand(InstructionHolder insn) {
@@ -301,7 +330,37 @@ public abstract class InstructionComparator {
             case InstructionCodec.INSN_FORMAT_31C:
             case InstructionCodec.INSN_FORMAT_35C:
             case InstructionCodec.INSN_FORMAT_3RC: {
-                return compareIndex(opcode, insnHolder1.index, insnHolder2.index);
+                if (!compareIndex(opcode, insnHolder1.index, insnHolder2.index)) {
+                    return false;
+                }
+                if (insnHolder1.a != insnHolder2.a) {
+                    return false;
+                }
+                if (insnHolder1.b != insnHolder2.b) {
+                    return false;
+                }
+                if (insnHolder1.c != insnHolder2.c) {
+                    return false;
+                }
+                return (insnHolder1.d == insnHolder2.d);
+            }
+            case InstructionCodec.INSN_FORMAT_45CC: {
+                if (!compareMethod(insnHolder1.index, insnHolder2.index)) {
+                    return false;
+                }
+                if (!compareProto(insnHolder1.protoIndex, insnHolder2.protoIndex)) {
+                    return false;
+                }
+                return Arrays.equals(insnHolder1.registers, insnHolder2.registers);
+            }
+            case InstructionCodec.INSN_FORMAT_4RCC: {
+                if (!compareMethod(insnHolder1.index, insnHolder2.index)) {
+                    return false;
+                }
+                if (!compareProto(insnHolder1.protoIndex, insnHolder2.protoIndex)) {
+                    return false;
+                }
+                return insnHolder1.c == insnHolder2.c;
             }
             case InstructionCodec.INSN_FORMAT_PACKED_SWITCH_PAYLOAD: {
                 PackedSwitchPayloadInsntructionHolder specInsnHolder1 = (PackedSwitchPayloadInsntructionHolder) insnHolder1;
@@ -396,13 +455,14 @@ public abstract class InstructionComparator {
                 if (insnHolder1.e != insnHolder2.e) {
                     return false;
                 }
-                return true;
+                return Arrays.equals(insnHolder1.registers, insnHolder2.registers);
             }
         }
     }
 
     private boolean compareIndex(int opcode, int index1, int index2) {
-        switch (InstructionCodec.getInstructionIndexType(opcode)) {
+        final int indexType = InstructionCodec.getInstructionIndexType(opcode);
+        switch (indexType) {
             case InstructionCodec.INDEX_TYPE_STRING_REF: {
                 return compareString(index1, index2);
             }
@@ -415,8 +475,17 @@ public abstract class InstructionComparator {
             case InstructionCodec.INDEX_TYPE_METHOD_REF: {
                 return compareMethod(index1, index2);
             }
+            case InstructionCodec.INDEX_TYPE_CALL_SITE_REF: {
+                return compareCallSite(index1, index2);
+            }
+            case InstructionCodec.INDEX_TYPE_METHOD_HANDLE_REF: {
+                return compareMethodHandle(index1, index2);
+            }
+            case InstructionCodec.INDEX_TYPE_PROTO_REF: {
+                return compareProto(index1, index2);
+            }
             default: {
-                return index1 == index2;
+                throw new IllegalArgumentException("Unknown index type " + indexType + " for opcode " + Hex.u1(opcode));
             }
         }
     }
@@ -428,6 +497,12 @@ public abstract class InstructionComparator {
     protected abstract boolean compareField(int fieldIndex1, int fieldIndex2);
 
     protected abstract boolean compareMethod(int methodIndex1, int methodIndex2);
+
+    protected abstract boolean compareCallSite(int callsiteIndex1, int callsiteIndex2);
+
+    protected abstract boolean compareMethodHandle(int methodHandleIndex1, int methodHandleIndex2);
+
+    protected abstract boolean compareProto(int protoIndex1, int protoIndex2);
 
     private static class InstructionHolder {
         int insnFormat = InstructionCodec.INSN_FORMAT_UNKNOWN;
@@ -442,6 +517,8 @@ public abstract class InstructionComparator {
         int c = 0;
         int d = 0;
         int e = 0;
+        int protoIndex = 0;
+        int[] registers = null;
     }
 
     private static class SparseSwitchPayloadInsntructionHolder extends InstructionHolder {
