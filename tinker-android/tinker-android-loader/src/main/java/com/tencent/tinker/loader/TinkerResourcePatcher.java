@@ -282,18 +282,36 @@ class TinkerResourcePatcher {
             resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
         }
 
-        try {
-            if (resourceImpls != null) {
-                for (WeakReference<Object> wr : resourceImpls.values()) {
-                    final Object resourceImpl = wr.get();
+        if (resourceImpls != null) {
+            try {
+                Field implAssetsField = null;
+                Field mResDirField = null;
+                for (Map.Entry<Object, WeakReference<Object>> pair : resourceImpls.entrySet()) {
+                    final Object resKey = pair.getKey();
+                    if (mResDirField == null) {
+                        mResDirField = findField(resKey.getClass(), "mResDir");
+                    }
+                    String origResDir = (String) mResDirField.get(resKey);
+                    if (!appInfo.sourceDir.equals(origResDir)) {
+                        continue;
+                    }
+
+                    if (Build.VERSION.SDK_INT >= 35) {
+                        mResDirField.set(resKey, externalResourceFile);
+                    }
+
+                    final WeakReference<Object> resValueRef = pair.getValue();
+                    final Object resourceImpl = resValueRef.get();
                     if (resourceImpl != null) {
-                        final Field implAssets = findField(resourceImpl, "mAssets");
-                        implAssets.set(resourceImpl, newAssetManager);
+                        if (implAssetsField == null) {
+                            implAssetsField = findField(resourceImpl, "mAssets");
+                        }
+                        implAssetsField.set(resourceImpl, newAssetManager);
                     }
                 }
+            } catch (Throwable thr) {
+                throw new TinkerRuntimeException("Fail to hack resourceImpls field.");
             }
-        } catch (Throwable ignored) {
-            // Ignored.
         }
 
         // Handle issues caused by WebView on Android N.
@@ -305,8 +323,8 @@ class TinkerResourcePatcher {
                 if (publicSourceDirField != null) {
                     publicSourceDirField.set(context.getApplicationInfo(), externalResourceFile);
                 }
-            } catch (Throwable ignore) {
-                // Ignored.
+            } catch (Throwable thr) {
+                ShareTinkerLog.printErrStackTrace(TAG, thr, "fail to process publicSourceDirField field hack.");
             }
         }
 
