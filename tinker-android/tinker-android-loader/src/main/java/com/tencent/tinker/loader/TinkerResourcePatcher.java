@@ -22,6 +22,7 @@ import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findConstruct
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findField;
 import static com.tencent.tinker.loader.shareutil.ShareReflectUtil.findMethod;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
@@ -273,8 +274,7 @@ class TinkerResourcePatcher {
                 // N
                 final Object resourceImpl = resourcesImplFiled.get(resources);
                 // for Huawei HwResourcesImpl
-                final Field implAssets = findField(resourceImpl, "mAssets");
-                implAssets.set(resourceImpl, newAssetManager);
+                patchResourcesImpl(resourceImpl, newAssetManager);
             }
 
             clearPreloadTypedArrayIssue(resources);
@@ -287,8 +287,7 @@ class TinkerResourcePatcher {
                 for (WeakReference<Object> wr : resourceImpls.values()) {
                     final Object resourceImpl = wr.get();
                     if (resourceImpl != null) {
-                        final Field implAssets = findField(resourceImpl, "mAssets");
-                        implAssets.set(resourceImpl, newAssetManager);
+                        patchResourcesImpl(resourceImpl, newAssetManager);
                     }
                 }
             }
@@ -315,6 +314,67 @@ class TinkerResourcePatcher {
         }
 
         installResourceInsuranceHacks(context, externalResourceFile);
+    }
+
+    private static final int UNINITIALIZED = 0;
+    private static final int NOT_NUBIA_OR_FAILED = -1;
+    private static final int IS_NUBIA = 1;
+
+    private static int sNubiaCacheHackPrepared = UNINITIALIZED;
+    private static Class<?> sNubiaControllerClass = null;
+
+    @SuppressLint("PrivateApi")
+    private synchronized static Class<?> getNubiaControllerClass() {
+        if (sNubiaCacheHackPrepared == NOT_NUBIA_OR_FAILED) {
+            return null;
+        }
+        if (sNubiaCacheHackPrepared == IS_NUBIA) {
+            return sNubiaControllerClass;
+        }
+        try {
+            sNubiaControllerClass = Class.forName("android.content.res.NubiaXmlCacheController");
+        } catch (ClassNotFoundException exception) {
+            sNubiaCacheHackPrepared = NOT_NUBIA_OR_FAILED;
+            return null;
+        }
+        sNubiaCacheHackPrepared = IS_NUBIA;
+        return sNubiaControllerClass;
+    }
+
+    private static void clearNubiaXmlCache(Object resourcesImpl) {
+        final Class<?> controllerClass = getNubiaControllerClass();
+        if (controllerClass == null) {
+            return;
+        }
+        try {
+            final Field[] allDeclaredFields = resourcesImpl.getClass().getDeclaredFields();
+            Field controllerField = null;
+            for (final Field field: allDeclaredFields) {
+                if (field.getDeclaringClass().equals(controllerClass)) {
+                    controllerField = field;
+                    break;
+                }
+            }
+            if (controllerField == null) {
+                return;
+            }
+            controllerField.setAccessible(true);
+            controllerField.set(resourcesImpl, null);
+            ShareTinkerLog.i(TAG, "clear Nubia XML cache success");
+        } catch (Throwable throwable) {
+            // ignored
+            ShareTinkerLog.printErrStackTrace(TAG, throwable, "clear Nubia XML cache failed");
+        }
+    }
+
+    private static void patchResourcesImpl(Object resourcesImpl, AssetManager newAssetManager) throws NoSuchFieldException, IllegalAccessException {
+        final Field implAssets = findField(resourcesImpl, "mAssets");
+        implAssets.set(resourcesImpl, newAssetManager);
+
+        // For Nubia manufacture, a cache layer created by class "NubiaXmlCacheController" is used
+        // to cache XML resources. The cache have to be cleared or resources from base package may
+        // be gotten.
+        clearNubiaXmlCache(resourcesImpl);
     }
 
     private static void installResourceInsuranceHacks(Context context, String patchedResApkPath) {
