@@ -17,7 +17,7 @@ dependencies {
     implementation (group: 'org.smali', name: 'dexlib2', version: '2.3.1') {
         exclude group: 'com.google.guava'
     }
-    implementation group: 'dom4j', name: 'dom4j', version: '1.6.1'
+    implementation group: 'org.dom4j', name: 'dom4j', version: '2.1.4'
 }
 
 sourceSets {
