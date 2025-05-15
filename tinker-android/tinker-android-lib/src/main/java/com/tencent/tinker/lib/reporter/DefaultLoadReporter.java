@@ -218,6 +218,12 @@ public class DefaultLoadReporter implements LoadReporter {
         //you can just report the result here
     }
 
+    @Override
+    public void onLoadResult(File patchDirectory, int loadCode, long cost, String patchVersion) {
+        ShareTinkerLog.i(TAG, "patch loadReporter onLoadResult: patch load result, path:%s, code: %d, cost: %dms, version: %s", patchDirectory.getAbsolutePath(), loadCode, cost, patchVersion);
+        //you can just report the result here
+    }
+
     /**
      * load patch occur unknown exception that we have wrap try catch for you!
      * you may need to report this exception and contact me

@@ -61,6 +61,7 @@ public interface LoadReporter {
      * @param e
      */
     void onLoadInterpret(int type, Throwable e);
+
     /**
      * the load patch process is end, we can see the cost times and the return code
      * return codes are define in {@link com.tencent.tinker.loader.shareutil.ShareConstants}
@@ -68,8 +69,23 @@ public interface LoadReporter {
      * @param patchDirectory the root patch directory {you_apk_data}/tinker
      * @param loadCode       {@code ShareConstants.ERROR_LOAD_OK}, 0 means success
      * @param cost           time in MS
+     * @deprecated           This callback method may not be called in the future. Use
+     *                       {@link com.tencent.tinker.lib.reporter.LoadReporter#onLoadResult(File, int, long, String)}
+     *                       instead.
      */
+    @Deprecated
     void onLoadResult(File patchDirectory, int loadCode, long cost);
+
+    /**
+     * the load patch process is end, we can see the cost times and the return code
+     * return codes are define in {@link com.tencent.tinker.loader.shareutil.ShareConstants}
+     *
+     * @param patchDirectory the root patch directory {you_apk_data}/tinker
+     * @param loadCode       {@code ShareConstants.ERROR_LOAD_OK}, 0 means success
+     * @param cost           time in MS
+     * @param patchVersion   current patch version
+     */
+    void onLoadResult(File patchDirectory, int loadCode, long cost, String patchVersion);
 
     /**
      * load patch occur unknown exception that we have wrap try catch for you!

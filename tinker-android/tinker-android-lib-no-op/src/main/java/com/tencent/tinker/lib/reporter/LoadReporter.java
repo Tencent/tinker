@@ -28,7 +28,10 @@ public interface LoadReporter {
 
     void onLoadInterpret(int type, Throwable e);
 
+    @Deprecated
     void onLoadResult(File patchDirectory, int loadCode, long cost);
+
+    void onLoadResult(File patchDirectory, int loadCode, long cost, String patchVersion);
 
     void onLoadException(Throwable e, int errorCode);
 

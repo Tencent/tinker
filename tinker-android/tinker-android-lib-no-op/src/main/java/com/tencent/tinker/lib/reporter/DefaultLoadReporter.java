@@ -71,6 +71,11 @@ public class DefaultLoadReporter implements LoadReporter {
     }
 
     @Override
+    public void onLoadResult(File patchDirectory, int loadCode, long cost, String patchVersion) {
+        // Ignored.
+    }
+
+    @Override
     public void onLoadException(Throwable e, int errorCode) {
         // Ignored.
     }

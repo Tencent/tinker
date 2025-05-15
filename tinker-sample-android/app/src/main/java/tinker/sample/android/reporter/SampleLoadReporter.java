@@ -45,7 +45,7 @@ public class SampleLoadReporter extends DefaultLoadReporter {
     }
 
     @Override
-    public void onLoadResult(File patchDirectory, int loadCode, long cost) {
+    public void onLoadResult(File patchDirectory, int loadCode, long cost, String patchVersion) {
         super.onLoadResult(patchDirectory, loadCode, cost);
         switch (loadCode) {
             case ShareConstants.ERROR_LOAD_OK:

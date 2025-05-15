@@ -155,7 +155,8 @@ public class Tinker {
         tinkerLoadResult = new TinkerLoadResult();
         tinkerLoadResult.parseTinkerResult(getContext(), intentResult);
         //after load code set
-        loadReporter.onLoadResult(patchDirectory, tinkerLoadResult.loadCode, tinkerLoadResult.costTime);
+        loadReporter.onLoadResult(patchDirectory, tinkerLoadResult.loadCode, tinkerLoadResult.costTime); // TODO: Remove deprecated.
+        loadReporter.onLoadResult(patchDirectory, tinkerLoadResult.loadCode, tinkerLoadResult.costTime, tinkerLoadResult.currentVersion);
 
         if (!loaded) {
             ShareTinkerLog.w(TAG, "tinker load fail!");
