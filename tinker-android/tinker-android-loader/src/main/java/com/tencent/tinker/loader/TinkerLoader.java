@@ -22,6 +22,7 @@ import android.os.SystemClock;
 
 import com.tencent.tinker.loader.app.TinkerApplication;
 import com.tencent.tinker.loader.hotplug.ComponentHotplug;
+import com.tencent.tinker.loader.shareutil.Guard;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
@@ -40,10 +41,8 @@ import java.io.File;
 public class TinkerLoader extends AbstractTinkerLoader {
     private static final String TAG = "Tinker.TinkerLoader";
 
-    /**
-     * the patch info file
-     */
-    private SharePatchInfo patchInfo;
+    // Hold current process guard lock and never release, until process dead.
+    private static Guard sProcessGuardRef = null;
 
     /**
      * only main process can handle patch version change or incomplete
@@ -52,15 +51,28 @@ public class TinkerLoader extends AbstractTinkerLoader {
     public Intent tryLoad(TinkerApplication app) {
         ShareTinkerLog.d(TAG, "tryLoad test test");
         Intent resultIntent = new Intent();
+        Guard[] resultGuard = new Guard[1];
 
         long begin = SystemClock.elapsedRealtime();
-        tryLoadPatchFilesInternal(app, resultIntent);
+        tryLoadPatchFilesInternal(app, resultIntent, resultGuard);
         long cost = SystemClock.elapsedRealtime() - begin;
         ShareIntentUtil.setIntentPatchCostTime(resultIntent, cost);
+
+        if (ShareIntentUtil.getIntentReturnCode(resultIntent) != ShareConstants.ERROR_LOAD_OK && resultGuard[0] != null) {
+            // release guard if load failed
+            resultGuard[0].close();
+        }
+
+        sProcessGuardRef = resultGuard[0];
+
+        if (ShareTinkerInternals.isInMainProcess(app)) {
+            tryCleanObsoletePatches(app);
+        }
+
         return resultIntent;
     }
 
-    private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent) {
+    private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent, Guard[] resultGuard) {
         final int tinkerFlag = app.getTinkerFlags();
 
         if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
@@ -98,11 +110,88 @@ public class TinkerLoader extends AbstractTinkerLoader {
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_NOT_EXIST);
             return;
         }
-        //old = 641e634c5b8f1649c75caf73794acbdf
-        //new = 2c150d8560334966952678930ba67fa8
+
+        boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
+
         File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectoryPath);
-        patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+        SharePatchInfo patchInfo = null;
+        String oldVersion;
+        String newVersion;
+        String oatDex;
+        String version;
+        boolean versionChanged;
+        String patchName;
+        int retryCount = 0;
+
+        do {
+            //old = 641e634c5b8f1649c75caf73794acbdf
+            //new = 2c150d8560334966952678930ba67fa8
+            final SharePatchInfo acquired = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+            if (acquired == null) {
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_CORRUPTED);
+                return;
+            }
+
+            oldVersion = acquired.oldVersion;
+            newVersion = acquired.newVersion;
+            oatDex = acquired.oatDir;
+
+            if (oldVersion == null || newVersion == null || oatDex == null) {
+                //it is nice to clean patch
+                ShareTinkerLog.w(TAG, "tryLoadPatchFiles:onPatchInfoCorrupted");
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_CORRUPTED);
+                return;
+            }
+
+            versionChanged = !(oldVersion.equals(newVersion));
+            oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
+            resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
+
+            version = oldVersion;
+            if (versionChanged && mainProcess) {
+                version = newVersion;
+            }
+
+            if (ShareTinkerInternals.isNullOrNil(version)) {
+                ShareTinkerLog.w(TAG, "tryLoadPatchFiles:version is blank, wait main process to restart");
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_BLANK);
+                return;
+            }
+
+            //patch-641e634c
+            patchName = SharePatchFileUtil.getPatchVersionDirectory(version);
+            if (patchName == null) {
+                ShareTinkerLog.w(TAG, "tryLoadPatchFiles:patchName is null");
+                //we may delete patch info file
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST);
+                return;
+            }
+
+            final File patchGuardDirectory = SharePatchFileUtil.getGuardDirectory(patchDirectoryPath);
+            // tinker/guard/patch-641e634c
+            final File patchGuardFile = new File(patchGuardDirectory, patchName);
+            if (!patchGuardFile.exists()) {
+                // Weird, the patch guard file is created before patch info file is updated.
+                // Still check here.
+                ShareTinkerLog.w(TAG, "tryLoadPatchFiles:patchGuardFile not exist");
+                ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_GUARD_FILE_NOT_EXIST);
+                return;
+            }
+            final Guard guard = Guard.acquireUse(patchGuardFile);
+            if (guard == null) {
+                ShareTinkerLog.i(TAG, "tryLoadPatchFiles:cannot acquire guard, try again");
+                // A new patch may be applied, try get patch info again.
+                retryCount++;
+                continue;
+            }
+
+            patchInfo = acquired;
+            resultGuard[0] = guard;
+            break;
+        } while (retryCount < 3);
+
         if (patchInfo == null) {
+            // unreachable
             ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_CORRUPTED);
             return;
         }
@@ -113,71 +202,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         final boolean useCustomPatch = patchInfo.useCustomPatch;
         resultIntent.putExtra(ShareIntentUtil.INTENT_USE_CUSTOM_PATCH, useCustomPatch);
 
-        String oldVersion = patchInfo.oldVersion;
-        String newVersion = patchInfo.newVersion;
-        String oatDex = patchInfo.oatDir;
-
-        if (oldVersion == null || newVersion == null || oatDex == null) {
-            //it is nice to clean patch
-            ShareTinkerLog.w(TAG, "tryLoadPatchFiles:onPatchInfoCorrupted");
-            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_CORRUPTED);
-            return;
-        }
-
-        boolean mainProcess = ShareTinkerInternals.isInMainProcess(app);
-        String versionToRemove = patchInfo.versionToRemove;
-
         if (mainProcess) {
-            if (!ShareTinkerInternals.isNullOrNil(versionToRemove)) {
-                if (newVersion.equals(versionToRemove)) {
-                    ShareTinkerLog.w(TAG, "found new version clean patch mark and we are in main process, delete patch file now.");
-                    final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
-                    if (patchName != null) {
-                        // oldVersion.equals(newVersion) means the new version has been loaded at least once
-                        // after it was applied.
-                        final boolean isNewVersionLoadedBefore = oldVersion.equals(newVersion);
-                        if (isNewVersionLoadedBefore) {
-                            // Set oldVersion and newVersion to empty string to clean patch
-                            // if current patch has been loaded before.
-                            oldVersion = "";
-                        }
-                        newVersion = oldVersion;
-                        patchInfo.oldVersion = oldVersion;
-                        patchInfo.newVersion = newVersion;
-                        patchInfo.versionToRemove = "";
-                        SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-
-                        String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
-                        if (isNewVersionLoadedBefore) {
-                            ShareTinkerInternals.killProcessExceptMain(app);
-                            SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath);
-                            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_DIRECTORY_NOT_EXIST);
-                            return;
-                        } else {
-                            // So far new version is not loaded in main process and other processes.
-                            // We can remove new version directory safely.
-                            SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath);
-                        }
-                    }
-                } else if (oldVersion.equals(versionToRemove)) {
-                    ShareTinkerLog.w(TAG, "found old version clean patch mark and we are in main process, delete patch file now.");
-                    final String patchName = SharePatchFileUtil.getPatchVersionDirectory(oldVersion);
-                    if (patchName != null) {
-                        oldVersion = newVersion;
-                        patchInfo.oldVersion = oldVersion;
-                        patchInfo.newVersion = newVersion;
-                        patchInfo.versionToRemove = "";
-                        SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-
-                        String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
-                        ShareTinkerInternals.killProcessExceptMain(app);
-                        SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath);
-                    }
-                } else {
-                    patchInfo.versionToRemove = "";
-                    SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-                }
-            }
             if (patchInfo.isRemoveInterpretOATDir) {
                 // delete interpret odex
                 // for android o, directory change. Fortunately, we don't need to support android o interpret mode any more
@@ -186,8 +211,8 @@ public class TinkerLoader extends AbstractTinkerLoader {
                 patchInfo.isRemoveInterpretOATDir = false;
                 SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
                 ShareTinkerInternals.killProcessExceptMain(app);
-                final String patchName = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
-                String patchVersionDirFullPath = patchDirectoryPath + "/" + patchName;
+                final String patchNameToRemove = SharePatchFileUtil.getPatchVersionDirectory(newVersion);
+                String patchVersionDirFullPath = patchDirectoryPath + "/" + patchNameToRemove;
                 SharePatchFileUtil.deleteDirAsync(patchVersionDirFullPath + "/" + ShareConstants.INTERPRET_DEX_OPTIMIZE_PATH);
             }
         }
@@ -195,15 +220,7 @@ public class TinkerLoader extends AbstractTinkerLoader {
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OLD_VERSION, oldVersion);
         resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_NEW_VERSION, newVersion);
 
-        boolean versionChanged = !(oldVersion.equals(newVersion));
         boolean oatModeChanged = oatDex.equals(ShareConstants.CHANING_DEX_OPTIMIZE_PATH);
-        oatDex = ShareTinkerInternals.getCurrentOatMode(app, oatDex);
-        resultIntent.putExtra(ShareIntentUtil.INTENT_PATCH_OAT_DIR, oatDex);
-
-        String version = oldVersion;
-        if (versionChanged && mainProcess) {
-            version = newVersion;
-        }
 
         if (ShareTinkerInternals.isNullOrNil(version)) {
             ShareTinkerLog.w(TAG, "tryLoadPatchFiles:version is blank, wait main process to restart");
@@ -211,14 +228,6 @@ public class TinkerLoader extends AbstractTinkerLoader {
             return;
         }
 
-        //patch-641e634c
-        String patchName = SharePatchFileUtil.getPatchVersionDirectory(version);
-        if (patchName == null) {
-            ShareTinkerLog.w(TAG, "tryLoadPatchFiles:patchName is null");
-            //we may delete patch info file
-            ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_VERSION_DIRECTORY_NOT_EXIST);
-            return;
-        }
         //tinker/patch.info/patch-641e634c
         String patchVersionDirectory = patchDirectoryPath + "/" + patchName;
 
@@ -411,6 +420,17 @@ public class TinkerLoader extends AbstractTinkerLoader {
         //all is ok!
         ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_OK);
         ShareTinkerLog.i(TAG, "tryLoadPatchFiles: load end, ok!");
+    }
+
+    private void tryCleanObsoletePatches(TinkerApplication app) {
+        ShareTinkerLog.i(TAG, "try clean obsolete patches");
+        File patchDirectory = SharePatchFileUtil.getPatchDirectory(app);
+        if (patchDirectory == null) {
+            ShareTinkerLog.w(TAG, "tryCleanObsoletePatches:getPatchDirectory == null");
+            return;
+        }
+        ShareTinkerInternals.cleanPatchDirectoryWithGuard(patchDirectory, null);
+        ShareTinkerLog.i(TAG, "tryCleanObsoletePatches: clean end, ok!");
     }
 
     private boolean checkSafeModeCount(TinkerApplication application) {

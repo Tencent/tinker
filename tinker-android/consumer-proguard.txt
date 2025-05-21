@@ -26,3 +26,7 @@
     <fields>;
     <methods>;
 }
+
+-keep,allowobfuscation class com.tencent.tinker.loader.TinkerLoader {
+    private static Guard sProcessGuardRef;
+}

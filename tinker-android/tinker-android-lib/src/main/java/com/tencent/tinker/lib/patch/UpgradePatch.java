@@ -77,7 +77,8 @@ public class UpgradePatch extends AbstractPatch {
         ShareTinkerLog.i(TAG, "UpgradePatch tryPatch:patchMd5:%s", patchMd5);
 
         //check ok, we can real recover a new patch
-        final String patchDirectory = manager.getPatchDirectory().getAbsolutePath();
+        final File patchDirectoryFile = manager.getPatchDirectory();
+        final String patchDirectory = patchDirectoryFile.getAbsolutePath();
 
         File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory);
         File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory);
@@ -203,6 +204,18 @@ public class UpgradePatch extends AbstractPatch {
             return false;
         }
 
+        final File guardDirectory = SharePatchFileUtil.getGuardDirectory(patchDirectory);
+        if (!guardDirectory.exists()) {
+            guardDirectory.mkdirs();
+        }
+        final File newVersionGuardLockFile = new File(guardDirectory, patchName);
+        try {
+            newVersionGuardLockFile.createNewFile();
+        } catch (IOException e) {
+            ShareTinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, create guard lock file failed");
+            return false;
+        }
+
         if (!SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, newInfo, patchInfoLockFile)) {
             ShareTinkerLog.e(TAG, "UpgradePatch tryPatch:new patch recover, rewrite patch info failed");
             manager.getPatchReporter().onPatchInfoCorrupted(patchFile, newInfo.oldVersion, newInfo.newVersion);
@@ -212,6 +225,8 @@ public class UpgradePatch extends AbstractPatch {
         // Reset patch apply retry count to let us be able to reapply without triggering
         // patch apply disable when we apply it successfully previously.
         UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(patchMd5);
+
+        ShareTinkerInternals.cleanPatchDirectoryWithGuard(patchDirectoryFile, patchName);
 
         ShareTinkerLog.w(TAG, "UpgradePatch tryPatch: done, it is ok");
         return true;

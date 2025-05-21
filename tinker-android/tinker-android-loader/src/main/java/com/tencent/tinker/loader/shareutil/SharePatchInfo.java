@@ -42,10 +42,22 @@ public class SharePatchInfo {
     public static final String OAT_DIR                     = "dir";
     public static final String IS_REMOVE_INTERPRET_OAT_DIR = "is_remove_interpret_oat_dir";
     public static final String DEFAULT_DIR                 = ShareConstants.DEFAULT_DEX_OPTIMIZE_PATH;
+
+    /*
+     * The meaning of this field has changed after moving cleaning task to patch process.
+     *      Before: Version of previous patch.
+     *      After: Version of patch which active main process is used.
+     */
     public String oldVersion;
     public String newVersion;
     public boolean isProtectedApp;
     public boolean useCustomPatch;
+
+    /**
+     * @deprecated Patch version directories cleaning is moved from main process to patch process,
+     *             this should always be an empty string.
+     */
+    @Deprecated
     public String versionToRemove;
     public String fingerPrint;
     public String oatDir;

@@ -107,6 +107,7 @@ public class ShareConstants {
 
     public static final String PATCH_INFO_NAME      = "patch_meta.info";
     public static final String PATCH_INFO_LOCK_NAME = "info.lock";
+    public static final String PATCH_GUARD_DIRECTORY_NAME = "guard";
 
     public static final String META_SUFFIX = "meta.txt";
 
@@ -182,6 +183,7 @@ public class ShareConstants {
     public static final int ERROR_LOAD_PATCH_UNCAUGHT_EXCEPTION                   = -25;
     // -26 & -27 is used by WeChat internal logic.
     public static final int ERROR_LOAD_PATCH_BAIL_HACK_FAILURE                    = -28;
+    public static final int ERROR_LOAD_PATCH_GUARD_FILE_NOT_EXIST                 = -29;
 
     public static final int ERROR_LOAD_GET_INTENT_FAIL = -10000;
 

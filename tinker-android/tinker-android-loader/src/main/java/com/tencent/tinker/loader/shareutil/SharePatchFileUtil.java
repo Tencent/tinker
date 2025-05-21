@@ -102,6 +102,10 @@ public class SharePatchFileUtil {
         return getPatchVersionDirectory(version) + ShareConstants.PATCH_SUFFIX;
     }
 
+    public static File getGuardDirectory(String patchDirectory) {
+        return new File(patchDirectory, ShareConstants.PATCH_GUARD_DIRECTORY_NAME);
+    }
+
     public static boolean checkIfMd5Valid(final String object) {
         if ((object == null) || (object.length() != ShareConstants.MD5_LENGTH)) {
             return false;
