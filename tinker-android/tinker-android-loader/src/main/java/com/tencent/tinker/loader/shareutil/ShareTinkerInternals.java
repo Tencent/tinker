@@ -756,14 +756,50 @@ public class ShareTinkerInternals {
                 // newVersion hasn't been loaded yet, we can remove it directly now.
                 final String patchName = SharePatchFileUtil.getPatchVersionDirectory(patchInfo.newVersion);
                 SharePatchFileUtil.deleteDir(new File(tinkerDir, patchName));
-                patchInfo.newVersion = patchInfo.oldVersion;
-                patchInfo.versionToRemove = "";
-            } else {
-                patchInfo.versionToRemove = patchInfo.newVersion;
+                patchInfo.newVersion = "";
             }
+            patchInfo.versionToRemove = "";
             SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
         } else {
             ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "fail to get patchInfo.");
+        }
+        cleanPatchDirectoryWithGuard(tinkerDir, null);
+    }
+
+    public static void cleanPatchDirectoryWithGuard(File patchDirectory, String skipDirName) {
+        final File guardDirectory = SharePatchFileUtil.getGuardDirectory(patchDirectory.getAbsolutePath());
+        final File[] allChildrenInPatchDir = patchDirectory.listFiles();
+        if (allChildrenInPatchDir != null) {
+            for (final File child: allChildrenInPatchDir) {
+                final String childName = child.getName();
+                if (!child.isDirectory() || !childName.startsWith(ShareConstants.PATCH_BASE_NAME)) {
+                    // skip non-patch directory.
+                    continue;
+                }
+                if (childName.equals(skipDirName)) {
+                    // Skip cleaning patch just created.
+                    continue;
+                }
+                final File guardLockFile = new File(guardDirectory, childName);
+                if (!guardLockFile.exists()) {
+                    // Directory is broken, just clean.
+                    ShareTinkerLog.w(TAG, "clean broken patch directory %s", child.getAbsolutePath());
+                    SharePatchFileUtil.deleteDir(child);
+                }
+                boolean cleaned;
+                try (final Guard guard = Guard.acquireClean(guardLockFile)) {
+                    cleaned = guard != null;
+                    if (cleaned) {
+                        ShareTinkerLog.i(TAG, "clean obsolete patch directory %s", child.getAbsolutePath());
+                        SharePatchFileUtil.deleteDir(child);
+                    }
+                }
+                if (cleaned) {
+                    guardLockFile.delete();
+                } else {
+                    ShareTinkerLog.i(TAG, "skip cleaning used patch directory %s", child.getAbsolutePath());
+                }
+            }
         }
     }
 }
