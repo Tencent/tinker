@@ -118,8 +118,8 @@ public class TinkerDexLoader {
                         return false;
                     }
                 }
+                ShareTinkerLog.i(TAG, "verify dex file:" + classNFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
             }
-            ShareTinkerLog.i(TAG, "verify dex file:" + classNFile.getPath() + " md5, use time: " + (System.currentTimeMillis() - start));
 
             legalFiles.add(classNFile);
         }
