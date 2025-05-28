@@ -97,17 +97,6 @@ public class DefaultLoadReporter implements LoadReporter {
 
         // reset retry count to 1, for interpret retry
         UpgradePatchRetry.getInstance(context).onPatchResetMaxCheck(newVersion);
-
-        // delete old patch files
-        File[] files = patchDirectoryFile.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                String name = file.getName();
-                if (file.isDirectory() && !name.equals(currentPatchName)) {
-                    SharePatchFileUtil.deleteDir(file);
-                }
-            }
-        }
     }
 
     /**
