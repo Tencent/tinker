@@ -229,6 +229,7 @@ public class SharePatchFileUtil {
 
         if (file.exists()) {
             ShareTinkerLog.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());
+            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "try to delete file: " + file.getPath());
 
             boolean deleted = file.delete();
             if (!deleted) {
