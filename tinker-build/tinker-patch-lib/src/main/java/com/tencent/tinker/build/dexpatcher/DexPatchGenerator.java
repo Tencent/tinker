@@ -26,6 +26,7 @@ import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Code;
 import com.tencent.tinker.android.dex.DebugInfoItem;
 import com.tencent.tinker.android.dex.Dex;
+import com.tencent.tinker.android.dex.DexFormat;
 import com.tencent.tinker.android.dex.EncodedValue;
 import com.tencent.tinker.android.dex.FieldId;
 import com.tencent.tinker.android.dex.MethodHandle;
@@ -33,6 +34,7 @@ import com.tencent.tinker.android.dex.MethodId;
 import com.tencent.tinker.android.dex.ProtoId;
 import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.StringData;
+import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationSectionDiffAlgorithm;
@@ -558,7 +560,8 @@ public class DexPatchGenerator {
         buffer.write(DexPatchFile.MAGIC);
         buffer.writeShort(DexPatchFile.CURRENT_VERSION);
         buffer.writeInt(oldDex.getTableOfContents().api);
-        buffer.writeInt(newDex.getTableOfContents().api);
+        // buffer.writeInt(newDex.getTableOfContents().api);
+        buffer.writeInt(DexFormat.API_NO_EXTENDED_OPCODES);  // Force generating dex035 dex.
         buffer.writeInt(this.patchedDexSize);
         // we will return here to write firstChunkOffset later.
         int posOfFirstChunkOffsetField = buffer.position();
