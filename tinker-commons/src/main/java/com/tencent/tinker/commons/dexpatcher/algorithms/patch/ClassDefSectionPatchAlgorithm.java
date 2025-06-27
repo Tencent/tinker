@@ -20,16 +20,26 @@ import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.TableOfContents;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
+import com.tencent.tinker.android.utils.SparseIntArray;
 import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
 import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * Created by tangyinsheng on 2016/7/4.
  */
 public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<ClassDef> {
+    private Dex patchedDex = null;
     private TableOfContents.Section patchedClassDefTocSec = null;
     private Dex.Section patchedClassDefSec = null;
+    private List<ClassDef> patchedClassDefs = null;
 
     public ClassDefSectionPatchAlgorithm(
             DexPatchFile patchFile,
@@ -40,8 +50,10 @@ public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Clas
         super(patchFile, oldDex, oldToPatchedIndexMap);
 
         if (patchedDex != null) {
+            this.patchedDex = patchedDex;
             this.patchedClassDefTocSec = patchedDex.getTableOfContents().classDefs;
             this.patchedClassDefSec = patchedDex.openSection(this.patchedClassDefTocSec);
+            this.patchedClassDefs = new ArrayList<>(512);
         }
     }
 
@@ -69,6 +81,70 @@ public class ClassDefSectionPatchAlgorithm extends DexSectionPatchAlgorithm<Clas
     @Override
     protected int writePatchedItem(ClassDef patchedItem) {
         ++this.patchedClassDefTocSec.size;
-        return this.patchedClassDefSec.writeClassDef(patchedItem);
+        this.patchedClassDefs.add(patchedItem);
+        // Since no other sections concern about offset of ClassDef item, we can simply return 0 here.
+        return 0;
+    }
+
+    @Override
+    protected void onPatchAlgorithmEnd() {
+        this.patchedClassDefs = topologicalSort(this.patchedClassDefs);
+        for (ClassDef patchedItem : this.patchedClassDefs) {
+            this.patchedClassDefSec.writeClassDef(patchedItem);
+        }
+    }
+
+    private List<ClassDef> topologicalSort(List<ClassDef> elements) {
+        final Map<Integer, ClassDef> typeIdToClassDefMap = new HashMap<>(elements.size() + 8);
+        final Map<Integer, List<Integer>> typeGraph = new HashMap<>(elements.size() + 8);
+        final SparseIntArray inDegrees = new SparseIntArray(elements.size() + 8);
+        for (ClassDef elem : elements) {
+            typeIdToClassDefMap.put(elem.typeIndex, elem);
+            typeGraph.put(elem.typeIndex, new ArrayList<>(8));
+            inDegrees.put(elem.typeIndex, 0);
+        }
+
+        for (ClassDef elem : elements) {
+            if (typeIdToClassDefMap.containsKey(elem.supertypeIndex)) {
+                typeGraph.get(elem.supertypeIndex).add(elem.typeIndex);
+                inDegrees.put(elem.typeIndex, inDegrees.get(elem.typeIndex) + 1);
+            }
+            for (int implTypeId : patchedDex.interfaceTypeIndicesFromClassDef(elem)) {
+                if (typeIdToClassDefMap.containsKey(implTypeId)) {
+                    typeGraph.get(implTypeId).add(elem.typeIndex);
+                    inDegrees.put(elem.typeIndex, inDegrees.get(elem.typeIndex) + 1);
+                }
+            }
+        }
+
+        final Queue<Integer> typeIdWithZeroInDegrees = new ArrayDeque<>(64);
+        for (int i = 0; i < inDegrees.size(); ++i) {
+            final int typeId = inDegrees.keyAt(i);
+            final int inDegree = inDegrees.valueAt(i);
+            if (inDegree == 0) {
+                typeIdWithZeroInDegrees.offer(typeId);
+            }
+        }
+
+        final List<ClassDef> result = new ArrayList<>();
+        while (!typeIdWithZeroInDegrees.isEmpty()) {
+            final int currentTypeId = typeIdWithZeroInDegrees.poll();
+            result.add(typeIdToClassDefMap.get(currentTypeId));
+
+            for (int nextTypeId : typeGraph.get(currentTypeId)) {
+                final int newInDegree = inDegrees.get(nextTypeId) - 1;
+                inDegrees.put(nextTypeId, newInDegree);
+                if (newInDegree == 0) {
+                    typeIdWithZeroInDegrees.offer(nextTypeId);
+                }
+            }
+        }
+
+        // Check if type graph contains loop.
+        if (result.size() != elements.size()) {
+            throw new IllegalStateException("Illegal dex format, there's at least one loop in class inheritance graph.");
+        }
+
+        return result;
     }
 }

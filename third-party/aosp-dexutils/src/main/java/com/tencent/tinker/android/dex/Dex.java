@@ -52,6 +52,27 @@ public final class Dex {
     static final short[] EMPTY_SHORT_ARRAY = new short[0];
     private static final int CHECKSUM_OFFSET = 8;
     private static final int SIGNATURE_OFFSET = CHECKSUM_OFFSET + SizeOf.CHECKSUM;
+
+    public static final int ACC_PUBLIC = 0x1;
+    public static final int ACC_PRIVATE = 0x2;
+    public static final int ACC_PROTECTED = 0x4;
+    public static final int ACC_STATIC = 0x8;
+    public static final int ACC_FINAL = 0x10;
+    public static final int ACC_SYNCHRONIZED = 0x20;
+    public static final int ACC_VOLATILE = 0x40;
+    public static final int ACC_BRIDGE = 0x40;
+    public static final int ACC_TRANSIENT = 0x80;
+    public static final int ACC_VARARGS = 0x80;
+    public static final int ACC_NATIVE = 0x100;
+    public static final int ACC_INTERFACE = 0x200;
+    public static final int ACC_ABSTRACT = 0x400;
+    public static final int ACC_STRICT = 0x800;
+    public static final int ACC_SYNTHETIC = 0x1000;
+    public static final int ACC_ANNOTATION = 0x2000;
+    public static final int ACC_ENUM = 0x4000;
+    public static final int ACC_CONSTRUCTOR = 0x10000;
+    public static final int ACC_DECLARED_SYNCHRONIZED = 0x20000;
+
     private final TableOfContents tableOfContents = new TableOfContents();
     private final StringTable strings = new StringTable();
     private final TypeIndexToDescriptorIndexTable typeIds = new TypeIndexToDescriptorIndexTable();
@@ -595,15 +616,11 @@ public final class Dex {
     }
 
     public short[] interfaceTypeIndicesFromClassDef(ClassDef classDef) {
-        int position = classDef.off;
-        position += SizeOf.UINT;  // type
-        position += SizeOf.UINT;  // accessFlags
-        position += SizeOf.UINT;  // superType
-        int interfacesOffset = data.getInt(position);
+        int interfacesOffset = classDef.interfacesOffset;
         if (interfacesOffset == 0) {
             return EMPTY_SHORT_ARRAY;
         }
-        position = interfacesOffset;
+        int position = interfacesOffset;
         int size = data.getInt(position);
         if (size <= 0) {
             throw new AssertionError("Unexpected interfaces list size: " + size);

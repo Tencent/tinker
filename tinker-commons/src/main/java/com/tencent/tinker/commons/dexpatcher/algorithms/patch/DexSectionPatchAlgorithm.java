@@ -94,9 +94,15 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
      * Output patched item. This method should be overrided by subclass
      * so that patched item can be written to right place.
      * <p/>
-     * Returns the offset where {@code patchedItem} is written. (<b>Must be valid.</b>)
+     * Returns the offset where {@code patchedItem} is written.
+     * (<b>Must be valid if the patched section is depended by other sections.</b>)
      */
     protected abstract int writePatchedItem(T patchedItem);
+
+    /**
+     * Called when patch algorithm finish generating patched section.
+     */
+    protected void onPatchAlgorithmEnd() {}
 
     private int[] readDeltaIndiciesOrOffsets(int count) {
         int[] result = new int[count];
@@ -234,5 +240,7 @@ public abstract class DexSectionPatchAlgorithm<T extends Comparable<T>> {
                     )
             );
         }
+
+        onPatchAlgorithmEnd();
     }
 }
