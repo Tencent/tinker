@@ -35,6 +35,11 @@ class Compatibilities {
 
     static def getOutputManifestPath(project, manifestTask, variantOutput) {
         try {
+            return new File(manifestTask.packageManifests.get().asFile, "${variantOutput.dirName}/AndroidManifest.xml")
+        } catch (Throwable ignored) {
+            // Ignored.
+        }
+        try {
             return new File(manifestTask.multiApkManifestOutputDirectory.get().asFile, "${variantOutput.dirName}/AndroidManifest.xml")
         } catch (Throwable ignored) {
             // Ignored.
@@ -67,7 +72,10 @@ class Compatibilities {
     }
 
     static def getProcessManifestTask(project, variant) {
-        return project.tasks.findByName("process${variant.name.capitalize()}Manifest")
+        def tasks = project.tasks
+        def task = tasks.findByName("process${variant.name.capitalize()}ManifestForPackage")
+        if (task != null) return task
+        return tasks.findByName("process${variant.name.capitalize()}Manifest")
     }
 
     static def getMergeResourcesTask(project, variant) {
