@@ -151,6 +151,9 @@ class TinkerPatchPlugin implements Plugin<Project> {
                 def tinkerManifestAction = new TinkerManifestAction(project)
                 agpProcessManifestTask.doLast tinkerManifestAction
 
+                def agpProcessManifestForPackageTask = Compatibilities.getProcessManifestForPackageTask(project, variant)
+                agpProcessManifestForPackageTask.mustRunAfter tinkerManifestTask
+
                 variant.outputs.each { variantOutput ->
                     setPatchNewApkPath(configuration, variantOutput, variant, tinkerPatchBuildTask)
                     setPatchOutputFolder(configuration, variantOutput, variant, tinkerPatchBuildTask)

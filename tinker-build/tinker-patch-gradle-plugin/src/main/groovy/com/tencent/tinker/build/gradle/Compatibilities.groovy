@@ -70,6 +70,10 @@ class Compatibilities {
         return project.tasks.findByName("process${variant.name.capitalize()}Manifest")
     }
 
+   static def getProcessManifestForPackageTask(project, variant) {
+        return project.tasks.findByName("process${variant.name.capitalize()}ManifestForPackage")
+    }
+
     static def getMergeResourcesTask(project, variant) {
         return project.tasks.findByName("merge${variant.name.capitalize()}Resources")
     }
