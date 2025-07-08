@@ -19,6 +19,7 @@ package com.tencent.tinker.build.decoder;
 import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
+import com.tencent.tinker.build.util.CaseSensitive;
 import com.tencent.tinker.build.util.DiffFactory;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.CustomDiff;
@@ -125,6 +126,8 @@ public class ResDiffDecoder extends BaseDecoder {
     @Override
     public void onAllPatchesStart() throws IOException, TinkerPatchException {
         newApkParser.parseResourceTable();
+        CaseSensitive.caseInsensitiveCompat = config.mCaseInsensitiveCompat;
+
         final Map<String, ResourcePackage> newApkResPkgNameMap = newApkParser.getResourceTable().getPackageNameMap();
         do {
             if (newApkResPkgNameMap == null) {
@@ -502,6 +505,7 @@ public class ResDiffDecoder extends BaseDecoder {
             }
             metaWriter.writeLineToInfoFile(title);
             for (String name : set) {
+                name = CaseSensitive.getOriginalEntryName(name);
                 String line = name;
                 if (mode == TypedValue.LARGE_MOD) {
                     LargeModeInfo info = largeModifiedMap.get(name);
