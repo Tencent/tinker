@@ -1,6 +1,7 @@
 include ':tinker-commons'
 include ':tinker-android:tinker-android-loader'
 include ':tinker-android:tinker-android-loader-no-op'
+include ':tinker-android:tinker-android-loader-test-helper'
 include ':tinker-android:tinker-android-lib'
 include ':tinker-android:tinker-android-lib-no-op'
 include ':tinker-android:tinker-android-anno'
