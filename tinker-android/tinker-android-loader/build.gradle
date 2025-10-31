@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: "org.jetbrains.kotlin.android"
 
 version rootProject.ext.VERSION_NAME
 group rootProject.ext.GROUP
@@ -26,13 +27,21 @@ android {
         sourceCompatibility rootProject.ext.javaVersion
         targetCompatibility rootProject.ext.javaVersion
     }
+
+    kotlinOptions {
+        jvmTarget = rootProject.ext.kotlinJvmTarget
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly fileTree(dir: 'stubs', include: ['*.jar'])
-    testImplementation 'junit:junit:4.12'
     implementation project(':tinker-android:tinker-android-anno-support')
+    implementation "androidx.annotation:annotation:1.0.0"
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.5.0")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit-ktx:1.1.3")
 }
 
 task buildTinkerSdk(type: Copy, dependsOn: [build]) {

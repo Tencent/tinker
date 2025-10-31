@@ -8,6 +8,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.2.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.32"
         classpath "com.github.johnrengelman.shadow:com.github.johnrengelman.shadow.gradle.plugin:4.0.4"
     }
 }
@@ -27,12 +28,13 @@ allprojects {
 }
 
 ext {
-    minSdkVersion = 10
+    minSdkVersion = 19
     compileSdkVersion = 29
     targetSdkVersion = 23
     buildToolsVersion = '28.0.3'
     androidXAnnotationVersion = '1.1.0'
     javaVersion = JavaVersion.VERSION_1_8
+    kotlinJvmTarget = "1.8"
 
     GROUP = 'com.tencent.tinker'
     VERSION_NAME = '1.9.15.2'
