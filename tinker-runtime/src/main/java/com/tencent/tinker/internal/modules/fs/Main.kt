@@ -1,8 +1,8 @@
 @file:JvmName("TinkerPatchFileSystem")
 
-package com.tencent.tinker.modules
+package com.tencent.tinker.internal.modules.fs
 
-import com.tencent.tinker.base.TinkerPatch
+import com.tencent.tinker.internal.TinkerPatch
 import java.io.File
 
 internal val File.patchApkFile: File
@@ -28,3 +28,9 @@ internal val File.patchResourcesDirectory: File
 
 internal val TinkerPatch.resourcesDirectory: File
     get() = directory.patchResourcesDirectory
+
+internal val File.patchOatDirectory: File
+    get() = resolve("oat")
+
+internal val TinkerPatch.oatDirectory: File
+    get() = directory.patchOatDirectory

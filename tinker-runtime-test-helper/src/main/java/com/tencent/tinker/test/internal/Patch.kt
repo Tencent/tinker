@@ -1,4 +1,4 @@
-package com.tencent.tinker.test.base
+package com.tencent.tinker.test.internal
 
 import android.app.Service
 import android.content.Context
@@ -49,7 +49,7 @@ abstract class TinkerPatchManagerTestService : Service() {
     }
 
     protected val delegate by lazy {
-        Class.forName("com.tencent.tinker.test.base.TinkerPatchManagerTestServiceDelegateImpl")
+        Class.forName(Delegate::class.java.name.substringBeforeLast('.') + ".TinkerPatchManagerTestServiceDelegateImpl")
             .getDeclaredConstructor()
             .newInstance()
             .let { it as Delegate }

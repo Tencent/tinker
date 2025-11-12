@@ -8,16 +8,25 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme">
         <service
-            android:name=".base.TinkerPatchManagerTestMainService"
+            android:name=".internal.TinkerPatchManagerTestMainService"
             android:enabled="true"
             android:exported="false" />
         <service
-            android:name=".base.TinkerPatchManagerTestOthersService"
+            android:name=".internal.TinkerPatchManagerTestOthersService"
             android:process=":others"
             android:enabled="true"
             android:exported="false" />
         <service
-            android:name=".base.TinkerPatchManagerTestPatchService"
+            android:name=".internal.TinkerPatchManagerTestPatchService"
+            android:process=":patch"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name=".internal.modules.oat.TinkerOatManagerTestMainService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name=".internal.modules.oat.TinkerOatManagerTestPatchService"
             android:process=":patch"
             android:enabled="true"
             android:exported="false" />

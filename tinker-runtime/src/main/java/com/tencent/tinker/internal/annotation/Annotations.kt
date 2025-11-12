@@ -1,4 +1,4 @@
-package com.tencent.tinker.annotation
+package com.tencent.tinker.internal.annotation
 
 /**
  * Functions with this annotation are only available for main process.

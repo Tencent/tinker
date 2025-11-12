@@ -30,3 +30,7 @@
 -keep,allowobfuscation class com.tencent.tinker.loader.TinkerLoader {
     private static Guard sProcessGuardRef;
 }
+
+-assumenosideeffects class ** {
+    *** *ForTesting(...);
+}

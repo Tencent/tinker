@@ -1,12 +1,13 @@
-package com.tencent.tinker.test.base
+package com.tencent.tinker.test.internal
 
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
-import com.tencent.tinker.base.TinkerPatch
-import com.tencent.tinker.base.TinkerPatchManager
+import com.tencent.tinker.internal.TinkerPatchManager
+import com.tencent.tinker.test.casted
+import com.tencent.tinker.test.createTestDirectory
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,7 +16,6 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import java.io.File
-import java.nio.file.Files
 
 private val rethrowMessagePattern = "error#(\\d+)#(.*)".toRegex()
 
@@ -32,7 +32,7 @@ private val IllegalStateException.asError: TinkerPatchManager.Error
         ?.let { match ->
             TinkerPatchManager.Error(
                 match.groupValues[1].toInt().let {
-                    TinkerPatchManager.Error.Type.values()[it]
+                    TinkerPatchManager.Error.Type.entries[it]
                 },
                 match.groupValues[2],
                 cause
@@ -88,12 +88,6 @@ class TinkerPatchManagerTestServiceDelegateImpl : TinkerPatchManagerTestService.
         }
 }
 
-internal val TinkerPatch.casted: ParcelableTinkerPatch
-    get() = ParcelableTinkerPatch(version, directory)
-
-internal val ParcelableTinkerPatch.casted: TinkerPatch
-    get() = TinkerPatch(version, directory)
-
 @RunWith(AndroidJUnit4::class)
 class TinkerPatchManagerTest {
 
@@ -143,8 +137,7 @@ class TinkerPatchManagerTest {
         val plainFileName = "content.txt"
         val plainFileContent = "Hello world!"
         val executableFileName = "executable"
-        val sourceDir = Files.createTempDirectory("tinker-test-")
-            .toFile()
+        val sourceDir = createTestDirectory()
             .apply {
                 resolve(plainFileName).apply {
                     writeText(plainFileContent)
@@ -187,8 +180,7 @@ class TinkerPatchManagerTest {
         // Creates patch "foo", and lets others process acquires it.
         patchService.create(
             fooVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val patchFromOthers = othersService.acquire()
@@ -197,8 +189,7 @@ class TinkerPatchManagerTest {
         // Creates patch "bar" as latest version. Main process always get latest version.
         patchService.create(
             barVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val patchFromMain = mainService.acquire()
@@ -222,8 +213,7 @@ class TinkerPatchManagerTest {
         // Creates patch "foo", and lets main process acquires it.
         patchService.create(
             fooVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val patchFromMain = mainService.acquire()
@@ -233,8 +223,7 @@ class TinkerPatchManagerTest {
         // main process is alive and using patch "foo".
         patchService.create(
             barVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val patchFromOthers = othersService.acquire()
@@ -264,8 +253,7 @@ class TinkerPatchManagerTest {
         //  patch "foo", and lets others process acquires it.
         patchService.create(
             fooVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val patchFromOthers = othersService.acquire()
@@ -274,8 +262,7 @@ class TinkerPatchManagerTest {
         // Creates patch "bar", and lets main process acquires it.
         patchService.create(
             barVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val patchFromMain = mainService.acquire()
@@ -284,8 +271,7 @@ class TinkerPatchManagerTest {
         // Creates patch "baz" as latest version.
         patchService.create(
             bazVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         // Cleans all patches. While patches "foo" and "bar" are used, "baz" is latest version, none
@@ -309,8 +295,7 @@ class TinkerPatchManagerTest {
         val expectedVersion = "foo"
         patchService.create(
             expectedVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val patch = mainService.acquire()
@@ -333,8 +318,7 @@ class TinkerPatchManagerTest {
         val patchService = context.patchService()
         patchService.create(
             "foo",
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         // Main process acquires patch and requests it as unavailable. The manager should treats
@@ -363,8 +347,7 @@ class TinkerPatchManagerTest {
         val patchService = context.patchService()
         patchService.create(
             "foo",
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         // Main process acquires patch.
@@ -409,8 +392,7 @@ class TinkerPatchManagerTest {
         val patchService = context.patchService()
         patchService.create(
             "foo",
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         // Main process acquires patch.
@@ -452,8 +434,7 @@ class TinkerPatchManagerTest {
         val version = "foo"
         patchService.create(
             version,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         mainService.requestUnavailable(version)
@@ -474,14 +455,12 @@ class TinkerPatchManagerTest {
         val newVersion = "new"
         patchService.create(
             oldVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         patchService.create(
             newVersion,
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         mainService.requestUnavailable(oldVersion)
@@ -504,8 +483,7 @@ class TinkerPatchManagerTest {
         val patchService = context.patchService()
         patchService.create(
             "foo",
-            Files.createTempDirectory("tinker-test-")
-                .toFile().absolutePath
+            createTestDirectory().absolutePath
         )
         val patch = mainService.acquire()
         assertFalse(mainService.isRequestUnavailableListenerInvoked)
@@ -536,8 +514,7 @@ class TinkerPatchManagerTest {
         val patchService = context.patchService()
         patchService.create(
             "foo",
-            Files.createTempDirectory("tinker-test-")
-                .toFile().absolutePath
+            createTestDirectory().absolutePath
         )
         mainService.acquire()
         val error = assertThrows(IllegalStateException::class.java) {
@@ -557,14 +534,12 @@ class TinkerPatchManagerTest {
         val patchService = context.patchService()
         patchService.create(
             "foo",
-            Files.createTempDirectory("tinker-test-")
-                .toFile().absolutePath
+            createTestDirectory().absolutePath
         )
         mainService.acquire()
         patchService.create(
             "bar",
-            Files.createTempDirectory("tinker-test-")
-                .toFile().absolutePath
+            createTestDirectory().absolutePath
         )
         val error = assertThrows(IllegalStateException::class.java) {
             mainService.acquire()
@@ -594,8 +569,7 @@ class TinkerPatchManagerTest {
             TinkerPatchManager.create(
                 context,
                 "foo",
-                Files.createTempDirectory("tinker-test-")
-                    .toFile()
+                createTestDirectory()
             )
         }
     }
@@ -632,8 +606,7 @@ class TinkerPatchManagerTest {
         assertThrows(IllegalArgumentException::class.java) {
             patchService.create(
                 "#foo",
-                Files.createTempDirectory("tinker-test-")
-                    .toFile()
+                createTestDirectory()
                     .absolutePath
             )
         }
@@ -649,8 +622,7 @@ class TinkerPatchManagerTest {
         assertThrows(IllegalArgumentException::class.java) {
             patchService.create(
                 "foo",
-                Files.createTempDirectory("tinker-test-")
-                    .toFile()
+                createTestDirectory()
                     .apply { deleteRecursively() }
                     .absolutePath
             )
@@ -668,12 +640,7 @@ class TinkerPatchManagerTest {
         assertThrows(IllegalArgumentException::class.java) {
             patchService.create(
                 "foo",
-                Files.createTempFile("tinker-test-", ".txt")
-                    .toFile()
-                    .apply {
-                        createNewFile()
-                    }
-                    .absolutePath
+                File.createTempFile("tinker-test-", ".txt").absolutePath
             )
         }
     }
@@ -687,16 +654,14 @@ class TinkerPatchManagerTest {
         val patchService = context.patchService()
         patchService.create(
             "foo",
-            Files.createTempDirectory("tinker-test-")
-                .toFile()
+            createTestDirectory()
                 .absolutePath
         )
         val error =
             assertThrows(IllegalStateException::class.java) {
                 patchService.create(
                     "foo",
-                    Files.createTempDirectory("tinker-test-")
-                        .toFile()
+                    createTestDirectory()
                         .absolutePath
                 )
             }?.asError
@@ -715,8 +680,7 @@ class TinkerPatchManagerTest {
     fun createWithInvalidPatch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val patchService = context.patchService()
-        val sourceDir = Files.createTempDirectory("tinker-test-")
-            .toFile()
+        val sourceDir = createTestDirectory()
             .apply {
                 resolve("content.txt").apply {
                     writeText("Hello world!")
@@ -759,8 +723,7 @@ class TinkerPatchManagerTest {
             assertThrows(IllegalStateException::class.java) {
                 patchService.create(
                     "foo",
-                    Files.createTempDirectory("tinker-test-")
-                        .toFile()
+                    createTestDirectory()
                         .absolutePath
                 )
             }.asError

@@ -1,6 +1,6 @@
-package com.tencent.tinker.test.base;
+package com.tencent.tinker.test.internal;
 
-import com.tencent.tinker.test.base.ParcelableTinkerPatch;
+import com.tencent.tinker.test.internal.ParcelableTinkerPatch;
 
 interface ITinkerPatchManagerTestOthersService {
     ParcelableTinkerPatch acquire();

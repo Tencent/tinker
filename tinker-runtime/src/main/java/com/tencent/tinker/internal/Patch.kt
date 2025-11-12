@@ -1,21 +1,20 @@
-package com.tencent.tinker.base
+package com.tencent.tinker.internal
 
 import android.content.Context
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
-import com.tencent.tinker.annotation.MainProcessOnly
-import com.tencent.tinker.annotation.PatchProcessOnly
-import com.tencent.tinker.annotation.NonPatchProcessOnly
-import com.tencent.tinker.loader.shareutil.SharePatchFileUtil
-import com.tencent.tinker.utils.EscapedGuardedContent
-import com.tencent.tinker.utils.escapedGuardedContentExclusive
-import com.tencent.tinker.utils.escapedGuardedContentExclusiveNullable
-import com.tencent.tinker.utils.escapedGuardedContentSharedNullable
-import com.tencent.tinker.utils.guardedContent
-import com.tencent.tinker.utils.guardedContentNullable
-import com.tencent.tinker.utils.guardedReadOrWriteContent
-import com.tencent.tinker.utils.isInMainProcess
-import com.tencent.tinker.utils.isInPatchProcess
+import com.tencent.tinker.internal.annotation.MainProcessOnly
+import com.tencent.tinker.internal.annotation.PatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
+import com.tencent.tinker.internal.utils.EscapedGuardedContent
+import com.tencent.tinker.internal.utils.escapedGuardedContentExclusive
+import com.tencent.tinker.internal.utils.escapedGuardedContentExclusiveNullable
+import com.tencent.tinker.internal.utils.escapedGuardedContentSharedNullable
+import com.tencent.tinker.internal.utils.guardedContent
+import com.tencent.tinker.internal.utils.guardedContentNullable
+import com.tencent.tinker.internal.utils.guardedReadOrWriteContent
+import com.tencent.tinker.internal.utils.isInMainProcess
+import com.tencent.tinker.internal.utils.isInPatchProcess
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.collections.toString
@@ -65,9 +64,7 @@ internal object TinkerPatchManager {
      * Base directory of patch files.
      */
     private val Context.baseDirectory: File
-        get() = SharePatchFileUtil
-            .getPatchDirectory(this)
-            .resolve("tinker-isolated")
+        get() = rootDirectory.resolve("patches-isolated")
 
     @VisibleForTesting
     fun baseDirectoryForTesting(context: Context): File =

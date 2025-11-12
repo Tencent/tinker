@@ -1,9 +1,12 @@
-package com.tencent.tinker.utils
+package com.tencent.tinker.internal.utils
 
+import android.os.Build
+import android.system.Os
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.nio.channels.FileLock
+import java.nio.file.Files
 import kotlin.io.use
 
 /**
@@ -202,4 +205,44 @@ internal fun File.escapedGuardedContentExclusiveNullable(content: ByteArray): Es
         return null
     }
     return EscapedGuardedContent(content, stream, lock)
+}
+
+internal fun File.ensureIsExistingFile(): File = apply {
+    if (exists() && !isFile) {
+        if (isDirectory) {
+            deleteRecursively()
+        } else {
+            delete()
+        }
+    }
+    parentFile!!.ensureIsExistingDirectory()
+    if (!exists()) {
+        createNewFile()
+    }
+}
+
+internal fun File.ensureIsExistingDirectory(): File = apply {
+    if (exists() && !isDirectory) {
+        delete()
+    }
+    if (!exists()) {
+        mkdirs()
+    }
+}
+
+/**
+ * Returns true if the file is a readable non-empty file.
+ */
+internal val File.isReadableNonEmptyFile: Boolean
+    get() = isFile && canRead() && length() > 0
+
+/**
+ * Creates a symbolic link to [target] path.
+ */
+internal fun File.symlinkTo(target: File) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Files.createSymbolicLink(target.toPath(), toPath())
+    } else {
+        Os.symlink(canonicalPath, target.canonicalPath)
+    }
 }
