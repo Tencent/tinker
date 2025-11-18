@@ -17,6 +17,7 @@ import com.tencent.tinker.loader.hotplug.IncrementComponentManager;
 import com.tencent.tinker.loader.hotplug.interceptor.ServiceBinderInterceptor.BinderInvocationHandler;
 import com.tencent.tinker.loader.shareutil.ShareIntentUtil;
 import com.tencent.tinker.loader.shareutil.ShareReflectUtil;
+import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
 
 import java.lang.reflect.Method;
 
@@ -37,7 +38,7 @@ public class AMSInterceptHandler implements BinderInvocationHandler {
             try {
                 val = (int) ShareReflectUtil.findField(ActivityManager.class, "INTENT_SENDER_ACTIVITY").get(null);
             } catch (Throwable thr) {
-                thr.printStackTrace();
+                ShareTinkerLog.e(TAG, "find INTENT_SENDER_ACTIVITY field exception:", thr);
                 val = 2;
             }
         }

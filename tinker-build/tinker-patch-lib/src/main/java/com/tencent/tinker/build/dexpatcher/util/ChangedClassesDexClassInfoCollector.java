@@ -43,7 +43,7 @@ import static com.tencent.tinker.build.util.DexClassesComparator.DexGroup;
  */
 
 public class ChangedClassesDexClassInfoCollector {
-    private static final String TAG = "ChangedClassesDexClassInfoCollector";
+    private static final String TAG = "Tinker.ChangedClassesDexClassInfoCollector";
 
     private static final DexPatcherLogger LOGGER = new DexPatcherLogger();
     private final Set<String> excludedClassPatterns = new HashSet<>();

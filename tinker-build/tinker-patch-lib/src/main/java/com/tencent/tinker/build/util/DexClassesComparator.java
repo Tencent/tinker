@@ -59,7 +59,7 @@ import java.util.regex.Pattern;
  * Created by tangyinsheng on 2016/4/14.
  */
 public final class DexClassesComparator {
-    private static final String TAG = "DexClassesComparator";
+    private static final String TAG = "Tinker.DexClassesComparator";
 
     public static final int COMPARE_MODE_NORMAL = 0;
     public static final int COMPARE_MODE_REFERRER_AFFECTED_CHANGE_ONLY = 1;
