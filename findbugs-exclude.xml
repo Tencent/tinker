@@ -1,9 +1,0 @@
-<FindBugsFilter>
-
-    <Match>
-        <Class name="~.*R\$.*" />
-    </Match>
-    <Match>
-        <Class name="~.*Manifest\$.*" />
-    </Match>
-</FindBugsFilter>

@@ -1,0 +1,39 @@
+[versions]
+agp = "8.13.1"
+androidx-annotation = "1.9.1"
+androidx-test = "1.7.0"
+androidx-test-junit = "1.3.0"
+apk-parser-lib = "1.2.3"
+asm = "9.9"
+commons-codec = "1.20.0"
+dexlib2 = "2.5.2"
+dom4j = "2.2.0"
+guava = "33.5.0-android"
+jetbrains-annotations = "26.0.2-1"
+junit = "4.13.2"
+kotlin = "1.9.25"
+osdetector = "1.7.3"
+
+[libraries]
+agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
+androidx-test-junit-ktx = { module = "androidx.test.ext:junit-ktx", version.ref = "androidx-test-junit" }
+apk-parser-lib = { module = "com.tencent.mm:apk-parser-lib", version.ref = "apk-parser-lib" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
+dexlib2 = { module = "org.smali:dexlib2", version.ref = "dexlib2" }
+dom4j = { module = "org.dom4j:dom4j", version.ref = "dom4j" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
+junit = { module = "junit:junit", version.ref = "junit" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+osdetector-gradle-plugin = { module = "com.google.gradle:osdetector-gradle-plugin", version.ref = "osdetector" }
+
+[plugins]
+tinker-build-config = { id = "com.tencent.tinker.build.config" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
