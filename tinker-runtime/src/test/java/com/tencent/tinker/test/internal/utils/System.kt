@@ -1,6 +1,6 @@
 package com.tencent.tinker.test.internal.utils
 
-import com.tencent.tinker.internal.utils.CurrentSdk
+import com.tencent.tinker.internal.util.CurrentSdk
 import org.junit.Test
 
 import org.junit.Assert.*

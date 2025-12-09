@@ -1,6 +1,6 @@
 @file:JvmName("TinkerPatchFileSystem")
 
-package com.tencent.tinker.internal.modules.fs
+package com.tencent.tinker.internal.module.fs
 
 import com.tencent.tinker.internal.TinkerPatch
 import java.io.File

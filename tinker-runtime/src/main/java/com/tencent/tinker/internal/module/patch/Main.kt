@@ -1,4 +1,4 @@
-package com.tencent.tinker.internal.modules.patch
+package com.tencent.tinker.internal.module.patch
 
 import android.content.Context
 import androidx.annotation.GuardedBy
@@ -8,15 +8,15 @@ import com.tencent.tinker.internal.annotation.MainProcessOnly
 import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
 import com.tencent.tinker.internal.annotation.PatchProcessOnly
 import com.tencent.tinker.internal.rootDirectory
-import com.tencent.tinker.internal.utils.EscapedGuardedContent
-import com.tencent.tinker.internal.utils.escapedGuardedContentExclusive
-import com.tencent.tinker.internal.utils.escapedGuardedContentExclusiveNullable
-import com.tencent.tinker.internal.utils.escapedGuardedContentSharedNullable
-import com.tencent.tinker.internal.utils.guardedContent
-import com.tencent.tinker.internal.utils.guardedContentNullable
-import com.tencent.tinker.internal.utils.guardedReadOrWriteContent
-import com.tencent.tinker.internal.utils.isInMainProcess
-import com.tencent.tinker.internal.utils.isInPatchProcess
+import com.tencent.tinker.internal.util.EscapedGuardedContent
+import com.tencent.tinker.internal.util.escapedGuardedContentExclusive
+import com.tencent.tinker.internal.util.escapedGuardedContentExclusiveNullable
+import com.tencent.tinker.internal.util.escapedGuardedContentSharedNullable
+import com.tencent.tinker.internal.util.guardedContent
+import com.tencent.tinker.internal.util.guardedContentNullable
+import com.tencent.tinker.internal.util.guardedReadOrWriteContent
+import com.tencent.tinker.internal.util.isInMainProcess
+import com.tencent.tinker.internal.util.isInPatchProcess
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 

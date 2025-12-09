@@ -1,4 +1,4 @@
-package com.tencent.tinker.test.internal.modules.oat
+package com.tencent.tinker.test.internal.module.oat
 
 import android.app.Service
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.tencent.tinker.internal.utils
+package com.tencent.tinker.internal.util
 
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog
 

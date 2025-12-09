@@ -1,4 +1,4 @@
-package com.tencent.tinker.test.internal.modules.patch
+package com.tencent.tinker.test.internal.module.patch
 
 import android.app.Service
 import android.content.Context
@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.IBinder
 import java.io.File
 import com.tencent.tinker.test.internal.ParcelableTinkerPatch
-
 
 
 abstract class TinkerPatchManagerTestService : Service() {

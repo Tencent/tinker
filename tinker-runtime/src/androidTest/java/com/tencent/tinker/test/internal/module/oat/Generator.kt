@@ -1,11 +1,11 @@
-package com.tencent.tinker.test.internal.modules.oat
+package com.tencent.tinker.test.internal.module.oat
 
 import android.content.Context
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SdkSuppress
-import com.tencent.tinker.internal.modules.oat.Compiler
-import com.tencent.tinker.internal.modules.oat.Interpreter
+import com.tencent.tinker.internal.module.oat.Compiler
+import com.tencent.tinker.internal.module.oat.Interpreter
 import com.tencent.tinker.test.createTestDirectory
 import org.junit.Assert.assertTrue
 import org.junit.Test

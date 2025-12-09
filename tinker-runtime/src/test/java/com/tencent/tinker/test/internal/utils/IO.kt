@@ -1,6 +1,6 @@
 package com.tencent.tinker.test.internal.utils
 
-import com.tencent.tinker.internal.utils.escapedGuardedContentExclusive
+import com.tencent.tinker.internal.util.escapedGuardedContentExclusive
 import org.junit.Test
 import org.junit.Assert.*
 import java.nio.file.Files

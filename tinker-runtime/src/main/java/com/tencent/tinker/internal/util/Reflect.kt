@@ -1,4 +1,4 @@
-package com.tencent.tinker.internal.utils
+package com.tencent.tinker.internal.util
 
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field

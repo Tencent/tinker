@@ -1,14 +1,14 @@
-package com.tencent.tinker.internal.modules.oat
+package com.tencent.tinker.internal.module.oat
 
 import android.content.Context
 import android.os.Build
-import com.tencent.tinker.internal.utils.arkHotRunning
-import com.tencent.tinker.internal.utils.currentInstructionSet
-import com.tencent.tinker.internal.utils.currentSdk
-import com.tencent.tinker.internal.utils.ensureIsExistingDirectory
-import com.tencent.tinker.internal.utils.errorLog
-import com.tencent.tinker.internal.utils.isReadableNonEmptyFile
-import com.tencent.tinker.internal.utils.warnLog
+import com.tencent.tinker.internal.util.arkHotRunning
+import com.tencent.tinker.internal.util.currentInstructionSet
+import com.tencent.tinker.internal.util.currentSdk
+import com.tencent.tinker.internal.util.ensureIsExistingDirectory
+import com.tencent.tinker.internal.util.errorLog
+import com.tencent.tinker.internal.util.isReadableNonEmptyFile
+import com.tencent.tinker.internal.util.warnLog
 import dalvik.system.DexFile
 import java.io.File
 import java.util.concurrent.Callable

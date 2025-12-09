@@ -1,4 +1,4 @@
-package com.tencent.tinker.internal.utils
+package com.tencent.tinker.internal.util
 
 import android.os.Build
 import android.system.Os
