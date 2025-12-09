@@ -50,6 +50,7 @@ internal val currentSdk by lazy {
     )
 }
 
+@Suppress("DEPRECATION")
 internal val currentInstructionSet by lazy {
     try {
         return@lazy Class.forName("dalvik.system.VMRuntime")

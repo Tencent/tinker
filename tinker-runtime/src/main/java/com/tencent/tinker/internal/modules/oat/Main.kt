@@ -1,13 +1,11 @@
 package com.tencent.tinker.internal.modules.oat
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.internal.TinkerPatch
-import com.tencent.tinker.internal.TinkerPatchManager
 import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
 import com.tencent.tinker.internal.annotation.PatchProcessOnly
 import com.tencent.tinker.internal.modules.fs.dexDirectory
@@ -269,7 +267,7 @@ internal object TinkerOatManager {
         init {
             stackTrace = stackTrace
                 .dropWhile {
-                    it.className == TinkerPatchManager.javaClass.name
+                    it.className == TinkerOatManager.javaClass.name
                 }
                 .toTypedArray()
         }

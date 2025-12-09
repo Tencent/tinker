@@ -1,13 +1,14 @@
-package com.tencent.tinker.test.internal
+package com.tencent.tinker.test.internal.modules.patch
 
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
-import com.tencent.tinker.internal.TinkerPatchManager
+import com.tencent.tinker.internal.modules.patch.TinkerPatchManager
 import com.tencent.tinker.test.casted
 import com.tencent.tinker.test.createTestDirectory
+import com.tencent.tinker.test.internal.ParcelableTinkerPatch
 
 import org.junit.Test
 import org.junit.runner.RunWith

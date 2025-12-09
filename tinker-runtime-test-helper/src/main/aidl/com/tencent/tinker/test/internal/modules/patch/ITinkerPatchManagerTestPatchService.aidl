@@ -1,4 +1,4 @@
-package com.tencent.tinker.test.internal;
+package com.tencent.tinker.test.internal.modules.patch;
 
 import com.tencent.tinker.test.internal.ParcelableTinkerPatch;
 
