@@ -5,12 +5,10 @@ import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
-import com.tencent.tinker.internal.TinkerPatch
-import com.tencent.tinker.internal.module.oat.TinkerOatManager
-import com.tencent.tinker.internal.module.fs.dexDirectory
 import com.tencent.tinker.internal.module.oat.Generator
-import com.tencent.tinker.test.internal.ParcelableTinkerPatch
-import com.tencent.tinker.test.casted
+import com.tencent.tinker.internal.module.oat.OatManager
+import com.tencent.tinker.internal.module.oat.OatManagerImpl
+import com.tencent.tinker.internal.util.isInPatchProcess
 import com.tencent.tinker.test.createTestDirectory
 import org.junit.Rule
 import org.junit.Test
@@ -25,17 +23,17 @@ private val rethrowMessagePattern = "error#(\\d+)#(.*)".toRegex()
 private inline fun <T> rethrowAsIllegalState(action: () -> T) =
     try {
         action()
-    } catch (error: TinkerOatManager.Error) {
+    } catch (error: OatManager.Error) {
         throw IllegalStateException("error#${error.type.ordinal}#${error.message}", error)
     }
 
-private val IllegalStateException.asError: TinkerOatManager.Error
+private val IllegalStateException.asError: OatManager.Error
     get() = message
         ?.let(rethrowMessagePattern::matchEntire)
         ?.let { match ->
-            TinkerOatManager.Error(
+            OatManager.Error(
                 match.groupValues[1].toInt().let {
-                    TinkerOatManager.Error.Type.entries[it]
+                    OatManager.Error.Type.entries[it]
                 },
                 match.groupValues[2],
                 cause
@@ -44,116 +42,133 @@ private val IllegalStateException.asError: TinkerOatManager.Error
         ?: throw AssertionError("Exception is not manager error as expected", this)
 
 @Suppress("unused")
-internal class TinkerOatManagerTestServiceDelegateImpl : TinkerOatManagerTestService.Delegate {
+internal class OatManagerDelegate(
+    context: Context
+) : OatManagerTestService.Delegate {
+
+    private var interpreter: Generator = SuccessGenerator
+
+    private var compiler: Generator = SuccessGenerator
+
+    private val managerImpl = OatManagerImpl(
+        context = context,
+        interpreter = if (context.isInPatchProcess) {
+            IllegalGenerator("patch", "interpreter")
+        } else {
+            object : Generator() {
+                override fun generate(
+                    context: Context,
+                    inputs: List<File>,
+                    outputDirectory: File
+                ): Boolean = interpreter.generate(context, inputs, outputDirectory)
+            }
+        },
+        compiler = if (!context.isInPatchProcess) {
+            IllegalGenerator("main", "compiler")
+        } else {
+            object : Generator() {
+                override fun generate(
+                    context: Context,
+                    inputs: List<File>,
+                    outputDirectory: File
+                ): Boolean = compiler.generate(context, inputs, outputDirectory)
+            }
+        }
+    )
+
+    override val baseDirectory: File
+        get() = managerImpl.baseDirectoryForTesting()
+
+    override fun metadataFile(directory: File): File =
+        managerImpl.metadataFileForTesting(directory)
+
+    override fun contentBaseDirectory(directory: File): File =
+        managerImpl.contentBaseDirectoryForTesting(directory)
 
     override fun acquire(
-        context: Context,
-        patch: ParcelableTinkerPatch,
+        directory: File,
         skipGenerateIfMissing: Boolean
     ): String? = rethrowAsIllegalState {
-        TinkerOatManager
+        managerImpl
             .acquire(
-                context,
-                TinkerPatch(patch.version, patch.directory),
+                directory,
                 skipGenerateIfMissing,
             )
             ?.absolutePath
     }
 
-    override fun generateIfNeeded(
-        context: Context,
-        patch: ParcelableTinkerPatch
-    ) {
+    override fun generateIfNeeded(directory: File) {
         rethrowAsIllegalState {
-            TinkerOatManager.generateIfNeeded(context, TinkerPatch(patch.version, patch.directory))
+            managerImpl.generateIfNeeded(directory)
         }
     }
 
-    override fun clean(context: Context, version: String) =
+    override fun clean(directory: File): Boolean =
         rethrowAsIllegalState {
-            TinkerOatManager.clean(context, version)
+            managerImpl.clean(directory)
         }
 
-    override fun release(context: Context) {
+    override fun release() {
         rethrowAsIllegalState {
-            TinkerOatManager.release(context)
+            managerImpl.release()
         }
     }
 
     override fun releaseGuard() {
         rethrowAsIllegalState {
-            TinkerOatManager.releaseGuardForTesting()
+            managerImpl.releaseGuardForTesting()
         }
     }
 
-    override fun setMainProcessCompilerAsInvalid() {
+    override fun reset() {
         rethrowAsIllegalState {
-            TinkerOatManager.setCompilerForTesting(
-                TinkerOatManagerTestMainProcessIllegalCompiler
-            )
-        }
-    }
-
-    override fun useSuccessCompilerForPatchProcess() {
-        rethrowAsIllegalState {
-            TinkerOatManagerTestPatchProcessSuccessCompiler
+            managerImpl.baseDirectoryForTesting().apply {
+                walk(direction = FileWalkDirection.TOP_DOWN).forEach {
+                    it.setWritable(true)
+                }
+                deleteRecursively()
+            }
+            SuccessGenerator
                 .apply { cleanGenerated() }
-                .let(TinkerOatManager::setCompilerForTesting)
+                .also {
+                    interpreter = it
+                    compiler = it
+                }
         }
     }
 
-    override fun setPatchProcessInterpreterAsInvalid() {
+    override fun useFailureGenerator() {
         rethrowAsIllegalState {
-            TinkerOatManager.setInterpreterForTesting(
-                TinkerOatManagerTestPatchProcessIllegalInterpreter
-            )
+            FailureGenerator
+                .let {
+                    interpreter = it
+                    compiler = it
+                }
         }
     }
 
-    override fun useSuccessInterpreterForMainProcess() {
+    override fun useExceptionGenerator() {
         rethrowAsIllegalState {
-            TinkerOatManagerTestMainProcessSuccessInterpreter
-                .apply { cleanGenerated() }
-                .let(TinkerOatManager::setInterpreterForTesting)
+            ExceptionGenerator
+                .let {
+                    interpreter = it
+                    compiler = it
+                }
         }
     }
-
-    override fun useFailureCompiler() {
-        rethrowAsIllegalState {
-            TinkerOatManager.setCompilerForTesting(TinkerOatManagerTestFailureCompiler)
-        }
-    }
-
-    override fun useFailureInterpreter() {
-        rethrowAsIllegalState {
-            TinkerOatManager.setInterpreterForTesting(TinkerOatManagerTestFailureInterpreter)
-        }
-    }
-
-    override fun useExceptionCompiler() {
-        rethrowAsIllegalState {
-            TinkerOatManager.setCompilerForTesting(TinkerOatManagerTestExceptionCompiler)
-        }
-    }
-
-    override fun useExceptionInterpreter() {
-        rethrowAsIllegalState {
-            TinkerOatManager.setInterpreterForTesting(TinkerOatManagerTestExceptionInterpreter)
-        }
-    }
-
-    override fun isCompilerGenerated(): Boolean =
-        rethrowAsIllegalState {
-            TinkerOatManagerTestPatchProcessSuccessCompiler.generated
-        }
 
     override fun isInterpreterGenerated(): Boolean =
         rethrowAsIllegalState {
-            TinkerOatManagerTestMainProcessSuccessInterpreter.generated
+            (interpreter as? SuccessGenerator)?.generated == true
+        }
+
+    override fun isCompilerGenerated(): Boolean =
+        rethrowAsIllegalState {
+            (compiler as? SuccessGenerator)?.generated == true
         }
 }
 
-private sealed class TinkerOatManagerTestSuccessGenerator : Generator() {
+private object SuccessGenerator : Generator() {
 
     var generated = false
         private set
@@ -175,28 +190,20 @@ private sealed class TinkerOatManagerTestSuccessGenerator : Generator() {
     }
 }
 
-private object TinkerOatManagerTestPatchProcessSuccessCompiler :
-    TinkerOatManagerTestSuccessGenerator()
-
-private object TinkerOatManagerTestMainProcessSuccessInterpreter :
-    TinkerOatManagerTestSuccessGenerator()
-
-private sealed class TinkerOatManagerTestIllegalGenerator(
+private class IllegalGenerator(
     private val process: String,
     private val type: String
 ) : Generator() {
-    override fun generate(context: Context, inputs: List<File>, outputDirectory: File): Boolean {
+    override fun generate(
+        context: Context,
+        inputs: List<File>,
+        outputDirectory: File
+    ): Boolean {
         throw AssertionError("$process process should never use $type")
     }
 }
 
-private object TinkerOatManagerTestMainProcessIllegalCompiler :
-    TinkerOatManagerTestIllegalGenerator("main", "compiler")
-
-private object TinkerOatManagerTestPatchProcessIllegalInterpreter :
-    TinkerOatManagerTestIllegalGenerator("patch", "interpreter")
-
-private sealed class TinkerOatManagerTestFailureGenerator : Generator() {
+private object FailureGenerator : Generator() {
     override fun generate(
         context: Context,
         inputs: List<File>,
@@ -204,11 +211,7 @@ private sealed class TinkerOatManagerTestFailureGenerator : Generator() {
     ): Boolean = false
 }
 
-private object TinkerOatManagerTestFailureCompiler : TinkerOatManagerTestFailureGenerator()
-
-private object TinkerOatManagerTestFailureInterpreter : TinkerOatManagerTestFailureGenerator()
-
-private sealed class TinkerOatManagerTestExceptionGenerator : Generator() {
+private object ExceptionGenerator : Generator() {
 
     override fun generate(
         context: Context,
@@ -219,42 +222,30 @@ private sealed class TinkerOatManagerTestExceptionGenerator : Generator() {
     }
 }
 
-private object TinkerOatManagerTestExceptionCompiler : TinkerOatManagerTestExceptionGenerator()
-
-private object TinkerOatManagerTestExceptionInterpreter : TinkerOatManagerTestExceptionGenerator()
-
 @RunWith(AndroidJUnit4::class)
 class TinkerOatManagerTest {
 
     @get:Rule
     val serviceRule = ServiceTestRule()
 
-    private fun Context.mainService(): ITinkerOatManagerTestMainService =
-        Intent(this, TinkerOatManagerTestMainService::class.java)
+    private fun Context.mainService(): IOatManagerTestMainService =
+        Intent(this, OatManagerTestMainService::class.java)
             .let(serviceRule::bindService)
-            .let(ITinkerOatManagerTestMainService.Stub::asInterface)
+            .let(IOatManagerTestMainService.Stub::asInterface)
 
-    private fun Context.patchService(): ITinkerOatManagerTestPatchService =
-        Intent(this, TinkerOatManagerTestPatchService::class.java)
+    private fun Context.patchService(): IOatManagerTestPatchService =
+        Intent(this, OatManagerTestPatchService::class.java)
             .let(serviceRule::bindService)
-            .let(ITinkerOatManagerTestPatchService.Stub::asInterface)
+            .let(IOatManagerTestPatchService.Stub::asInterface)
 
     @Before
     fun cleanUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        TinkerOatManager.baseDirectoryForTesting(context).apply {
-            walk(direction = FileWalkDirection.TOP_DOWN).forEach {
-                it.setWritable(true)
-            }
-            deleteRecursively()
-        }
         val mainService = context.mainService()
-        mainService.setCompilerIsInvalid()
-        mainService.useSuccessInterpreter()
+        mainService.reset()
         mainService.releaseGuard()
         val patchService = context.patchService()
-        patchService.setInterpreterIsInvalid()
-        patchService.useSuccessCompiler()
+        patchService.reset()
     }
 
     /**
@@ -265,19 +256,17 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
             resolve("bar.jar").createNewFile()
             resolve("baz.apk").createNewFile()
             resolve("qux.txt").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         assertTrue(patchService.isCompilerGenerated)
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertFalse(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -289,13 +278,13 @@ class TinkerOatManagerTest {
         assertFalse(acquired.resolve("qux.txt.oat").exists())
         // No other files or directories remains in base directory, except metadata and OAT files
         // content directory.
-        val baseDirectory = TinkerOatManager.baseDirectoryForTesting(context)
+        val baseDirectory = mainService.baseDirectory().let(::File)
         assertEquals(
             setOf(
-                TinkerOatManager.metadataFileForTesting(context, patch.version),
-                TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version),
+                mainService.metadataFile(inputDirectory.absolutePath),
+                mainService.contentBaseDirectory(inputDirectory.absolutePath),
             ),
-            baseDirectory.listFiles()?.toSet()
+            baseDirectory.listFiles()?.map { it.absolutePath }?.toSet(),
         )
     }
 
@@ -306,9 +295,7 @@ class TinkerOatManagerTest {
     fun acquireBySelf() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
             resolve("bar.jar").createNewFile()
@@ -316,7 +303,7 @@ class TinkerOatManagerTest {
             resolve("qux.txt").createNewFile()
         }
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -335,9 +322,7 @@ class TinkerOatManagerTest {
     fun acquireBySelfButSkipGenerating() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
             resolve("bar.jar").createNewFile()
@@ -345,7 +330,7 @@ class TinkerOatManagerTest {
             resolve("qux.txt").createNewFile()
         }
         val acquired = mainService
-            .acquire(patch.casted, true)
+            .acquire(inputDirectory.absolutePath, true)
             ?.let(::File)
         assertFalse(mainService.isInterpreterGenerated)
         assertNull(acquired)
@@ -359,26 +344,23 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
         assertEquals(1, beforeReGenerateContentDirectories.size)
 
-        TinkerOatManager.metadataFileForTesting(context, patch.version).delete()
+        mainService.metadataFile(inputDirectory.absolutePath).let(::File).delete()
 
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -386,7 +368,7 @@ class TinkerOatManagerTest {
         assertTrue(acquired.resolve("foo.dex.oat").exists())
         // Make sure OAT files directory are completely refreshed.
         val afterReGeneratedContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
@@ -405,27 +387,24 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
         assertEquals(1, beforeReGenerateContentDirectories.size)
 
-        TinkerOatManager.metadataFileForTesting(context, patch.version)
+        mainService.metadataFile(inputDirectory.absolutePath).let(::File)
             .writeText("corrupted")
 
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -433,7 +412,7 @@ class TinkerOatManagerTest {
         assertTrue(acquired.resolve("foo.dex.oat").exists())
         // Make sure OAT files directory are completely refreshed.
         val afterReGeneratedContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
@@ -452,23 +431,20 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
 
-        TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+        mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
             .listFiles()
             ?.forEach {
                 it.deleteRecursively()
             }
 
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -484,22 +460,20 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
         assertEquals(1, beforeReGenerateContentDirectories.size)
 
-        TinkerOatManager.metadataFileForTesting(context, patch.version).apply {
+        mainService.metadataFile(inputDirectory.absolutePath).let(::File).apply {
             val metadata = Properties().also { properties ->
                 inputStream().use(properties::load)
             }
@@ -510,7 +484,7 @@ class TinkerOatManagerTest {
         }
 
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -518,7 +492,7 @@ class TinkerOatManagerTest {
         assertTrue(acquired.resolve("foo.dex.oat").exists())
         // Make sure OAT files directory are completely refreshed.
         val afterReGeneratedContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
@@ -537,22 +511,20 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
         assertEquals(1, beforeReGenerateContentDirectories.size)
 
-        TinkerOatManager.metadataFileForTesting(context, patch.version).apply {
+        mainService.metadataFile(inputDirectory.absolutePath).let(::File).apply {
             val metadata = Properties().also { properties ->
                 inputStream().use(properties::load)
             }
@@ -563,7 +535,7 @@ class TinkerOatManagerTest {
         }
 
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -571,7 +543,7 @@ class TinkerOatManagerTest {
         assertTrue(acquired.resolve("foo.dex.oat").exists())
         // Make sure OAT files directory are completely refreshed.
         val afterReGeneratedContentDirectories =
-            TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version)
+            mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
                 .listFiles()
                 ?.toList()
                 ?: emptyList()
@@ -590,19 +562,17 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
-        patch.dexDirectory.apply {
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        inputDirectory.apply {
             resolve("bar.dex").createNewFile()
         }
 
         val acquired = mainService
-            .acquire(patch.casted, false)
+            .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
@@ -619,19 +589,17 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        val generatedByMain = mainService.acquire(patch.casted, false)
+        val generatedByMain = mainService.acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertNotNull(generatedByMain)
-        patch.dexDirectory.apply {
+        inputDirectory.apply {
             resolve("bar.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         assertFalse(generatedByMain!!.resolve("bar.dex.oat").exists())
     }
 
@@ -642,21 +610,19 @@ class TinkerOatManagerTest {
     fun acquireWithFailureInterpreter() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        mainService.useFailureInterpreter()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        mainService.useFailureGenerator()
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
         val error = assertThrows(IllegalStateException::class.java) {
-            mainService.acquire(patch.casted, false)
+            mainService.acquire(inputDirectory.absolutePath, false)
         }.asError
-        assertEquals(TinkerOatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
         // Make sure none of temporary files remains.
         assertEquals(
-            setOf(TinkerOatManager.metadataFileForTesting(context, patch.version)),
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.toSet(),
+            setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),
+            mainService.baseDirectory().let(::File).listFiles()?.toSet(),
         )
     }
 
@@ -666,22 +632,21 @@ class TinkerOatManagerTest {
     @Test
     fun generateWithFailureCompiler() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
         val patchService = context.patchService()
-        patchService.useFailureCompiler()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        patchService.useFailureGenerator()
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
         val error = assertThrows(IllegalStateException::class.java) {
-            patchService.generateIfNeeded(patch.casted)
+            patchService.generateIfNeeded(inputDirectory.absolutePath)
         }.asError
-        assertEquals(TinkerOatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
         // Make sure none of temporary files remains.
         assertEquals(
-            setOf(TinkerOatManager.metadataFileForTesting(context, patch.version)),
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.toSet(),
+            setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),
+            mainService.baseDirectory().let(::File).listFiles()?.toSet(),
         )
     }
 
@@ -692,21 +657,19 @@ class TinkerOatManagerTest {
     fun acquireWithExceptionInterpreter() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        mainService.useExceptionInterpreter()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        mainService.useExceptionGenerator()
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
         val error = assertThrows(IllegalStateException::class.java) {
-            mainService.acquire(patch.casted, false)
+            mainService.acquire(inputDirectory.absolutePath, false)
         }.asError
-        assertEquals(TinkerOatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
         // Make sure none of temporary files remains.
         assertEquals(
-            setOf(TinkerOatManager.metadataFileForTesting(context, patch.version)),
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.toSet(),
+            setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),
+            mainService.baseDirectory().let(::File).listFiles()?.toSet(),
         )
     }
 
@@ -716,22 +679,21 @@ class TinkerOatManagerTest {
     @Test
     fun generateWithExceptionCompiler() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
         val patchService = context.patchService()
-        patchService.useExceptionCompiler()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        patchService.useExceptionGenerator()
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
         val error = assertThrows(IllegalStateException::class.java) {
-            patchService.generateIfNeeded(patch.casted)
+            patchService.generateIfNeeded(inputDirectory.absolutePath)
         }.asError
-        assertEquals(TinkerOatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
         // Make sure none of temporary files remains.
         assertEquals(
-            setOf(TinkerOatManager.metadataFileForTesting(context, patch.version)),
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.toSet(),
+            setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),
+            mainService.baseDirectory().let(::File).listFiles()?.toSet(),
         )
     }
 
@@ -741,29 +703,28 @@ class TinkerOatManagerTest {
     @Test
     fun clean() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         // Checks if files generated successfully. It is to make sure files are cleaned after
         // cleaning is because of cleaning, not because of generating failure.
         assertEquals(
             setOf(
-                TinkerOatManager.metadataFileForTesting(context, patch.version),
-                TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version),
+                mainService.metadataFile(inputDirectory.absolutePath).let(::File),
+                mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File),
             ),
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.toSet(),
+            mainService.baseDirectory().let(::File).listFiles()?.toSet(),
         )
         // Make sure none of files remains.
-        val cleaned = patchService.clean(patch.version)
+        val cleaned = patchService.clean(inputDirectory.absolutePath)
         assertTrue(cleaned)
         assertEquals(
             0,
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.size ?: 0,
+            mainService.baseDirectory().let(::File).listFiles()?.size ?: 0,
         )
     }
 
@@ -776,31 +737,29 @@ class TinkerOatManagerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        val generated = mainService.acquire(patch.casted, false)
+        val generated = mainService.acquire(inputDirectory.absolutePath, false)
         assertNotNull(generated)
         // Make sure none of files are cleaned.
-        val cleanedWhileUsing = patchService.clean(patch.version)
+        val cleanedWhileUsing = patchService.clean(inputDirectory.absolutePath)
         assertFalse(cleanedWhileUsing)
         assertEquals(
             setOf(
-                TinkerOatManager.metadataFileForTesting(context, patch.version),
-                TinkerOatManager.contentBaseDirectoryForTesting(context, patch.version),
+                mainService.metadataFile(inputDirectory.absolutePath).let(::File),
+                mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File),
             ),
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.toSet(),
+            mainService.baseDirectory().let(::File).listFiles()?.toSet(),
         )
         // Make sure cleaning works as expectedly after using is released.
         mainService.release()
-        val cleanedAfterUsing = patchService.clean(patch.version)
+        val cleanedAfterUsing = patchService.clean(inputDirectory.absolutePath)
         assertTrue(cleanedAfterUsing)
         assertEquals(
             0,
-            TinkerOatManager.baseDirectoryForTesting(context).listFiles()?.size ?: 0,
+            mainService.baseDirectory().let(::File).listFiles()?.size ?: 0,
         )
     }
 
@@ -811,15 +770,13 @@ class TinkerOatManagerTest {
     fun acquireInPatchProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val patchService = context.patchService()
-        val sourceDirectory = createTestDirectory()
-        val patch = TinkerPatch("foo", sourceDirectory)
-        patch.dexDirectory.apply {
+        val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(patch.casted)
+        patchService.generateIfNeeded(inputDirectory.absolutePath)
         assertThrows(IllegalStateException::class.java) {
-            patchService.invalidAcquire(patch.casted, false)
+            patchService.invalidAcquire(inputDirectory.absolutePath, false)
         }
     }
 }

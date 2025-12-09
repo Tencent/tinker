@@ -5,10 +5,10 @@ import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
-import com.tencent.tinker.internal.module.patch.TinkerPatchManager
+import com.tencent.tinker.internal.module.patch.RawPatchManager
+import com.tencent.tinker.internal.module.patch.RawPatchManagerImpl
 import com.tencent.tinker.test.casted
 import com.tencent.tinker.test.createTestDirectory
-import com.tencent.tinker.test.internal.ParcelableTinkerPatch
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,17 +23,17 @@ private val rethrowMessagePattern = "error#(\\d+)#(.*)".toRegex()
 private inline fun <T> rethrowAsIllegalState(action: () -> T) =
     try {
         action()
-    } catch (error: TinkerPatchManager.Error) {
+    } catch (error: RawPatchManager.Error) {
         throw IllegalStateException("error#${error.type.ordinal}#${error.message}", error)
     }
 
-private val IllegalStateException.asError: TinkerPatchManager.Error
+private val IllegalStateException.asError: RawPatchManager.Error
     get() = message
         ?.let(rethrowMessagePattern::matchEntire)
         ?.let { match ->
-            TinkerPatchManager.Error(
+            RawPatchManager.Error(
                 match.groupValues[1].toInt().let {
-                    TinkerPatchManager.Error.Type.entries[it]
+                    RawPatchManager.Error.Type.entries[it]
                 },
                 match.groupValues[2],
                 cause
@@ -42,50 +42,63 @@ private val IllegalStateException.asError: TinkerPatchManager.Error
         ?: throw AssertionError("Exception is not manager error as expected", this)
 
 @Suppress("unused")
-class TinkerPatchManagerTestServiceDelegateImpl : TinkerPatchManagerTestService.Delegate {
+internal class PatchManagerDelegate(
+    context: Context
+) : PatchManagerTestService.Delegate {
+
+    private val managerImpl = RawPatchManagerImpl(context)
 
     override var isRequestUnavailableListenerInvoked = false
 
     init {
         rethrowAsIllegalState {
-            TinkerPatchManager.addUnavailableRequestListener {
+            managerImpl.addUnavailableRequestListener {
                 isRequestUnavailableListenerInvoked = true
             }
         }
     }
 
-    override fun acquire(context: Context): ParcelableTinkerPatch? =
+    override val baseDirectory: File
+        get() = managerImpl.baseDirectoryForTesting()
+
+    override val latestVersionFile: File
+        get() = managerImpl.latestVersionFileForTesting()
+
+    override fun patchDirectory(version: String): File =
+        managerImpl.patchDirectoryForTesting(version)
+
+    override fun acquire(): ParcelableRawPatch? =
         rethrowAsIllegalState {
-            TinkerPatchManager.acquire(context)?.casted
+            managerImpl.acquire()?.casted
         }
 
-    override fun requestUnavailable(context: Context, version: String) {
+    override fun requestUnavailable(version: String) {
         rethrowAsIllegalState {
-            TinkerPatchManager.requestUnavailable(context, version)
+            managerImpl.requestUnavailable(version)
         }
     }
 
     override fun releaseAllEscapedGuardedContent() {
         rethrowAsIllegalState {
             isRequestUnavailableListenerInvoked = false
-            TinkerPatchManager.releaseAllHoldersForTesting()
+            managerImpl.releaseAllHoldersForTesting()
         }
     }
 
-    override fun create(context: Context, version: String, patch: File) {
+    override fun create(version: String, patch: File) {
         rethrowAsIllegalState {
-            TinkerPatchManager.create(context, version, patch)
+            managerImpl.create(version, patch)
         }
     }
 
-    override fun cleanAll(context: Context): Array<String> =
+    override fun cleanAll(): Array<String> =
         rethrowAsIllegalState {
-            TinkerPatchManager.cleanAll(context).toTypedArray()
+            managerImpl.cleanAll().toTypedArray()
         }
 
-    override fun cleanObsolete(context: Context): Array<String> =
+    override fun cleanObsolete(): Array<String> =
         rethrowAsIllegalState {
-            TinkerPatchManager.cleanObsolete(context).toTypedArray()
+            managerImpl.cleanObsolete().toTypedArray()
         }
 }
 
@@ -95,33 +108,33 @@ class TinkerPatchManagerTest {
     @get:Rule
     val serviceRule = ServiceTestRule()
 
-    private fun Context.mainService(): ITinkerPatchManagerTestMainService =
-        Intent(this, TinkerPatchManagerTestMainService::class.java)
+    private fun Context.mainService(): IPatchManagerTestMainService =
+        Intent(this, PatchManagerTestMainService::class.java)
             .let(serviceRule::bindService)
-            .let(ITinkerPatchManagerTestMainService.Stub::asInterface)
+            .let(IPatchManagerTestMainService.Stub::asInterface)
 
-    private fun Context.othersService(): ITinkerPatchManagerTestOthersService =
-        Intent(this, TinkerPatchManagerTestOthersService::class.java)
+    private fun Context.othersService(): IPatchManagerTestOthersService =
+        Intent(this, PatchManagerTestOthersService::class.java)
             .let(serviceRule::bindService)
-            .let(ITinkerPatchManagerTestOthersService.Stub::asInterface)
+            .let(IPatchManagerTestOthersService.Stub::asInterface)
 
-    private fun Context.patchService(): ITinkerPatchManagerTestPatchService =
-        Intent(this, TinkerPatchManagerTestPatchService::class.java)
+    private fun Context.patchService(): IPatchManagerTestPatchService =
+        Intent(this, PatchManagerTestPatchService::class.java)
             .let(serviceRule::bindService)
-            .let(ITinkerPatchManagerTestPatchService.Stub::asInterface)
+            .let(IPatchManagerTestPatchService.Stub::asInterface)
 
 
     @Before
     fun clean() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        TinkerPatchManager.baseDirectoryForTesting(context).apply {
+        val mainService = context.mainService()
+        val othersService = context.othersService()
+        mainService.baseDirectory().let(::File).apply {
             walk(direction = FileWalkDirection.TOP_DOWN).forEach {
                 it.setWritable(true)
             }
             deleteRecursively()
         }
-        val mainService = context.mainService()
-        val othersService = context.othersService()
         mainService.assumeProcessIsDead()
         othersService.assumeProcessIsDead()
     }
@@ -279,9 +292,9 @@ class TinkerPatchManagerTest {
         // of them is cleaned.
         val cleaned = patchService.cleanObsolete()
         assertTrue(cleaned.isEmpty())
-        assertTrue(TinkerPatchManager.patchDirectoryForTesting(context, fooVersion).exists())
-        assertTrue(TinkerPatchManager.patchDirectoryForTesting(context, barVersion).exists())
-        assertTrue(TinkerPatchManager.patchDirectoryForTesting(context, bazVersion).exists())
+        assertTrue(mainService.patchDirectory(barVersion).let(::File).exists())
+        assertTrue(mainService.patchDirectory(barVersion).let(::File).exists())
+        assertTrue(mainService.patchDirectory(bazVersion).let(::File).exists())
     }
 
     /**
@@ -441,7 +454,7 @@ class TinkerPatchManagerTest {
         mainService.requestUnavailable(version)
         assertNull(mainService.acquire())
         patchService.cleanAll()
-        assertFalse(TinkerPatchManager.patchDirectoryForTesting(context, version).exists())
+        assertFalse(mainService.patchDirectory(version).let(::File).exists())
     }
 
     /**
@@ -471,7 +484,7 @@ class TinkerPatchManagerTest {
         assertNotNull(patch)
         assertEquals(newVersion, patch.version)
         // Old version should be cleaned.
-        assertFalse(TinkerPatchManager.patchDirectoryForTesting(context, oldVersion).exists())
+        assertFalse(mainService.patchDirectory(oldVersion).let(::File).exists())
     }
 
     /**
@@ -521,7 +534,7 @@ class TinkerPatchManagerTest {
         val error = assertThrows(IllegalStateException::class.java) {
             mainService.acquire()
         }.asError
-        assertEquals(TinkerPatchManager.Error.Type.HAS_ACQUIRED_PATCH, error.type)
+        assertEquals(RawPatchManager.Error.Type.HAS_ACQUIRED_PATCH, error.type)
     }
 
     /**
@@ -545,7 +558,7 @@ class TinkerPatchManagerTest {
         val error = assertThrows(IllegalStateException::class.java) {
             mainService.acquire()
         }.asError
-        assertEquals(TinkerPatchManager.Error.Type.HAS_ACQUIRED_PATCH, error.type)
+        assertEquals(RawPatchManager.Error.Type.HAS_ACQUIRED_PATCH, error.type)
     }
 
     /**
@@ -566,11 +579,11 @@ class TinkerPatchManagerTest {
     @Test
     fun createInNonPatchProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
         assertThrows(IllegalStateException::class.java) {
-            TinkerPatchManager.create(
-                context,
+            mainService.invalidCreate(
                 "foo",
-                createTestDirectory()
+                createTestDirectory().absolutePath
             )
         }
     }
@@ -581,8 +594,9 @@ class TinkerPatchManagerTest {
     @Test
     fun cleanAllInNonPatchProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
         assertThrows(IllegalStateException::class.java) {
-            TinkerPatchManager.cleanAll(context)
+            mainService.invalidCleanAll()
         }
     }
 
@@ -592,8 +606,9 @@ class TinkerPatchManagerTest {
     @Test
     fun cleanObsoleteInNonPatchProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
         assertThrows(IllegalStateException::class.java) {
-            TinkerPatchManager.cleanObsolete(context)
+            mainService.invalidCleanObsolete()
         }
     }
 
@@ -668,7 +683,7 @@ class TinkerPatchManagerTest {
             }?.asError
         assertNotNull(error)
         assertEquals(
-            TinkerPatchManager.Error.Type.CREATE_EXIST_PATCH,
+            RawPatchManager.Error.Type.CREATE_EXIST_PATCH,
             error!!.type
         )
     }
@@ -697,7 +712,7 @@ class TinkerPatchManagerTest {
                 )
             }.asError
         assertEquals(
-            TinkerPatchManager.Error.Type.CLONE_PATCH,
+            RawPatchManager.Error.Type.CLONE_PATCH,
             error.type
         )
         // Cleans up the source directory.
@@ -713,7 +728,8 @@ class TinkerPatchManagerTest {
     @Test
     fun latestVersionIsCorrupted() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        TinkerPatchManager.latestVersionFileForTesting(context)
+        val mainService = context.mainService()
+        mainService.latestVersionFile().let(::File)
             .apply {
                 parentFile?.mkdirs()
                 createNewFile()
@@ -728,6 +744,6 @@ class TinkerPatchManagerTest {
                         .absolutePath
                 )
             }.asError
-        assertEquals(TinkerPatchManager.Error.Type.WRITE_LATEST_VERSION, error.type)
+        assertEquals(RawPatchManager.Error.Type.WRITE_LATEST_VERSION, error.type)
     }
 }

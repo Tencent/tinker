@@ -13,6 +13,9 @@ import org.junit.Test
 @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.O)
 class GeneratorTest {
 
+    /**
+     * Tests if compiler can generate oat file.
+     */
     @Test
     fun compilerGenerate() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -34,6 +37,9 @@ class GeneratorTest {
         assertTrue(output.exists())
     }
 
+    /**
+     * Tests if interpreter can generate oat file.
+     */
     @Test
     fun interpreterGenerate() {
         val context = ApplicationProvider.getApplicationContext<Context>()
