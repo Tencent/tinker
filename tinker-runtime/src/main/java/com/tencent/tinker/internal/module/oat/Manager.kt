@@ -287,6 +287,7 @@ internal class OatManagerImpl(
     }
 
     @VisibleForTesting
+    @NonPatchProcessOnly
     fun releaseGuardForTesting() {
         releaseGuard()
     }

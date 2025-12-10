@@ -30,6 +30,20 @@
             android:process=":patch"
             android:enabled="true"
             android:exported="false" />
+        <service
+            android:name=".internal.module.layout.PatchLayoutConstructorTestMainService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name=".internal.module.layout.PatchLayoutConstructorTestOthersService"
+            android:process=":others"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name=".internal.module.layout.PatchLayoutConstructorTestPatchService"
+            android:process=":patch"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>
