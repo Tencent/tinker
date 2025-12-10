@@ -38,6 +38,9 @@ private fun File.createNotWritableCopy(target: File) {
 
 internal class RawPatchManagerImpl(private val context: Context) : RawPatchManager() {
 
+    @VisibleForTesting
+    fun contextForTesting(): Context = context
+
     companion object {
         /**
          * A byte may in the guard file to indicate that the patch is being cleaned up.

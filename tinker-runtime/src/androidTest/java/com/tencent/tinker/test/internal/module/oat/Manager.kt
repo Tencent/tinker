@@ -202,7 +202,7 @@ private object ExceptionGenerator : Generator() {
 }
 
 @RunWith(AndroidJUnit4::class)
-class OatManagerTest {
+class OatManagerImplTest {
 
     @get:Rule
     val serviceRule = ServiceTestRule()

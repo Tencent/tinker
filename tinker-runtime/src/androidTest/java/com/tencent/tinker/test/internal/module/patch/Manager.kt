@@ -85,7 +85,7 @@ internal class PatchManagerDelegate(
 }
 
 @RunWith(AndroidJUnit4::class)
-class RawPatchManagerTest {
+class RawPatchManagerImplTest {
 
     @get:Rule
     val serviceRule = ServiceTestRule()
