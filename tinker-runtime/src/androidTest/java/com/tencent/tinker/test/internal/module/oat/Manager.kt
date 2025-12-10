@@ -67,13 +67,12 @@ internal class OatManagerDelegate(
     override fun acquire(
         directory: File,
         skipGenerateIfMissing: Boolean
-    ): String? = rethrowAsIllegalState {
+    ): File? = rethrowAsIllegalState {
         managerImpl
             .acquire(
                 directory,
                 skipGenerateIfMissing,
             )
-            ?.absolutePath
     }
 
     override fun generateIfNeeded(directory: File) {

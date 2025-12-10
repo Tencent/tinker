@@ -15,7 +15,8 @@ abstract class OatManagerTestService : Service() {
         fun acquire(
             directory: File,
             skipGenerateIfMissing: Boolean
-        ): String?
+        ): File?
+
         fun generateIfNeeded(directory: File)
         fun clean(directory: File): Boolean
         fun release()
@@ -63,7 +64,12 @@ class OatManagerTestMainService : OatManagerTestService() {
             override fun acquire(
                 directoryPath: String,
                 skipGenerateIfMissing: Boolean
-            ): String? = delegate.acquire(directoryPath.let(::File), skipGenerateIfMissing)
+            ): String? = delegate
+                .acquire(
+                    directoryPath.let(::File),
+                    skipGenerateIfMissing,
+                )
+                ?.absolutePath
 
             override fun release() {
                 delegate.release()
@@ -105,7 +111,12 @@ class OatManagerTestPatchService : OatManagerTestService() {
             override fun invalidAcquire(
                 directoryPath: String,
                 skipGenerateIfMissing: Boolean
-            ): String? = delegate.acquire(directoryPath.let(::File), skipGenerateIfMissing)
+            ): String? = delegate
+                .acquire(
+                    directoryPath.let(::File),
+                    skipGenerateIfMissing,
+                )
+                ?.absolutePath
 
             override fun invalidRelease() {
                 delegate.release()
