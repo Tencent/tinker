@@ -3,6 +3,7 @@ package com.tencent.tinker.internal.module.patch
 import android.content.Context
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
+import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.annotation.MainProcessOnly
 import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
 import com.tencent.tinker.internal.annotation.PatchProcessOnly
@@ -11,6 +12,7 @@ import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusive
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusiveNullable
 import com.tencent.tinker.internal.util.escapedGuardedContentSharedNullable
+import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.guardedContent
 import com.tencent.tinker.internal.util.guardedContentNullable
 import com.tencent.tinker.internal.util.guardedReadOrWriteContent
@@ -41,7 +43,40 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
          * A byte may in the guard file to indicate that the patch is being cleaned up.
          */
         private const val GUARD_CLEANING_CONTENT = 1.toByte()
+
+        @VisibleForTesting
+        fun errorTypeOf(type: String): TinkerError.Type {
+            return ErrorType.valueOf(type)
+        }
     }
+
+    private enum class ErrorType : TinkerError.Type {
+        UNEXPECTED,
+        ACQUIRE_PATCH_AS_USING,
+        ACQUIRE_PATCH_AS_CLEANING,
+        HAS_ACQUIRED_PATCH,
+        READ_LATEST_VERSION,
+        WRITE_LATEST_VERSION,
+        READ_MAIN_VERSION,
+        WRITE_MAIN_VERSION,
+        READ_UNAVAILABLE,
+        APPEND_UNAVAILABLE,
+        CLEAN_UNAVAILABLE,
+        MARK_MAIN_ALIVE,
+        CHECK_MAIN_ALIVE,
+        CREATE_EXIST_PATCH,
+        CLONE_PATCH,
+        CLEAN_PATCH,
+        DROP_PATCH_WRITE_PERMISSION,
+        RECOVER_PATCH_WRITE_PERMISSION;
+
+        override val group: TinkerError.TypeGroup
+            get() = TinkerError.TypeGroup.MODULE_PATCH
+
+        override val typeCode: Int
+            get() = ordinal
+    }
+
 
     /**
      * Base directory of patch files.
@@ -327,8 +362,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             val guardedContent = try {
                 acquirePatchAsCleaning(version)
             } catch (throwable: Throwable) {
-                throw Error(
-                    Error.Type.ACQUIRE_PATCH_AS_CLEANING,
+                throw TinkerError(
+                    ErrorType.ACQUIRE_PATCH_AS_CLEANING,
                     "Cannot acquire patch \"${version}\" as clean",
                     throwable,
                 )
@@ -339,8 +374,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                         it.setWritable(true)
                     }
                 } catch (throwable: Throwable) {
-                    throw Error(
-                        Error.Type.RECOVER_PATCH_WRITE_PERMISSION,
+                    throw TinkerError(
+                        ErrorType.RECOVER_PATCH_WRITE_PERMISSION,
                         "Cannot recover patch directory \"${dir.absolutePath}\" as writable",
                         throwable,
                     )
@@ -348,8 +383,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 try {
                     dir.deleteRecursively()
                 } catch (throwable: Throwable) {
-                    throw Error(
-                        Error.Type.CLEAN_PATCH,
+                    throw TinkerError(
+                        ErrorType.CLEAN_PATCH,
                         "Cannot clean patch directory \"${dir.absolutePath}\"",
                         throwable,
                     )
@@ -373,8 +408,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                             }
                     }
                 } catch (throwable: Throwable) {
-                    throw Error(
-                        Error.Type.CLEAN_UNAVAILABLE,
+                    throw TinkerError(
+                        ErrorType.CLEAN_UNAVAILABLE,
                         "Cannot clean unavailable records",
                         throwable,
                     )
@@ -383,132 +418,133 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         return pairs.filter { it.second }.map { it.first }
     }
 
-
     @Synchronized
     @NonPatchProcessOnly
-    @Throws(Error::class)
     override fun acquire(): RawPatch? {
         check(!context.isInPatchProcess) {
             "Cannot acquire patch in patch process"
         }
-        versionHolder?.let { (_, lastAcquired) ->
-            throw Error(
-                Error.Type.HAS_ACQUIRED_PATCH,
-                "Cannot acquire patch while current process has already acquired a patch",
-                lastAcquired,
-            )
-        }
-        val version = run {
-            if (!context.isInMainProcess) {
-                val alive = try {
-                    context.isMainAlive
-                } catch (throwable: Throwable) {
-                    throw Error(
-                        Error.Type.CHECK_MAIN_ALIVE,
-                        "Cannot check if main process is alive",
-                        throwable,
-                    )
-                }
-                if (alive) {
-                    try {
-                        context.mainVersion?.let { return@run it }
+        expected<ErrorType>("acquire patch") {
+            versionHolder?.let { (_, lastAcquired) ->
+                throw TinkerError(
+                    ErrorType.HAS_ACQUIRED_PATCH,
+                    "Cannot acquire patch while current process has already acquired a patch",
+                    lastAcquired,
+                )
+            }
+            val version = run {
+                if (!context.isInMainProcess) {
+                    val alive = try {
+                        context.isMainAlive
                     } catch (throwable: Throwable) {
-                        throw Error(
-                            Error.Type.READ_MAIN_VERSION,
-                            "Cannot read main version",
+                        throw TinkerError(
+                            ErrorType.CHECK_MAIN_ALIVE,
+                            "Cannot check if main process is alive",
                             throwable,
                         )
                     }
+                    if (alive) {
+                        try {
+                            context.mainVersion?.let { return@run it }
+                        } catch (throwable: Throwable) {
+                            throw TinkerError(
+                                ErrorType.READ_MAIN_VERSION,
+                                "Cannot read main version",
+                                throwable,
+                            )
+                        }
+                    }
+                }
+                val latest = try {
+                    context.latestVersion ?: return@run null
+                } catch (throwable: Throwable) {
+                    throw TinkerError(
+                        ErrorType.READ_LATEST_VERSION,
+                        "Cannot read latest version",
+                        throwable,
+                    )
+                }
+                val unavailable = try {
+                    context.unavailable
+                } catch (throwable: Throwable) {
+                    throw TinkerError(
+                        ErrorType.READ_UNAVAILABLE,
+                        "Cannot read unavailable",
+                        throwable,
+                    )
+                }
+                if (latest in unavailable) {
+                    return@run null
+                }
+                return@run latest
+            } ?: return null
+            val acquired = try {
+                context.acquirePatchAsUsing(version) ?: return null
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.ACQUIRE_PATCH_AS_USING,
+                    "Cannot acquire patch with version \"${version}\" for using",
+                    throwable,
+                )
+            }
+            versionHolder = Pair(
+                acquired,
+                AcquiringRecord(version),
+            )
+            if (context.isInMainProcess) {
+                try {
+                    context.mainVersion = version
+                } catch (throwable: Throwable) {
+                    releaseVersion()
+                    throw TinkerError(
+                        ErrorType.WRITE_MAIN_VERSION,
+                        "Cannot update main version",
+                        throwable,
+                    )
+                }
+                try {
+                    context.markMainAlive()
+                } catch (throwable: Throwable) {
+                    releaseVersion()
+                    unmarkMainAlive()
+                    throw TinkerError(
+                        ErrorType.MARK_MAIN_ALIVE,
+                        "Cannot mark main process is alive",
+                        throwable,
+                    )
                 }
             }
-            val latest = try {
-                context.latestVersion ?: return@run null
-            } catch (throwable: Throwable) {
-                throw Error(
-                    Error.Type.READ_LATEST_VERSION,
-                    "Cannot read latest version",
-                    throwable,
-                )
-            }
-            val unavailable = try {
-                context.unavailable
-            } catch (throwable: Throwable) {
-                throw Error(
-                    Error.Type.READ_UNAVAILABLE,
-                    "Cannot read unavailable",
-                    throwable,
-                )
-            }
-            if (latest in unavailable) {
-                return@run null
-            }
-            return@run latest
-        } ?: return null
-        val acquired = try {
-            context.acquirePatchAsUsing(version) ?: return null
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.ACQUIRE_PATCH_AS_USING,
-                "Cannot acquire patch with version \"${version}\" for using",
-                throwable,
+            return RawPatch(
+                version,
+                context.patchDirectory(version)
             )
         }
-        versionHolder = Pair(
-            acquired,
-            AcquiringRecord(version),
-        )
-        if (context.isInMainProcess) {
-            try {
-                context.mainVersion = version
-            } catch (throwable: Throwable) {
-                releaseVersion()
-                throw Error(
-                    Error.Type.WRITE_MAIN_VERSION,
-                    "Cannot update main version",
-                    throwable,
-                )
-            }
-            try {
-                context.markMainAlive()
-            } catch (throwable: Throwable) {
-                releaseVersion()
-                unmarkMainAlive()
-                throw Error(
-                    Error.Type.MARK_MAIN_ALIVE,
-                    "Cannot mark main process is alive",
-                    throwable,
-                )
-            }
-        }
-        return RawPatch(
-            version,
-            context.patchDirectory(version)
-        )
     }
 
     @Synchronized
     @NonPatchProcessOnly
-    @Throws(Error::class)
     override fun requestUnavailable(version: String) {
         check(!context.isInPatchProcess) {
             "Cannot request patch as unavailable in patch process"
         }
-        if (context.isInMainProcess) {
-            unmarkMainAlive()
-        }
-        releaseVersion()
-        try {
-            context.updateUnavailable {
-                it + version
+        expected<ErrorType>("request patch as unavailable") {
+            if (context.isInMainProcess) {
+                unmarkMainAlive()
             }
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.APPEND_UNAVAILABLE,
-                "Cannot append \"$version\" as unavailable record",
-                throwable,
-            )
+            releaseVersion()
+            try {
+                context.updateUnavailable {
+                    it + version
+                }
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.APPEND_UNAVAILABLE,
+                    "Cannot append \"$version\" as unavailable record",
+                    throwable,
+                )
+            }
+            unavailableRequestListeners.forEach { it.run() }
         }
-        unavailableRequestListeners.forEach { it.run() }
     }
 
     @NonPatchProcessOnly
@@ -518,7 +554,6 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
 
     @Synchronized
     @PatchProcessOnly
-    @Throws(Error::class)
     override fun create(version: String, patch: File): RawPatch {
         require(!version.startsWith("#")) {
             "Version cannot start with '#'"
@@ -532,61 +567,64 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(context.isInPatchProcess) {
             "Only available for patch process"
         }
-        val patchDirectory = context.patchDirectory(version)
-        if (patchDirectory.exists()) {
-            throw Error(
-                Error.Type.CREATE_EXIST_PATCH,
-                "Patch directory \"${patchDirectory.absolutePath}\" already exists",
-                null,
-            )
-        }
-        try {
-            patch.createNotWritableCopy(patchDirectory)
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.CLONE_PATCH,
-                "Cannot copy \"${patch.absolutePath}\" to patch directory \"${patchDirectory.absolutePath}\"",
-                throwable,
-            )
-        }
-        try {
-            patchDirectory.walk(direction = FileWalkDirection.BOTTOM_UP).forEach {
-                it.setWritable(false)
+        expected<ErrorType>("create patch") {
+            val patchDirectory = context.patchDirectory(version)
+            if (patchDirectory.exists()) {
+                throw TinkerError(
+                    ErrorType.CREATE_EXIST_PATCH,
+                    "Patch directory \"${patchDirectory.absolutePath}\" already exists",
+                    null,
+                )
             }
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.DROP_PATCH_WRITE_PERMISSION,
-                "Cannot update patch directory \"${patchDirectory.absolutePath}\" as non-writable",
-                throwable,
-            )
+            try {
+                patch.createNotWritableCopy(patchDirectory)
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.CLONE_PATCH,
+                    "Cannot copy \"${patch.absolutePath}\" to patch directory \"${patchDirectory.absolutePath}\"",
+                    throwable,
+                )
+            }
+            try {
+                patchDirectory.walk(direction = FileWalkDirection.BOTTOM_UP).forEach {
+                    it.setWritable(false)
+                }
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.DROP_PATCH_WRITE_PERMISSION,
+                    "Cannot update patch directory \"${patchDirectory.absolutePath}\" as non-writable",
+                    throwable,
+                )
+            }
+            try {
+                context.latestVersion = version
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.WRITE_LATEST_VERSION,
+                    "Cannot update latest version to \"${version}\"",
+                    throwable,
+                )
+            }
+            return RawPatch(version, patchDirectory)
         }
-        try {
-            context.latestVersion = version
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.WRITE_LATEST_VERSION,
-                "Cannot update latest version to \"${version}\"",
-                throwable,
-            )
-        }
-        return RawPatch(version, patchDirectory)
     }
 
     @Synchronized
     @PatchProcessOnly
-    @Throws(Error::class)
     override fun latestVersion(): String? {
         check(context.isInPatchProcess) {
             "Only available for patch process"
         }
-        return try {
-            context.latestVersion
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.READ_LATEST_VERSION,
-                "Cannot read latest version",
-                throwable,
-            )
+        expected<ErrorType>("get latest version") {
+            return try {
+                context.latestVersion
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.READ_LATEST_VERSION,
+                    "Cannot read latest version",
+                    throwable,
+                )
+            }
         }
     }
 
@@ -596,74 +634,78 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(context.isInPatchProcess) {
             "Only available for patch process"
         }
-        val patchDirectory = context.patchDirectory(version)
-        if (!patchDirectory.exists()) {
-            return null
+        expected<ErrorType>("get patch by version") {
+            val patchDirectory = context.patchDirectory(version)
+            if (!patchDirectory.exists()) {
+                return null
+            }
+            return RawPatch(version, patchDirectory)
         }
-        return RawPatch(version, patchDirectory)
     }
 
     @Synchronized
     @PatchProcessOnly
-    @Throws(Error::class)
     override fun cleanAll(): List<String> {
         check(context.isInPatchProcess) {
             "Only available for patch process"
         }
-        try {
-            context.latestVersion = null
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.WRITE_LATEST_VERSION,
-                "Cannot remove latest version",
-                throwable,
-            )
-        }
-        return context.cleanPatches { false }
-    }
-
-    @Synchronized
-    @PatchProcessOnly
-    @Throws(Error::class)
-    override fun cleanObsolete(): List<String> {
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
-        }
-        // Patches that meets these conditions will be cleaned up:
-        //   - inactive, a.k.a not used by any running process
-        //   - not marked as latest version, or if marked as latest version, also marked as
-        //     unavailable
-        val latest = try {
-            context.latestVersion
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.READ_LATEST_VERSION,
-                "Cannot read latest version",
-                throwable,
-            )
-        }
-        val removeLatest = try {
-            context.unavailable.contains(latest)
-        } catch (throwable: Throwable) {
-            throw Error(
-                Error.Type.READ_UNAVAILABLE,
-                "Cannot read unavailable records",
-                throwable,
-            )
-        }
-        if (removeLatest) {
+        expected<ErrorType>("clean all patches") {
             try {
                 context.latestVersion = null
             } catch (throwable: Throwable) {
-                throw Error(
-                    Error.Type.WRITE_LATEST_VERSION,
+                throw TinkerError(
+                    ErrorType.WRITE_LATEST_VERSION,
                     "Cannot remove latest version",
                     throwable,
                 )
             }
+            return context.cleanPatches { false }
         }
-        return context.cleanPatches {
-            if (removeLatest) false else (it == latest)
+    }
+
+    @Synchronized
+    @PatchProcessOnly
+    override fun cleanObsolete(): List<String> {
+        check(context.isInPatchProcess) {
+            "Only available for patch process"
+        }
+        expected<ErrorType>("clean obsolete patches") {
+            // Patches that meets these conditions will be cleaned up:
+            //   - inactive, a.k.a not used by any running process
+            //   - not marked as latest version, or if marked as latest version, also marked as
+            //     unavailable
+            val latest = try {
+                context.latestVersion
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.READ_LATEST_VERSION,
+                    "Cannot read latest version",
+                    throwable,
+                )
+            }
+            val removeLatest = try {
+                context.unavailable.contains(latest)
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.READ_UNAVAILABLE,
+                    "Cannot read unavailable records",
+                    throwable,
+                )
+            }
+            if (removeLatest) {
+                try {
+                    context.latestVersion = null
+                } catch (throwable: Throwable) {
+                    throw TinkerError(
+                        ErrorType.WRITE_LATEST_VERSION,
+                        "Cannot remove latest version",
+                        throwable,
+                    )
+                }
+            }
+            return context.cleanPatches {
+                if (removeLatest) false else (it == latest)
+            }
         }
     }
 }

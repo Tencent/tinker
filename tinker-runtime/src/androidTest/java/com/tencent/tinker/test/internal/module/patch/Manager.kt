@@ -5,10 +5,12 @@ import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
-import com.tencent.tinker.internal.module.patch.RawPatchManager
+import com.tencent.tinker.internal.module.patch.RawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManagerImpl
-import com.tencent.tinker.test.casted
+import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.test.createTestDirectory
+import com.tencent.tinker.test.rethrowAsIllegalState
+import com.tencent.tinker.test.tinkerErrorCode
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,28 +20,8 @@ import org.junit.Before
 import org.junit.Rule
 import java.io.File
 
-private val rethrowMessagePattern = "error#(\\d+)#(.*)".toRegex()
-
-private inline fun <T> rethrowAsIllegalState(action: () -> T) =
-    try {
-        action()
-    } catch (error: RawPatchManager.Error) {
-        throw IllegalStateException("error#${error.type.ordinal}#${error.message}", error)
-    }
-
-private val IllegalStateException.asError: RawPatchManager.Error
-    get() = message
-        ?.let(rethrowMessagePattern::matchEntire)
-        ?.let { match ->
-            RawPatchManager.Error(
-                match.groupValues[1].toInt().let {
-                    RawPatchManager.Error.Type.entries[it]
-                },
-                match.groupValues[2],
-                cause
-            )
-        }
-        ?: throw AssertionError("Exception is not manager error as expected", this)
+private val RawPatch.casted: ParcelableRawPatch
+    get() = ParcelableRawPatch(version, directory)
 
 @Suppress("unused")
 internal class PatchManagerDelegate(
@@ -103,7 +85,7 @@ internal class PatchManagerDelegate(
 }
 
 @RunWith(AndroidJUnit4::class)
-class TinkerPatchManagerTest {
+class RawPatchManagerTest {
 
     @get:Rule
     val serviceRule = ServiceTestRule()
@@ -531,10 +513,13 @@ class TinkerPatchManagerTest {
             createTestDirectory().absolutePath
         )
         mainService.acquire()
-        val error = assertThrows(IllegalStateException::class.java) {
+        val errorCode = assertThrows(IllegalStateException::class.java) {
             mainService.acquire()
-        }.asError
-        assertEquals(RawPatchManager.Error.Type.HAS_ACQUIRED_PATCH, error.type)
+        }.tinkerErrorCode
+        assertEquals(
+            RawPatchManagerImpl.errorTypeOf("HAS_ACQUIRED_PATCH").errorCode,
+            errorCode
+        )
     }
 
     /**
@@ -555,10 +540,13 @@ class TinkerPatchManagerTest {
             "bar",
             createTestDirectory().absolutePath
         )
-        val error = assertThrows(IllegalStateException::class.java) {
+        val errorCode = assertThrows(IllegalStateException::class.java) {
             mainService.acquire()
-        }.asError
-        assertEquals(RawPatchManager.Error.Type.HAS_ACQUIRED_PATCH, error.type)
+        }.tinkerErrorCode
+        assertEquals(
+            RawPatchManagerImpl.errorTypeOf("HAS_ACQUIRED_PATCH").errorCode,
+            errorCode
+        )
     }
 
     /**
@@ -673,18 +661,18 @@ class TinkerPatchManagerTest {
             createTestDirectory()
                 .absolutePath
         )
-        val error =
+        val errorCode =
             assertThrows(IllegalStateException::class.java) {
                 patchService.create(
                     "foo",
                     createTestDirectory()
                         .absolutePath
                 )
-            }?.asError
-        assertNotNull(error)
+            }?.tinkerErrorCode
+        assertNotNull(errorCode)
         assertEquals(
-            RawPatchManager.Error.Type.CREATE_EXIST_PATCH,
-            error!!.type
+            RawPatchManagerImpl.errorTypeOf("CREATE_EXIST_PATCH").errorCode,
+            errorCode,
         )
     }
 
@@ -704,16 +692,16 @@ class TinkerPatchManagerTest {
                 }
                 setReadable(false)
             }
-        val error =
+        val errorCode =
             assertThrows(IllegalStateException::class.java) {
                 patchService.create(
                     "not-readable",
                     sourceDir.absolutePath,
                 )
-            }.asError
+            }.tinkerErrorCode
         assertEquals(
-            RawPatchManager.Error.Type.CLONE_PATCH,
-            error.type
+            RawPatchManagerImpl.errorTypeOf("CLONE_PATCH").errorCode,
+            errorCode
         )
         // Cleans up the source directory.
         sourceDir.walk(direction = FileWalkDirection.TOP_DOWN).forEach {
@@ -736,14 +724,17 @@ class TinkerPatchManagerTest {
                 setWritable(false)
             }
         val patchService = context.patchService()
-        val error =
+        val errorCode =
             assertThrows(IllegalStateException::class.java) {
                 patchService.create(
                     "foo",
                     createTestDirectory()
                         .absolutePath
                 )
-            }.asError
-        assertEquals(RawPatchManager.Error.Type.WRITE_LATEST_VERSION, error.type)
+            }.tinkerErrorCode
+        assertEquals(
+            RawPatchManagerImpl.errorTypeOf("WRITE_LATEST_VERSION").errorCode,
+            errorCode
+        )
     }
 }

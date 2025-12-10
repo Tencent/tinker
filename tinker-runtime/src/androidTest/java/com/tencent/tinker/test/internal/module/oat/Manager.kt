@@ -6,10 +6,12 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.internal.module.oat.Generator
-import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.oat.OatManagerImpl
+import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.internal.util.isInPatchProcess
 import com.tencent.tinker.test.createTestDirectory
+import com.tencent.tinker.test.rethrowAsIllegalState
+import com.tencent.tinker.test.tinkerErrorCode
 import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.*
@@ -17,29 +19,6 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.Properties
-
-private val rethrowMessagePattern = "error#(\\d+)#(.*)".toRegex()
-
-private inline fun <T> rethrowAsIllegalState(action: () -> T) =
-    try {
-        action()
-    } catch (error: OatManager.Error) {
-        throw IllegalStateException("error#${error.type.ordinal}#${error.message}", error)
-    }
-
-private val IllegalStateException.asError: OatManager.Error
-    get() = message
-        ?.let(rethrowMessagePattern::matchEntire)
-        ?.let { match ->
-            OatManager.Error(
-                match.groupValues[1].toInt().let {
-                    OatManager.Error.Type.entries[it]
-                },
-                match.groupValues[2],
-                cause
-            )
-        }
-        ?: throw AssertionError("Exception is not manager error as expected", this)
 
 @Suppress("unused")
 internal class OatManagerDelegate(
@@ -223,7 +202,7 @@ private object ExceptionGenerator : Generator() {
 }
 
 @RunWith(AndroidJUnit4::class)
-class TinkerOatManagerTest {
+class OatManagerTest {
 
     @get:Rule
     val serviceRule = ServiceTestRule()
@@ -615,10 +594,13 @@ class TinkerOatManagerTest {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        val error = assertThrows(IllegalStateException::class.java) {
+        val errorCode = assertThrows(IllegalStateException::class.java) {
             mainService.acquire(inputDirectory.absolutePath, false)
-        }.asError
-        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        }.tinkerErrorCode
+        assertEquals(
+            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            errorCode
+        )
         // Make sure none of temporary files remains.
         assertEquals(
             setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),
@@ -639,10 +621,13 @@ class TinkerOatManagerTest {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        val error = assertThrows(IllegalStateException::class.java) {
+        val errorCode = assertThrows(IllegalStateException::class.java) {
             patchService.generateIfNeeded(inputDirectory.absolutePath)
-        }.asError
-        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        }.tinkerErrorCode
+        assertEquals(
+            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            errorCode
+        )
         // Make sure none of temporary files remains.
         assertEquals(
             setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),
@@ -662,10 +647,13 @@ class TinkerOatManagerTest {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        val error = assertThrows(IllegalStateException::class.java) {
+        val errorCode = assertThrows(IllegalStateException::class.java) {
             mainService.acquire(inputDirectory.absolutePath, false)
-        }.asError
-        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        }.tinkerErrorCode
+        assertEquals(
+            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            errorCode
+        )
         // Make sure none of temporary files remains.
         assertEquals(
             setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),
@@ -686,10 +674,13 @@ class TinkerOatManagerTest {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        val error = assertThrows(IllegalStateException::class.java) {
+        val errorCode = assertThrows(IllegalStateException::class.java) {
             patchService.generateIfNeeded(inputDirectory.absolutePath)
-        }.asError
-        assertEquals(OatManager.Error.Type.GENERATE_OR_STORE_FAILED, error.type)
+        }.tinkerErrorCode
+        assertEquals(
+            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            errorCode
+        )
         // Make sure none of temporary files remains.
         assertEquals(
             setOf(mainService.metadataFile(inputDirectory.absolutePath).let(::File)),

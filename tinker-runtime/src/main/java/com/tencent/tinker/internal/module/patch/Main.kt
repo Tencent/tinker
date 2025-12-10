@@ -3,6 +3,7 @@ package com.tencent.tinker.internal.module.patch
 import android.content.Context
 import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
 import com.tencent.tinker.internal.annotation.PatchProcessOnly
+import com.tencent.tinker.internal.util.SynchronizedCache
 
 import java.io.File
 
@@ -36,45 +37,10 @@ internal class RawPatch(
 internal abstract class RawPatchManager {
 
     companion object {
-        private val implCache = arrayOfNulls<RawPatchManager>(1)
+        private val implCache = SynchronizedCache<RawPatchManager>()
 
-        fun with(context: Context): RawPatchManager {
-            implCache[0]?.let { return it }
-            synchronized(implCache) {
-                implCache[0]?.let { return it }
-                return RawPatchManagerImpl(context.applicationContext)
-                    .also { implCache[0] = it }
-            }
-        }
-    }
-
-    /**
-     * An error raised by manager.
-     */
-    class Error(
-        val type: Type,
-        message: String,
-        cause: Throwable?
-    ) : Exception(message, cause) {
-        enum class Type(val code: Int) {
-            ACQUIRE_PATCH_AS_USING(-100),
-            ACQUIRE_PATCH_AS_CLEANING(-101),
-            HAS_ACQUIRED_PATCH(-102),
-            READ_LATEST_VERSION(-110),
-            WRITE_LATEST_VERSION(-110),
-            READ_MAIN_VERSION(-112),
-            WRITE_MAIN_VERSION(-113),
-            READ_UNAVAILABLE(-120),
-            APPEND_UNAVAILABLE(-121),
-            CLEAN_UNAVAILABLE(-122),
-            MARK_MAIN_ALIVE(-140),
-            CHECK_MAIN_ALIVE(-141),
-            CREATE_EXIST_PATCH(-150),
-            CLONE_PATCH(-151),
-            CLEAN_PATCH(-152),
-            DROP_PATCH_WRITE_PERMISSION(-153),
-            RECOVER_PATCH_WRITE_PERMISSION(-154),
-        }
+        fun with(context: Context): RawPatchManager =
+            implCache.getOrPut { RawPatchManagerImpl(context.applicationContext) }
     }
 
     /**
@@ -94,7 +60,6 @@ internal abstract class RawPatchManager {
      * use [requestUnavailable] to ask patch processes to clean up this patch.
      */
     @NonPatchProcessOnly
-    @Throws(Error::class)
     abstract fun acquire(): RawPatch?
 
     /**
@@ -107,7 +72,6 @@ internal abstract class RawPatchManager {
      * more.
      */
     @NonPatchProcessOnly
-    @Throws(Error::class)
     abstract fun requestUnavailable(version: String)
 
     /**
@@ -126,14 +90,12 @@ internal abstract class RawPatchManager {
      * the patch directory as non-writable to its storage, and marks this version as latest.
      */
     @PatchProcessOnly
-    @Throws(Error::class)
     abstract fun create(version: String, patch: File): RawPatch
 
     /**
      * Gets the latest version, or null if no patch is available.
      */
     @PatchProcessOnly
-    @Throws(Error::class)
     abstract fun latestVersion(): String?
 
     /**
@@ -149,7 +111,6 @@ internal abstract class RawPatchManager {
      * The function returns list of patch versions are cleaned.
      */
     @PatchProcessOnly
-    @Throws(Error::class)
     abstract fun cleanAll(): List<String>
 
     /**
@@ -159,6 +120,5 @@ internal abstract class RawPatchManager {
      * The function returns list of patch versions are cleaned.
      */
     @PatchProcessOnly
-    @Throws(Error::class)
     abstract fun cleanObsolete(): List<String>
 }

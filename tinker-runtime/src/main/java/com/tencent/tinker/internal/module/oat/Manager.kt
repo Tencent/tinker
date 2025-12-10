@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
+import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
 import com.tencent.tinker.internal.annotation.PatchProcessOnly
 import com.tencent.tinker.internal.rootDirectory
@@ -14,6 +15,7 @@ import com.tencent.tinker.internal.util.ensureIsExistingFile
 import com.tencent.tinker.internal.util.errorLog
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusiveNullable
 import com.tencent.tinker.internal.util.escapedGuardedContentShared
+import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.guardedReadOrWriteContent
 import com.tencent.tinker.internal.util.guardedReadOrWriteContentNullable
 import com.tencent.tinker.internal.util.infoLog
@@ -53,9 +55,31 @@ internal class OatManagerImpl(
     private val compiler: Generator = defaultCompiler,
 ) : OatManager() {
 
+    @VisibleForTesting
+    fun contextForTesting(): Context = context
+
     companion object {
         private const val TAG = "Tinker.Oat.Manager"
+
+
+        @VisibleForTesting
+        fun errorTypeOf(type: String): TinkerError.Type {
+            return ErrorType.valueOf(type)
+        }
     }
+
+    private enum class ErrorType : TinkerError.Type {
+        UNEXPECTED,
+        HAS_ACQUIRED_OAT,
+        GENERATE_OR_STORE_FAILED;
+
+        override val group: TinkerError.TypeGroup
+            get() = TinkerError.TypeGroup.MODULE_OAT
+
+        override val typeCode: Int
+            get() = ordinal
+    }
+
 
     private enum class State(val code: Int) {
         DONE(0),
@@ -477,8 +501,8 @@ internal class OatManagerImpl(
                 if (hasFailure == null) {
                     return null
                 }
-                throw Error(
-                    Error.Type.GENERATE_OR_STORE_FAILED,
+                throw TinkerError(
+                    ErrorType.GENERATE_OR_STORE_FAILED,
                     "Generates or stores OAT files failed.",
                     reason,
                 )
@@ -494,7 +518,6 @@ internal class OatManagerImpl(
      */
     @Synchronized
     @NonPatchProcessOnly
-    @Throws(Error::class)
     override fun acquire(
         directory: File,
         skipGenerateIfMissing: Boolean
@@ -502,26 +525,28 @@ internal class OatManagerImpl(
         check(!context.isInPatchProcess) {
             "Cannot acquire OAT files in patch process"
         }
-        val skipGenerateStrategy =
-            if (skipGenerateIfMissing) SkipGenerateStrategy.SKIP_IF_MISSING else SkipGenerateStrategy.NO
-        val (metadataGuardedContent, result) = getFilesOrNull(
-            directory,
-            skipGenerateStrategy,
-            GenerateMode.INTERPRET
-        ) ?: return null
-        guardHolder?.let { (_, lastAcquired) ->
-            metadataGuardedContent.close()
-            throw Error(
-                Error.Type.HAS_ACQUIRED_OAT,
-                "Cannot acquire OAT files while current process has already acquired one",
-                lastAcquired,
+        expected<ErrorType>("acquire OAT files") {
+            val skipGenerateStrategy =
+                if (skipGenerateIfMissing) SkipGenerateStrategy.SKIP_IF_MISSING else SkipGenerateStrategy.NO
+            val (metadataGuardedContent, result) = getFilesOrNull(
+                directory,
+                skipGenerateStrategy,
+                GenerateMode.INTERPRET
+            ) ?: return null
+            guardHolder?.let { (_, lastAcquired) ->
+                metadataGuardedContent.close()
+                throw TinkerError(
+                    ErrorType.HAS_ACQUIRED_OAT,
+                    "Cannot acquire OAT files while current process has already acquired one",
+                    lastAcquired,
+                )
+            }
+            guardHolder = Pair(
+                metadataGuardedContent,
+                AcquiringRecord(directory),
             )
+            return result
         }
-        guardHolder = Pair(
-            metadataGuardedContent,
-            AcquiringRecord(directory),
-        )
-        return result
     }
 
 
@@ -529,9 +554,11 @@ internal class OatManagerImpl(
     @NonPatchProcessOnly
     override fun release() {
         check(!context.isInPatchProcess) {
-            "Cannot request OAT files unavailable in patch process"
+            "Cannot request OAT files in patch process"
         }
-        releaseGuard()
+        expected<ErrorType>("release reference") {
+            releaseGuard()
+        }
     }
 
     /**
@@ -540,50 +567,52 @@ internal class OatManagerImpl(
      */
     @Synchronized
     @PatchProcessOnly
-    @Throws(Error::class)
     override fun generateIfNeeded(directory: File, async: Boolean) {
         check(context.isInPatchProcess) {
             "Only available for patch process"
         }
-        val action: () -> Unit = lambda@{
-            val metadataGuardedContent = getFilesOrNull(
-                directory,
-                SkipGenerateStrategy.SKIP_IF_USING,
-                GenerateMode.COMPILE
-            )
-                ?.first
-                ?: return@lambda
-            // Patch process does not use OAT files, so we can close the metadata file.
-            metadataGuardedContent.close()
-        }
-        if (async) {
-            thread(name = "tinker-oat-generate", block = action)
-        } else {
-            action.invoke()
+        expected<ErrorType>("generate OAT files") {
+            val action: () -> Unit = lambda@{
+                val metadataGuardedContent = getFilesOrNull(
+                    directory,
+                    SkipGenerateStrategy.SKIP_IF_USING,
+                    GenerateMode.COMPILE
+                )
+                    ?.first
+                    ?: return@lambda
+                // Patch process does not use OAT files, so we can close the metadata file.
+                metadataGuardedContent.close()
+            }
+            if (async) {
+                thread(name = "tinker-oat-generate", block = action)
+            } else {
+                action.invoke()
+            }
         }
     }
 
     @Synchronized
     @PatchProcessOnly
-    @Throws(Error::class)
     override fun clean(directory: File): Boolean {
         check(context.isInPatchProcess) {
             "Only available for patch process"
         }
-        val directoryPathHash = directory.pathHash
-        val metadataFile = metadataFile(directoryPathHash)
-        val contentBaseDirectory = contentBaseDirectory(directoryPathHash)
-        if (metadataFile.exists()) {
-            return metadataFile
-                .escapedGuardedContentExclusiveNullable(ByteArray(0))
-                ?.use {
-                    contentBaseDirectory.deleteRecursively()
-                    metadataFile.delete()
-                } != null
-        } else {
-            // Metadata is missing, but content directory remains.
-            contentBaseDirectory.deleteRecursively()
-            return true
+        expected<ErrorType>("clean OAT files") {
+            val directoryPathHash = directory.pathHash
+            val metadataFile = metadataFile(directoryPathHash)
+            val contentBaseDirectory = contentBaseDirectory(directoryPathHash)
+            if (metadataFile.exists()) {
+                return metadataFile
+                    .escapedGuardedContentExclusiveNullable(ByteArray(0))
+                    ?.use {
+                        contentBaseDirectory.deleteRecursively()
+                        metadataFile.delete()
+                    } != null
+            } else {
+                // Metadata is missing, but content directory remains.
+                contentBaseDirectory.deleteRecursively()
+                return true
+            }
         }
     }
 }
