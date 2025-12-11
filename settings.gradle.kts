@@ -35,6 +35,7 @@ val projects = listOf(
     "tinker-commons",
     "tinker-runtime",
     "tinker-runtime-internal/test-helper",
+    "tinker-runtime-internal/lint",
     "tinker-annotation-processor",
     "tinker-cli",
     "tinker-patch-commons",

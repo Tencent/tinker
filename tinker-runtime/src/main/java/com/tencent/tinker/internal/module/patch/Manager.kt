@@ -326,6 +326,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
 
     @VisibleForTesting
     @Synchronized
+    @NonPatchProcessOnly
     fun releaseAllHoldersForTesting() {
         unmarkMainAlive()
         releaseVersion()

@@ -28,6 +28,7 @@ android {
         jacocoVersion = "0.8.14"
     }
     lint {
+        baseline = file("lint-baseline.xml")
         disable.add("LongLogTag")
     }
 }
@@ -38,6 +39,7 @@ dependencies {
     implementation(project(":tinker-annotation-processor"))
     implementation(libs.androidx.annotation)
     testImplementation(libs.junit)
+    lintChecks(project(":tinker-runtime-internal-lint"))
     androidTestImplementation(project(":tinker-runtime-internal-test-helper"))
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)

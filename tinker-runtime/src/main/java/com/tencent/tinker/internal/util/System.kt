@@ -1,12 +1,13 @@
 package com.tencent.tinker.internal.util
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
 
 private const val TAG = "Tinker.Utils.System"
 
-@Suppress("UnusedReceiverParameter", "PrivateApi")
+@get:SuppressLint("UnusedReceiverParameter", "PrivateApi")
 internal val Context.currentProcess: String
     get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         Application.getProcessName()
