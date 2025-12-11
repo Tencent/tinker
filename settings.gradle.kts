@@ -30,12 +30,22 @@ dependencyResolutionManagement {
 include(":third-party:aosp-dexutils")
 include(":third-party:bsdiff-util")
 include(":third-party:tinker-ziputils")
-include(":tinker-commons")
-include(":tinker-runtime")
-include(":tinker-runtime-test-helper")
-include(":tinker-annotation-processor")
-include(":tinker-cli")
-include(":tinker-patch-commons")
+
+val projects = listOf(
+    "tinker-commons",
+    "tinker-runtime",
+    "tinker-runtime-internal/test-helper",
+    "tinker-annotation-processor",
+    "tinker-cli",
+    "tinker-patch-commons",
+)
+
+projects.forEach { pro ->
+    val name = pro.replace("/", "-")
+    val path = pro.replace("/", File.separator)
+    include(name)
+    project(":$name").projectDir = file(path)
+}
 
 // FIXME: support latest AGP.
 //include(":tinker-plugin")

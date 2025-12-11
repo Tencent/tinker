@@ -38,7 +38,7 @@ dependencies {
     implementation(project(":tinker-annotation-processor"))
     implementation(libs.androidx.annotation)
     testImplementation(libs.junit)
-    androidTestImplementation(project(":tinker-runtime-test-helper"))
+    androidTestImplementation(project(":tinker-runtime-internal-test-helper"))
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit.ktx)

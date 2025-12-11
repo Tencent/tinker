@@ -13,37 +13,37 @@
             android:exported="false" />
         <service
             android:name=".internal.module.patch.PatchManagerTestOthersService"
-            android:process=":others"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":others" />
         <service
             android:name=".internal.module.patch.PatchManagerTestPatchService"
-            android:process=":patch"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":patch" />
         <service
             android:name=".internal.module.oat.OatManagerTestMainService"
             android:enabled="true"
             android:exported="false" />
         <service
             android:name=".internal.module.oat.OatManagerTestPatchService"
-            android:process=":patch"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":patch" />
         <service
             android:name=".internal.module.layout.PatchLayoutConstructorTestMainService"
             android:enabled="true"
             android:exported="false" />
         <service
             android:name=".internal.module.layout.PatchLayoutConstructorTestOthersService"
-            android:process=":others"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":others" />
         <service
             android:name=".internal.module.layout.PatchLayoutConstructorTestPatchService"
-            android:process=":patch"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":patch" />
     </application>
 
 </manifest>
