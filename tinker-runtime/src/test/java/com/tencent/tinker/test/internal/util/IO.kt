@@ -1,4 +1,4 @@
-package com.tencent.tinker.test.internal.utils
+package com.tencent.tinker.test.internal.util
 
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusive
 import org.junit.Test
