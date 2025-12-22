@@ -318,7 +318,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOf("INVALID_SOURCE").errorCode,
+            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }
@@ -345,7 +345,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOf("INVALID_SOURCE").errorCode,
+            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }
@@ -372,7 +372,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOf("INVALID_SOURCE").errorCode,
+            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }
@@ -399,7 +399,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOf("INVALID_SOURCE").errorCode,
+            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }

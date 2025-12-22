@@ -20,6 +20,9 @@ internal val File.patchApkFile: File
 internal val File.patchDexDirectory: File
     get() = resolve("dex")
 
+internal val File.patchTestDexFile: File
+    get() = resolve("test.dex")
+
 internal val File.patchLibraryDirectory: File
     get() = resolve("lib")
 
@@ -51,6 +54,8 @@ internal class Patch(
     val apkFile: File
         get() = directory.patchApkFile
 
+    val testDexFile: File
+        get() = directory.patchTestDexFile
 
     val dexDirectory: File
         get() = directory.patchDexDirectory

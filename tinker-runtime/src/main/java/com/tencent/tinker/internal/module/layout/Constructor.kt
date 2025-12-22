@@ -56,9 +56,8 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
         }
 
         @VisibleForTesting
-        fun errorTypeOf(type: String): TinkerError.Type {
-            return ErrorType.valueOf(type)
-        }
+        fun errorTypeOfForTesting(type: String): TinkerError.Type =
+            ErrorType.valueOf(type)
     }
 
     private enum class ErrorType : TinkerError.Type {

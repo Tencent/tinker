@@ -25,6 +25,7 @@ internal fun Class<*>.methodOrNull(name: String, vararg parameterTypes: Class<*>
             .firstOrNull {
                 it.name == name && it.parameterTypes.contentEquals(parameterTypes)
             }
+            ?.apply { isAccessible = true }
             ?.let { return it }
         current = current.superclass ?: return null
     }
@@ -35,7 +36,8 @@ internal fun Class<*>.method(name: String, vararg parameterTypes: Class<*>): Met
         ?: throw NoSuchMethodException("Cannot find method \"${name}\"")
 
 internal fun Class<*>.constructorOrNull(vararg parameterTypes: Class<*>): Constructor<*>? =
-    constructors.firstOrNull { it.parameterTypes.contentEquals(parameterTypes) }
+    constructors
+        .firstOrNull { it.parameterTypes.contentEquals(parameterTypes) }
 
 internal fun Class<*>.constructor(vararg parameterTypes: Class<*>): Constructor<*> =
     constructorOrNull(*parameterTypes)

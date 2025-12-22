@@ -597,7 +597,7 @@ class OatManagerImplTest {
             mainService.acquire(inputDirectory.absolutePath, false)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -624,7 +624,7 @@ class OatManagerImplTest {
             patchService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -650,7 +650,7 @@ class OatManagerImplTest {
             mainService.acquire(inputDirectory.absolutePath, false)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -677,7 +677,7 @@ class OatManagerImplTest {
             patchService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOf("GENERATE_OR_STORE_FAILED").errorCode,
+            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.

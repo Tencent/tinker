@@ -517,7 +517,7 @@ class RawPatchManagerImplTest {
             mainService.acquire()
         }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOf("HAS_ACQUIRED_PATCH").errorCode,
+            RawPatchManagerImpl.errorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
             errorCode
         )
     }
@@ -544,7 +544,7 @@ class RawPatchManagerImplTest {
             mainService.acquire()
         }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOf("HAS_ACQUIRED_PATCH").errorCode,
+            RawPatchManagerImpl.errorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
             errorCode
         )
     }
@@ -671,7 +671,7 @@ class RawPatchManagerImplTest {
             }?.tinkerErrorCode
         assertNotNull(errorCode)
         assertEquals(
-            RawPatchManagerImpl.errorTypeOf("CREATE_EXIST_PATCH").errorCode,
+            RawPatchManagerImpl.errorTypeOfForTesting("CREATE_EXIST_PATCH").errorCode,
             errorCode,
         )
     }
@@ -700,7 +700,7 @@ class RawPatchManagerImplTest {
                 )
             }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOf("CLONE_PATCH").errorCode,
+            RawPatchManagerImpl.errorTypeOfForTesting("CLONE_PATCH").errorCode,
             errorCode
         )
         // Cleans up the source directory.
@@ -733,7 +733,7 @@ class RawPatchManagerImplTest {
                 )
             }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOf("WRITE_LATEST_VERSION").errorCode,
+            RawPatchManagerImpl.errorTypeOfForTesting("WRITE_LATEST_VERSION").errorCode,
             errorCode
         )
     }

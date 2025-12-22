@@ -63,9 +63,8 @@ internal class OatManagerImpl(
 
 
         @VisibleForTesting
-        fun errorTypeOf(type: String): TinkerError.Type {
-            return ErrorType.valueOf(type)
-        }
+        fun errorTypeOfForTesting(type: String): TinkerError.Type =
+            ErrorType.valueOf(type)
     }
 
     private enum class ErrorType : TinkerError.Type {
@@ -296,7 +295,7 @@ internal class OatManagerImpl(
         get() = takeIf { it.isDirectory }
             ?.listFiles()
             ?.filter {
-                it.name.endsWith(".dex") || it.name.endsWith(".jar") || it.name.endsWith(".apk")
+                it.extension == "dex" || it.extension == "jar" || it.extension == "apk"
             }
             ?: emptyList()
 

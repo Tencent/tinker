@@ -48,9 +48,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         private const val GUARD_CLEANING_CONTENT = 1.toByte()
 
         @VisibleForTesting
-        fun errorTypeOf(type: String): TinkerError.Type {
-            return ErrorType.valueOf(type)
-        }
+        fun errorTypeOfForTesting(type: String): TinkerError.Type =
+            ErrorType.valueOf(type)
     }
 
     private enum class ErrorType : TinkerError.Type {
@@ -126,7 +125,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
      * cleaner.
      *
      * Each patch version has its independent guard lock file. When a process is trying to apply a
-     * patch version, it have to acquire a use guard (based on shared lock) of the guard lock file
+     * patch version, it has to acquire a use guard (based on shared lock) of the guard lock file
      * first, and check the guard file content is not [GUARD_CLEANING_CONTENT] (its meaning is
      * described below). While cleaner is cleaning obsolete patch version directories, it tries to
      * acquire a clean guard (based on exclusive lock), If failed, which means there are other
@@ -298,7 +297,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
 
     /**
      * A container used to hold guarded content of patch guard file. Unless release manually,
-     * guarded content will never released until process dead. Which means lifecycles of guarded
+     * guarded content will never be released until process dead. Which means lifecycles of guarded
      * content are same as process lifecycle.
      */
     @GuardedBy("this")

@@ -8,9 +8,12 @@ internal class TinkerError(
 
     enum class TypeGroup {
         UNEXPECTED,
+        LOAD,
+        LOAD_DEX,
+        LOAD_DEX_NOUGAT,
         MODULE_PATCH,
         MODULE_OAT,
-        MODULE_LAYOUT
+        MODULE_LAYOUT,
     }
 
     interface Type {
