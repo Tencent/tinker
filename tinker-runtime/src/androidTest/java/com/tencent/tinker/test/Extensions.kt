@@ -1,7 +1,10 @@
 package com.tencent.tinker.test
 
+import android.content.Context
 import android.os.Build
+import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.util.errorCode
 import java.io.File
 import java.nio.file.Files
@@ -32,3 +35,42 @@ internal val IllegalStateException.tinkerErrorCode: Int
             match.groupValues[1].toInt()
         }
         ?: throw AssertionError("Exception is not tinker error as expected", this)
+
+internal val availableDexFileNamesAsSorted: List<String> =
+    listOf(
+        "classes.dex",
+        "classes2.dex",
+        "classes4.dex",
+        "classes10.dex",
+        "alpha.dex",
+        "beta.dex",
+        TEST_DEX_FILE_NAME,
+    )
+
+internal fun createMockTestPatchDirectory(): File =
+    createTestDirectory()
+        .apply {
+            patchDexDirectory.apply {
+                mkdirs()
+                availableDexFileNamesAsSorted.forEach {
+                    resolve(it).createNewFile()
+                }
+                resolve("not-dex.txt").createNewFile()
+                resolve("fake-is-directory.dex").mkdirs()
+            }
+        }
+
+internal fun Context.createLoadableTestPatchDirectory(): File =
+    createTestDirectory()
+        .apply {
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve(TEST_DEX_FILE_NAME).apply {
+                    outputStream().use { outputStream ->
+                        assets.open("tinker/${TEST_DEX_FILE_NAME}").use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                }
+            }
+        }

@@ -51,7 +51,6 @@ internal val currentSdk by lazy {
     )
 }
 
-@Suppress("DEPRECATION")
 internal val currentInstructionSet by lazy {
     try {
         return@lazy Class.forName("dalvik.system.VMRuntime")
@@ -66,6 +65,7 @@ internal val currentInstructionSet by lazy {
             "Get \"currentInstructionSet\" failed, try to read CPU ABI directly.",
             throwable,
         )
+        @Suppress("DEPRECATION")
         return@lazy when (Build.CPU_ABI) {
             "armeabi", "armeabi-v7a" -> "arm"
             "arm64-v8a" -> "arm64"

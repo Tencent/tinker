@@ -23,7 +23,7 @@ import dalvik.system.PathClassLoader;
 public final class TinkerClassLoader extends PathClassLoader {
     private final ClassLoader mOriginAppClassLoader;
 
-    TinkerClassLoader(String dexPath, File optimizedDir, String libraryPath, ClassLoader originAppClassLoader) {
+    public TinkerClassLoader(String dexPath, File optimizedDir, String libraryPath, ClassLoader originAppClassLoader) {
         super("", libraryPath, ClassLoader.getSystemClassLoader());
         mOriginAppClassLoader = originAppClassLoader;
         injectDexPath(this, dexPath, optimizedDir);

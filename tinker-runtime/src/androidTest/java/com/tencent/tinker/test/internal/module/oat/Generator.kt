@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.SdkSuppress
+import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.module.oat.Compiler
 import com.tencent.tinker.internal.module.oat.Interpreter
 import com.tencent.tinker.test.createTestDirectory
@@ -25,7 +26,7 @@ class GeneratorTest {
             .resolve("classes.dex")
             .also { file ->
                 file.outputStream().buffered().use { outputStream ->
-                    context.assets.open("test.dex").use { inputStream ->
+                    context.assets.open("tinker/${TEST_DEX_FILE_NAME}").use { inputStream ->
                         inputStream.copyTo(outputStream)
                     }
                 }
@@ -49,7 +50,7 @@ class GeneratorTest {
             .resolve("classes.dex")
             .also { file ->
                 file.outputStream().buffered().use { outputStream ->
-                    context.assets.open("test.dex").use { inputStream ->
+                    context.assets.open("tinker/${TEST_DEX_FILE_NAME}").use { inputStream ->
                         inputStream.copyTo(outputStream)
                     }
                 }

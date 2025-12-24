@@ -6,22 +6,22 @@ import java.io.File
 
 internal val Context.rootDirectory: File
     get() {
-        val name = if ("oppo" == Build.MANUFACTURER.lowercase() && Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
-            "wc_tinker_dir"
-        } else {
-            "tinker"
-        }
+        val name =
+            if ("oppo" == Build.MANUFACTURER.lowercase() && Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
+                "wc_tinker_dir"
+            } else {
+                "tinker"
+            }
         return applicationInfo.dataDir.let(::File).resolve(name)
     }
+
+internal const val TEST_DEX_FILE_NAME = "test.dex"
 
 internal val File.patchApkFile: File
     get() = resolve("patch.apk")
 
 internal val File.patchDexDirectory: File
     get() = resolve("dex")
-
-internal val File.patchTestDexFile: File
-    get() = resolve("test.dex")
 
 internal val File.patchLibraryDirectory: File
     get() = resolve("lib")
@@ -53,9 +53,6 @@ internal class Patch(
 ) {
     val apkFile: File
         get() = directory.patchApkFile
-
-    val testDexFile: File
-        get() = directory.patchTestDexFile
 
     val dexDirectory: File
         get() = directory.patchDexDirectory
