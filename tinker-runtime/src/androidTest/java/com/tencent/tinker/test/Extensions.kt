@@ -27,16 +27,16 @@ internal inline fun <T> rethrowAsIllegalState(action: () -> T) =
     try {
         action()
     } catch (error: TinkerError) {
-        throw IllegalStateException("error#${error.type.errorCode}", error)
+        throw IllegalStateException("error#${error.type.errorCode.toString(16)}#${error.message}", error)
     }
 
-private val rethrowMessagePattern = "error#(\\d+)".toRegex()
+private val rethrowMessagePattern = "error#([0-9a-f]+)#.*".toRegex()
 
 internal val IllegalStateException.tinkerErrorCode: Int
     get() = message
         ?.let(rethrowMessagePattern::matchEntire)
         ?.let { match ->
-            match.groupValues[1].toInt()
+            match.groupValues[1].toInt(16)
         }
         ?: throw AssertionError("Exception is not tinker error as expected", this)
 

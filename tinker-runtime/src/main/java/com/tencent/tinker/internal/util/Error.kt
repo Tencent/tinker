@@ -15,17 +15,17 @@ internal val TinkerError.Type.errorCode: Int
  * called.
  */
 @OptIn(ExperimentalStdlibApi::class, ExperimentalContracts::class)
-internal inline fun expected(
+internal inline fun <T> expected(
     action: String,
     unexpected: TinkerError.Type,
     noinline cleaner: (() -> Unit)? = null,
-    scope: () -> Unit,
-) {
+    scope: () -> T,
+): T {
     contract {
         callsInPlace(scope, InvocationKind.EXACTLY_ONCE)
     }
     try {
-        scope()
+        return scope()
     } catch (throwable: Throwable) {
         cleaner?.invoke()
         if (throwable is TinkerError) {

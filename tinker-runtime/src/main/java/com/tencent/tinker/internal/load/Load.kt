@@ -2,6 +2,7 @@ package com.tencent.tinker.internal.load
 
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.internal.util.expected
 
 /**
  * Patch loader.
@@ -43,16 +44,11 @@ private object UnexpectedLoadError : TinkerError.Type {
  */
 internal fun Iterable<Loader.Factory>.tryLoad(patch: Patch): TinkerError? {
     val loaders = try {
-        mapNotNull { it.createLoaderIfNeeded(patch) }
-    } catch (throwable: Throwable) {
-        if (throwable is TinkerError) {
-            return throwable
+        expected("factor loaders for patch \"${patch.version}\"", UnexpectedLoadError) {
+            mapNotNull { it.createLoaderIfNeeded(patch) }
         }
-        return TinkerError(
-            UnexpectedLoadError,
-            "Cannot create loaders for patch \"${patch.version}\" because of unexpected error.",
-            throwable,
-        )
+    } catch (error: TinkerError) {
+        return error
     }
     loaders.forEach { it.load() }
     return null
