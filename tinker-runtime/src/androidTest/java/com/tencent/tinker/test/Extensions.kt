@@ -2,9 +2,13 @@ package com.tencent.tinker.test
 
 import android.content.Context
 import android.os.Build
+import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
+import com.tencent.tinker.internal.TEST_JNI_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.patchDexDirectory
+import com.tencent.tinker.internal.patchLibraryDirectory
+import com.tencent.tinker.internal.util.currentInstructionSet
 import com.tencent.tinker.internal.util.errorCode
 import java.io.File
 import java.nio.file.Files
@@ -69,6 +73,30 @@ internal fun Context.createLoadableTestPatchDirectory(): File =
                     outputStream().use { outputStream ->
                         assets.open("tinker/${TEST_DEX_FILE_NAME}").use { inputStream ->
                             inputStream.copyTo(outputStream)
+                        }
+                    }
+                }
+            }
+            patchLibraryDirectory.apply {
+                mkdirs()
+                Build.SUPPORTED_ABIS.forEach { abi ->
+                    resolve(abi).apply {
+                        mkdirs()
+                        resolve(TEST_JNI_LIBRARY_FILE_NAME).apply {
+                            outputStream().use { outputStream ->
+                                assets.open("tinker/lib/${abi}/${TEST_JNI_LIBRARY_FILE_NAME}")
+                                    .use { inputStream ->
+                                        inputStream.copyTo(outputStream)
+                                    }
+                            }
+                        }
+                        resolve(TEST_DEPENDENCY_LIBRARY_FILE_NAME).apply {
+                            outputStream().use { outputStream ->
+                                assets.open("tinker/lib/${abi}/${TEST_DEPENDENCY_LIBRARY_FILE_NAME}")
+                                    .use { inputStream ->
+                                        inputStream.copyTo(outputStream)
+                                    }
+                            }
                         }
                     }
                 }

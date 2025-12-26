@@ -51,6 +51,10 @@ internal val currentSdk by lazy {
     )
 }
 
+internal val currentAbi by lazy {
+    Build.SUPPORTED_ABIS.firstOrNull()
+}
+
 internal val currentInstructionSet by lazy {
     try {
         return@lazy Class.forName("dalvik.system.VMRuntime")

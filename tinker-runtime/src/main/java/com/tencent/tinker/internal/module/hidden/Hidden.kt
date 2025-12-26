@@ -240,8 +240,15 @@ internal fun Any.lazySetNativeLibraryDirectoriesV23(value: ArrayList<File>) =
         value = value
     )
 
-internal var Any.nativeLibraryDirectoriesOld: Array<File>
+internal val Any.nativeLibraryDirectoriesOld: Array<File>
         by FieldDelegate<Array<File>>(NATIVE_LIBRARY_DIRECTORIES_NAME)
+
+internal fun Any.lazySetNativeLibraryDirectoriesOld(value: Array<File>) =
+    ReflectLazySetter(
+        field = javaClass.field(NATIVE_LIBRARY_DIRECTORIES_NAME),
+        instance = this,
+        value = value
+    )
 
 private const val DEX_PATH_LIST_SYSTEM_NATIVE_LIBRARY_DIRECTORIES_NAME =
     "systemNativeLibraryDirectories"
@@ -374,6 +381,7 @@ private val Any.makeNativeLibraryPathElements: Method
         List::class.java,
     )
 
+@RequiresApi(Build.VERSION_CODES.O)
 internal fun Any.makeNativeLibraryElements(files: List<File>): Array<Any> =
     makeNativeLibraryPathElements.let { method ->
         try {

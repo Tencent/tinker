@@ -17,6 +17,10 @@ internal val Context.rootDirectory: File
 
 internal const val TEST_DEX_FILE_NAME = "test.dex"
 
+internal const val TEST_JNI_LIBRARY_FILE_NAME = "libtinker.test.jni.so"
+
+internal const val TEST_DEPENDENCY_LIBRARY_FILE_NAME = "libtinker.test.dep.so"
+
 internal val File.patchApkFile: File
     get() = resolve("patch.apk")
 

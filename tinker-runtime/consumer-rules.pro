@@ -31,6 +31,10 @@
     private static Guard sProcessGuardRef;
 }
 
+-keepnames class com.tencent.tinker.internal.load.library.test.TestLibrary {
+    native <methods>;
+}
+
 -assumenosideeffects class ** {
     *** *ForTesting(...);
 }

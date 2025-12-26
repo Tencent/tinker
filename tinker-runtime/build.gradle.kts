@@ -1,3 +1,4 @@
+import com.android.build.api.artifact.SingleArtifact
 import kotlin.text.replace
 
 plugins {
@@ -15,11 +16,25 @@ android {
     defaultConfig {
         buildConfigField("String", "TINKER_VERSION", "\"${version}\"")
         manifestPlaceholders["TINKER_VERSION"] = version
+        ndk {
+            abiFilters.add("arm64-v8a")
+        }
     }
     buildTypes {
         debug {
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path(
+                project.layout.projectDirectory
+                    .dir("src")
+                    .dir("main")
+                    .dir("cpp")
+                    .file("CMakeLists.txt")
+            )
         }
     }
     buildFeatures {
@@ -55,7 +70,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit.ktx)
     androidTestUtil(libs.androidx.orchestrator)
 }
-
 
 
 /*
@@ -185,6 +199,62 @@ abstract class RenameTestDexTask : DefaultTask() {
     }
 }
 
+abstract class CreateTestLibrariesTask : DefaultTask() {
+
+    companion object {
+        private val originalArray = "<_B_>".toByteArray(Charsets.US_ASCII)
+        private val updatedArray = "<_P_>".toByteArray(Charsets.US_ASCII)
+    }
+
+    private fun ByteArray.replace(original: ByteArray, updated: ByteArray) {
+        require(original.size == updated.size) {
+            "original and updated must have the same size"
+        }
+        require(original.size < this.size) {
+            "original size must be smaller than self size"
+        }
+        var index = 0
+        val endIndex = this.size - original.size
+        while (index < endIndex) {
+            val match = originalArray.indices.all { originalIndex ->
+                this[index + originalIndex] == originalArray[originalIndex]
+            }
+            if (match) {
+                updatedArray.copyInto(this, index)
+                index += updated.size
+            } else {
+                index++
+            }
+        }
+    }
+
+    @get:InputDirectory
+    abstract val input: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val output: DirectoryProperty
+
+    @TaskAction
+    fun exec() {
+        val sourceDir = input.get().asFile
+        val targetDir = output.get().asFile
+            .resolve("tinker")
+        sourceDir.walk()
+            .filter { it.name == "libtinker.test.jni.so" || it.name == "libtinker.test.dep.so" }
+            .forEach { source ->
+                val target = targetDir.resolve(source.relativeTo(sourceDir))
+                val content = source.readBytes().apply {
+                    replace(originalArray, updatedArray)
+                }
+                target
+                    .apply {
+                        parentFile.mkdirs()
+                    }
+                    .writeBytes(content)
+            }
+    }
+}
+
 val createTestClassSourceTask =
     tasks.register<CreateTestClassSourceTask>("createTestClassSource") {
         group = "build"
@@ -242,5 +312,18 @@ androidComponents.onVariants { variant ->
         ?.addGeneratedSourceDirectory(
             renameTestDexTest,
             RenameTestDexTask::output,
+        )
+
+    val createTestLibrariesTask =
+        tasks.register<CreateTestLibrariesTask>("create${capitalizedVariantName}TestLibraries") {
+            group = "build"
+            description = "Creates test libraries for assets."
+            @Suppress("UnstableApiUsage")
+            input.set(variant.artifacts.get(SingleArtifact.MERGED_NATIVE_LIBS))
+        }
+    variant.sources.assets
+        ?.addGeneratedSourceDirectory(
+            createTestLibrariesTask,
+            CreateTestLibrariesTask::output,
         )
 }

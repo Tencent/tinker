@@ -2,8 +2,11 @@ package com.tencent.tinker.test.internal
 
 import android.util.Log
 import com.tencent.tinker.TinkerLogger
+import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
+import com.tencent.tinker.internal.TEST_JNI_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.patchDexDirectory
+import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.util.logger
 import java.io.File
 import java.nio.file.Files
@@ -19,7 +22,9 @@ internal val availableDexFileNamesAsSorted: List<String> =
         TEST_DEX_FILE_NAME,
     )
 
-internal fun createTestPatchDirectoryWithTestDexFiles(): File =
+internal val testAbiList = arrayOf("arm64-v8a", "mock-new-abi")
+
+internal fun createTestPatchDirectoryWithMockFiles(): File =
     Files.createTempDirectory("tinker-test-").toFile()
         .apply {
             patchDexDirectory.apply {
@@ -29,6 +34,14 @@ internal fun createTestPatchDirectoryWithTestDexFiles(): File =
                 }
                 resolve("not-dex.txt").createNewFile()
                 resolve("fake-is-directory.dex").mkdirs()
+            }
+            patchLibraryDirectory.apply {
+                mkdirs()
+                testAbiList.forEach {
+                    resolve(it).apply {
+                        mkdirs()
+                    }
+                }
             }
         }
 
