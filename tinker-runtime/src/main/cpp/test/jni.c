@@ -30,7 +30,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     }
     jclass clazz = (*env)->FindClass(
             env,
-            "com/tencent/tinker/internal/load/library/test/TestLibrary"
+            "com/tencent/tinker/internal/load/code/test/TestLibrary"
     );
     if (clazz == NULL) {
         return JNI_ERR;

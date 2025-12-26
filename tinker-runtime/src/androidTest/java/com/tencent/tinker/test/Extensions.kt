@@ -62,6 +62,12 @@ internal fun createMockTestPatchDirectory(): File =
                 resolve("not-dex.txt").createNewFile()
                 resolve("fake-is-directory.dex").mkdirs()
             }
+            patchLibraryDirectory.apply {
+                mkdirs()
+                Build.SUPPORTED_ABIS.forEach {
+                    resolve(it).mkdirs()
+                }
+            }
         }
 
 internal fun Context.createLoadableTestPatchDirectory(): File =

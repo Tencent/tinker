@@ -1,11 +1,12 @@
-package com.tencent.tinker.test.internal.load.dex
+package com.tencent.tinker.test.internal.load.code
 
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.load.dex.DexLoader
+import com.tencent.tinker.internal.load.code.CodeLoader
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.test.internal.availableDexFileNamesAsSorted
 import com.tencent.tinker.test.internal.createTestPatchDirectoryWithMockFiles
+import com.tencent.tinker.test.internal.testAbiList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
@@ -17,27 +18,27 @@ class DexLoaderTest {
 
     private object TestClassLoader : ClassLoader()
 
-    private class TestLoader : DexLoader() {
+    private class TestLoader : CodeLoader() {
 
-        override fun dexLoad(): ClassLoader {
+        override fun loadForCode(): ClassLoader {
             return TestClassLoader
         }
 
-        class Factory : DexLoader.Factory() {
+        class Factory : CodeLoader.Factory(testAbiList) {
 
             var calledInputs = null as List<File>?
 
-            override fun createLoaderByDexFiles(inputs: List<File>): DexLoader {
-                calledInputs = inputs
+            override fun createLoader(dexFiles: List<File>, libraryDirectories: List<File>): CodeLoader {
+                calledInputs = dexFiles
                 return TestLoader()
             }
         }
     }
 
-    private object TestExceptionFactory : DexLoader.Factory() {
+    private object TestExceptionFactory : CodeLoader.Factory(testAbiList) {
         val exception = IllegalStateException("This is an unexpected exception")
 
-        override fun createLoaderByDexFiles(inputs: List<File>): DexLoader {
+        override fun createLoader(dexFiles: List<File>, libraryDirectories: List<File>): CodeLoader {
             throw exception
         }
     }
@@ -72,7 +73,7 @@ class DexLoaderTest {
             factory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            DexLoader.errorTypeOfForTesting("NO_VALID_INPUTS"),
+            CodeLoader.errorTypeOfForTesting("NO_VALID_INPUTS"),
             error.type,
         )
     }
@@ -91,7 +92,7 @@ class DexLoaderTest {
             factory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            DexLoader.errorTypeOfForTesting("NO_VALID_INPUTS"),
+            CodeLoader.errorTypeOfForTesting("NO_VALID_INPUTS"),
             error.type,
         )
     }
@@ -107,7 +108,7 @@ class DexLoaderTest {
             TestExceptionFactory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            DexLoader.errorTypeOfForTesting("UNEXPECTED"),
+            CodeLoader.errorTypeOfForTesting("UNEXPECTED"),
             error.type,
         )
         assertSame(

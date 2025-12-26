@@ -1,10 +1,10 @@
-package com.tencent.tinker.internal.load.dex
+package com.tencent.tinker.internal.load.code
 
 import android.app.Application
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.load.dex.NewClassLoaderDexLoader.ClassLoaderInjector
+import com.tencent.tinker.internal.load.code.NewClassLoaderCodeLoader.ClassLoaderInjector
 import com.tencent.tinker.internal.module.hidden.ReflectInjector
 import com.tencent.tinker.internal.module.hidden.ReflectSetter
 import com.tencent.tinker.internal.module.hidden.base
@@ -74,18 +74,18 @@ private fun createDefaultClassLoaderInjectors(
     }
 
 /**
- * Dex loader which loads by creating a new class loader.
+ * Code loader which loads by creating a new class loader.
  */
 @RequiresApi(Build.VERSION_CODES.N)
-internal abstract class NewClassLoaderDexLoader(
+internal abstract class NewClassLoaderCodeLoader(
     private val reference: Array<ClassLoader?>,
     private val classLoaderInjectors: Iterable<ClassLoaderInjector>,
-) : DexLoader() {
+) : CodeLoader() {
 
     private object ErrorType : TinkerError.Type {
 
         override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.LOAD_DEX_NOUGAT
+            get() = TinkerError.TypeGroup.LOAD_CODE_NOUGAT
 
         override val typeCode: Int
             get() = 0
@@ -97,7 +97,7 @@ internal abstract class NewClassLoaderDexLoader(
 
     protected abstract fun createClassLoader(): ClassLoader
 
-    override fun dexLoad(): ClassLoader =
+    override fun loadForCode(): ClassLoader =
         createClassLoader().also { classLoader ->
             classLoaderInjectors.forEach { injector ->
                 injector.inject(classLoader)
@@ -109,19 +109,30 @@ internal abstract class NewClassLoaderDexLoader(
         protected val reference: Array<ClassLoader?>,
         protected val classLoaderInjectors: Iterable<ClassLoaderInjector>,
         protected val source: ClassLoader,
-    ) : DexLoader.Factory() {
+        abiList: Array<String>,
+    ) : CodeLoader.Factory(abiList) {
 
-        override fun createLoaderByDexFiles(inputs: List<File>): DexLoader {
-            expected("create loader by dex files", ErrorType) {
-                val dexPathList = source.pathList
+        override fun createLoader(
+            dexFiles: List<File>,
+            libraryDirectories: List<File>,
+        ): CodeLoader {
+            expected("create code loader", ErrorType) {
+                val dexPathList =
+                    source.pathList
+                val dexPaths =
+                    dexFiles.joinToString(File.pathSeparator) { it.absolutePath }
                 val sourceNativeLibraryDirectories =
                     dexPathList.nativeLibraryDirectoriesV23
-                val dexPaths =
-                    inputs.joinToString(File.pathSeparator) { it.absolutePath }
+                val updatedNativeLibraryDirectories =
+                    if (sourceNativeLibraryDirectories != null) {
+                        val pathsSet =
+                            libraryDirectories.map { it.absolutePath }
+                        libraryDirectories + sourceNativeLibraryDirectories.filter { it.absolutePath !in pathsSet }
+                    } else {
+                        libraryDirectories
+                    }
                 val libraryDirectoryPaths =
-                    sourceNativeLibraryDirectories
-                        ?.joinToString(File.pathSeparator) { it.absolutePath }
-                        ?: ""
+                    updatedNativeLibraryDirectories.joinToString(File.pathSeparator) { it.absolutePath }
                 return createLoaderByPaths(dexPaths, libraryDirectoryPaths)
             }
         }
@@ -129,19 +140,19 @@ internal abstract class NewClassLoaderDexLoader(
         protected abstract fun createLoaderByPaths(
             dexPaths: String,
             libraryDirectoryPaths: String
-        ): NewClassLoaderDexLoader
+        ): NewClassLoaderCodeLoader
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.S)
-internal class V31NonHardeningDexLoader private constructor(
+internal class V31NonHardeningCodeLoader private constructor(
     reference: Array<ClassLoader?>,
     classLoaderInjectors: Iterable<ClassLoaderInjector>,
     private val parentInjector: ReflectInjector,
     private val dexPaths: String,
     private val libraryDirectoryPaths: String,
     private val classLoaderConstructor: (String, String, ClassLoader) -> ClassLoader,
-) : NewClassLoaderDexLoader(reference, classLoaderInjectors) {
+) : NewClassLoaderCodeLoader(reference, classLoaderInjectors) {
 
     override fun createClassLoader(): ClassLoader =
         classLoaderConstructor(dexPaths, libraryDirectoryPaths, ClassLoader.getSystemClassLoader())
@@ -150,12 +161,14 @@ internal class V31NonHardeningDexLoader private constructor(
     class Factory(
         reference: Array<ClassLoader?>,
         classLoaderInjectors: Iterable<ClassLoaderInjector>,
-        source: ClassLoader = V31NonHardeningDexLoader::class.java.classLoader!!,
+        source: ClassLoader = V31NonHardeningCodeLoader::class.java.classLoader!!,
+        abiList: Array<String> = Build.SUPPORTED_ABIS,
         private val classLoaderConstructor: (String, String, ClassLoader) -> ClassLoader = ::DelegateLastClassLoader
-    ) : NewClassLoaderDexLoader.Factory(
+    ) : NewClassLoaderCodeLoader.Factory(
         reference,
         classLoaderInjectors,
         source,
+        abiList,
     ) {
         constructor(
             reference: Array<ClassLoader?>,
@@ -168,9 +181,9 @@ internal class V31NonHardeningDexLoader private constructor(
         override fun createLoaderByPaths(
             dexPaths: String,
             libraryDirectoryPaths: String
-        ): NewClassLoaderDexLoader {
+        ): V31NonHardeningCodeLoader {
             val parentInjector = ClassLoader::class.java.parentLazyInjector(source)
-            return V31NonHardeningDexLoader(
+            return V31NonHardeningCodeLoader(
                 reference = reference,
                 classLoaderInjectors = classLoaderInjectors,
                 parentInjector = parentInjector,
@@ -183,14 +196,14 @@ internal class V31NonHardeningDexLoader private constructor(
 }
 
 @RequiresApi(Build.VERSION_CODES.O_MR1)
-internal class V27NonHardeningDexLoader private constructor(
+internal class V27NonHardeningCodeLoader private constructor(
     reference: Array<ClassLoader?>,
     classLoaderInjectors: Iterable<ClassLoaderInjector>,
     private val source: ClassLoader,
     private val dexPaths: String,
     private val libraryDirectoryPaths: String,
     private val classLoaderConstructor: (String, String, ClassLoader) -> ClassLoader,
-) : NewClassLoaderDexLoader(reference, classLoaderInjectors) {
+) : NewClassLoaderCodeLoader(reference, classLoaderInjectors) {
 
     override fun createClassLoader(): ClassLoader =
         classLoaderConstructor(dexPaths, libraryDirectoryPaths, source)
@@ -198,12 +211,14 @@ internal class V27NonHardeningDexLoader private constructor(
     class Factory(
         reference: Array<ClassLoader?>,
         classLoaderInjectors: Iterable<ClassLoaderInjector>,
-        source: ClassLoader = V27NonHardeningDexLoader::class.java.classLoader!!,
+        source: ClassLoader = V27NonHardeningCodeLoader::class.java.classLoader!!,
+        abiList: Array<String> = Build.SUPPORTED_ABIS,
         private val classLoaderConstructor: (String, String, ClassLoader) -> ClassLoader = ::DelegateLastClassLoader,
-    ) : NewClassLoaderDexLoader.Factory(
+    ) : NewClassLoaderCodeLoader.Factory(
         reference,
         classLoaderInjectors,
         source,
+        abiList,
     ) {
         constructor(
             reference: Array<ClassLoader?>,
@@ -216,7 +231,7 @@ internal class V27NonHardeningDexLoader private constructor(
         override fun createLoaderByPaths(
             dexPaths: String,
             libraryDirectoryPaths: String
-        ): NewClassLoaderDexLoader = V27NonHardeningDexLoader(
+        ): V27NonHardeningCodeLoader = V27NonHardeningCodeLoader(
             reference = reference,
             classLoaderInjectors = classLoaderInjectors,
             source = source,
@@ -228,7 +243,7 @@ internal class V27NonHardeningDexLoader private constructor(
 }
 
 @RequiresApi(Build.VERSION_CODES.N)
-internal class V24NonHardeningDexLoader private constructor(
+internal class V24NonHardeningCodeLoader private constructor(
     reference: Array<ClassLoader?>,
     classLoaderInjectors: Iterable<ClassLoaderInjector>,
     private val source: ClassLoader,
@@ -236,7 +251,7 @@ internal class V24NonHardeningDexLoader private constructor(
     private val dexPaths: String,
     private val libraryDirectoryPaths: String,
     private val classLoaderConstructor: (String, File, String, ClassLoader) -> ClassLoader,
-) : NewClassLoaderDexLoader(reference, classLoaderInjectors) {
+) : NewClassLoaderCodeLoader(reference, classLoaderInjectors) {
 
     override fun createClassLoader(): ClassLoader =
         classLoaderConstructor(dexPaths, outputDirectory, libraryDirectoryPaths, source)
@@ -245,12 +260,14 @@ internal class V24NonHardeningDexLoader private constructor(
         reference: Array<ClassLoader?>,
         classLoaderInjectors: Iterable<ClassLoaderInjector>,
         private val outputDirectory: File,
-        source: ClassLoader = V24NonHardeningDexLoader::class.java.classLoader!!,
+        source: ClassLoader = V24NonHardeningCodeLoader::class.java.classLoader!!,
+        abiList: Array<String> = Build.SUPPORTED_ABIS,
         private val classLoaderConstructor: (String, File, String, ClassLoader) -> ClassLoader = ::TinkerClassLoader
-    ) : NewClassLoaderDexLoader.Factory(
+    ) : NewClassLoaderCodeLoader.Factory(
         reference,
         classLoaderInjectors,
         source,
+        abiList,
     ) {
         constructor(
             reference: Array<ClassLoader?>,
@@ -265,7 +282,7 @@ internal class V24NonHardeningDexLoader private constructor(
         override fun createLoaderByPaths(
             dexPaths: String,
             libraryDirectoryPaths: String
-        ): NewClassLoaderDexLoader = V24NonHardeningDexLoader(
+        ): V24NonHardeningCodeLoader = V24NonHardeningCodeLoader(
             reference = reference,
             classLoaderInjectors = classLoaderInjectors,
             source = source,

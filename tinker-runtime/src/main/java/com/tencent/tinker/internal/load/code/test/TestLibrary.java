@@ -1,4 +1,4 @@
-package com.tencent.tinker.internal.load.library.test;
+package com.tencent.tinker.internal.load.code.test;
 
 public class TestLibrary {
 

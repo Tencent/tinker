@@ -9,10 +9,9 @@ internal class TinkerError(
     enum class TypeGroup {
         UNEXPECTED,
         LOAD,
-        LOAD_DEX,
-        LOAD_DEX_OLD,
-        LOAD_DEX_NOUGAT,
-        LOAD_LIBRARY,
+        LOAD_CODE,
+        LOAD_CODE_OLD,
+        LOAD_CODE_NOUGAT,
         MODULE_PATCH,
         MODULE_OAT,
         MODULE_LAYOUT,

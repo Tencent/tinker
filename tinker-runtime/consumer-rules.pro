@@ -31,7 +31,7 @@
     private static Guard sProcessGuardRef;
 }
 
--keepnames class com.tencent.tinker.internal.load.library.test.TestLibrary {
+-keepnames class com.tencent.tinker.internal.load.code.test.TestLibrary {
     native <methods>;
 }
 

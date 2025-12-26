@@ -77,7 +77,7 @@ dependencies {
     as expected.
  */
 
-private val testClassSourceTemplate =
+private val testClassSourcesFrom =
     layout.projectDirectory
         .dir("src")
         .dir("main")
@@ -87,17 +87,15 @@ private val testClassSourceTemplate =
         .dir("tinker")
         .dir("internal")
         .dir("load")
-        .dir("dex")
+        .dir("code")
         .dir("test")
-        .file("TestClass.java")
 
-private val testClassSource =
+private val testClassSources =
     layout.buildDirectory
         .map { buildDirectory ->
             buildDirectory
                 .dir("intermediates")
                 .dir("tinker_test_class_source")
-                .file("TestClass.java")
         }
 
 private val d8 = androidComponents.sdkComponents.sdkDirectory
@@ -107,22 +105,38 @@ private val d8 = androidComponents.sdkComponents.sdkDirectory
 
 abstract class CreateTestClassSourceTask : DefaultTask() {
 
-    @get:InputFile
-    abstract val input: RegularFileProperty
+    @get:InputDirectory
+    abstract val from: DirectoryProperty
 
-    @get:OutputFile
-    abstract val output: RegularFileProperty
+    private val inputBase by lazy {
+        from.get().asFile
+    }
+
+    @get:OutputDirectory
+    abstract val target: DirectoryProperty
+
+    private val outputBase by lazy {
+        target.get().asFile
+    }
 
     @TaskAction
     fun exec() {
-        input.get().asFile.readText()
-            .replace("false", "true")
-            .let {
-                output.get().asFile
+        inputBase.walk()
+            .filter { it.isFile && it.extension == "java" }
+            .forEach { input ->
+                val content = input.readText()
+                    .let {
+                        if (input.name == "TestClass.java") {
+                            it.replace("false", "true")
+                        } else {
+                            it
+                        }
+                    }
+                val output = outputBase.resolve(input.relativeTo(inputBase))
                     .apply {
                         parentFile.mkdirs()
                     }
-                    .writeText(it)
+                output.writeText(content)
             }
     }
 }
@@ -259,8 +273,8 @@ val createTestClassSourceTask =
     tasks.register<CreateTestClassSourceTask>("createTestClassSource") {
         group = "build"
         description = "Creates source file of test class."
-        input.set(testClassSourceTemplate)
-        output.set(testClassSource)
+        from.set(testClassSourcesFrom)
+        target.set(testClassSources)
     }
 
 androidComponents.onVariants { variant ->
@@ -286,7 +300,7 @@ androidComponents.onVariants { variant ->
         tasks.register<JavaCompile>("compile${capitalizedVariantName}TestClass") {
             group = "build"
             description = "Compiles test class source file."
-            source(testClassSource)
+            source(testClassSources)
             destinationDirectory.set(testClassDirectory)
             classpath = project.files()
             dependsOn(createTestClassSourceTask)

@@ -2,9 +2,7 @@ package com.tencent.tinker.test.internal
 
 import android.util.Log
 import com.tencent.tinker.TinkerLogger
-import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
-import com.tencent.tinker.internal.TEST_JNI_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.util.logger
@@ -38,9 +36,7 @@ internal fun createTestPatchDirectoryWithMockFiles(): File =
             patchLibraryDirectory.apply {
                 mkdirs()
                 testAbiList.forEach {
-                    resolve(it).apply {
-                        mkdirs()
-                    }
+                    resolve(it).mkdirs()
                 }
             }
         }

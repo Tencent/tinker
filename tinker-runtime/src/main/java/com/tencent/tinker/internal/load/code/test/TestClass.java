@@ -1,4 +1,4 @@
-package com.tencent.tinker.internal.load.dex.test;
+package com.tencent.tinker.internal.load.code.test;
 
 @SuppressWarnings("unused")
 public class TestClass {

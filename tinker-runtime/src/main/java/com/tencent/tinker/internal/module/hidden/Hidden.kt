@@ -9,7 +9,6 @@ import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.util.expected
 import java.io.File
 import java.io.IOException
-import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import kotlin.reflect.KProperty
@@ -118,23 +117,7 @@ private fun Class<*>.method(method: String, vararg parameterTypes: Class<*>): Me
             throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it)
         }
 
-private fun Class<*>.constructorOrNull(vararg parameterTypes: Class<*>): Constructor<*>? =
-    constructors
-        .firstOrNull { it.parameterTypes.contentEquals(parameterTypes) }
-
-private fun Class<*>.constructor(vararg parameterTypes: Class<*>): Constructor<*> =
-    constructorOrNull(*parameterTypes)
-        ?: buildString {
-            append("Cannot find constructor \"")
-            append(name)
-            append(".<init>(")
-            append(parameterTypes.joinToString(",") { it.name })
-            append(")\".")
-        }.let {
-            throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it)
-        }
-
-private class FieldDelegate<T>(
+private class FieldDelegate(
     val name: String,
 ) {
     inline operator fun <reified T> getValue(instance: Any, property: KProperty<*>): T {
@@ -178,7 +161,7 @@ internal fun Class<ClassLoader>.parentLazyInjector(value: ClassLoader): ReflectI
 private const val M_BASE_NAME = "mBase"
 
 internal val Application.base: Any
-        by FieldDelegate<Any>(M_BASE_NAME)
+        by FieldDelegate(M_BASE_NAME)
 
 private const val M_CLASS_LOADER_NAME = "mClassLoader"
 
@@ -191,21 +174,21 @@ internal val Any.classLoaderSetter: ReflectSetter
 private const val M_PACKAGE_INFO_NAME = "mPackageInfo"
 
 internal val Any.packageInfo: Any?
-        by FieldDelegate<Any?>(M_PACKAGE_INFO_NAME)
+        by FieldDelegate(M_PACKAGE_INFO_NAME)
 
 private const val M_DRAWABLE_INFLATER = "mDrawableInflater"
 
 internal val Resources.drawableInflater: Any?
-        by FieldDelegate<Any?>(M_DRAWABLE_INFLATER)
+        by FieldDelegate(M_DRAWABLE_INFLATER)
 
 
 internal val ClassLoader.pathList: Any
-        by FieldDelegate<Any>("pathList")
+        by FieldDelegate("pathList")
 
 private const val DEX_ELEMENTS_NAME = "dexElements"
 
 internal var Any.dexElements: Array<Any>
-        by FieldDelegate<Array<Any>>(DEX_ELEMENTS_NAME)
+        by FieldDelegate(DEX_ELEMENTS_NAME)
 
 internal fun Any.lazySetDexElements(value: Array<Any>): ReflectLazySetter =
     ReflectLazySetter(
@@ -230,7 +213,7 @@ internal typealias JavaMutableList<T> = java.util.List<T>
 
 @get:RequiresApi(Build.VERSION_CODES.M)
 internal val Any.nativeLibraryDirectoriesV23: JavaMutableList<File>?
-        by FieldDelegate<JavaMutableList<File>?>(NATIVE_LIBRARY_DIRECTORIES_NAME)
+        by FieldDelegate(NATIVE_LIBRARY_DIRECTORIES_NAME)
 
 @RequiresApi(Build.VERSION_CODES.M)
 internal fun Any.lazySetNativeLibraryDirectoriesV23(value: ArrayList<File>) =
@@ -241,7 +224,7 @@ internal fun Any.lazySetNativeLibraryDirectoriesV23(value: ArrayList<File>) =
     )
 
 internal val Any.nativeLibraryDirectoriesOld: Array<File>
-        by FieldDelegate<Array<File>>(NATIVE_LIBRARY_DIRECTORIES_NAME)
+        by FieldDelegate(NATIVE_LIBRARY_DIRECTORIES_NAME)
 
 internal fun Any.lazySetNativeLibraryDirectoriesOld(value: Array<File>) =
     ReflectLazySetter(
@@ -256,142 +239,362 @@ private const val DEX_PATH_LIST_SYSTEM_NATIVE_LIBRARY_DIRECTORIES_NAME =
 @get:RequiresApi(Build.VERSION_CODES.M)
 @set:RequiresApi(Build.VERSION_CODES.M)
 internal var Any.systemNativeLibraryDirectories: List<File>
-        by FieldDelegate<List<File>>(DEX_PATH_LIST_SYSTEM_NATIVE_LIBRARY_DIRECTORIES_NAME)
+        by FieldDelegate(DEX_PATH_LIST_SYSTEM_NATIVE_LIBRARY_DIRECTORIES_NAME)
+
+private const val DEFINING_CONTEXT_NAME = "definingContext"
+
+private const val MAKE_DEX_ELEMENTS_NAME = "makeDexElements"
 
 private const val MAKE_PATH_ELEMENTS_NAME = "makePathElements"
 
-@get:RequiresApi(Build.VERSION_CODES.M)
-private val Any.makePathElementsMethod: Method?
-    get() {
-        try {
-            return javaClass.method(
-                MAKE_PATH_ELEMENTS_NAME,
-                List::class.java,
-                File::class.java,
-                List::class.java,
-            )
-        } catch (_: TinkerError) {
-            // Ignored.
-        }
-        try {
-            return javaClass.method(
-                MAKE_PATH_ELEMENTS_NAME,
-                ArrayList::class.java,
-                File::class.java,
-                ArrayList::class.java,
-            )
-        } catch (_: TinkerError) {
-            // Ignored.
-        }
-        return null
-    }
+@get:RequiresApi(Build.VERSION_CODES.N)
+private val Any.definingContext: Any by FieldDelegate(DEFINING_CONTEXT_NAME)
 
-private const val DEX_PATH_LIST_MAKE_DEX_ELEMENTS_NAME = "makeDexElements"
-
-private val Any.makeDexElementsMethod: Method?
-    get() {
-        try {
-            return javaClass.method(
-                DEX_PATH_LIST_MAKE_DEX_ELEMENTS_NAME,
-                List::class.java,
-                File::class.java,
-                List::class.java,
-            )
-        } catch (_: TinkerError) {
-            // Ignored.
-        }
-        try {
-            return javaClass.method(
-                DEX_PATH_LIST_MAKE_DEX_ELEMENTS_NAME,
-                ArrayList::class.java,
-                File::class.java,
-                ArrayList::class.java,
-            )
-        } catch (_: TinkerError) {
-            // Ignored.
-        }
-        return null
-    }
-
-internal fun Any.makeElements(
+@RequiresApi(Build.VERSION_CODES.N)
+private fun Any.makeDexElementsV24(
     files: ArrayList<File>,
     optimizedDirectory: File?,
     suppressedExceptions: ArrayList<IOException>,
 ): Array<Any> {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        makePathElementsMethod?.let { method ->
-            try {
-                @Suppress("UNCHECKED_CAST")
-                return method.invoke(
-                    this,
-                    files,
-                    optimizedDirectory,
-                    suppressedExceptions
-                ) as Array<Any>
-            } catch (exception: ClassCastException) {
-                throw TinkerError(
-                    ErrorType.CAST_FAILED,
-                    "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
-                    exception,
-                )
-            }
-        }
-
-    }
-    makeDexElementsMethod?.let { method ->
-        try {
-            @Suppress("UNCHECKED_CAST")
-            return method.invoke(
-                this,
-                files,
-                optimizedDirectory,
-                suppressedExceptions
-            ) as Array<Any>
-        } catch (exception: ClassCastException) {
-            throw TinkerError(
-                ErrorType.CAST_FAILED,
-                "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
-                exception,
-            )
+    val method = try {
+        javaClass.method(
+            MAKE_DEX_ELEMENTS_NAME,
+            List::class.java,
+            File::class.java,
+            List::class.java,
+            ClassLoader::class.java,
+        )
+    } catch (throwable: Throwable) {
+        buildString {
+            append("Cannot find method \"")
+            append(javaClass.name)
+            append(".")
+            append(MAKE_DEX_ELEMENTS_NAME)
+            append("(")
+            append("java.util.List")
+            append(", ")
+            append("java.io.File")
+            append(", ")
+            append("java.util.List")
+            append(", ")
+            append("java.lang.ClassLoader")
+            append(").")
+        }.let {
+            throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it, throwable)
         }
     }
-    buildString {
-        append("Cannot find method \"")
-        append(javaClass.name)
-        append(".")
-        append(MAKE_PATH_ELEMENTS_NAME)
-        append("/")
-        append(DEX_PATH_LIST_MAKE_DEX_ELEMENTS_NAME)
-        append("(")
-        append("java.util.List/java.util.ArrayList")
-        append(", ")
-        append("java.io.File")
-        append(", ")
-        append("java.util.List/java.util.ArrayList")
-        append(").")
-    }.let {
-        throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it)
+    try {
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(
+            this,
+            files,
+            optimizedDirectory,
+            suppressedExceptions,
+            definingContext,
+        ) as Array<Any>
+    } catch (exception: ClassCastException) {
+        throw TinkerError(
+            ErrorType.CAST_FAILED,
+            "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
+            exception,
+        )
     }
 }
 
-@get:RequiresApi(Build.VERSION_CODES.O)
-private val Any.makeNativeLibraryPathElements: Method
-    get() = javaClass.method(
-        MAKE_PATH_ELEMENTS_NAME,
-        List::class.java,
-    )
-
-@RequiresApi(Build.VERSION_CODES.O)
-internal fun Any.makeNativeLibraryElements(files: List<File>): Array<Any> =
-    makeNativeLibraryPathElements.let { method ->
-        try {
-            @Suppress("UNCHECKED_CAST")
-            method.invoke(this, files) as Array<Any>
-        } catch (exception: ClassCastException) {
-            throw TinkerError(
-                ErrorType.CAST_FAILED,
-                "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
-                exception,
-            )
+@RequiresApi(Build.VERSION_CODES.M)
+private fun Any.makeDexElementsV23(
+    files: ArrayList<File>,
+    optimizedDirectory: File?,
+    suppressedExceptions: ArrayList<IOException>,
+): Array<Any> {
+    val method = try {
+        javaClass.method(
+            MAKE_PATH_ELEMENTS_NAME,
+            List::class.java,
+            File::class.java,
+            List::class.java,
+        )
+    } catch (throwable: Throwable) {
+        buildString {
+            append("Cannot find method \"")
+            append(javaClass.name)
+            append(".")
+            append(MAKE_PATH_ELEMENTS_NAME)
+            append("(")
+            append("java.util.List")
+            append(", ")
+            append("java.io.File")
+            append(", ")
+            append("java.util.List")
+            append(").")
+        }.let {
+            throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it, throwable)
         }
     }
+    try {
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(
+            this,
+            files,
+            optimizedDirectory,
+            suppressedExceptions,
+        ) as Array<Any>
+    } catch (exception: ClassCastException) {
+        throw TinkerError(
+            ErrorType.CAST_FAILED,
+            "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
+            exception,
+        )
+    }
+}
+
+private fun Any.makeDexElementsOld(
+    files: ArrayList<File>,
+    optimizedDirectory: File?,
+    suppressedExceptions: ArrayList<IOException>,
+): Array<Any> {
+    val method = try {
+        javaClass.method(
+            MAKE_DEX_ELEMENTS_NAME,
+            ArrayList::class.java,
+            File::class.java,
+            ArrayList::class.java,
+        )
+    } catch (throwable: Throwable) {
+        buildString {
+            append("Cannot find method \"")
+            append(javaClass.name)
+            append(".")
+            append(MAKE_DEX_ELEMENTS_NAME)
+            append("(")
+            append("java.util.ArrayList")
+            append(", ")
+            append("java.io.File")
+            append(", ")
+            append("java.util.ArrayList")
+            append(").")
+        }.let {
+            throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it, throwable)
+        }
+    }
+    try {
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(
+            this,
+            files,
+            optimizedDirectory,
+            suppressedExceptions,
+        ) as Array<Any>
+    } catch (exception: ClassCastException) {
+        throw TinkerError(
+            ErrorType.CAST_FAILED,
+            "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
+            exception,
+        )
+    }
+}
+
+internal fun Any.makeDexElements(
+    files: ArrayList<File>,
+    optimizedDirectory: File?,
+    suppressedExceptions: ArrayList<IOException>,
+): Array<Any> {
+    var firstThrowable = null as Throwable?
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+            return makeDexElementsV24(
+                files,
+                optimizedDirectory,
+                suppressedExceptions,
+            )
+        } catch (throwable: Throwable) {
+            firstThrowable = throwable
+        }
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+            return makeDexElementsV23(
+                files,
+                optimizedDirectory,
+                suppressedExceptions,
+            )
+        } catch (throwable: Throwable) {
+            if (firstThrowable == null) {
+                firstThrowable = throwable
+            }
+        }
+    }
+    try {
+        return makeDexElementsOld(
+            files,
+            optimizedDirectory,
+            suppressedExceptions,
+        )
+    } catch (throwable: Throwable) {
+        if (firstThrowable == null) {
+            firstThrowable = throwable
+        }
+    }
+    throw firstThrowable!!
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun Any.makeLibraryElementsV26(
+    files: ArrayList<File>,
+): Array<Any> {
+    val method = try {
+        javaClass.method(
+            MAKE_PATH_ELEMENTS_NAME,
+            List::class.java,
+        )
+    } catch (throwable: Throwable) {
+        buildString {
+            append("Cannot find method \"")
+            append(javaClass.name)
+            append(".")
+            append(MAKE_PATH_ELEMENTS_NAME)
+            append("(")
+            append("java.util.List")
+            append(").")
+        }.let {
+            throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it, throwable)
+        }
+    }
+    try {
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(
+            this,
+            files,
+        ) as Array<Any>
+    } catch (exception: ClassCastException) {
+        throw TinkerError(
+            ErrorType.CAST_FAILED,
+            "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
+            exception,
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.N)
+private fun Any.makeLibraryElementsV24(
+    files: ArrayList<File>,
+    suppressedExceptions: ArrayList<IOException>,
+): Array<Any> {
+    val method = try {
+        javaClass.method(
+            MAKE_PATH_ELEMENTS_NAME,
+            List::class.java,
+            List::class.java,
+            ClassLoader::class.java,
+        )
+    } catch (throwable: Throwable) {
+        buildString {
+            append("Cannot find method \"")
+            append(javaClass.name)
+            append(".")
+            append(MAKE_PATH_ELEMENTS_NAME)
+            append("(")
+            append("java.util.List")
+            append(", ")
+            append("java.util.List")
+            append(", ")
+            append("java.lang.ClassLoader")
+            append(").")
+        }.let {
+            throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it, throwable)
+        }
+    }
+    try {
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(
+            this,
+            files,
+            suppressedExceptions,
+            definingContext,
+        ) as Array<Any>
+    } catch (exception: ClassCastException) {
+        throw TinkerError(
+            ErrorType.CAST_FAILED,
+            "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
+            exception,
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+private fun Any.makeLibraryElementsV23(
+    files: ArrayList<File>,
+    suppressedExceptions: ArrayList<IOException>,
+): Array<Any> {
+    val method = try {
+        javaClass.method(
+            MAKE_PATH_ELEMENTS_NAME,
+            List::class.java,
+            File::class.java,
+            List::class.java,
+        )
+    } catch (throwable: Throwable) {
+        buildString {
+            append("Cannot find method \"")
+            append(javaClass.name)
+            append(".")
+            append(MAKE_PATH_ELEMENTS_NAME)
+            append("(")
+            append("java.util.List")
+            append(", ")
+            append("java.io.File")
+            append(", ")
+            append("java.util.List")
+            append(").")
+        }.let {
+            throw TinkerError(ErrorType.NO_SUCH_ELEMENT, it, throwable)
+        }
+    }
+    try {
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(
+            this,
+            files,
+            null,
+            suppressedExceptions,
+        ) as Array<Any>
+    } catch (exception: ClassCastException) {
+        throw TinkerError(
+            ErrorType.CAST_FAILED,
+            "Return type of method \"${method.descriptor}\" is not \"Array<Any>\".",
+            exception,
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+internal fun Any.makeLibraryElements(
+    files: ArrayList<File>,
+    suppressedExceptions: ArrayList<IOException>,
+): Array<Any> {
+    var firstThrowable = null as Throwable?
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        try {
+            return makeLibraryElementsV26(files)
+        } catch (throwable: Throwable) {
+            firstThrowable = throwable
+        }
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+            return makeLibraryElementsV24(files, suppressedExceptions)
+        } catch (throwable: Throwable) {
+            if (firstThrowable == null) {
+                firstThrowable = throwable
+            }
+        }
+    }
+    try {
+        return makeLibraryElementsV23(files, suppressedExceptions)
+    } catch (throwable: Throwable) {
+        if (firstThrowable == null) {
+            firstThrowable = throwable
+        }
+    }
+    throw firstThrowable!!
+}
