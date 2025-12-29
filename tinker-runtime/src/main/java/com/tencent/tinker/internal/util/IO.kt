@@ -5,9 +5,27 @@ import android.system.Os
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
+import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
 import java.nio.file.Files
 import kotlin.io.use
+
+/**
+ * Some old versions of Android throws `IOException` with errno `EAGAIN` instead of returning null
+ * while calling `FileChannel.tryLock()`. We have to handle this case.
+ */
+private fun FileChannel.compatTryLock(shared: Boolean = false): FileLock? {
+    try {
+        return tryLock(0, Long.MAX_VALUE, shared)
+    } catch (exception: IOException) {
+        exception.message?.let {
+            if (it.contains("EAGAIN")) {
+                return null
+            }
+        }
+        throw exception
+    }
+}
 
 /**
  * Closes the given resource without throwing any exceptions.
@@ -63,7 +81,7 @@ internal var File.guardedContent: ByteArray
 internal val File.guardedContentNullable: ByteArray?
     get() = inputStream().use { stream ->
         stream.channel
-            .tryLock(0, Long.MAX_VALUE, true)
+            .compatTryLock(true)
             ?.use {
                 stream.readBytes()
             }
@@ -99,7 +117,7 @@ internal fun <T> File.guardedReadOrWriteContentNullable(block: (RandomAccessFile
         }
     }
     RandomAccessFile(this, "rw").use { file ->
-        file.channel.tryLock()
+        file.channel.compatTryLock()
             ?.use {
                 block(file)
             }
@@ -151,7 +169,7 @@ internal val File.escapedGuardedContentSharedNullable: EscapedGuardedContent?
     get() {
         val stream = inputStream()
         val lock = try {
-            stream.channel.tryLock(0, Long.MAX_VALUE, true)
+            stream.channel.compatTryLock(true)
         } catch (_: Throwable) {
             stream.closeQuietly()
             return null
@@ -188,7 +206,7 @@ internal fun File.escapedGuardedContentExclusive(content: ByteArray): EscapedGua
 internal fun File.escapedGuardedContentExclusiveNullable(content: ByteArray): EscapedGuardedContent? {
     val stream = outputStream()
     val lock = try {
-        stream.channel.tryLock()
+        stream.channel.compatTryLock()
     } catch (_: Throwable) {
         stream.closeQuietly()
         return null
