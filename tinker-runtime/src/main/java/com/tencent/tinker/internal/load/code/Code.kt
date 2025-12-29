@@ -59,6 +59,16 @@ internal abstract class CodeLoader : Loader() {
         loadForCode()
     }
 
+    /**
+     * Whether to verify dependencies library loading.
+     *
+     * Some load strategies may unable to hijack dependency libraries loading, the verification
+     * should be disabled.
+     *
+     * FIXME: Let all load strategies to support dependency library loading verification.
+     */
+    open val verifyDependencyLibraryLoading: Boolean = true
+
     private fun verify(classLoader: ClassLoader) {
         verifyDex(classLoader)
         verifyLibrary(classLoader)
@@ -121,20 +131,22 @@ internal abstract class CodeLoader : Loader() {
                 "Cannot load patched test JNI library.",
             )
         }
-        val fromDependency = try {
-            clazz.getDeclaredMethod("fromDependency").invoke(null) as String
-        } catch (throwable: Throwable) {
-            throw TinkerError(
-                ErrorType.TEST_RESOURCE_BROKEN,
-                "Cannot find \"fromDependency\" method from \"${TEST_LIBRARY_NAME}\".",
-                throwable,
-            )
-        }
-        if (fromDependency != "<_P_>") {
-            throw TinkerError(
-                ErrorType.VERIFY_FAILED,
-                "Cannot load patched test dependency library.",
-            )
+        if (verifyDependencyLibraryLoading) {
+            val fromDependency = try {
+                clazz.getDeclaredMethod("fromDependency").invoke(null) as String
+            } catch (throwable: Throwable) {
+                throw TinkerError(
+                    ErrorType.TEST_RESOURCE_BROKEN,
+                    "Cannot find \"fromDependency\" method from \"${TEST_LIBRARY_NAME}\".",
+                    throwable,
+                )
+            }
+            if (fromDependency != "<_P_>") {
+                throw TinkerError(
+                    ErrorType.VERIFY_FAILED,
+                    "Cannot load patched test dependency library.",
+                )
+            }
         }
     }
 
