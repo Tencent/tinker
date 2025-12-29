@@ -12,6 +12,7 @@ internal class TinkerError(
         LOAD_CODE,
         LOAD_CODE_OLD,
         LOAD_CODE_NOUGAT,
+        LOAD_RESOURCE,
         MODULE_PATCH,
         MODULE_OAT,
         MODULE_LAYOUT,
