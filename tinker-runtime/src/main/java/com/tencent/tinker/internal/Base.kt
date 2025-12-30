@@ -30,8 +30,8 @@ internal val File.patchDexDirectory: File
 internal val File.patchLibraryDirectory: File
     get() = resolve("lib")
 
-internal val File.patchResourceDirectory: File
-    get() = resolve("res")
+internal val File.patchResourceApkFile: File
+    get() = resolve("resources.apk")
 
 internal val File.patchOatDirectory: File
     get() = resolve("oat")
@@ -66,8 +66,8 @@ internal class Patch(
         get() = directory.patchLibraryDirectory
 
 
-    val resourceDirectory: File
-        get() = directory.patchResourceDirectory
+    val resourceApkFile: File
+        get() = directory.patchResourceApkFile
 
 
     val oatDirectory: File

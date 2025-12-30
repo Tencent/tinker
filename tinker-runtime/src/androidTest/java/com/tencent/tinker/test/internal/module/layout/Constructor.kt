@@ -10,7 +10,7 @@ import com.tencent.tinker.internal.patchApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchOatDirectory
-import com.tencent.tinker.internal.patchResourceDirectory
+import com.tencent.tinker.internal.patchResourceApkFile
 import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.test.createTestDirectory
 import com.tencent.tinker.test.rethrowAsIllegalState
@@ -103,7 +103,7 @@ class PatchLayoutConstructorImplTest {
             patchApkFile.createNewFile()
             patchDexDirectory.mkdirs()
             patchLibraryDirectory.mkdirs()
-            patchResourceDirectory.mkdirs()
+            patchResourceApkFile.createNewFile()
         }
         val oatDirectory = createTestDirectory()
 
@@ -148,9 +148,9 @@ class PatchLayoutConstructorImplTest {
             baseDirectory.patchLibraryDirectory,
         )
         assertDifferentLink(
-            constructedByMain.patchResourceDirectory,
-            constructedByOthers.patchResourceDirectory,
-            baseDirectory.patchResourceDirectory,
+            constructedByMain.patchResourceApkFile,
+            constructedByOthers.patchResourceApkFile,
+            baseDirectory.patchResourceApkFile,
         )
         assertDifferentLink(
             constructedByMain.patchOatDirectory,
@@ -194,13 +194,8 @@ class PatchLayoutConstructorImplTest {
             .apply {
                 createNewFile()
             }
-        val resourceDirectory = baseDirectory
-            .patchResourceDirectory
-            .apply {
-                mkdirs()
-            }
-        val resourceFile = resourceDirectory
-            .resolve("res.xml")
+        val resourceApkFile = baseDirectory
+            .patchResourceApkFile
             .apply {
                 createNewFile()
             }
@@ -227,8 +222,7 @@ class PatchLayoutConstructorImplTest {
         assertTrue(dexFile.exists())
         assertTrue(libraryDirectory.exists())
         assertTrue(libraryFile.exists())
-        assertTrue(resourceDirectory.exists())
-        assertTrue(resourceFile.exists())
+        assertTrue(resourceApkFile.exists())
         assertTrue(oatDirectory.exists())
         assertTrue(oatFile.exists())
     }
@@ -244,7 +238,7 @@ class PatchLayoutConstructorImplTest {
             patchApkFile.createNewFile()
             patchDexDirectory.mkdirs()
             patchLibraryDirectory.mkdirs()
-            patchResourceDirectory.mkdirs()
+            patchResourceApkFile.createNewFile()
         }
         val oatDirectory = createTestDirectory()
         assertThrows(IllegalStateException::class.java) {
@@ -284,7 +278,7 @@ class PatchLayoutConstructorImplTest {
             patchApkFile.createNewFile()
             patchDexDirectory.mkdirs()
             patchLibraryDirectory.mkdirs()
-            patchResourceDirectory.mkdirs()
+            patchResourceApkFile.createNewFile()
         }
         // Invalid oat directory, should be a directory.
         val oatDirectory = File.createTempFile("tinker-test-", "")
@@ -308,7 +302,7 @@ class PatchLayoutConstructorImplTest {
             patchApkFile.mkdirs()
             patchDexDirectory.mkdirs()
             patchLibraryDirectory.mkdirs()
-            patchResourceDirectory.mkdirs()
+            patchResourceApkFile.createNewFile()
         }
         val oatDirectory = createTestDirectory()
         val errorCode = assertThrows(IllegalStateException::class.java) {
@@ -335,7 +329,7 @@ class PatchLayoutConstructorImplTest {
             // Invalid dex directory, should be a directory.
             patchDexDirectory.createNewFile()
             patchLibraryDirectory.mkdirs()
-            patchResourceDirectory.mkdirs()
+            patchResourceApkFile.createNewFile()
         }
         val oatDirectory = createTestDirectory()
         val errorCode = assertThrows(IllegalStateException::class.java) {
@@ -362,7 +356,7 @@ class PatchLayoutConstructorImplTest {
             patchDexDirectory.mkdirs()
             // Invalid library directory, should be a directory.
             patchLibraryDirectory.createNewFile()
-            patchResourceDirectory.mkdirs()
+            patchResourceApkFile.createNewFile()
         }
         val oatDirectory = createTestDirectory()
         val errorCode = assertThrows(IllegalStateException::class.java) {
@@ -378,18 +372,18 @@ class PatchLayoutConstructorImplTest {
     }
 
     /**
-     * Tests constructing with invalid resource directory can raise error expectedly.
+     * Tests constructing with invalid resource apk file can raise error expectedly.
      */
     @Test
-    fun constructWithInvalidResourceDirectory() {
+    fun constructWithInvalidResourceApkFile() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val baseDirectory = createTestDirectory().apply {
             patchApkFile.createNewFile()
             patchDexDirectory.mkdirs()
             patchLibraryDirectory.mkdirs()
-            // Invalid resource directory, should be a directory.
-            patchResourceDirectory.createNewFile()
+            // Invalid resource apk file, should be a file.
+            patchResourceApkFile.mkdirs()
         }
         val oatDirectory = createTestDirectory()
         val errorCode = assertThrows(IllegalStateException::class.java) {

@@ -8,7 +8,7 @@ import com.tencent.tinker.internal.patchApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchOatDirectory
-import com.tencent.tinker.internal.patchResourceDirectory
+import com.tencent.tinker.internal.patchResourceApkFile
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.currentProcess
 import com.tencent.tinker.internal.util.ensureIsExistingDirectory
@@ -29,7 +29,7 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
             File::patchApkFile to File::isFile,
             File::patchDexDirectory to File::isDirectory,
             File::patchLibraryDirectory to File::isDirectory,
-            File::patchResourceDirectory to File::isDirectory
+            File::patchResourceApkFile to File::isFile
         )
 
         private fun refreshProcessBaseDirectory(directory: File) {
