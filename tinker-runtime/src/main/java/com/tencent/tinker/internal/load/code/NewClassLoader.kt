@@ -5,14 +5,11 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.code.NewClassLoaderCodeLoader.ClassLoaderInjector
-import com.tencent.tinker.internal.module.hidden.ReflectInjector
-import com.tencent.tinker.internal.module.hidden.ReflectSetter
 import com.tencent.tinker.internal.module.hidden.base
 import com.tencent.tinker.internal.module.hidden.classLoaderSetter
 import com.tencent.tinker.internal.module.hidden.drawableInflater
-import com.tencent.tinker.internal.module.hidden.nativeLibraryDirectoriesV23
 import com.tencent.tinker.internal.module.hidden.packageInfo
-import com.tencent.tinker.internal.module.hidden.parentLazyInjector
+import com.tencent.tinker.internal.module.hidden.classLoaderParentInjector
 import com.tencent.tinker.internal.module.hidden.pathList
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.loader.TinkerClassLoader
@@ -29,10 +26,10 @@ private object CurrentThreadContextClassLoaderInjector
 
 @RequiresApi(Build.VERSION_CODES.N)
 private class FieldClassLoaderInjector(
-    private val delegate: ReflectSetter
+    private val delegate: (ClassLoader) -> Unit,
 ) : ClassLoaderInjector() {
     override fun inject(classLoader: ClassLoader) {
-        delegate.set(classLoader)
+        delegate(classLoader)
     }
 }
 
@@ -148,7 +145,7 @@ internal abstract class NewClassLoaderCodeLoader(
 internal class V31NonHardeningCodeLoader private constructor(
     reference: Array<ClassLoader?>,
     classLoaderInjectors: Iterable<ClassLoaderInjector>,
-    private val parentInjector: ReflectInjector,
+    private val injectParent: ClassLoader.() -> Unit,
     private val dexPaths: String,
     private val libraryDirectoryPaths: String,
     private val classLoaderConstructor: (String, String, ClassLoader) -> ClassLoader,
@@ -156,7 +153,9 @@ internal class V31NonHardeningCodeLoader private constructor(
 
     override fun createClassLoader(): ClassLoader =
         classLoaderConstructor(dexPaths, libraryDirectoryPaths, ClassLoader.getSystemClassLoader())
-            .also(parentInjector::inject)
+            .also {
+                it.injectParent()
+            }
 
     class Factory(
         reference: Array<ClassLoader?>,
@@ -181,17 +180,15 @@ internal class V31NonHardeningCodeLoader private constructor(
         override fun createLoaderByPaths(
             dexPaths: String,
             libraryDirectoryPaths: String
-        ): V31NonHardeningCodeLoader {
-            val parentInjector = ClassLoader::class.java.parentLazyInjector(source)
-            return V31NonHardeningCodeLoader(
+        ): V31NonHardeningCodeLoader =
+            V31NonHardeningCodeLoader(
                 reference = reference,
                 classLoaderInjectors = classLoaderInjectors,
-                parentInjector = parentInjector,
+                injectParent = classLoaderParentInjector(source),
                 dexPaths = dexPaths,
                 libraryDirectoryPaths = libraryDirectoryPaths,
                 classLoaderConstructor = classLoaderConstructor,
             )
-        }
     }
 }
 

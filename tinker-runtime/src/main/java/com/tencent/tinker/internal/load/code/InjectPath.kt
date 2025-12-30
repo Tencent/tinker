@@ -4,26 +4,15 @@ import android.app.Application
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.internal.module.hidden.DexPathListDelegate
 import com.tencent.tinker.internal.module.hidden.JavaMutableList
-import com.tencent.tinker.internal.module.hidden.dexElements
-import com.tencent.tinker.internal.module.hidden.lazySetDexElements
-import com.tencent.tinker.internal.module.hidden.lazySetNativeLibraryDirectoriesOld
-import com.tencent.tinker.internal.module.hidden.lazySetNativeLibraryDirectoriesV23
-import com.tencent.tinker.internal.module.hidden.lazySetNativeLibraryPathElements
-import com.tencent.tinker.internal.module.hidden.makeDexElements
-import com.tencent.tinker.internal.module.hidden.makeLibraryElements
-import com.tencent.tinker.internal.module.hidden.nativeLibraryDirectoriesOld
-import com.tencent.tinker.internal.module.hidden.nativeLibraryDirectoriesV23
 import com.tencent.tinker.internal.module.hidden.pathList
-import com.tencent.tinker.internal.module.hidden.systemNativeLibraryDirectories
 import com.tencent.tinker.internal.util.expected
 import java.io.File
 import java.io.IOException
 import kotlin.collections.filter
 import kotlin.collections.plus
 import java.lang.reflect.Array as JvmReflectArray
-
-private typealias DexPathList = Any
 
 /**
  * Code loader which loads by injecting path into system class loader.
@@ -66,7 +55,7 @@ internal class InjectPathCodeLoader(
         )
 
         private fun createLoadActionsForDex(
-            dexPathList: DexPathList,
+            dexPathList: DexPathListDelegate,
             dexFiles: List<File>,
             outputDirectory: File
         ): List<Runnable> =
@@ -126,7 +115,7 @@ internal class InjectPathCodeLoader(
 
         @RequiresApi(Build.VERSION_CODES.M)
         private fun createLoadActionsForLibraryV23(
-            dexPathList: DexPathList,
+            dexPathList: DexPathListDelegate,
             libraryDirectories: List<File>,
         ): List<Runnable> =
             buildList {
@@ -160,7 +149,7 @@ internal class InjectPathCodeLoader(
             }
 
         private fun createLoadActionsForLibraryOld(
-            dexPathList: DexPathList,
+            dexPathList: DexPathListDelegate,
             libraryDirectories: List<File>,
         ): List<Runnable> =
             buildList {
@@ -174,7 +163,7 @@ internal class InjectPathCodeLoader(
             }
 
         private fun createLoadActionsForLibrary(
-            dexPathList: DexPathList,
+            dexPathList: DexPathListDelegate,
             libraryDirectories: List<File>,
         ): List<Runnable> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
