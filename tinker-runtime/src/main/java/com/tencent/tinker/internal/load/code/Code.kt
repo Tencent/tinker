@@ -46,17 +46,17 @@ internal abstract class CodeLoader : Loader() {
     }
 
     override fun load() {
-        loadForCode().also(::verify)
+        doLoad().also(::verify)
     }
 
     /**
      * Loads patch dex files, and returns a class loader that can load classes from patch dex files.
      */
-    protected abstract fun loadForCode(): ClassLoader
+    protected abstract fun doLoad(): ClassLoader
 
     @VisibleForTesting
     fun loadForCodeForTesting() {
-        loadForCode()
+        doLoad()
     }
 
     /**

@@ -94,7 +94,7 @@ internal abstract class NewClassLoaderCodeLoader(
 
     protected abstract fun createClassLoader(): ClassLoader
 
-    override fun loadForCode(): ClassLoader =
+    override fun doLoad(): ClassLoader =
         createClassLoader().also { classLoader ->
             classLoaderInjectors.forEach { injector ->
                 injector.inject(classLoader)

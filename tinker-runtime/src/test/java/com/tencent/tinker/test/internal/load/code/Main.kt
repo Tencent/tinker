@@ -20,7 +20,7 @@ class DexLoaderTest {
 
     private class TestLoader : CodeLoader() {
 
-        override fun loadForCode(): ClassLoader {
+        override fun doLoad(): ClassLoader {
             return TestClassLoader
         }
 

@@ -33,7 +33,7 @@ internal class InjectPathCodeLoader(
     override val verifyDependencyLibraryLoading: Boolean
         get() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
 
-    override fun loadForCode(): ClassLoader {
+    override fun doLoad(): ClassLoader {
         actions.forEach {
             it.run()
         }
