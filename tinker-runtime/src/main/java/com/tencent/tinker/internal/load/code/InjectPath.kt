@@ -4,9 +4,9 @@ import android.app.Application
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.module.hidden.DexPathListDelegate
-import com.tencent.tinker.internal.module.hidden.JavaMutableList
-import com.tencent.tinker.internal.module.hidden.pathList
+import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
+import com.tencent.tinker.internal.load.DexPathListDelegate
+import com.tencent.tinker.internal.load.JavaMutableList
 import com.tencent.tinker.internal.util.expected
 import java.io.File
 import java.io.IOException
@@ -19,7 +19,7 @@ import java.lang.reflect.Array as JvmReflectArray
  */
 internal class InjectPathCodeLoader(
     private val source: ClassLoader,
-    private val actions: Iterable<Runnable>,
+    private val actions: Iterable<() -> Unit>,
 ) : CodeLoader() {
 
     private object ErrorType : TinkerError.Type {
@@ -35,7 +35,7 @@ internal class InjectPathCodeLoader(
 
     override fun doLoad(): ClassLoader {
         actions.forEach {
-            it.run()
+            it.invoke()
         }
         return source
     }
@@ -58,7 +58,7 @@ internal class InjectPathCodeLoader(
             dexPathList: DexPathListDelegate,
             dexFiles: List<File>,
             outputDirectory: File
-        ): List<Runnable> =
+        ): List<() -> Unit> =
             buildList {
                 val inputsAsArrayList = ArrayList<File>().apply {
                     addAll(dexFiles)
@@ -97,15 +97,15 @@ internal class InjectPathCodeLoader(
                         it as Array<Any>
                     }
                 dexPathList
-                    .lazySetDexElements(updatedDexElements)
+                    .lazySelfSetDexElements(updatedDexElements)
                     .let(::add)
             }
 
         private class ListUpdater<T>(
             private val source: JavaMutableList<T>,
             private val target: List<T>,
-        ) : Runnable {
-            override fun run() {
+        ) : () -> Unit {
+            override fun invoke() {
                 source.apply {
                     clear()
                     addAll(target)
@@ -117,7 +117,7 @@ internal class InjectPathCodeLoader(
         private fun createLoadActionsForLibraryV23(
             dexPathList: DexPathListDelegate,
             libraryDirectories: List<File>,
-        ): List<Runnable> =
+        ): List<() -> Unit> =
             buildList {
                 val originalNativeLibraryDirectories =
                     dexPathList.nativeLibraryDirectoriesV23
@@ -132,7 +132,7 @@ internal class InjectPathCodeLoader(
                         result
                     } else {
                         dexPathList
-                            .lazySetNativeLibraryDirectoriesV23(ArrayList(libraryDirectories))
+                            .lazySelfSetNativeLibraryDirectoriesV23(ArrayList(libraryDirectories))
                             .let(::add)
                         libraryDirectories
                     }
@@ -144,28 +144,28 @@ internal class InjectPathCodeLoader(
                         suppressedExceptions = suppressedExceptions,
                     )
                 suppressedExceptions.forEach { throw it }
-                elements.let(dexPathList::lazySetNativeLibraryPathElements)
+                elements.let(dexPathList::lazySelfSetNativeLibraryPathElements)
                     .let(::add)
             }
 
         private fun createLoadActionsForLibraryOld(
             dexPathList: DexPathListDelegate,
             libraryDirectories: List<File>,
-        ): List<Runnable> =
+        ): List<() -> Unit> =
             buildList {
                 val originalNativeLibraryDirectories =
                     dexPathList.nativeLibraryDirectoriesOld
                 val updatedNativeLibraryDirectories =
                     libraryDirectories.toTypedArray() + originalNativeLibraryDirectories
                 dexPathList
-                    .lazySetNativeLibraryDirectoriesOld(updatedNativeLibraryDirectories)
+                    .lazySelfSetNativeLibraryDirectoriesOld(updatedNativeLibraryDirectories)
                     .let(::add)
             }
 
         private fun createLoadActionsForLibrary(
             dexPathList: DexPathListDelegate,
             libraryDirectories: List<File>,
-        ): List<Runnable> {
+        ): List<() -> Unit> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 return createLoadActionsForLibraryV23(dexPathList, libraryDirectories)
             }
@@ -178,8 +178,8 @@ internal class InjectPathCodeLoader(
             libraryDirectories: List<File>
         ): CodeLoader {
             expected("create code loader", ErrorType) {
-                val actions = mutableListOf<Runnable>()
-                val dexPathList = source.pathList
+                val actions = mutableListOf<() -> Unit>()
+                val dexPathList = source.delegated.pathList
                 createLoadActionsForDex(
                     dexPathList,
                     dexFiles,

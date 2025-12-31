@@ -5,12 +5,10 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.code.NewClassLoaderCodeLoader.ClassLoaderInjector
-import com.tencent.tinker.internal.module.hidden.base
-import com.tencent.tinker.internal.module.hidden.classLoaderSetter
-import com.tencent.tinker.internal.module.hidden.drawableInflater
-import com.tencent.tinker.internal.module.hidden.packageInfo
-import com.tencent.tinker.internal.module.hidden.classLoaderParentInjector
-import com.tencent.tinker.internal.module.hidden.pathList
+import com.tencent.tinker.internal.load.ApplicationDelegate.Companion.delegated
+import com.tencent.tinker.internal.load.ClassLoaderDelegate
+import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
+import com.tencent.tinker.internal.load.ResourcesDelegate.Companion.delegated
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.loader.TinkerClassLoader
 import dalvik.system.DelegateLastClassLoader
@@ -39,9 +37,9 @@ private fun createDefaultClassLoaderInjectors(
 ): List<ClassLoaderInjector> =
     buildList {
         CurrentThreadContextClassLoaderInjector.let(::add)
-        val baseContext = application.base
+        val baseContext = application.delegated.base
         try {
-            baseContext.classLoaderSetter
+            baseContext.classLoaderSelfSetter
                 .let(::FieldClassLoaderInjector)
                 .let(::add)
         } catch (_: Throwable) {
@@ -49,12 +47,12 @@ private fun createDefaultClassLoaderInjectors(
             // should try our best to replace this field in case some customized system has one.
         }
         baseContext.packageInfo
-            ?.classLoaderSetter
+            ?.classLoaderSelfSetter
             ?.let(::FieldClassLoaderInjector)
             ?.let(::add)
-        val resources = application.resources
+        val resources = application.resources.delegated
         try {
-            resources.classLoaderSetter
+            resources.classLoaderSelfSetter
                 .let(::FieldClassLoaderInjector)
                 .let(::add)
         } catch (_: Throwable) {
@@ -62,7 +60,7 @@ private fun createDefaultClassLoaderInjectors(
         }
         try {
             resources.drawableInflater
-                ?.classLoaderSetter
+                ?.classLoaderSelfSetter
                 ?.let(::FieldClassLoaderInjector)
                 ?.let(::add)
         } catch (_: Throwable) {
@@ -115,7 +113,7 @@ internal abstract class NewClassLoaderCodeLoader(
         ): CodeLoader {
             expected("create code loader", ErrorType) {
                 val dexPathList =
-                    source.pathList
+                    source.delegated.pathList
                 val dexPaths =
                     dexFiles.joinToString(File.pathSeparator) { it.absolutePath }
                 val sourceNativeLibraryDirectories =
@@ -145,7 +143,7 @@ internal abstract class NewClassLoaderCodeLoader(
 internal class V31NonHardeningCodeLoader private constructor(
     reference: Array<ClassLoader?>,
     classLoaderInjectors: Iterable<ClassLoaderInjector>,
-    private val injectParent: ClassLoader.() -> Unit,
+    private val lazySetParent: ClassLoader.() -> Unit,
     private val dexPaths: String,
     private val libraryDirectoryPaths: String,
     private val classLoaderConstructor: (String, String, ClassLoader) -> ClassLoader,
@@ -154,7 +152,7 @@ internal class V31NonHardeningCodeLoader private constructor(
     override fun createClassLoader(): ClassLoader =
         classLoaderConstructor(dexPaths, libraryDirectoryPaths, ClassLoader.getSystemClassLoader())
             .also {
-                it.injectParent()
+                it.lazySetParent()
             }
 
     class Factory(
@@ -184,7 +182,7 @@ internal class V31NonHardeningCodeLoader private constructor(
             V31NonHardeningCodeLoader(
                 reference = reference,
                 classLoaderInjectors = classLoaderInjectors,
-                injectParent = classLoaderParentInjector(source),
+                lazySetParent = ClassLoaderDelegate.lazySetParent(source),
                 dexPaths = dexPaths,
                 libraryDirectoryPaths = libraryDirectoryPaths,
                 classLoaderConstructor = classLoaderConstructor,

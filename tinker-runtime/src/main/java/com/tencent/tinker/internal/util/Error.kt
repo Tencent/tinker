@@ -55,3 +55,21 @@ internal inline fun <reified T> expected(
     }
     return expected(action, enumEntries<T>()[0], cleaner, scope)
 }
+
+/**
+ * Tries each strategy and returns the first successful result. If all strategies fail, the function throws the first
+ * error.
+ */
+internal fun <T> tryEach(
+    strategies: Iterable<() -> T>,
+): T {
+    val throwables =
+        strategies.mapNotNull { strategy ->
+            try {
+                return strategy() ?: return@mapNotNull null
+            } catch (throwable: Throwable) {
+                return@mapNotNull throwable
+            }
+        }
+    throw throwables.first()
+}

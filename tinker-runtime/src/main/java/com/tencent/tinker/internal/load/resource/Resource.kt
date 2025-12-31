@@ -4,13 +4,19 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Message
+import androidx.annotation.RequiresApi
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.Loader
-import com.tencent.tinker.internal.module.hidden.ActivityThreadDelegate
-import com.tencent.tinker.internal.module.hidden.AssetManagerDelegate
-import com.tencent.tinker.internal.module.hidden.ResourceManagerDelegate
-import com.tencent.tinker.internal.module.hidden.transactionGetCallbacks
+import com.tencent.tinker.internal.load.ActivityThreadDelegate
+import com.tencent.tinker.internal.load.AssetManagerDelegate
+import com.tencent.tinker.internal.load.ClientTransactionDelegate
+import com.tencent.tinker.internal.load.ClientTransactionDelegate.Companion.delegatedAsClientTransaction
+import com.tencent.tinker.internal.load.LoadedApkDelegate
+import com.tencent.tinker.internal.load.ResourceImplementationDelegate
+import com.tencent.tinker.internal.load.ResourceKeyDelegate
+import com.tencent.tinker.internal.load.ResourceManagerDelegate
+import com.tencent.tinker.internal.load.ResourcesDelegate
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.warnLog
 import java.io.File
@@ -28,105 +34,181 @@ private enum class ErrorType : TinkerError.Type {
         get() = ordinal
 }
 
-internal class ResourceLoader(
-    private val context: Context,
-    private val resourceApk: File
-) : Loader() {
+private class CurrentActivityThreadUpdater(
+    private val original: String,
+    private val updated: String,
+) : () -> Unit {
 
-    companion object {
-        private fun Context.replaceResourceDirectoriesOfCurrentActivityThreadPackages(
-            resourceApk: File
-        ) {
-            val activityThread = ActivityThreadDelegate.currentActivityThread
-            activityThread.referencedPackages.forEach {
-                if (applicationInfo.sourceDir != it.resDir) {
-                    return@forEach
-                }
-                it.resDir = resourceApk.absolutePath
+    private val getCurrentActivityThreadReferencedPackages: () -> List<LoadedApkDelegate> =
+        ActivityThreadDelegate.currentActivityThread.referencedPackagesSelfGetter
+
+    private val getResourceDirectory: LoadedApkDelegate.() -> String =
+        LoadedApkDelegate.resDirGetter
+
+    private val setResourceDirectory: LoadedApkDelegate.(String) -> Unit =
+        LoadedApkDelegate.resDirSetter
+
+    override fun invoke() {
+        getCurrentActivityThreadReferencedPackages().forEach {
+            if (original != it.getResourceDirectory()) {
+                return@forEach
             }
+            it.setResourceDirectory(updated)
         }
+    }
+}
 
-        private fun Context.replaceAssetManager(
-            resourceApk: File
-        ) {
-            val newAssetManager =
-                AssetManagerDelegate.createInstanceLike(assets)
-            newAssetManager.addAssetPath(resourceApk.absolutePath)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                applicationInfo.sharedLibraryFiles.forEach { path ->
-                    if (!path.endsWith(".apk")) {
-                        return@forEach
-                    }
-                    newAssetManager.addAssetPathAsSharedLibrary(path)
-                }
-            }
-            newAssetManager.initializeStringBlocksIfNeeded()
+private class ResourceManagerUpdater(
+    private val assetManager: AssetManagerDelegate,
+    private val original: String,
+    private val updated: String,
+) : () -> Unit {
 
-            ResourceManagerDelegate.referencedResources.forEach {
-                it.assets = newAssetManager
-                it.clearPreloadTypedArrayIssue()
-                it.refreshConfiguration()
-            }
+    private class ReferencedResources(
+        private val assetManager: AssetManagerDelegate,
+    ) : () -> Unit {
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                ResourceManagerDelegate.resourceImplementations.forEach { (key, impl) ->
-                    if (applicationInfo.sourceDir != key.resDir) {
-                        return@forEach
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                        key.resDir = resourceApk.absolutePath
-                    }
-                    impl?.assets = newAssetManager
-                }
-            }
-        }
+        private val getResourceManagerReferencedResources: () -> List<ResourcesDelegate> =
+            ResourceManagerDelegate.instance.referencedResourcesSelfGetter
 
-        /**
-         * Try resolving issues caused by WebView on Android N.
-         *
-         * On Android N, if an activity contains a webview, our resource patch may lost effects if
-         * screen rotates.
-         */
-        private fun Context.replacePublicSourceDirectory(
-            resourceApk: File
-        ) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                applicationInfo.publicSourceDir = resourceApk.absolutePath
-            }
-        }
+        private val setAssetManager: ResourcesDelegate.(AssetManagerDelegate) -> Unit =
+            ResourcesDelegate.assetsSetter
 
-        private fun Context.injectCallback(
-            resourceApk: File,
-            initialUpdatedTimestamp: Long,
-        ) {
-            val activityThread = ActivityThreadDelegate.currentActivityThread
-            val handler = activityThread.handler
-            val original = handler.callback
-            if (original is InsuranceHandlerCallback) {
-                return
+        override fun invoke() {
+            getResourceManagerReferencedResources().forEach {
+                it.setAssetManager(assetManager)
             }
-            handler.callback = InsuranceHandlerCallback(
-                context = this,
-                resourceApk = resourceApk,
-                reloadTriggerMessageIds = buildList {
-                    handler.launchActivityMessageId?.let(::add)
-                    handler.relaunchActivityMessageId?.let(::add)
-                }.toIntArray(),
-                transactionMessageId = handler.transactionMessageId,
-                original = original,
-                initialUpdatedTimestamp = initialUpdatedTimestamp,
-            )
         }
     }
 
-    private class InsuranceHandlerCallback(
-        private val context: Context,
+    @RequiresApi(Build.VERSION_CODES.N)
+    private class ResourceImplementationsUpdater(
+        private val assetManager: AssetManagerDelegate,
+        private val original: String,
+        private val updated: String,
+    ) : () -> Unit {
+
+        private val getResourceManagerResourceImplementations: () -> List<Pair<ResourceKeyDelegate, ResourceImplementationDelegate?>> =
+            ResourceManagerDelegate.instance.resourceImplementationsSelfGetter
+
+        private val getResourceDirectory: ResourceKeyDelegate.() -> String =
+            ResourceKeyDelegate.resourceDirectoryGetter
+
+        private val setResourceDirectory: ResourceKeyDelegate.(String) -> Unit =
+            ResourceKeyDelegate.resourceDirectorySetter
+
+        private val setAssetManager: ResourceImplementationDelegate.(AssetManagerDelegate) -> Unit =
+            ResourceImplementationDelegate.assetsSetter
+
+        override fun invoke() {
+            getResourceManagerResourceImplementations().forEach { (key, impl) ->
+                if (original != key.getResourceDirectory()) {
+                    return@forEach
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    key.setResourceDirectory(updated)
+                }
+                impl?.setAssetManager(assetManager)
+            }
+        }
+    }
+
+    private val actions =
+        buildList {
+            ReferencedResources(
+                assetManager = assetManager,
+            ).let(::add)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                ResourceImplementationsUpdater(
+                    assetManager = assetManager,
+                    original = original,
+                    updated = updated,
+                ).let(::add)
+            }
+        }
+
+    override fun invoke() {
+        actions.forEach { it.invoke() }
+    }
+}
+
+/**
+ * Tries resolving issues caused by WebView on Android N.
+ *
+ * On Android N, if an activity contains a webview, our resource patch may lost effects if screen
+ * rotates.
+ */
+@RequiresApi(Build.VERSION_CODES.N)
+private class PublicSourceDirectoryUpdater(
+    private val context: Context,
+    private val updated: String,
+) : () -> Unit {
+    override fun invoke() {
+        context.applicationInfo.publicSourceDir = updated
+    }
+}
+
+internal class ResourceLoader(
+    private val resourceApk: File,
+    private val loaders: Iterable<() -> Unit>,
+    private val injectInsuranceCallback: ((Long) -> Unit)?,
+) : Loader() {
+
+    override fun load() {
+        doLoad()
+        verify()
+    }
+
+    private fun doLoad() {
+        val initialUpdatedTimestamp = resourceApk.lastModified()
+        loaders.forEach {
+            it.invoke()
+        }
+        injectInsuranceCallback?.invoke(initialUpdatedTimestamp)
+    }
+
+    private fun verify() {
+        // TODO
+    }
+
+    private class InsuranceHandlerCallback private constructor(
         private val resourceApk: File,
         private val reloadTriggerMessageIds: IntArray,
         private val transactionMessageId: Int?,
+        private val loaders: Iterable<() -> Unit>,
         private val original: Handler.Callback,
         initialUpdatedTimestamp: Long,
     ) : Handler.Callback {
+
+        class Injector(
+            private val resourceApk: File,
+            private val reloadTriggerMessageIds: IntArray,
+            private val transactionMessageId: Int?,
+            private val loaders: Iterable<() -> Unit>,
+            private val getCallback: () -> Handler.Callback,
+            private val setCallback: (Handler.Callback) -> Unit,
+        ) : (Long) -> Unit {
+            override fun invoke(initialUpdatedTimestamp: Long) {
+                val original = getCallback()
+                if (original is InsuranceHandlerCallback) {
+                    return
+                }
+                InsuranceHandlerCallback(
+                    resourceApk =
+                        resourceApk,
+                    reloadTriggerMessageIds =
+                        reloadTriggerMessageIds,
+                    transactionMessageId =
+                        transactionMessageId,
+                    loaders =
+                        loaders,
+                    original =
+                        original,
+                    initialUpdatedTimestamp =
+                        initialUpdatedTimestamp,
+                ).let(setCallback)
+            }
+        }
 
         companion object {
             private const val LAUNCH_ACTIVITY_LIFECYCLE_ITEM_CLASS_NAME =
@@ -146,7 +228,7 @@ internal class ResourceLoader(
 
         override fun handleMessage(message: Message): Boolean {
             if (shouldReload(message)) {
-                context.replaceResourceDirectoriesOfCurrentActivityThreadPackages(resourceApk)
+                loaders.forEach { it.invoke() }
             }
             return original.handleMessage(message)
         }
@@ -164,17 +246,19 @@ internal class ResourceLoader(
 
         private var interceptTransactingFuse = false
 
-        private var cachedGetCallbacks: (Any.() -> List<Any>?)? = null
+        private var cachedCallbacksGetter: (ClientTransactionDelegate.() -> List<Any>?)? = null
 
         private fun shouldReloadWhileTransacting(message: Message): Boolean {
             if (interceptTransactingFuse) {
                 return false
             }
-            val transaction = message.obj ?: return false
-            val getCallbacks = cachedGetCallbacks
+            val transaction = message.obj
+                ?.delegatedAsClientTransaction
+                ?: return false
+            val getCallbacks = cachedCallbacksGetter
                 ?: try {
-                    transaction.transactionGetCallbacks.also {
-                        cachedGetCallbacks = it
+                    transaction.callbacksGetter.also {
+                        cachedCallbacksGetter = it
                     }
                 } catch (throwable: Throwable) {
                     warnLog(
@@ -203,23 +287,6 @@ internal class ResourceLoader(
         }
     }
 
-    override fun load() {
-        doLoad()
-        verify()
-    }
-
-    private fun doLoad() {
-        val initialUpdatedTimestamp = resourceApk.lastModified()
-        context.replaceResourceDirectoriesOfCurrentActivityThreadPackages(resourceApk)
-        context.replaceAssetManager(resourceApk)
-        context.replacePublicSourceDirectory(resourceApk)
-        context.injectCallback(resourceApk, initialUpdatedTimestamp)
-    }
-
-    private fun verify() {
-        // TODO
-    }
-
     class Factory(
         private val context: Context,
     ) : Loader.Factory() {
@@ -240,7 +307,84 @@ internal class ResourceLoader(
             }
         }
 
-        private fun createLoader(resourceApk: File): ResourceLoader =
-            ResourceLoader(context, resourceApk)
+        private fun createLoader(resourceApk: File): ResourceLoader {
+
+            val currentActivityThreadUpdater =
+                CurrentActivityThreadUpdater(
+                    original =
+                        context.applicationInfo.sourceDir,
+                    updated =
+                        resourceApk.absolutePath,
+                )
+
+            val updatedAssetManager =
+                AssetManagerDelegate.createInstanceLike(context.assets)
+            updatedAssetManager.addAssetPath(resourceApk.absolutePath)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                context.applicationInfo.sharedLibraryFiles.forEach { path ->
+                    if (!path.endsWith(".apk")) {
+                        return@forEach
+                    }
+                    updatedAssetManager.addAssetPathAsSharedLibrary(path)
+                }
+            }
+            updatedAssetManager.initializeStringBlocksIfNeeded()
+
+            val loaders = buildList {
+                currentActivityThreadUpdater
+                    .let(::add)
+
+                ResourceManagerUpdater(
+                    assetManager =
+                        updatedAssetManager,
+                    original =
+                        context.applicationInfo.sourceDir,
+                    updated =
+                        resourceApk.absolutePath,
+                ).let(::add)
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    PublicSourceDirectoryUpdater(
+                        context =
+                            context,
+                        updated =
+                            resourceApk.absolutePath,
+                    ).let(::add)
+                }
+            }
+
+            // Creates new handler callback for intercepting ones from current activity thread.
+            //
+            // TODO: Add documents
+            val activityThread = ActivityThreadDelegate.currentActivityThread
+            val handler = activityThread.handler
+            val callbackInjector = InsuranceHandlerCallback.Injector(
+                resourceApk =
+                    resourceApk,
+                reloadTriggerMessageIds =
+                    buildList {
+                        handler.launchActivityMessageId?.let(::add)
+                        handler.relaunchActivityMessageId?.let(::add)
+                    }.toIntArray(),
+                transactionMessageId =
+                    handler.transactionMessageId,
+                loaders = listOf(
+                    currentActivityThreadUpdater
+                ),
+                getCallback =
+                    handler.callbackSelfGetter,
+                setCallback =
+                    handler.callbackSelfSetter,
+            )
+
+            return ResourceLoader(
+                resourceApk =
+                    resourceApk,
+                loaders =
+                    loaders,
+                injectInsuranceCallback =
+                    callbackInjector,
+            )
+        }
     }
 }
