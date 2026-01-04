@@ -3,6 +3,7 @@ package com.tencent.tinker.test.internal.load.code
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.code.CodeLoader
+import com.tencent.tinker.internal.load.code.codeLoaderErrorTypeOfForTesting
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.test.internal.availableDexFileNamesAsSorted
 import com.tencent.tinker.test.internal.createTestPatchDirectoryWithMockFiles
@@ -73,7 +74,7 @@ class DexLoaderTest {
             factory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            CodeLoader.errorTypeOfForTesting("NO_VALID_INPUTS"),
+            codeLoaderErrorTypeOfForTesting("NO_VALID_INPUTS"),
             error.type,
         )
     }
@@ -92,7 +93,7 @@ class DexLoaderTest {
             factory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            CodeLoader.errorTypeOfForTesting("NO_VALID_INPUTS"),
+            codeLoaderErrorTypeOfForTesting("NO_VALID_INPUTS"),
             error.type,
         )
     }
@@ -108,7 +109,7 @@ class DexLoaderTest {
             TestExceptionFactory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            CodeLoader.errorTypeOfForTesting("UNEXPECTED"),
+            codeLoaderErrorTypeOfForTesting("UNEXPECTED"),
             error.type,
         )
         assertSame(

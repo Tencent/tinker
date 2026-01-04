@@ -31,6 +31,22 @@ import java.util.zip.CRC32
 import kotlin.concurrent.thread
 import kotlin.random.Random
 
+private enum class ErrorType : TinkerError.Type {
+    UNEXPECTED,
+    HAS_ACQUIRED_OAT,
+    GENERATE_OR_STORE_FAILED;
+
+    override val group: TinkerError.TypeGroup
+        get() = TinkerError.TypeGroup.MODULE_OAT
+
+    override val typeCode: Int
+        get() = ordinal
+}
+
+@VisibleForTesting
+internal fun oatErrorTypeOfForTesting(type: String): TinkerError.Type =
+    ErrorType.valueOf(type)
+
 /**
  * On Android 8 and above, interpreting dex files is unnecessary.
  */
@@ -60,25 +76,7 @@ internal class OatManagerImpl(
 
     companion object {
         private const val TAG = "Tinker.Oat.Manager"
-
-
-        @VisibleForTesting
-        fun errorTypeOfForTesting(type: String): TinkerError.Type =
-            ErrorType.valueOf(type)
     }
-
-    private enum class ErrorType : TinkerError.Type {
-        UNEXPECTED,
-        HAS_ACQUIRED_OAT,
-        GENERATE_OR_STORE_FAILED;
-
-        override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.MODULE_OAT
-
-        override val typeCode: Int
-            get() = ordinal
-    }
-
 
     private enum class State(val code: Int) {
         DONE(0),

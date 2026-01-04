@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.internal.module.patch.RawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManagerImpl
+import com.tencent.tinker.internal.module.patch.rawPatchErrorTypeOfForTesting
 import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.test.createTestDirectory
 import com.tencent.tinker.test.rethrowAsIllegalState
@@ -517,7 +518,7 @@ class RawPatchManagerImplTest {
             mainService.acquire()
         }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
+            rawPatchErrorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
             errorCode
         )
     }
@@ -544,7 +545,7 @@ class RawPatchManagerImplTest {
             mainService.acquire()
         }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
+            rawPatchErrorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
             errorCode
         )
     }
@@ -671,7 +672,7 @@ class RawPatchManagerImplTest {
             }?.tinkerErrorCode
         assertNotNull(errorCode)
         assertEquals(
-            RawPatchManagerImpl.errorTypeOfForTesting("CREATE_EXIST_PATCH").errorCode,
+            rawPatchErrorTypeOfForTesting("CREATE_EXIST_PATCH").errorCode,
             errorCode,
         )
     }
@@ -700,7 +701,7 @@ class RawPatchManagerImplTest {
                 )
             }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOfForTesting("CLONE_PATCH").errorCode,
+            rawPatchErrorTypeOfForTesting("CLONE_PATCH").errorCode,
             errorCode
         )
         // Cleans up the source directory.
@@ -733,7 +734,7 @@ class RawPatchManagerImplTest {
                 )
             }.tinkerErrorCode
         assertEquals(
-            RawPatchManagerImpl.errorTypeOfForTesting("WRITE_LATEST_VERSION").errorCode,
+            rawPatchErrorTypeOfForTesting("WRITE_LATEST_VERSION").errorCode,
             errorCode
         )
     }

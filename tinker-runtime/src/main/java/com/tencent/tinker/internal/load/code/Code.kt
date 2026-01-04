@@ -8,6 +8,25 @@ import com.tencent.tinker.internal.load.Loader
 import com.tencent.tinker.internal.util.expected
 import java.io.File
 
+private enum class ErrorType : TinkerError.Type {
+    UNEXPECTED,
+    NO_VALID_INPUTS,
+    INVALID_LIBRARY_DIRECTORY,
+    TEST_RESOURCE_BROKEN,
+    VERIFY_FAILED;
+
+    override val group: TinkerError.TypeGroup
+        get() = TinkerError.TypeGroup.LOAD_CODE
+
+    override val typeCode: Int
+        get() = ordinal
+}
+
+
+@VisibleForTesting
+internal fun codeLoaderErrorTypeOfForTesting(type: String): TinkerError.Type =
+    ErrorType.valueOf(type)
+
 internal abstract class CodeLoader : Loader() {
 
     companion object {
@@ -32,24 +51,6 @@ internal abstract class CodeLoader : Loader() {
          */
         private const val TEST_LIBRARY_NAME =
             "com.tencent.tinker.internal.load.code.test.TestLibrary"
-
-        @VisibleForTesting
-        fun errorTypeOfForTesting(type: String): TinkerError.Type =
-            ErrorType.valueOf(type)
-    }
-
-    private enum class ErrorType : TinkerError.Type {
-        UNEXPECTED,
-        NO_VALID_INPUTS,
-        INVALID_LIBRARY_DIRECTORY,
-        TEST_RESOURCE_BROKEN,
-        VERIFY_FAILED;
-
-        override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.LOAD_CODE
-
-        override val typeCode: Int
-            get() = ordinal
     }
 
     override fun load() {

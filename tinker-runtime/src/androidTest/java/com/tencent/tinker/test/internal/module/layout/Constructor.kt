@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.internal.module.layout.PatchLayoutConstructorImpl
+import com.tencent.tinker.internal.module.layout.patchLayoutConstructErrorTypeOfForTesting
 import com.tencent.tinker.internal.patchApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
@@ -312,7 +313,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }
@@ -339,7 +340,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }
@@ -366,7 +367,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }
@@ -393,7 +394,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            PatchLayoutConstructorImpl.errorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
             errorCode,
         )
     }

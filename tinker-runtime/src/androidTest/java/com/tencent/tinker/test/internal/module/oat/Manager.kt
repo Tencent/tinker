@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.internal.module.oat.Generator
 import com.tencent.tinker.internal.module.oat.OatManagerImpl
+import com.tencent.tinker.internal.module.oat.oatErrorTypeOfForTesting
 import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.internal.util.isInPatchProcess
 import com.tencent.tinker.test.createTestDirectory
@@ -597,7 +598,7 @@ class OatManagerImplTest {
             mainService.acquire(inputDirectory.absolutePath, false)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
+            oatErrorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -624,7 +625,7 @@ class OatManagerImplTest {
             patchService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
+            oatErrorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -650,7 +651,7 @@ class OatManagerImplTest {
             mainService.acquire(inputDirectory.absolutePath, false)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
+            oatErrorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -677,7 +678,7 @@ class OatManagerImplTest {
             patchService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
-            OatManagerImpl.errorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
+            oatErrorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
             errorCode
         )
         // Make sure none of temporary files remains.

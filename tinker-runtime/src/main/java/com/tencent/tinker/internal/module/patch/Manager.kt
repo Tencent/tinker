@@ -21,6 +21,37 @@ import com.tencent.tinker.internal.util.isInPatchProcess
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 
+private enum class ErrorType : TinkerError.Type {
+    UNEXPECTED,
+    ACQUIRE_PATCH_AS_USING,
+    ACQUIRE_PATCH_AS_CLEANING,
+    HAS_ACQUIRED_PATCH,
+    READ_LATEST_VERSION,
+    WRITE_LATEST_VERSION,
+    READ_MAIN_VERSION,
+    WRITE_MAIN_VERSION,
+    READ_UNAVAILABLE,
+    APPEND_UNAVAILABLE,
+    CLEAN_UNAVAILABLE,
+    MARK_MAIN_ALIVE,
+    CHECK_MAIN_ALIVE,
+    CREATE_EXIST_PATCH,
+    CLONE_PATCH,
+    CLEAN_PATCH,
+    DROP_PATCH_WRITE_PERMISSION,
+    RECOVER_PATCH_WRITE_PERMISSION;
+
+    override val group: TinkerError.TypeGroup
+        get() = TinkerError.TypeGroup.MODULE_PATCH
+
+    override val typeCode: Int
+        get() = ordinal
+}
+
+@VisibleForTesting
+internal fun rawPatchErrorTypeOfForTesting(type: String): TinkerError.Type =
+    ErrorType.valueOf(type)
+
 private fun File.createNotWritableCopy(target: File) {
     if (isDirectory) {
         target.mkdirs()
@@ -46,39 +77,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
          * A byte may in the guard file to indicate that the patch is being cleaned up.
          */
         private const val GUARD_CLEANING_CONTENT = 1.toByte()
-
-        @VisibleForTesting
-        fun errorTypeOfForTesting(type: String): TinkerError.Type =
-            ErrorType.valueOf(type)
     }
-
-    private enum class ErrorType : TinkerError.Type {
-        UNEXPECTED,
-        ACQUIRE_PATCH_AS_USING,
-        ACQUIRE_PATCH_AS_CLEANING,
-        HAS_ACQUIRED_PATCH,
-        READ_LATEST_VERSION,
-        WRITE_LATEST_VERSION,
-        READ_MAIN_VERSION,
-        WRITE_MAIN_VERSION,
-        READ_UNAVAILABLE,
-        APPEND_UNAVAILABLE,
-        CLEAN_UNAVAILABLE,
-        MARK_MAIN_ALIVE,
-        CHECK_MAIN_ALIVE,
-        CREATE_EXIST_PATCH,
-        CLONE_PATCH,
-        CLEAN_PATCH,
-        DROP_PATCH_WRITE_PERMISSION,
-        RECOVER_PATCH_WRITE_PERMISSION;
-
-        override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.MODULE_PATCH
-
-        override val typeCode: Int
-            get() = ordinal
-    }
-
 
     /**
      * Base directory of patch files.

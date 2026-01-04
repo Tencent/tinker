@@ -18,6 +18,21 @@ import com.tencent.tinker.internal.util.symlinkTo
 import java.io.File
 import kotlin.random.Random
 
+private enum class ErrorType : TinkerError.Type {
+    UNEXPECTED,
+    INVALID_SOURCE;
+
+    override val group: TinkerError.TypeGroup
+        get() = TinkerError.TypeGroup.MODULE_LAYOUT
+
+    override val typeCode: Int
+        get() = ordinal
+}
+
+@VisibleForTesting
+internal fun patchLayoutConstructErrorTypeOfForTesting(type: String): TinkerError.Type =
+    ErrorType.valueOf(type)
+
 internal class PatchLayoutConstructorImpl(private val context: Context) : PatchLayoutConstructor() {
 
     @VisibleForTesting
@@ -54,23 +69,7 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
                 delete()
             }
         }
-
-        @VisibleForTesting
-        fun errorTypeOfForTesting(type: String): TinkerError.Type =
-            ErrorType.valueOf(type)
     }
-
-    private enum class ErrorType : TinkerError.Type {
-        UNEXPECTED,
-        INVALID_SOURCE;
-
-        override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.MODULE_LAYOUT
-
-        override val typeCode: Int
-            get() = ordinal
-    }
-
 
     private val baseDirectory: File
         get() = context.rootDirectory.resolve("layout")
