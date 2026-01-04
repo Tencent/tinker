@@ -24,6 +24,7 @@ android-lint-checks = { module = "com.android.tools.lint:lint-checks", version.r
 android-lint-tests = { module = "com.android.tools.lint:lint-tests", version.ref = "agp-tools" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
 androidx-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-orchestrator" }
+androidx-test-core-ktx = { module = "androidx.test:core-ktx", version.ref = "androidx-test" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
 androidx-test-junit-ktx = { module = "androidx.test.ext:junit-ktx", version.ref = "androidx-test-junit" }

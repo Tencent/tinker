@@ -21,6 +21,12 @@ internal const val TEST_JNI_LIBRARY_FILE_NAME = "libtinker.test.jni.so"
 
 internal const val TEST_DEPENDENCY_LIBRARY_FILE_NAME = "libtinker.test.dep.so"
 
+internal const val TEST_ADDED_ASSET_FILE_NAME = "test_added_asset.txt"
+
+internal const val TEST_MODIFIED_ASSET_FILE_NAME = "test_modified_asset.txt"
+
+internal const val TEST_REMOVED_ASSET_FILE_NAME = "test_removed_asset.txt"
+
 internal val File.patchApkFile: File
     get() = resolve("patch.apk")
 

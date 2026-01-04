@@ -65,6 +65,7 @@ dependencies {
     testImplementation(libs.robolectric)
     lintChecks(project(":tinker-runtime-internal-lint"))
     androidTestImplementation(project(":tinker-runtime-internal-test-helper"))
+    androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit.ktx)
@@ -274,6 +275,22 @@ abstract class CreateTestLibrariesTask : DefaultTask() {
     }
 }
 
+abstract class CreateTestAssetsTask : DefaultTask() {
+    @get:OutputDirectory
+    abstract val output: DirectoryProperty
+
+    @TaskAction
+    fun exec() {
+        output.get().asFile
+            .resolve("tinker")
+            .apply {
+                mkdirs()
+                resolve("test_added_asset.txt").writeText("patched")
+                resolve("test_modified_asset.txt").writeText("original")
+            }
+    }
+}
+
 val createTestClassSourceTask =
     tasks.register<CreateTestClassSourceTask>("createTestClassSource") {
         group = "build"
@@ -344,5 +361,13 @@ androidComponents.onVariants { variant ->
         ?.addGeneratedSourceDirectory(
             createTestLibrariesTask,
             CreateTestLibrariesTask::output,
+        )
+
+    val createTestAssetsTask =
+        tasks.register<CreateTestAssetsTask>("create${capitalizedVariantName}TestAssets")
+    variant.sources.assets
+        ?.addGeneratedSourceDirectory(
+            createTestAssetsTask,
+            CreateTestAssetsTask::output,
         )
 }

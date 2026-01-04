@@ -6,6 +6,9 @@ import android.os.Handler
 import android.os.Message
 import androidx.annotation.RequiresApi
 import com.tencent.tinker.internal.Patch
+import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
+import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
+import com.tencent.tinker.internal.TEST_REMOVED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.Loader
 import com.tencent.tinker.internal.load.ActivityThreadDelegate
@@ -20,12 +23,14 @@ import com.tencent.tinker.internal.load.ResourcesDelegate
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.warnLog
 import java.io.File
+import java.io.IOException
 
 private const val TAG = "Tinker.Loader.Res"
 
 private enum class ErrorType : TinkerError.Type {
     UNEXPECTED,
-    NO_VALID_INPUTS;
+    NO_VALID_INPUTS,
+    VERIFY_FAILED;
 
     override val group: TinkerError.TypeGroup
         get() = TinkerError.TypeGroup.LOAD_RESOURCE
@@ -149,6 +154,7 @@ private class PublicSourceDirectoryUpdater(
 }
 
 internal class ResourceLoader(
+    private val context: Context,
     private val resourceApk: File,
     private val loaders: Iterable<() -> Unit>,
     private val injectInsuranceCallback: ((Long) -> Unit)?,
@@ -168,7 +174,35 @@ internal class ResourceLoader(
     }
 
     private fun verify() {
-        // TODO
+        val added = context.assets
+            .open("tinker/${TEST_ADDED_ASSET_FILE_NAME}")
+            .use { it.readBytes() }
+            .toString(Charsets.UTF_8)
+        if (added != "patched") {
+            throw TinkerError(
+                ErrorType.VERIFY_FAILED,
+                "Cannot load patch-added test asset.",
+            )
+        }
+        val modified = context.assets
+            .open("tinker/${TEST_MODIFIED_ASSET_FILE_NAME}")
+            .use { it.readBytes() }
+            .toString(Charsets.UTF_8)
+        if (modified != "patched") {
+            throw TinkerError(
+                ErrorType.VERIFY_FAILED,
+                "Cannot load patch-modified test asset.",
+            )
+        }
+        try {
+            context.assets.open("tinker/${TEST_REMOVED_ASSET_FILE_NAME}")
+            throw Tinker.Error(
+                Tinker.Error.Load.Resource.VERIFY_FAILED,
+                "Patch-removed test asset is still exists.",
+            )
+        } catch (_: IOException) {
+            // Expected.
+        }
     }
 
     private class InsuranceHandlerCallback private constructor(
@@ -176,7 +210,7 @@ internal class ResourceLoader(
         private val reloadTriggerMessageIds: IntArray,
         private val transactionMessageId: Int?,
         private val loaders: Iterable<() -> Unit>,
-        private val original: Handler.Callback,
+        private val original: Handler.Callback?,
         initialUpdatedTimestamp: Long,
     ) : Handler.Callback {
 
@@ -211,7 +245,7 @@ internal class ResourceLoader(
         }
 
         companion object {
-            private const val LAUNCH_ACTIVITY_LIFECYCLE_ITEM_CLASS_NAME =
+            private const val LAUNCH_ACTIVITY_ITEM_CLASS_NAME =
                 "android.app.servertransaction.LaunchActivityItem"
         }
 
@@ -230,7 +264,7 @@ internal class ResourceLoader(
             if (shouldReload(message)) {
                 loaders.forEach { it.invoke() }
             }
-            return original.handleMessage(message)
+            return original?.handleMessage(message) ?: false
         }
 
         private fun shouldReload(message: Message): Boolean {
@@ -273,7 +307,7 @@ internal class ResourceLoader(
                 return transaction.getCallbacks()
                     ?.firstOrNull()
                     ?.takeIf {
-                        it.javaClass.name == LAUNCH_ACTIVITY_LIFECYCLE_ITEM_CLASS_NAME
+                        it.javaClass.name == LAUNCH_ACTIVITY_ITEM_CLASS_NAME
                     } != null
             } catch (throwable: Throwable) {
                 warnLog(
@@ -288,7 +322,7 @@ internal class ResourceLoader(
     }
 
     class Factory(
-        private val context: Context,
+        private val applicationContext: Context,
     ) : Loader.Factory() {
 
         private fun searchResourceApk(patch: Patch): File =
@@ -312,33 +346,35 @@ internal class ResourceLoader(
             val currentActivityThreadUpdater =
                 CurrentActivityThreadUpdater(
                     original =
-                        context.applicationInfo.sourceDir,
+                        applicationContext.applicationInfo.sourceDir,
                     updated =
                         resourceApk.absolutePath,
                 )
-
-            val updatedAssetManager =
-                AssetManagerDelegate.createInstanceLike(context.assets)
-            updatedAssetManager.addAssetPath(resourceApk.absolutePath)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                context.applicationInfo.sharedLibraryFiles.forEach { path ->
-                    if (!path.endsWith(".apk")) {
-                        return@forEach
-                    }
-                    updatedAssetManager.addAssetPathAsSharedLibrary(path)
-                }
-            }
-            updatedAssetManager.initializeStringBlocksIfNeeded()
 
             val loaders = buildList {
                 currentActivityThreadUpdater
                     .let(::add)
 
+                val updatedAssets =
+                    AssetManagerDelegate.createInstanceLike(applicationContext.assets)
+                        .apply {
+                            addAssetPath(resourceApk.absolutePath)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                applicationContext.applicationInfo.sharedLibraryFiles.forEach { path ->
+                                    if (!path.endsWith(".apk")) {
+                                        return@forEach
+                                    }
+                                    addAssetPathAsSharedLibrary(path)
+                                }
+                            }
+                            initializeStringBlocksIfNeeded()
+                        }
+
                 ResourceManagerUpdater(
                     assetManager =
-                        updatedAssetManager,
+                        updatedAssets,
                     original =
-                        context.applicationInfo.sourceDir,
+                        applicationContext.applicationInfo.sourceDir,
                     updated =
                         resourceApk.absolutePath,
                 ).let(::add)
@@ -346,7 +382,7 @@ internal class ResourceLoader(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     PublicSourceDirectoryUpdater(
                         context =
-                            context,
+                            applicationContext,
                         updated =
                             resourceApk.absolutePath,
                     ).let(::add)
@@ -355,7 +391,8 @@ internal class ResourceLoader(
 
             // Creates new handler callback for intercepting ones from current activity thread.
             //
-            // TODO: Add documents
+            // When last modified time of resources apk file is changed in runtime, the resource manager will trigger
+            // resources reload. We have to inject patch resources again once lifecycle state is changed.
             val activityThread = ActivityThreadDelegate.currentActivityThread
             val handler = activityThread.handler
             val callbackInjector = InsuranceHandlerCallback.Injector(
@@ -378,6 +415,8 @@ internal class ResourceLoader(
             )
 
             return ResourceLoader(
+                context =
+                    applicationContext,
                 resourceApk =
                     resourceApk,
                 loaders =

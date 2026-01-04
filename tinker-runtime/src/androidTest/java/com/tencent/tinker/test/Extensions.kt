@@ -2,16 +2,20 @@ package com.tencent.tinker.test
 
 import android.content.Context
 import android.os.Build
+import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.TEST_JNI_LIBRARY_FILE_NAME
+import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
-import com.tencent.tinker.internal.util.currentInstructionSet
+import com.tencent.tinker.internal.patchResourceApkFile
 import com.tencent.tinker.internal.util.errorCode
 import java.io.File
 import java.nio.file.Files
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 internal fun createTestDirectory(): File =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -105,6 +109,16 @@ internal fun Context.createLoadableTestPatchDirectory(): File =
                             }
                         }
                     }
+                }
+            }
+            patchResourceApkFile.apply {
+                ZipOutputStream(outputStream()).use { zip ->
+                    zip.putNextEntry(ZipEntry("assets/${TEST_ADDED_ASSET_FILE_NAME}"))
+                    zip.write("patched".toByteArray())
+                    zip.closeEntry()
+                    zip.putNextEntry(ZipEntry("assets/${TEST_MODIFIED_ASSET_FILE_NAME}"))
+                    zip.write("patched".toByteArray())
+                    zip.closeEntry()
                 }
             }
         }

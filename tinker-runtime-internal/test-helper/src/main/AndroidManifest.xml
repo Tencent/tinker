@@ -7,6 +7,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme">
+        <activity
+            android:name=".internal.loader.resource.TestResourceActivity"
+            android:exported="false" />
         <service
             android:name=".internal.module.patch.PatchManagerTestMainService"
             android:enabled="true"
