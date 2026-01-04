@@ -1,0 +1,11 @@
+package com.tencent.tinker.internal.load.code.test;
+
+/**
+ * The class is used to test if added class can be loaded by tinker.
+ * <p> 
+ * The source file is a template for test patch building and should not be compiled in base building.
+ */
+@SuppressWarnings("unused")
+public class TestAddedClass {
+    public static boolean isPatched = false;
+}

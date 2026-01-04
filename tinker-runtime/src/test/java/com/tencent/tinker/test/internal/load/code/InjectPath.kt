@@ -56,7 +56,7 @@ class InjectPathDexLoaderTest {
             )
             .createLoaderIfNeeded(patch)
             .apply {
-                loadForCodeForTesting()
+                doLoadForTesting()
             }
         assertEquals(
             buildList {
@@ -116,7 +116,7 @@ class InjectPathDexLoaderTest {
             )
             .createLoaderIfNeeded(patch)
             .apply {
-                loadForCodeForTesting()
+                doLoadForTesting()
             }
         assertEquals(
             buildList {
@@ -175,7 +175,7 @@ class InjectPathDexLoaderTest {
             )
             .createLoaderIfNeeded(patch)
             .apply {
-                loadForCodeForTesting()
+                doLoadForTesting()
             }
         assertEquals(
             buildList {
@@ -235,7 +235,7 @@ class InjectPathDexLoaderTest {
             )
             .createLoaderIfNeeded(patch)
             .apply {
-                loadForCodeForTesting()
+                doLoadForTesting()
             }
         assertEquals(
             buildList {

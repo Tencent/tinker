@@ -156,7 +156,7 @@ class V31NonHardeningDexLoaderTest {
                 classLoaderConstructor = ::TestClassLoader,
             )
             .createLoaderIfNeeded(patch)
-            .loadForCodeForTesting()
+            .doLoadForTesting()
         assertTrue(reference[0] is TestClassLoader)
         val createdClassLoader = reference[0] as TestClassLoader
         assertSame(

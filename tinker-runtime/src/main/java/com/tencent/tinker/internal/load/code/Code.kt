@@ -16,8 +16,15 @@ internal abstract class CodeLoader : Loader() {
          * Never get class name by referencing `TestClass`, as this will cause `TestClass` to be
          * loaded.
          */
-        private const val TEST_CLASS_NAME =
-            "com.tencent.tinker.internal.load.code.test.TestClass"
+        private const val TEST_ADDED_CLASS_NAME =
+            "com.tencent.tinker.internal.load.code.test.TestAddedClass"
+
+        /**
+         * Never get class name by referencing `TestClass`, as this will cause `TestClass` to be
+         * loaded.
+         */
+        private const val TEST_MODIFIED_CLASS_NAME =
+            "com.tencent.tinker.internal.load.code.test.TestModifiedClass"
 
         /**
          * Never get class name by referencing `TestLibrary`, as this will cause `TestLibrary` to be
@@ -55,7 +62,7 @@ internal abstract class CodeLoader : Loader() {
     protected abstract fun doLoad(): ClassLoader
 
     @VisibleForTesting
-    fun loadForCodeForTesting() {
+    fun doLoadForTesting() {
         doLoad()
     }
 
@@ -81,23 +88,42 @@ internal abstract class CodeLoader : Loader() {
         //     is the same class loader the application will use.
         //   Getting application class loader may cause code is too complex to test. Try to find a
         //     better solution.
-        val patched = try {
+        val addedClassPatched = try {
             Class.forName(
-                TEST_CLASS_NAME,
+                TEST_ADDED_CLASS_NAME,
                 true,
                 classLoader
             ).getDeclaredField("isPatched").getBoolean(null)
         } catch (throwable: Throwable) {
             throw TinkerError(
                 ErrorType.TEST_RESOURCE_BROKEN,
-                "Cannot find \"${TEST_CLASS_NAME}\" from provided class loader.",
+                "Cannot find \"${TEST_ADDED_CLASS_NAME}\" from provided class loader.",
                 throwable,
             )
         }
-        if (!patched) {
+        if (!addedClassPatched) {
             throw TinkerError(
                 ErrorType.VERIFY_FAILED,
-                "Cannot load patched test class by provided class loader.",
+                "Cannot load patch-added test class by provided class loader.",
+            )
+        }
+        val modifiedClassPatched = try {
+            Class.forName(
+                TEST_MODIFIED_CLASS_NAME,
+                true,
+                classLoader
+            ).getDeclaredField("isPatched").getBoolean(null)
+        } catch (throwable: Throwable) {
+            throw TinkerError(
+                ErrorType.TEST_RESOURCE_BROKEN,
+                "Cannot find \"${TEST_MODIFIED_CLASS_NAME}\" from provided class loader.",
+                throwable,
+            )
+        }
+        if (!modifiedClassPatched) {
+            throw TinkerError(
+                ErrorType.VERIFY_FAILED,
+                "Cannot load patch-modified test class by provided class loader.",
             )
         }
     }

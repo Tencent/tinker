@@ -105,6 +105,10 @@ private val d8 = androidComponents.sdkComponents.sdkDirectory
 
 abstract class CreateTestClassSourceTask : DefaultTask() {
 
+    companion object {
+        private val testClassPattern = "Test.*Class".toRegex()
+    }
+
     @get:InputDirectory
     abstract val from: DirectoryProperty
 
@@ -122,20 +126,21 @@ abstract class CreateTestClassSourceTask : DefaultTask() {
     @TaskAction
     fun exec() {
         inputBase.walk()
-            .filter { it.isFile && it.extension == "java" }
+            .filter { it.isFile && (it.extension == "java" || it.extension == "java-template") }
             .forEach { input ->
                 val content = input.readText()
                     .let {
-                        if (input.name == "TestClass.java") {
+                        if (input.nameWithoutExtension.matches(testClassPattern)) {
                             it.replace("false", "true")
                         } else {
                             it
                         }
                     }
-                val output = outputBase.resolve(input.relativeTo(inputBase))
+                val output = outputBase.resolve(input.parentFile.relativeTo(inputBase))
                     .apply {
-                        parentFile.mkdirs()
+                        mkdirs()
                     }
+                    .resolve("${input.nameWithoutExtension}.java")
                 output.writeText(content)
             }
     }
