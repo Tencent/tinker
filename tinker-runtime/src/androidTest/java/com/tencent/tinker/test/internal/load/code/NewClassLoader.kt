@@ -10,8 +10,10 @@ import com.tencent.tinker.internal.load.code.NewClassLoaderCodeLoader
 import com.tencent.tinker.internal.load.code.V24NonHardeningCodeLoader
 import com.tencent.tinker.internal.load.code.V27NonHardeningCodeLoader
 import com.tencent.tinker.internal.load.code.V31NonHardeningCodeLoader
+import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
+import com.tencent.tinker.test.DexMockMode
 import com.tencent.tinker.test.availableDexFileNamesAsSorted
 import com.tencent.tinker.test.createLoadableTestPatchDirectory
 import com.tencent.tinker.test.createMockTestPatchDirectory
@@ -135,18 +137,20 @@ class V31NonHardeningDexLoaderTest {
     }
 
     /**
-     * Tests if factor loader works expectedly.
+     * Tests if factor loader works expectedly with dex files as input.
      *
      * While factoring `V31NoHardeningDexLoader` needs to access private field `parent` of
      * `ClassLoader`, which is inaccessible in OpenJDK, the test is moved to here as instrumentation
      * test.
      */
     @Test
-    fun mockFactorLoader() {
+    fun mockFactorLoaderWithDexFiles() {
         val reference = arrayOfNulls<ClassLoader>(1)
         val source = TestSourceClassLoader()
         val injector = TestClassLoaderInjector()
-        val patchDirectory = createMockTestPatchDirectory()
+        val patchDirectory = createMockTestPatchDirectory(
+            dexMockMode = DexMockMode.DEX,
+        )
         val patch = Patch("foo", patchDirectory)
         V31NonHardeningCodeLoader
             .Factory(
@@ -190,13 +194,91 @@ class V31NonHardeningDexLoaderTest {
     }
 
     /**
+     * Tests if factor loader works expectedly with apk file as input.
+     *
+     * While factoring `V31NoHardeningDexLoader` needs to access private field `parent` of
+     * `ClassLoader`, which is inaccessible in OpenJDK, the test is moved to here as instrumentation
+     * test.
+     */
+    @Test
+    fun mockFactorLoaderWithApkFile() {
+        val reference = arrayOfNulls<ClassLoader>(1)
+        val source = TestSourceClassLoader()
+        val injector = TestClassLoaderInjector()
+        val patchDirectory = createMockTestPatchDirectory(
+            dexMockMode = DexMockMode.APK,
+        )
+        val patch = Patch("foo", patchDirectory)
+        V31NonHardeningCodeLoader
+            .Factory(
+                reference = reference,
+                classLoaderInjectors = listOf(injector),
+                source = source,
+                classLoaderConstructor = ::TestClassLoader,
+            )
+            .createLoaderIfNeeded(patch)
+            .doLoadForTesting()
+        assertTrue(reference[0] is TestClassLoader)
+        val createdClassLoader = reference[0] as TestClassLoader
+        assertSame(
+            createdClassLoader,
+            injector.injected,
+        )
+        assertEquals(
+            patchDirectory.patchDexApkFile.absolutePath,
+            createdClassLoader.dexPaths,
+        )
+        assertEquals(
+            buildList {
+                Build.SUPPORTED_ABIS.forEach {
+                    patchDirectory.patchLibraryDirectory.resolve(it).absolutePath.let(::add)
+                }
+                "/foo/bar".let(::add)
+                "/baz".let(::add)
+            }.joinToString(File.pathSeparator),
+            createdClassLoader.libraryDirectoryPaths,
+        )
+        assertSame(
+            ClassLoader.getSystemClassLoader(),
+            createdClassLoader.parentFromConstructor,
+        )
+        assertSame(
+            source,
+            createdClassLoader.parent,
+        )
+    }
+
+    /**
      * Tests if loader can load dex files and libraries and pass verification.
      */
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
-    fun factorLoaderAndLoad() {
+    fun factorLoaderAndLoadWithDexFiles() {
         val application = ApplicationProvider.getApplicationContext<Application>()
-        val directory = application.createLoadableTestPatchDirectory()
+        val directory = application.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.DEX,
+        )
+        val patch = Patch("foo", directory)
+        val reference = arrayOfNulls<ClassLoader>(1)
+        // Make sure verification is passed and no exception is thrown.
+        V31NonHardeningCodeLoader
+            .Factory(reference, application)
+            .createLoaderIfNeeded(patch)
+            .load()
+        // Make sure constructed class loader is returned.
+        assertNotNull(reference[0])
+    }
+
+    /**
+     * Tests if loader can load apk file and libraries and pass verification.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    fun factorLoaderAndLoadWithApkFile() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val directory = application.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.APK,
+        )
         val patch = Patch("foo", directory)
         val reference = arrayOfNulls<ClassLoader>(1)
         // Make sure verification is passed and no exception is thrown.
@@ -216,9 +298,32 @@ class V27NonHardeningDexLoaderTest {
      */
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O_MR1, maxSdkVersion = Build.VERSION_CODES.R)
-    fun load() {
+    fun loadWithDexFiles() {
         val application = ApplicationProvider.getApplicationContext<Application>()
-        val directory = application.createLoadableTestPatchDirectory()
+        val directory = application.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.DEX,
+        )
+        val patch = Patch("foo", directory)
+        val reference = arrayOfNulls<ClassLoader>(1)
+        // Make sure verification is passed and no exception is thrown.
+        V27NonHardeningCodeLoader
+            .Factory(reference, application)
+            .createLoaderIfNeeded(patch)
+            .load()
+        // Make sure constructed class loader is returned.
+        assertNotNull(reference[0])
+    }
+
+    /**
+     * Tests if loader can load apk file and libraries and pass verification.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O_MR1, maxSdkVersion = Build.VERSION_CODES.R)
+    fun loadWithApkFile() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val directory = application.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.APK,
+        )
         val patch = Patch("foo", directory)
         val reference = arrayOfNulls<ClassLoader>(1)
         // Make sure verification is passed and no exception is thrown.
@@ -238,9 +343,33 @@ class V24NonHardeningDexLoaderTest {
      */
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N, maxSdkVersion = Build.VERSION_CODES.O)
-    fun load() {
+    fun loadWithDexFiles() {
         val application = ApplicationProvider.getApplicationContext<Application>()
-        val directory = application.createLoadableTestPatchDirectory()
+        val directory = application.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.DEX,
+        )
+        val outputDirectory = createTestDirectory()
+        val patch = Patch("foo", directory)
+        val reference = arrayOfNulls<ClassLoader>(1)
+        // Make sure verification is passed and no exception is thrown.
+        V24NonHardeningCodeLoader
+            .Factory(reference, application, outputDirectory)
+            .createLoaderIfNeeded(patch)
+            .load()
+        // Make sure constructed class loader is returned.
+        assertNotNull(reference[0])
+    }
+
+    /**
+     * Tests if loader can load apk file and libraries and pass verification.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N, maxSdkVersion = Build.VERSION_CODES.O)
+    fun loadWithApkFile() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val directory = application.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.APK,
+        )
         val outputDirectory = createTestDirectory()
         val patch = Patch("foo", directory)
         val reference = arrayOfNulls<ClassLoader>(1)

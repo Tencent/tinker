@@ -6,6 +6,7 @@ import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.Loader
 import com.tencent.tinker.internal.util.expected
+import com.tencent.tinker.internal.util.searchAndSortDexFiles
 import java.io.File
 
 private enum class ErrorType : TinkerError.Type {
@@ -181,42 +182,18 @@ internal abstract class CodeLoader : Loader() {
         private val abiList: Array<String>,
     ) : Loader.Factory() {
 
-        companion object {
-            private val classesDexWithIndexPattern =
-                "classes(\\d*)\\.dex".toRegex()
+        private fun searchJvmCodeFiles(patch: Patch): List<File> {
+            patch.dexApkFile
+                .takeIf { it.isFile }
+                ?.let { return listOf(it) }
+            patch.dexDirectory
+                .searchAndSortDexFiles()
+                ?.let { return it }
+            throw TinkerError(
+                ErrorType.NO_VALID_INPUTS,
+                "Missing valid input dex files in \"${patch.dexDirectory.absolutePath}\".",
+            )
         }
-
-        private fun searchDexFiles(patch: Patch): List<File> =
-            patch.dexDirectory.takeIf { it.isDirectory }
-                ?.listFiles()
-                ?.filter {
-                    it.isFile && it.extension == "dex"
-                }
-                ?.takeIf { it.isNotEmpty() }
-                ?.map { dex ->
-                    if (dex.name == TEST_DEX_FILE_NAME) {
-                        return@map dex to (2 to 0)
-                    }
-                    val match = classesDexWithIndexPattern
-                        .matchEntire(dex.name)
-                        ?: return@map dex to (1 to dex.name)
-                    val index = match.groupValues[1]
-                        .takeIf { it.isNotEmpty() }
-                        ?.toInt()
-                        ?: 0
-                    return@map dex to (0 to index)
-                }
-                ?.sortedWith(
-                    compareBy(
-                        { it.second.first },
-                        { it.second.second }
-                    )
-                )
-                ?.map { it.first }
-                ?: throw TinkerError(
-                    ErrorType.NO_VALID_INPUTS,
-                    "Missing valid input dex files in \"${patch.dexDirectory.absolutePath}\".",
-                )
 
         private fun searchLibraryDirectory(patch: Patch): List<File> =
             abiList
@@ -241,14 +218,14 @@ internal abstract class CodeLoader : Loader() {
         override fun createLoaderIfNeeded(patch: Patch): CodeLoader {
             expected<ErrorType>("create code loader") {
                 return createLoader(
-                    dexFiles = searchDexFiles(patch),
+                    jvmCodeFiles = searchJvmCodeFiles(patch),
                     libraryDirectories = searchLibraryDirectory(patch),
                 )
             }
         }
 
         protected abstract fun createLoader(
-            dexFiles: List<File>,
+            jvmCodeFiles: List<File>,
             libraryDirectories: List<File>,
         ): CodeLoader
     }

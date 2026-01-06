@@ -30,6 +30,9 @@ internal const val TEST_REMOVED_ASSET_FILE_NAME = "test_removed_asset.txt"
 internal val File.patchApkFile: File
     get() = resolve("patch.apk")
 
+internal val File.patchDexApkFile: File
+    get() = resolve("dex.apk")
+
 internal val File.patchDexDirectory: File
     get() = resolve("dex")
 
@@ -64,17 +67,17 @@ internal class Patch(
     val apkFile: File
         get() = directory.patchApkFile
 
+    val dexApkFile: File
+        get() = directory.patchDexApkFile
+
     val dexDirectory: File
         get() = directory.patchDexDirectory
-
 
     val libraryDirectory: File
         get() = directory.patchLibraryDirectory
 
-
     val resourceApkFile: File
         get() = directory.patchResourceApkFile
-
 
     val oatDirectory: File
         get() = directory.patchOatDirectory

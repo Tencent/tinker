@@ -5,6 +5,7 @@ import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.code.CodeLoader
 import com.tencent.tinker.internal.load.code.codeLoaderErrorTypeOfForTesting
 import com.tencent.tinker.internal.patchDexDirectory
+import com.tencent.tinker.test.internal.DexMockMode
 import com.tencent.tinker.test.internal.availableDexFileNamesAsSorted
 import com.tencent.tinker.test.internal.createTestPatchDirectoryWithMockFiles
 import com.tencent.tinker.test.internal.testAbiList
@@ -29,8 +30,8 @@ class DexLoaderTest {
 
             var calledInputs = null as List<File>?
 
-            override fun createLoader(dexFiles: List<File>, libraryDirectories: List<File>): CodeLoader {
-                calledInputs = dexFiles
+            override fun createLoader(jvmCodeFiles: List<File>, libraryDirectories: List<File>): CodeLoader {
+                calledInputs = jvmCodeFiles
                 return TestLoader()
             }
         }
@@ -39,7 +40,7 @@ class DexLoaderTest {
     private object TestExceptionFactory : CodeLoader.Factory(testAbiList) {
         val exception = IllegalStateException("This is an unexpected exception")
 
-        override fun createLoader(dexFiles: List<File>, libraryDirectories: List<File>): CodeLoader {
+        override fun createLoader(jvmCodeFiles: List<File>, libraryDirectories: List<File>): CodeLoader {
             throw exception
         }
     }
@@ -49,7 +50,9 @@ class DexLoaderTest {
      */
     @Test
     fun buildLoaderWithSortedInputs() {
-        val directory = createTestPatchDirectoryWithMockFiles()
+        val directory = createTestPatchDirectoryWithMockFiles(
+            dexMockMode = DexMockMode.DEX,
+        )
         val patch = Patch("foo", directory)
         val factory = TestLoader.Factory()
         factory.createLoaderIfNeeded(patch)
@@ -103,7 +106,9 @@ class DexLoaderTest {
      */
     @Test
     fun buildLoaderWithSubclassException() {
-        val directory = createTestPatchDirectoryWithMockFiles()
+        val directory = createTestPatchDirectoryWithMockFiles(
+            dexMockMode = DexMockMode.DEX,
+        )
         val patch = Patch("foo", directory)
         val error = assertThrows(TinkerError::class.java) {
             TestExceptionFactory.createLoaderIfNeeded(patch)

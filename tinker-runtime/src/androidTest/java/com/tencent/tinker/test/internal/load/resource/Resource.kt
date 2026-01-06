@@ -10,6 +10,7 @@ import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.load.resource.ResourceLoader
 import com.tencent.tinker.internal.patchResourceApkFile
+import com.tencent.tinker.test.DexMockMode
 import com.tencent.tinker.test.createLoadableTestPatchDirectory
 import com.tencent.tinker.test.internal.loader.resource.TestResourceActivity
 import org.junit.Assert.assertEquals
@@ -25,7 +26,9 @@ class ResourceLoaderTest {
     @Test
     fun factorLoaderAndLoad() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val directory = context.createLoadableTestPatchDirectory()
+        val directory = context.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.DEX,
+        )
         val patch = Patch("foo", directory)
         ResourceLoader.Factory(context)
             .createLoaderIfNeeded(patch)
@@ -38,7 +41,9 @@ class ResourceLoaderTest {
     @Test
     fun reload() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val directory = context.createLoadableTestPatchDirectory()
+        val directory = context.createLoadableTestPatchDirectory(
+            dexMockMode = DexMockMode.DEX,
+        )
         val patch = Patch("foo", directory)
         ResourceLoader.Factory(context)
             .createLoaderIfNeeded(patch)

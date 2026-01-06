@@ -108,14 +108,14 @@ internal abstract class NewClassLoaderCodeLoader(
     ) : CodeLoader.Factory(abiList) {
 
         override fun createLoader(
-            dexFiles: List<File>,
+            jvmCodeFiles: List<File>,
             libraryDirectories: List<File>,
         ): CodeLoader {
             expected("create code loader", ErrorType) {
                 val dexPathList =
                     source.delegated.pathList
                 val dexPaths =
-                    dexFiles.joinToString(File.pathSeparator) { it.absolutePath }
+                    jvmCodeFiles.joinToString(File.pathSeparator) { it.absolutePath }
                 val sourceNativeLibraryDirectories =
                     dexPathList.nativeLibraryDirectoriesV23
                 val updatedNativeLibraryDirectories =

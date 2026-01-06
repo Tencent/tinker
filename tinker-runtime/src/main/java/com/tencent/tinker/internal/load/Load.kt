@@ -5,7 +5,7 @@ import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.util.expected
 
 /**
- * Patch loader.
+ * Patch loader used to load patch in runtime.
  *
  * The patch loading is separated into two stages:
  *

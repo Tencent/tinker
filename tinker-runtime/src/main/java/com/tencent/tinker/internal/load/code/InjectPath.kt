@@ -54,14 +54,14 @@ internal class InjectPathCodeLoader(
             outputDirectory = outputDirectory,
         )
 
-        private fun createLoadActionsForDex(
+        private fun createLoadActionsForJvmCodeFiles(
             dexPathList: DexPathListDelegate,
-            dexFiles: List<File>,
+            jvmCodeFiles: List<File>,
             outputDirectory: File
         ): List<() -> Unit> =
             buildList {
                 val inputsAsArrayList = ArrayList<File>().apply {
-                    addAll(dexFiles)
+                    addAll(jvmCodeFiles)
                 }
                 val suppressedExceptions = ArrayList<IOException>()
                 val expandedElements = dexPathList.makeDexElements(
@@ -174,15 +174,15 @@ internal class InjectPathCodeLoader(
 
         @Suppress("UNCHECKED_CAST")
         override fun createLoader(
-            dexFiles: List<File>,
+            jvmCodeFiles: List<File>,
             libraryDirectories: List<File>
         ): CodeLoader {
             expected("create code loader", ErrorType) {
                 val actions = mutableListOf<() -> Unit>()
                 val dexPathList = source.delegated.pathList
-                createLoadActionsForDex(
+                createLoadActionsForJvmCodeFiles(
                     dexPathList,
-                    dexFiles,
+                    jvmCodeFiles,
                     outputDirectory,
                 ).let(actions::addAll)
                 createLoadActionsForLibrary(

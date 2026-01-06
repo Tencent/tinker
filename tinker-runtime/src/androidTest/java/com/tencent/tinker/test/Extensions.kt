@@ -8,12 +8,15 @@ import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.TEST_JNI_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
 import com.tencent.tinker.internal.util.errorCode
+import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream
 import java.io.File
 import java.nio.file.Files
+import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -55,16 +58,25 @@ internal val availableDexFileNamesAsSorted: List<String> =
         TEST_DEX_FILE_NAME,
     )
 
-internal fun createMockTestPatchDirectory(): File =
+internal enum class DexMockMode {
+    DEX,
+    APK,
+}
+
+internal fun createMockTestPatchDirectory(dexMockMode: DexMockMode): File =
     createTestDirectory()
         .apply {
-            patchDexDirectory.apply {
-                mkdirs()
-                availableDexFileNamesAsSorted.forEach {
-                    resolve(it).createNewFile()
+            if (dexMockMode == DexMockMode.DEX) {
+                patchDexDirectory.apply {
+                    mkdirs()
+                    availableDexFileNamesAsSorted.forEach {
+                        resolve(it).createNewFile()
+                    }
+                    resolve("not-dex.txt").createNewFile()
+                    resolve("fake-is-directory.dex").mkdirs()
                 }
-                resolve("not-dex.txt").createNewFile()
-                resolve("fake-is-directory.dex").mkdirs()
+            } else if (dexMockMode == DexMockMode.APK) {
+                patchDexApkFile.createNewFile()
             }
             patchLibraryDirectory.apply {
                 mkdirs()
@@ -74,16 +86,35 @@ internal fun createMockTestPatchDirectory(): File =
             }
         }
 
-internal fun Context.createLoadableTestPatchDirectory(): File =
+internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode): File =
     createTestDirectory()
         .apply {
-            patchDexDirectory.apply {
-                mkdirs()
-                resolve(TEST_DEX_FILE_NAME).apply {
-                    outputStream().use { outputStream ->
-                        assets.open("tinker/${TEST_DEX_FILE_NAME}").use { inputStream ->
-                            inputStream.copyTo(outputStream)
+            if (dexMockMode == DexMockMode.DEX) {
+                patchDexDirectory.apply {
+                    mkdirs()
+                    resolve(TEST_DEX_FILE_NAME).apply {
+                        outputStream().use { output ->
+                            assets.open("tinker/${TEST_DEX_FILE_NAME}").use { input ->
+                                input.copyTo(output)
+                            }
                         }
+                    }
+                }
+            } else if (dexMockMode == DexMockMode.APK) {
+                patchDexApkFile.apply {
+                    outputStream().let(::AlignedZipOutputStream).use { zip ->
+                        val payload = assets.open("tinker/${TEST_DEX_FILE_NAME}").use { input ->
+                            input.readBytes()
+                        }
+                        val entry = ZipEntry("classes.dex")
+                            .apply {
+                                method = ZipEntry.STORED
+                                size = payload.size.toLong()
+                                crc = CRC32().apply { update(payload) }.value
+                            }
+                        zip.putNextEntry(entry)
+                        zip.write(payload)
+                        zip.closeEntry()
                     }
                 }
             }
@@ -93,18 +124,18 @@ internal fun Context.createLoadableTestPatchDirectory(): File =
                     resolve(abi).apply {
                         mkdirs()
                         resolve(TEST_JNI_LIBRARY_FILE_NAME).apply {
-                            outputStream().use { outputStream ->
+                            outputStream().use { output ->
                                 assets.open("tinker/lib/${abi}/${TEST_JNI_LIBRARY_FILE_NAME}")
-                                    .use { inputStream ->
-                                        inputStream.copyTo(outputStream)
+                                    .use { input ->
+                                        input.copyTo(output)
                                     }
                             }
                         }
                         resolve(TEST_DEPENDENCY_LIBRARY_FILE_NAME).apply {
-                            outputStream().use { outputStream ->
+                            outputStream().use { output ->
                                 assets.open("tinker/lib/${abi}/${TEST_DEPENDENCY_LIBRARY_FILE_NAME}")
-                                    .use { inputStream ->
-                                        inputStream.copyTo(outputStream)
+                                    .use { input ->
+                                        input.copyTo(output)
                                     }
                             }
                         }
