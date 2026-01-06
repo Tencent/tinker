@@ -225,6 +225,34 @@ internal fun File.escapedGuardedContentExclusiveNullable(content: ByteArray): Es
     return EscapedGuardedContent(content, stream, lock)
 }
 
+/**
+ * Ensures the file is existing and is a directory.
+ *
+ * Returns the file itself.
+ */
+internal fun File.ensureIsExistingDirectory(): File = apply {
+    if (exists() && !isDirectory) {
+        delete()
+    }
+    if (!exists()) {
+        mkdirs()
+    }
+}
+
+/**
+ * Ensures the parent directory of the file is existing.
+ *
+ * Returns the file itself.
+ */
+internal fun File.ensureParentIsExistingDirectory(): File = apply {
+    parentFile!!.ensureIsExistingDirectory()
+}
+
+/**
+ * Ensures the file is existing and is a file.
+ *
+ * Returns the file itself.
+ */
 internal fun File.ensureIsExistingFile(): File = apply {
     if (exists() && !isFile) {
         if (isDirectory) {
@@ -233,18 +261,9 @@ internal fun File.ensureIsExistingFile(): File = apply {
             delete()
         }
     }
-    parentFile!!.ensureIsExistingDirectory()
+    ensureParentIsExistingDirectory()
     if (!exists()) {
         createNewFile()
-    }
-}
-
-internal fun File.ensureIsExistingDirectory(): File = apply {
-    if (exists() && !isDirectory) {
-        delete()
-    }
-    if (!exists()) {
-        mkdirs()
     }
 }
 

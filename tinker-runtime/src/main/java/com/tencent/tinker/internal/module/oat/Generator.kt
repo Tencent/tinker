@@ -6,6 +6,7 @@ import com.tencent.tinker.internal.util.arkHotRunning
 import com.tencent.tinker.internal.util.currentInstructionSet
 import com.tencent.tinker.internal.util.currentSdk
 import com.tencent.tinker.internal.util.ensureIsExistingDirectory
+import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.errorLog
 import com.tencent.tinker.internal.util.isReadableNonEmptyFile
 import com.tencent.tinker.internal.util.warnLog
@@ -126,7 +127,7 @@ internal object Interpreter : DefaultGenerator() {
         input: File,
         output: File
     ): Boolean {
-        output.parentFile!!.ensureIsExistingDirectory()
+        output.ensureParentIsExistingDirectory()
         val command = buildList {
             add("dex2oat")
             // for 7.1.1, duplicate class fix

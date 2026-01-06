@@ -9,6 +9,7 @@ import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
 import com.tencent.tinker.internal.annotation.PatchProcessOnly
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
+import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusive
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusiveNullable
 import com.tencent.tinker.internal.util.escapedGuardedContentSharedNullable
@@ -113,7 +114,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         set(value) {
             value?.let {
                 latestVersionFile
-                    .apply { parentFile!!.mkdirs() }
+                    .ensureParentIsExistingDirectory()
                     .guardedContent = it.toByteArray(Charsets.UTF_8)
             } ?: latestVersionFile.delete()
         }
@@ -150,7 +151,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         val file = guardFile(version)
             .apply {
                 if (!exists()) {
-                    parentFile!!.mkdirs()
+                    ensureParentIsExistingDirectory()
                     // Create empty file with lock if it is not exists.
                     this.guardedContent = ByteArray(0)
                 }
@@ -169,10 +170,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
      */
     @PatchProcessOnly
     private fun Context.acquirePatchAsCleaning(version: String): EscapedGuardedContent? {
-        val file = guardFile(version)
-            .apply {
-                parentFile!!.mkdirs()
-            }
+        val file = guardFile(version).ensureParentIsExistingDirectory()
         return file.escapedGuardedContentExclusiveNullable(
             ByteArray(1) { GUARD_CLEANING_CONTENT }
         )
@@ -212,7 +210,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         set(value) {
             value?.let {
                 mainVersionFile
-                    .apply { parentFile!!.mkdirs() }
+                    .ensureParentIsExistingDirectory()
                     .guardedContent = it.toByteArray(Charsets.UTF_8)
             } ?: mainVersionFile.delete()
         }
@@ -223,10 +221,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     @MainProcessOnly
     @GuardedBy("this")
     private fun Context.markMainAlive() {
-        val file = mainAliveFile
-            .apply {
-                parentFile!!.mkdirs()
-            }
+        val file = mainAliveFile.ensureParentIsExistingDirectory()
         file.escapedGuardedContentExclusive(ByteArray(0))
             .also {
                 check(mainAliveHolder == null) {
