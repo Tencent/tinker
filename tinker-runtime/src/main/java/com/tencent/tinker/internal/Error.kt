@@ -20,6 +20,7 @@ internal class TinkerError(
         MODULE_PATCH,
         MODULE_OAT,
         MODULE_LAYOUT,
+        MODULE_VALIDATE,
         HIDDEN,
     }
 
