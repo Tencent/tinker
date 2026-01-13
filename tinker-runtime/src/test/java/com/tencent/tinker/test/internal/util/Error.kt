@@ -22,7 +22,7 @@ class ErrorTest {
     }
 
     /**
-     * TODO:
+     * Tests if [expected] works as expected if no throwable is raised, and clanger is not called.
      */
     @Test
     fun withoutThrowable() {
@@ -37,7 +37,7 @@ class ErrorTest {
     }
 
     /**
-     * TODO:
+     * Tests if unexpected exception being raised in [expected] can be converted to [TinkerError] with first error type.
      */
     @Test
     fun convertToUnexpected() {
@@ -57,7 +57,7 @@ class ErrorTest {
     }
 
     /**
-     * TODO:
+     * Tests if [TinkerError] being raised in [expected] can be raised as is.
      */
     @Test
     fun skipConvert() {
