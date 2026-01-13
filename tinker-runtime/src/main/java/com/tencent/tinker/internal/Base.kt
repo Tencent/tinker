@@ -64,9 +64,6 @@ internal class Patch(
      */
     private val directory: File,
 ) {
-    val apkFile: File
-        get() = directory.patchApkFile
-
     val dexApkFile: File
         get() = directory.patchDexApkFile
 

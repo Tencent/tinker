@@ -1,7 +1,7 @@
 package com.tencent.tinker.test.internal
 
 import android.util.Log
-import com.tencent.tinker.TinkerLogger
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
@@ -9,8 +9,6 @@ import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.util.logger
 import java.io.File
 import java.nio.file.Files
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 internal val availableDexFileNamesAsSorted: List<String> =
     listOf(
@@ -53,7 +51,7 @@ internal fun createTestPatchDirectoryWithMockFiles(dexMockMode: DexMockMode): Fi
             }
         }
 
-private object TestLogger : TinkerLogger() {
+private object TestLogger : Tinker.Logger() {
     override fun log(priority: Int, tag: String, message: String) {
         if (priority >= Log.WARN) {
             System.err.println("[$tag] $message")
