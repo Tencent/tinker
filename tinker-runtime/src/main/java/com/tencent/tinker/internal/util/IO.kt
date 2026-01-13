@@ -8,6 +8,9 @@ import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
 import java.nio.file.Files
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.io.use
 
 /**
@@ -282,4 +285,51 @@ internal fun File.symlinkTo(target: File) {
     } else {
         Os.symlink(canonicalPath, target.canonicalPath)
     }
+}
+
+/**
+ * Does [action] with a temporary file. The file will be deleted after [action] is done.
+ */
+@OptIn(ExperimentalContracts::class)
+internal fun <T> withTemporaryFile(action: (File) -> T): T {
+    contract {
+        callsInPlace(action, InvocationKind.EXACTLY_ONCE)
+    }
+    val file = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Files.createTempFile("tinker-", ".temp").toFile()
+    } else {
+        File.createTempFile("tinker-", ".temp")
+    }
+    return file
+        .ensureIsExistingFile()
+        .let {
+            try {
+                action(it)
+            } finally {
+                it.delete()
+            }
+        }
+}
+
+/**
+ * Does [action] with a temporary directory. The directory will be deleted after [action] is done.
+ */
+@OptIn(ExperimentalContracts::class)
+internal fun <T> withTemporaryDirectory(action: (File) -> T): T {
+    contract {
+        callsInPlace(action, InvocationKind.EXACTLY_ONCE)
+    }
+    val directory = File.createTempFile("tinker-", ".temp")
+        .apply {
+            delete()
+        }
+    return directory
+        .ensureIsExistingDirectory()
+        .let {
+            try {
+                action(it)
+            } finally {
+                it.deleteRecursively()
+            }
+        }
 }
