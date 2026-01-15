@@ -2,6 +2,8 @@ package com.tencent.tinker.test
 
 import android.content.Context
 import android.os.Build
+import android.system.Os
+import android.system.OsConstants
 import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
@@ -153,3 +155,13 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
                 }
             }
         }
+
+internal val File.isSymbolicLink: Boolean
+    get() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return Files.isSymbolicLink(toPath())
+        } else {
+            val state = Os.lstat(absolutePath)
+            return state.st_mode and OsConstants.S_IFMT == OsConstants.S_IFLNK
+        }
+    }

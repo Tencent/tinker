@@ -32,6 +32,6 @@ internal abstract class PatchLayoutConstructor {
     @NonPatchProcessOnly
     abstract fun construct(
         baseDirectory: File,
-        oatDirectory: File,
+        oatDirectory: File?,
     ): File
 }

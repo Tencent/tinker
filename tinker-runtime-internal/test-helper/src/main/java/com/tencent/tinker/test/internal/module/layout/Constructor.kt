@@ -10,7 +10,7 @@ abstract class PatchLayoutConstructorTestService : Service() {
 
     interface Delegate {
         val processBaseDirectory: File
-        fun construct(baseDirectory: File, oatDirectory: File): File
+        fun construct(baseDirectory: File, oatDirectory: File?): File
         fun assumeProcessIsRestarted()
     }
 
@@ -35,11 +35,11 @@ class PatchLayoutConstructorTestMainService : PatchLayoutConstructorTestService(
 
             override fun construct(
                 baseDirectoryPath: String,
-                oatDirectoryPath: String
+                oatDirectoryPath: String?,
             ): String = delegate
                 .construct(
                     baseDirectoryPath.let(::File),
-                    oatDirectoryPath.let(::File)
+                    oatDirectoryPath?.let(::File)
                 )
                 .absolutePath
 
@@ -59,11 +59,11 @@ class PatchLayoutConstructorTestOthersService : PatchLayoutConstructorTestServic
 
             override fun construct(
                 baseDirectoryPath: String,
-                oatDirectoryPath: String
+                oatDirectoryPath: String?,
             ): String = delegate
                 .construct(
                     baseDirectoryPath.let(::File),
-                    oatDirectoryPath.let(::File)
+                    oatDirectoryPath?.let(::File)
                 )
                 .absolutePath
 
@@ -81,11 +81,11 @@ class PatchLayoutConstructorTestPatchService : PatchLayoutConstructorTestService
 
             override fun invalidConstruct(
                 baseDirectoryPath: String,
-                oatDirectoryPath: String
+                oatDirectoryPath: String?,
             ): String = delegate
                 .construct(
                     baseDirectoryPath.let(::File),
-                    oatDirectoryPath.let(::File)
+                    oatDirectoryPath?.let(::File)
                 )
                 .absolutePath
         }

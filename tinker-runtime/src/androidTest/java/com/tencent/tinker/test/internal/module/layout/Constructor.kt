@@ -7,13 +7,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.internal.module.layout.PatchLayoutConstructorImpl
 import com.tencent.tinker.internal.module.layout.patchLayoutConstructErrorTypeOfForTesting
-import com.tencent.tinker.internal.patchApkFile
+import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchOatDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
 import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.test.createTestDirectory
+import com.tencent.tinker.test.isSymbolicLink
 import com.tencent.tinker.test.rethrowAsIllegalState
 import com.tencent.tinker.test.tinkerErrorCode
 import org.junit.Before
@@ -35,7 +36,7 @@ internal class PatchLayoutConstructorDelegate(
             constructorImpl.processBaseDirectoryForTesting()
         }
 
-    override fun construct(baseDirectory: File, oatDirectory: File): File =
+    override fun construct(baseDirectory: File, oatDirectory: File?): File =
         rethrowAsIllegalState {
             constructorImpl.construct(baseDirectory, oatDirectory)
         }
@@ -101,8 +102,7 @@ class PatchLayoutConstructorImplTest {
         val othersService = context.othersService()
 
         val baseDirectory = createTestDirectory().apply {
-            patchApkFile.createNewFile()
-            patchDexDirectory.mkdirs()
+            patchDexApkFile.createNewFile()
             patchLibraryDirectory.mkdirs()
             patchResourceApkFile.createNewFile()
         }
@@ -134,14 +134,9 @@ class PatchLayoutConstructorImplTest {
         )
 
         assertDifferentLink(
-            constructedByMain.patchApkFile,
-            constructedByOthers.patchApkFile,
-            baseDirectory.patchApkFile,
-        )
-        assertDifferentLink(
-            constructedByMain.patchDexDirectory,
-            constructedByOthers.patchDexDirectory,
-            baseDirectory.patchDexDirectory,
+            constructedByMain.patchDexApkFile,
+            constructedByOthers.patchDexApkFile,
+            baseDirectory.patchDexApkFile,
         )
         assertDifferentLink(
             constructedByMain.patchLibraryDirectory,
@@ -161,6 +156,28 @@ class PatchLayoutConstructorImplTest {
     }
 
     /**
+     * Tests if constructing without oat directory can use a temporary directory.
+     */
+    @Test
+    fun constructWithoutOatDirectory() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
+        val baseDirectory = createTestDirectory().apply {
+            patchDexApkFile.createNewFile()
+            patchLibraryDirectory.mkdirs()
+            patchResourceApkFile.createNewFile()
+        }
+        val constructed = mainService
+            .construct(
+                baseDirectory.absolutePath,
+                null,
+            )
+            .let(::File)
+        assertTrue(constructed.patchOatDirectory.isDirectory)
+        assertFalse(constructed.patchOatDirectory.isSymbolicLink)
+    }
+
+    /**
      * Test if cleaning content directories works but not removing source files or directories
      * unexpectedly.
      */
@@ -171,7 +188,7 @@ class PatchLayoutConstructorImplTest {
 
         val baseDirectory = createTestDirectory()
         val apkFile = baseDirectory
-            .patchApkFile
+            .patchDexApkFile
             .apply {
                 createNewFile()
             }
@@ -236,8 +253,7 @@ class PatchLayoutConstructorImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val patchService = context.patchService()
         val baseDirectory = createTestDirectory().apply {
-            patchApkFile.createNewFile()
-            patchDexDirectory.mkdirs()
+            patchDexApkFile.createNewFile()
             patchLibraryDirectory.mkdirs()
             patchResourceApkFile.createNewFile()
         }
@@ -276,8 +292,7 @@ class PatchLayoutConstructorImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val baseDirectory = createTestDirectory().apply {
-            patchApkFile.createNewFile()
-            patchDexDirectory.mkdirs()
+            patchDexApkFile.createNewFile()
             patchLibraryDirectory.mkdirs()
             patchResourceApkFile.createNewFile()
         }
@@ -295,13 +310,12 @@ class PatchLayoutConstructorImplTest {
      * Tests constructing with invalid apk file can raise error expectedly.
      */
     @Test
-    fun constructWithInvalidApkFile() {
+    fun constructWithInvalidDexApkFile() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val baseDirectory = createTestDirectory().apply {
             // Invalid apk file, should be a file.
-            patchApkFile.mkdirs()
-            patchDexDirectory.mkdirs()
+            patchDexApkFile.mkdirs()
             patchLibraryDirectory.mkdirs()
             patchResourceApkFile.createNewFile()
         }
@@ -326,7 +340,6 @@ class PatchLayoutConstructorImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val baseDirectory = createTestDirectory().apply {
-            patchApkFile.createNewFile()
             // Invalid dex directory, should be a directory.
             patchDexDirectory.createNewFile()
             patchLibraryDirectory.mkdirs()
@@ -353,8 +366,7 @@ class PatchLayoutConstructorImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val baseDirectory = createTestDirectory().apply {
-            patchApkFile.createNewFile()
-            patchDexDirectory.mkdirs()
+            patchDexApkFile.createNewFile()
             // Invalid library directory, should be a directory.
             patchLibraryDirectory.createNewFile()
             patchResourceApkFile.createNewFile()
@@ -380,8 +392,7 @@ class PatchLayoutConstructorImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val baseDirectory = createTestDirectory().apply {
-            patchApkFile.createNewFile()
-            patchDexDirectory.mkdirs()
+            patchDexApkFile.createNewFile()
             patchLibraryDirectory.mkdirs()
             // Invalid resource apk file, should be a file.
             patchResourceApkFile.mkdirs()
