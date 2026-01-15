@@ -2,14 +2,13 @@ package com.tencent.tinker.internal.load.code
 
 import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.internal.Patch
-import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.Loader
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.searchAndSortDexFiles
 import java.io.File
 
-private enum class ErrorType : TinkerError.Type {
+private enum class LoadCodeErrorType : TinkerError.Type {
     UNEXPECTED,
     NO_VALID_INPUTS,
     INVALID_LIBRARY_DIRECTORY,
@@ -26,7 +25,7 @@ private enum class ErrorType : TinkerError.Type {
 
 @VisibleForTesting
 internal fun codeLoaderErrorTypeOfForTesting(type: String): TinkerError.Type =
-    ErrorType.valueOf(type)
+    LoadCodeErrorType.valueOf(type)
 
 internal abstract class CodeLoader : Loader() {
 
@@ -98,14 +97,14 @@ internal abstract class CodeLoader : Loader() {
             ).getDeclaredField("isPatched").getBoolean(null)
         } catch (throwable: Throwable) {
             throw TinkerError(
-                ErrorType.TEST_RESOURCE_BROKEN,
+                LoadCodeErrorType.TEST_RESOURCE_BROKEN,
                 "Cannot find \"${TEST_ADDED_CLASS_NAME}\" from provided class loader.",
                 throwable,
             )
         }
         if (!addedClassPatched) {
             throw TinkerError(
-                ErrorType.VERIFY_FAILED,
+                LoadCodeErrorType.VERIFY_FAILED,
                 "Cannot load patch-added test class by provided class loader.",
             )
         }
@@ -117,14 +116,14 @@ internal abstract class CodeLoader : Loader() {
             ).getDeclaredField("isPatched").getBoolean(null)
         } catch (throwable: Throwable) {
             throw TinkerError(
-                ErrorType.TEST_RESOURCE_BROKEN,
+                LoadCodeErrorType.TEST_RESOURCE_BROKEN,
                 "Cannot find \"${TEST_MODIFIED_CLASS_NAME}\" from provided class loader.",
                 throwable,
             )
         }
         if (!modifiedClassPatched) {
             throw TinkerError(
-                ErrorType.VERIFY_FAILED,
+                LoadCodeErrorType.VERIFY_FAILED,
                 "Cannot load patch-modified test class by provided class loader.",
             )
         }
@@ -139,7 +138,7 @@ internal abstract class CodeLoader : Loader() {
             )
         } catch (throwable: Throwable) {
             throw TinkerError(
-                ErrorType.TEST_RESOURCE_BROKEN,
+                LoadCodeErrorType.TEST_RESOURCE_BROKEN,
                 "Cannot find \"${TEST_LIBRARY_NAME}\" from provided class loader.",
                 throwable,
             )
@@ -148,14 +147,14 @@ internal abstract class CodeLoader : Loader() {
             clazz.getDeclaredMethod("fromJni").invoke(null) as String
         } catch (throwable: Throwable) {
             throw TinkerError(
-                ErrorType.TEST_RESOURCE_BROKEN,
+                LoadCodeErrorType.TEST_RESOURCE_BROKEN,
                 "Cannot find \"fromJni\" method from \"${TEST_LIBRARY_NAME}\".",
                 throwable,
             )
         }
         if (fromJni != "<_P_>") {
             throw TinkerError(
-                ErrorType.VERIFY_FAILED,
+                LoadCodeErrorType.VERIFY_FAILED,
                 "Cannot load patched test JNI library.",
             )
         }
@@ -164,14 +163,14 @@ internal abstract class CodeLoader : Loader() {
                 clazz.getDeclaredMethod("fromDependency").invoke(null) as String
             } catch (throwable: Throwable) {
                 throw TinkerError(
-                    ErrorType.TEST_RESOURCE_BROKEN,
+                    LoadCodeErrorType.TEST_RESOURCE_BROKEN,
                     "Cannot find \"fromDependency\" method from \"${TEST_LIBRARY_NAME}\".",
                     throwable,
                 )
             }
             if (fromDependency != "<_P_>") {
                 throw TinkerError(
-                    ErrorType.VERIFY_FAILED,
+                    LoadCodeErrorType.VERIFY_FAILED,
                     "Cannot load patched test dependency library.",
                 )
             }
@@ -190,7 +189,7 @@ internal abstract class CodeLoader : Loader() {
                 .searchAndSortDexFiles()
                 ?.let { return it }
             throw TinkerError(
-                ErrorType.NO_VALID_INPUTS,
+                LoadCodeErrorType.NO_VALID_INPUTS,
                 "Missing valid input dex files in \"${patch.dexDirectory.absolutePath}\".",
             )
         }
@@ -202,7 +201,7 @@ internal abstract class CodeLoader : Loader() {
                         .also {
                             if (!it.isDirectory) {
                                 throw TinkerError(
-                                    ErrorType.INVALID_LIBRARY_DIRECTORY,
+                                    LoadCodeErrorType.INVALID_LIBRARY_DIRECTORY,
                                     "Path \"${it.absolutePath}\" is not an existing directory."
                                 )
                             }
@@ -210,13 +209,13 @@ internal abstract class CodeLoader : Loader() {
                 }
                 .takeIf { it.isNotEmpty() }
                 ?: throw TinkerError(
-                    ErrorType.NO_VALID_INPUTS,
+                    LoadCodeErrorType.NO_VALID_INPUTS,
                     "Missing valid input library directory in \"${patch.libraryDirectory.absolutePath}\".",
                 )
 
 
         override fun createLoaderIfNeeded(patch: Patch): CodeLoader {
-            expected<ErrorType>("create code loader") {
+            expected<LoadCodeErrorType>("create code loader") {
                 return createLoader(
                     jvmCodeFiles = searchJvmCodeFiles(patch),
                     libraryDirectories = searchLibraryDirectory(patch),

@@ -14,6 +14,16 @@ import kotlin.collections.filter
 import kotlin.collections.plus
 import java.lang.reflect.Array as JvmReflectArray
 
+private enum class LoadCodeInjectPathErrorType : TinkerError.Type {
+    UNEXPECTED;
+
+    override val group: TinkerError.TypeGroup
+        get() = TinkerError.TypeGroup.LOAD_CODE_INJECT_PATH
+
+    override val typeCode: Int
+        get() = ordinal
+}
+
 /**
  * Code loader which loads by injecting path into system class loader.
  */
@@ -21,14 +31,6 @@ internal class InjectPathCodeLoader(
     private val source: ClassLoader,
     private val actions: Iterable<() -> Unit>,
 ) : CodeLoader() {
-
-    private object ErrorType : TinkerError.Type {
-        override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.LOAD_CODE_OLD
-
-        override val typeCode: Int
-            get() = 0
-    }
 
     override val verifyDependencyLibraryLoading: Boolean
         get() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
@@ -177,7 +179,7 @@ internal class InjectPathCodeLoader(
             jvmCodeFiles: List<File>,
             libraryDirectories: List<File>
         ): CodeLoader {
-            expected("create code loader", ErrorType) {
+            expected<LoadCodeInjectPathErrorType>("create code loader") {
                 val actions = mutableListOf<() -> Unit>()
                 val dexPathList = source.delegated.pathList
                 createLoadActionsForJvmCodeFiles(

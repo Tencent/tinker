@@ -2,6 +2,7 @@ package com.tencent.tinker
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Configuration
 import com.tencent.tinker.internal.deploy.deployPatchByRemote
 import com.tencent.tinker.internal.deploy.legacy.globalCustomLegacyMerger
 import com.tencent.tinker.internal.load.load
@@ -92,7 +93,9 @@ object Tinker {
      * Following these steps to set up Tinker:
      *
      * - Create a subclass of [AppLike], which we refer it as "delegate application class" in the following text, and
-     *   move all implementation code of original [Application] into created delegate application class.
+     *   move all implementation code of original [Application] into created delegate application class. The subclass
+     *   must have a public constructor with only single parameter typed as [Application]. This constructor is only used
+     *   for creating delegate application class.
      * - Use a subclass of [App] as replacement of original [Application], which we refer it as "application class" in
      *   the following text. Because all classes accessed by application class are "non-patchable", it is recommended
      *   to write as less code as possible to application class.
@@ -127,14 +130,62 @@ object Tinker {
          */
         abstract val deployCallback: Callback?
 
+        /**
+         * Whether current application is hardening. Tinker will try to use special strategy for loading hardening
+         * application.
+         */
+        open val hardening: Boolean
+            get() = false
+
+        private var appLike = null as AppLike?
+
         override fun attachBaseContext(base: Context) {
             super.attachBaseContext(base)
-            if (!base.isInPatchProcess) {
-                base.load(
-                    appLikeClassName = appLikeClassName,
+            val appLikeClassLoader = if (!isInPatchProcess) {
+                load(
+                    hardening = hardening,
                     callback = loadCallback,
-                )
+                ) ?: classLoader
+            } else {
+                classLoader
             }
+            // Do not catch any throwable while creating delegate application class. It should be fail-fast if user
+            // provides an invalid delegate application class name.
+            appLike = appLikeClassName
+                ?.let {
+                    appLikeClassLoader.loadClass(it)
+                }
+                ?.getConstructor(Application::class.java)
+                ?.newInstance(this)
+                ?.let {
+                    it as AppLike
+                }
+            appLike?.attachBaseContext(base)
+        }
+
+        override fun onCreate() {
+            super.onCreate()
+            appLike?.onCreate()
+        }
+
+        override fun onTerminate() {
+            super.onTerminate()
+            appLike?.onTerminate()
+        }
+
+        override fun onLowMemory() {
+            super.onLowMemory()
+            appLike?.onLowMemory()
+        }
+
+        override fun onTrimMemory(level: Int) {
+            super.onTrimMemory(level)
+            appLike?.onTrimMemory(level)
+        }
+
+        override fun onConfigurationChanged(newConfig: Configuration) {
+            super.onConfigurationChanged(newConfig)
+            appLike?.onConfigurationChanged(newConfig)
         }
     }
 
@@ -144,7 +195,38 @@ object Tinker {
      *
      * See [App] for more details on how to set up Tinker.
      */
-    abstract class AppLike(val application: Application)
+    abstract class AppLike(val application: Application) {
+
+        /**
+         * See [Application.attachBaseContext].
+         */
+        open fun attachBaseContext(base: Context) {}
+
+        /**
+         * See [Application.onCreate].
+         */
+        open fun onCreate() {}
+
+        /**
+         * See [Application.onTerminate].
+         */
+        open fun onTerminate() {}
+
+        /**
+         * See [Application.onLowMemory].
+         */
+        open fun onLowMemory() {}
+
+        /**
+         * See [Application.onTrimMemory].
+         */
+        open fun onTrimMemory(level: Int) {}
+
+        /**
+         * See [Application.onConfigurationChanged].
+         */
+        open fun onConfigurationChanged(newConfig: Configuration) {}
+    }
 
     /**
      * Asks Tinker to create a patch with provided [version] and [diffPackage].

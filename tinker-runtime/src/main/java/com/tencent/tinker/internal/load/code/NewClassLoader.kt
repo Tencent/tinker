@@ -14,6 +14,16 @@ import com.tencent.tinker.loader.TinkerClassLoader
 import dalvik.system.DelegateLastClassLoader
 import java.io.File
 
+private enum class LoadCodeNewClassLoaderErrorType : TinkerError.Type {
+    UNEXPECTED;
+
+    override val group: TinkerError.TypeGroup
+        get() = TinkerError.TypeGroup.LOAD_CODE_NEW_CLASS_LOADER
+
+    override val typeCode: Int
+        get() = ordinal
+}
+
 @RequiresApi(Build.VERSION_CODES.N)
 private object CurrentThreadContextClassLoaderInjector
     : ClassLoaderInjector() {
@@ -77,15 +87,6 @@ internal abstract class NewClassLoaderCodeLoader(
     private val classLoaderInjectors: Iterable<ClassLoaderInjector>,
 ) : CodeLoader() {
 
-    private object ErrorType : TinkerError.Type {
-
-        override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.LOAD_CODE_NOUGAT
-
-        override val typeCode: Int
-            get() = 0
-    }
-
     abstract class ClassLoaderInjector {
         abstract fun inject(classLoader: ClassLoader)
     }
@@ -111,7 +112,7 @@ internal abstract class NewClassLoaderCodeLoader(
             jvmCodeFiles: List<File>,
             libraryDirectories: List<File>,
         ): CodeLoader {
-            expected("create code loader", ErrorType) {
+            expected<LoadCodeNewClassLoaderErrorType>("create code loader") {
                 val dexPathList =
                     source.delegated.pathList
                 val dexPaths =

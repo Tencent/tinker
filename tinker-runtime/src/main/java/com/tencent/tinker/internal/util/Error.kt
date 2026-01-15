@@ -10,17 +10,15 @@ internal val TinkerError.Type.errorCode: Int
     get() = (group.ordinal shl 8) or typeCode
 
 /**
- * Runs code in `scope`. If any throwable is thrown, the function rethrows it as original if it is a
- * `TinkerError`, or wraps it as a `TinkerError` with `unexpected` error type, and `cleaner` will be
- * called.
+ * Runs code in [scope]. If any throwable is thrown, the function rethrows it as original if it is a [TinkerError], or
+ * wraps it as a [TinkerError] with first entry of [T] as error type, and [cleaner] will be called.
  */
 @OptIn(ExperimentalStdlibApi::class, ExperimentalContracts::class)
-internal inline fun <T> expected(
+internal inline fun <reified T, R> expected(
     action: String,
-    unexpected: TinkerError.Type,
     noinline cleaner: (() -> Unit)? = null,
-    scope: () -> T,
-): T {
+    scope: () -> R,
+): R where T : Enum<T>, T : TinkerError.Type {
     contract {
         callsInPlace(scope, InvocationKind.EXACTLY_ONCE)
     }
@@ -32,7 +30,7 @@ internal inline fun <T> expected(
             throw throwable
         }
         throw TinkerError(
-            unexpected,
+            enumEntries<T>()[0],
             "Cannot $action because of unexpected error.",
             throwable
         )
@@ -40,9 +38,8 @@ internal inline fun <T> expected(
 }
 
 /**
- * Runs code in `scope`. If any throwable is thrown, the function rethrows it as original if it is a
- * `TinkerError`, or wraps it as a `TinkerError` with first entry of `T` as error type, and
- * `cleaner` will be called.
+ * Runs code in [scope]. If any throwable is thrown, the function rethrows it as original if it is a [TinkerError], or
+ * wraps it as a [TinkerError] with first entry of [T] as error type, and [cleaner] will be called.
  */
 @OptIn(ExperimentalStdlibApi::class, ExperimentalContracts::class)
 internal inline fun <reified T> expected(
@@ -53,7 +50,7 @@ internal inline fun <reified T> expected(
     contract {
         callsInPlace(scope, InvocationKind.EXACTLY_ONCE)
     }
-    return expected(action, enumEntries<T>()[0], cleaner, scope)
+    expected<T, Unit>(action, cleaner, scope)
 }
 
 /**
@@ -63,7 +60,7 @@ internal inline fun <reified T> expected(
 internal fun <T> tryEach(
     strategies: Iterable<() -> T>,
 ): T {
-    val throwables =
+    val throwableList =
         strategies.mapNotNull { strategy ->
             try {
                 return strategy() ?: return@mapNotNull null
@@ -71,5 +68,5 @@ internal fun <T> tryEach(
                 return@mapNotNull throwable
             }
         }
-    throw throwables.first()
+    throw throwableList.first()
 }

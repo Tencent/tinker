@@ -3,10 +3,10 @@ package com.tencent.tinker.test.internal.load
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.Loader
-import com.tencent.tinker.internal.load.tryLoad
+import com.tencent.tinker.internal.load.loadErrorTypeOfForTesting
+import com.tencent.tinker.internal.load.tryLoadForTesting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -62,8 +62,7 @@ class LoadTest {
             WrappedLoaderFactory(secondLoader),
             WrappedLoaderFactory(null),
         )
-        val error = factories.tryLoad(patch)
-        assertNull(error)
+        factories.tryLoadForTesting(patch)
         assertTrue(factories.all { it.factored })
         assertTrue(firstLoader.loaded)
         assertTrue(secondLoader.loaded)
@@ -84,12 +83,16 @@ class LoadTest {
             WrappedLoaderFactory(failureLoader),
             WrappedLoaderFactory(null),
         )
-        val exception = assertThrows(RuntimeException::class.java) {
-            factories.tryLoad(patch)
+        val error = assertThrows(TinkerError::class.java) {
+            factories.tryLoadForTesting(patch)
         }
         // Make sure start loading until all factories are factored.
         assertTrue(factories.all { it.factored })
-        assertSame(failureLoader.exception, exception)
+        assertEquals(
+            loadErrorTypeOfForTesting("UNRECOVERABLE_LOAD_FAILED"),
+            error.type,
+        )
+        assertSame(failureLoader.exception, error.cause)
     }
 
     /**
@@ -106,16 +109,18 @@ class LoadTest {
             TestErrorType,
             "This is a test error."
         )
-        val actual = listOf(
-            object : Loader.Factory() {
-                override fun createLoaderIfNeeded(patch: Patch): Loader = firstLoader
-            },
-            object : Loader.Factory() {
-                override fun createLoaderIfNeeded(patch: Patch): Loader {
-                    throw expected
-                }
-            },
-        ).tryLoad(patch)
+        val actual = assertThrows(TinkerError::class.java) {
+            listOf(
+                object : Loader.Factory() {
+                    override fun createLoaderIfNeeded(patch: Patch): Loader = firstLoader
+                },
+                object : Loader.Factory() {
+                    override fun createLoaderIfNeeded(patch: Patch): Loader {
+                        throw expected
+                    }
+                },
+            ).tryLoadForTesting(patch)
+        }
         assertSame(expected, actual)
     }
 
@@ -131,16 +136,18 @@ class LoadTest {
             Files.createTempDirectory("tinker-test-").toFile()
         )
         val expected = RuntimeException("This is an unexpected throwable")
-        val actual = listOf(
-            object : Loader.Factory() {
-                override fun createLoaderIfNeeded(patch: Patch): Loader = firstLoader
-            },
-            object : Loader.Factory() {
-                override fun createLoaderIfNeeded(patch: Patch): Loader {
-                    throw expected
-                }
-            },
-        ).tryLoad(patch)
+        val actual = assertThrows(TinkerError::class.java) {
+            listOf(
+                object : Loader.Factory() {
+                    override fun createLoaderIfNeeded(patch: Patch): Loader = firstLoader
+                },
+                object : Loader.Factory() {
+                    override fun createLoaderIfNeeded(patch: Patch): Loader {
+                        throw expected
+                    }
+                },
+            ).tryLoadForTesting(patch)
+        }
         assertNotNull(actual)
         assertEquals(TinkerError.TypeGroup.LOAD, actual!!.type.group)
         assertSame(expected, actual.cause)

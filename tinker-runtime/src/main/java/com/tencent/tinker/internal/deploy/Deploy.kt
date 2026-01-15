@@ -66,7 +66,7 @@ private fun deployPatch(
         )
         validator.createValidationFingerprint(temporaryDirectory)
         val rawPatch = rawPatchManager.create(version, temporaryDirectory)
-        oatManager.acquire(rawPatch.directory)
+        oatManager.generateIfNeeded(rawPatch.directory)
     }
 }
 
@@ -119,7 +119,7 @@ private const val DEPLOY_IPC_KEY_VERSION = "v"
 private const val DEPLOY_IPC_KEY_DIFF_PACKAGE = "d"
 
 @PatchProcessOnly
-private class TinkerDeployService : Service() {
+class TinkerDeployService : Service() {
 
     private fun runTask(intent: Intent) {
         val error = try {
