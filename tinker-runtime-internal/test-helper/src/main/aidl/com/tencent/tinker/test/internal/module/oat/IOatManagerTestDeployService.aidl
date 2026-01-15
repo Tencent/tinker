@@ -1,6 +1,6 @@
 package com.tencent.tinker.test.internal.module.oat;
 
-interface IOatManagerTestPatchService {
+interface IOatManagerTestDeployService {
     String invalidAcquire(String directoryPath, boolean skipGenerateIfMissing);
     void invalidRelease();
     void generateIfNeeded(String directoryPath);

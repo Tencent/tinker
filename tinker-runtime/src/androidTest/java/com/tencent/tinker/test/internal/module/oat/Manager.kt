@@ -9,7 +9,7 @@ import com.tencent.tinker.internal.module.oat.Generator
 import com.tencent.tinker.internal.module.oat.OatManagerImpl
 import com.tencent.tinker.internal.module.oat.oatErrorTypeOfForTesting
 import com.tencent.tinker.internal.util.errorCode
-import com.tencent.tinker.internal.util.isInPatchProcess
+import com.tencent.tinker.internal.util.isInDeployProcess
 import com.tencent.tinker.test.createTestDirectory
 import com.tencent.tinker.test.rethrowAsIllegalState
 import com.tencent.tinker.test.tinkerErrorCode
@@ -32,7 +32,7 @@ internal class OatManagerDelegate(
 
     private val managerImpl = OatManagerImpl(
         context = context,
-        interpreter = if (context.isInPatchProcess) {
+        interpreter = if (context.isInDeployProcess) {
             IllegalGenerator("patch", "interpreter")
         } else {
             object : Generator() {
@@ -43,7 +43,7 @@ internal class OatManagerDelegate(
                 ): Boolean = interpreter.generate(context, inputs, outputDirectory)
             }
         },
-        compiler = if (!context.isInPatchProcess) {
+        compiler = if (!context.isInDeployProcess) {
             IllegalGenerator("main", "compiler")
         } else {
             object : Generator() {
@@ -212,10 +212,10 @@ class OatManagerImplTest {
             .let(serviceRule::bindService)
             .let(IOatManagerTestMainService.Stub::asInterface)
 
-    private fun Context.patchService(): IOatManagerTestPatchService =
-        Intent(this, OatManagerTestPatchService::class.java)
+    private fun Context.deployService(): IOatManagerTestDeployService =
+        Intent(this, OatManagerTestDeployService::class.java)
             .let(serviceRule::bindService)
-            .let(IOatManagerTestPatchService.Stub::asInterface)
+            .let(IOatManagerTestDeployService.Stub::asInterface)
 
     @Before
     fun cleanUp() {
@@ -223,8 +223,8 @@ class OatManagerImplTest {
         val mainService = context.mainService()
         mainService.reset()
         mainService.releaseGuard()
-        val patchService = context.patchService()
-        patchService.reset()
+        val deployService = context.deployService()
+        deployService.reset()
     }
 
     /**
@@ -234,7 +234,7 @@ class OatManagerImplTest {
     fun createAndAcquire() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
@@ -242,8 +242,8 @@ class OatManagerImplTest {
             resolve("baz.apk").createNewFile()
             resolve("qux.txt").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
-        assertTrue(patchService.isCompilerGenerated)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
+        assertTrue(deployService.isCompilerGenerated)
         val acquired = mainService
             .acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
@@ -322,12 +322,12 @@ class OatManagerImplTest {
     fun reGenerateWithMissingMetadata() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
             mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
@@ -365,12 +365,12 @@ class OatManagerImplTest {
     fun reGenerateWithCorruptedMetadata() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
             mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
@@ -409,12 +409,12 @@ class OatManagerImplTest {
     fun reGenerateWithMissingContent() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
 
         mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
             .listFiles()
@@ -438,12 +438,12 @@ class OatManagerImplTest {
     fun reGenerateWithChangedMetadataVersion() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
             mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
@@ -489,12 +489,12 @@ class OatManagerImplTest {
     fun reGenerateWithChangedAndroidFingerprint() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
         val beforeReGenerateContentDirectories =
             mainService.contentBaseDirectory(inputDirectory.absolutePath).let(::File)
@@ -540,12 +540,12 @@ class OatManagerImplTest {
     fun reGenerateWithUpdatedInputs() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         inputDirectory.apply {
             resolve("bar.dex").createNewFile()
         }
@@ -567,7 +567,7 @@ class OatManagerImplTest {
     fun skipReGeneratingIfUsing() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
@@ -578,7 +578,7 @@ class OatManagerImplTest {
         inputDirectory.apply {
             resolve("bar.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         assertFalse(generatedByMain!!.resolve("bar.dex.oat").exists())
     }
 
@@ -609,20 +609,20 @@ class OatManagerImplTest {
     }
 
     /**
-     * Tests if compiler generates failed while generating in patch process is work expectedly.
+     * Tests if compiler generates failed while generating in deploy process is work expectedly.
      */
     @Test
     fun generateWithFailureCompiler() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
-        patchService.useFailureGenerator()
+        val deployService = context.deployService()
+        deployService.useFailureGenerator()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
         val errorCode = assertThrows(IllegalStateException::class.java) {
-            patchService.generateIfNeeded(inputDirectory.absolutePath)
+            deployService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
             oatErrorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
@@ -662,20 +662,20 @@ class OatManagerImplTest {
     }
 
     /**
-     * Tests if compiler raises exception while generating in patch process is work expectedly.
+     * Tests if compiler raises exception while generating in deploy process is work expectedly.
      */
     @Test
     fun generateWithExceptionCompiler() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
-        patchService.useExceptionGenerator()
+        val deployService = context.deployService()
+        deployService.useExceptionGenerator()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
         val errorCode = assertThrows(IllegalStateException::class.java) {
-            patchService.generateIfNeeded(inputDirectory.absolutePath)
+            deployService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
             oatErrorTypeOfForTesting("GENERATE_OR_STORE_FAILED").errorCode,
@@ -695,12 +695,12 @@ class OatManagerImplTest {
     fun clean() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Checks if files generated successfully. It is to make sure files are cleaned after
         // cleaning is because of cleaning, not because of generating failure.
         assertEquals(
@@ -711,7 +711,7 @@ class OatManagerImplTest {
             mainService.baseDirectory().let(::File).listFiles()?.toSet(),
         )
         // Make sure none of files remains.
-        val cleaned = patchService.clean(inputDirectory.absolutePath)
+        val cleaned = deployService.clean(inputDirectory.absolutePath)
         assertTrue(cleaned)
         assertEquals(
             0,
@@ -727,7 +727,7 @@ class OatManagerImplTest {
     fun cleanAfterUsingIsReleased() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
@@ -735,7 +735,7 @@ class OatManagerImplTest {
         val generated = mainService.acquire(inputDirectory.absolutePath, false)
         assertNotNull(generated)
         // Make sure none of files are cleaned.
-        val cleanedWhileUsing = patchService.clean(inputDirectory.absolutePath)
+        val cleanedWhileUsing = deployService.clean(inputDirectory.absolutePath)
         assertFalse(cleanedWhileUsing)
         assertEquals(
             setOf(
@@ -746,7 +746,7 @@ class OatManagerImplTest {
         )
         // Make sure cleaning works as expectedly after using is released.
         mainService.release()
-        val cleanedAfterUsing = patchService.clean(inputDirectory.absolutePath)
+        val cleanedAfterUsing = deployService.clean(inputDirectory.absolutePath)
         assertTrue(cleanedAfterUsing)
         assertEquals(
             0,
@@ -755,19 +755,19 @@ class OatManagerImplTest {
     }
 
     /**
-     * Tests acquiring OAT files in patch process can raise error expectedly.
+     * Tests acquiring OAT files in  procesps can raise error expectedly.
      */
     @Test
-    fun acquireInPatchProcess() {
+    fun acquireInDeployProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
             resolve("foo.dex").createNewFile()
         }
-        patchService.generateIfNeeded(inputDirectory.absolutePath)
+        deployService.generateIfNeeded(inputDirectory.absolutePath)
         assertThrows(IllegalStateException::class.java) {
-            patchService.invalidAcquire(inputDirectory.absolutePath, false)
+            deployService.invalidAcquire(inputDirectory.absolutePath, false)
         }
     }
 }

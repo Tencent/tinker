@@ -20,7 +20,7 @@
             android:exported="false"
             android:process=":others" />
         <service
-            android:name=".internal.module.patch.PatchManagerTestPatchService"
+            android:name=".internal.module.patch.PatchManagerTestDeployService"
             android:enabled="true"
             android:exported="false"
             android:process=":patch" />
@@ -29,7 +29,7 @@
             android:enabled="true"
             android:exported="false" />
         <service
-            android:name=".internal.module.oat.OatManagerTestPatchService"
+            android:name=".internal.module.oat.OatManagerTestDeployService"
             android:enabled="true"
             android:exported="false"
             android:process=":patch" />
@@ -43,7 +43,7 @@
             android:exported="false"
             android:process=":others" />
         <service
-            android:name=".internal.module.layout.PatchLayoutConstructorTestPatchService"
+            android:name=".internal.module.layout.PatchLayoutConstructorTestDeployService"
             android:enabled="true"
             android:exported="false"
             android:process=":patch" />

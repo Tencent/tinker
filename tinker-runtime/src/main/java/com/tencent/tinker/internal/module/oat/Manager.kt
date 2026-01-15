@@ -6,8 +6,8 @@ import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
-import com.tencent.tinker.internal.annotation.PatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
+import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.currentSdk
@@ -19,7 +19,7 @@ import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.guardedReadOrWriteContent
 import com.tencent.tinker.internal.util.guardedReadOrWriteContentNullable
 import com.tencent.tinker.internal.util.infoLog
-import com.tencent.tinker.internal.util.isInPatchProcess
+import com.tencent.tinker.internal.util.isInDeployProcess
 import com.tencent.tinker.internal.util.use
 import com.tencent.tinker.internal.util.warnLog
 import java.io.ByteArrayOutputStream
@@ -261,7 +261,7 @@ internal class OatManagerImpl(
 
 
     @GuardedBy("this")
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     private var guardHolder: Pair<EscapedGuardedContent, AcquiringRecord>? = null
 
     private class AcquiringRecord(directory: File) :
@@ -275,7 +275,7 @@ internal class OatManagerImpl(
         }
     }
 
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     private fun releaseGuard() {
         guardHolder?.let { (guardedContent, _) ->
             guardedContent.close()
@@ -284,7 +284,7 @@ internal class OatManagerImpl(
     }
 
     @VisibleForTesting
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     fun releaseGuardForTesting() {
         releaseGuard()
     }
@@ -515,13 +515,13 @@ internal class OatManagerImpl(
      * available.
      */
     @Synchronized
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     override fun acquire(
         directory: File,
         skipGenerateIfMissing: Boolean
     ): File? {
-        check(!context.isInPatchProcess) {
-            "Cannot acquire OAT files in patch process"
+        check(!context.isInDeployProcess) {
+            "Cannot acquire OAT files in deploy process"
         }
         expected<ErrorType>("acquire OAT files") {
             val skipGenerateStrategy =
@@ -549,10 +549,10 @@ internal class OatManagerImpl(
 
 
     @Synchronized
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     override fun release() {
-        check(!context.isInPatchProcess) {
-            "Cannot request OAT files in patch process"
+        check(!context.isInDeployProcess) {
+            "Cannot request OAT files in deploy process"
         }
         expected<ErrorType>("release reference") {
             releaseGuard()
@@ -564,10 +564,10 @@ internal class OatManagerImpl(
      * files are not available.
      */
     @Synchronized
-    @PatchProcessOnly
+    @DeployProcessOnly
     override fun generateIfNeeded(directory: File, async: Boolean) {
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
+        check(context.isInDeployProcess) {
+            "Only available for deploy process"
         }
         expected<ErrorType>("generate OAT files") {
             val action: () -> Unit = lambda@{
@@ -578,7 +578,7 @@ internal class OatManagerImpl(
                 )
                     ?.first
                     ?: return@lambda
-                // Patch process does not use OAT files, so we can close the metadata file.
+                // deploy process does not use OAT files, so we can close the metadata file.
                 metadataGuardedContent.close()
             }
             if (async) {
@@ -590,10 +590,10 @@ internal class OatManagerImpl(
     }
 
     @Synchronized
-    @PatchProcessOnly
+    @DeployProcessOnly
     override fun clean(directory: File): Boolean {
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
+        check(context.isInDeployProcess) {
+            "Only available for deploy process"
         }
         expected<ErrorType>("clean OAT files") {
             val directoryPathHash = directory.pathHash

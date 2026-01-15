@@ -1,7 +1,7 @@
 package com.tencent.tinker.internal.module.layout
 
 import android.content.Context
-import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.util.SynchronizedCache
 import java.io.File
 
@@ -29,7 +29,7 @@ internal abstract class PatchLayoutConstructor {
      * Constructs a new directory based on [baseDirectory] from raw patch manager and [oatDirectory]
      * from OAT manager.
      */
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     abstract fun construct(
         baseDirectory: File,
         oatDirectory: File?,

@@ -1,5 +1,5 @@
 package com.tencent.tinker.test.internal.module.layout;
 
-interface IPatchLayoutConstructorTestPatchService {
+interface IPatchLayoutConstructorTestDeployService {
     String invalidConstruct(String baseDirectoryPath, String oatDirectoryPath);
 }

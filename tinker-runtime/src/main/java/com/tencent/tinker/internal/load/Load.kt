@@ -6,7 +6,7 @@ import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.load.code.InjectPathCodeLoader
 import com.tencent.tinker.internal.load.code.V24NonHardeningCodeLoader
 import com.tencent.tinker.internal.load.code.V27NonHardeningCodeLoader
@@ -20,7 +20,6 @@ import com.tencent.tinker.internal.module.validate.Validator
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
 import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.internal.util.expected
-import com.tencent.tinker.internal.util.isInPatchProcess
 
 private enum class LoadErrorType : TinkerError.Type {
     UNEXPECTED,
@@ -66,7 +65,7 @@ internal abstract class Loader {
 /**
  * Tries to load patch by factories.
  */
-@NonPatchProcessOnly
+@NonDeployProcessOnly
 private fun Iterable<Loader.Factory>.tryLoad(patch: Patch) {
     val loaders = expected<LoadErrorType, List<Loader>>("create loaders") {
         mapNotNull { it.createLoaderIfNeeded(patch) }
@@ -87,7 +86,7 @@ private fun Iterable<Loader.Factory>.tryLoad(patch: Patch) {
 internal fun Iterable<Loader.Factory>.tryLoadForTesting(patch: Patch) =
     tryLoad(patch)
 
-@NonPatchProcessOnly
+@NonDeployProcessOnly
 private fun Application.loadWith(
     hardening: Boolean,
     patch: Patch,
@@ -124,7 +123,7 @@ private fun Application.loadWith(
     return classLoaderReference[0]
 }
 
-@NonPatchProcessOnly
+@NonDeployProcessOnly
 private fun Application.loadWith(
     hardening: Boolean,
     rawPatch: RawPatch,
@@ -145,7 +144,7 @@ private fun Application.loadWith(
     )
 }
 
-@NonPatchProcessOnly
+@NonDeployProcessOnly
 private fun Application.loadInternal(
     hardening: Boolean,
     rawPatchManager: RawPatchManager = RawPatchManager.with(this),
@@ -168,7 +167,7 @@ private fun Application.loadInternal(
  * If any patch is loaded successfully, a class loader which can load patch classes will be returned. Otherwise, the
  * function returns null.
  */
-@NonPatchProcessOnly
+@NonDeployProcessOnly
 internal fun Application.load(
     hardening: Boolean,
     callback: Tinker.Callback?,

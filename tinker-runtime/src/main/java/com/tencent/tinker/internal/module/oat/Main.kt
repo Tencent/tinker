@@ -1,8 +1,8 @@
 package com.tencent.tinker.internal.module.oat
 
 import android.content.Context
-import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
-import com.tencent.tinker.internal.annotation.PatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
+import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.util.SynchronizedCache
 import java.io.File
 
@@ -24,7 +24,7 @@ internal abstract class OatManager {
      * If set [skipGenerateIfMissing] as true, the function skips generating even if OAT files are not
      * available.
      */
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     abstract fun acquire(
         directory: File,
         skipGenerateIfMissing: Boolean = false
@@ -33,19 +33,19 @@ internal abstract class OatManager {
     /**
      * Releases OAT files using lock to mark OAT files is not used any more in current process.
      */
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     abstract fun release()
 
     /**
      * Generates OAT files for available inputs (like dex files or apk files) in [directory] if OAT
      * files are not available.
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     abstract fun generateIfNeeded(directory: File, async: Boolean = false)
 
     /**
      * Cleans OAT files acquired by [directory].
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     abstract fun clean(directory: File): Boolean
 }

@@ -24,7 +24,9 @@ internal val Context.currentProcess: String
 internal val Context.isInMainProcess: Boolean
     get() = (applicationInfo.processName ?: packageName) == currentProcess
 
-internal val Context.isInPatchProcess: Boolean
+internal val Context.isInDeployProcess: Boolean
+    // For compatible with legacy version of Tinker, the suffix of deploy process is still ":patch".
+    // TODO: Move suffix to ":tinker.deploy".
     get() = currentProcess.endsWith(":patch")
 
 internal data class CurrentSdk(

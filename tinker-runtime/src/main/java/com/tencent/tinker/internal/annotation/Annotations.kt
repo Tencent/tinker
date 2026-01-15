@@ -7,13 +7,13 @@ package com.tencent.tinker.internal.annotation
 annotation class MainProcessOnly
 
 /**
- * Functions with this annotation are only available for patch process.
+ * Functions with this annotation are only available for deploy process.
  */
 @Retention(AnnotationRetention.SOURCE)
-annotation class PatchProcessOnly
+annotation class DeployProcessOnly
 
 /**
- * Functions with this annotation are only available for non-patch process.
+ * Functions with this annotation are only available for non-deploy process.
  */
 @Retention(AnnotationRetention.SOURCE)
-annotation class NonPatchProcessOnly
+annotation class NonDeployProcessOnly

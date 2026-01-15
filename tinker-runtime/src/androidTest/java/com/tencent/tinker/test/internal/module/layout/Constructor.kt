@@ -64,10 +64,10 @@ class PatchLayoutConstructorImplTest {
             .let(serviceRule::bindService)
             .let(IPatchLayoutConstructorTestOthersService.Stub::asInterface)
 
-    private fun Context.patchService(): IPatchLayoutConstructorTestPatchService =
-        Intent(this, PatchLayoutConstructorTestPatchService::class.java)
+    private fun Context.deployService(): IPatchLayoutConstructorTestDeployService =
+        Intent(this, PatchLayoutConstructorTestDeployService::class.java)
             .let(serviceRule::bindService)
-            .let(IPatchLayoutConstructorTestPatchService.Stub::asInterface)
+            .let(IPatchLayoutConstructorTestDeployService.Stub::asInterface)
 
     @Before
     fun cleanUp() {
@@ -246,12 +246,12 @@ class PatchLayoutConstructorImplTest {
     }
 
     /**
-     * Tests constructing in patch process can raise error expectedly.
+     * Tests constructing in deploy process can raise error expectedly.
      */
     @Test
-    fun constructInPatchProcess() {
+    fun constructInDeployProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val baseDirectory = createTestDirectory().apply {
             patchDexApkFile.createNewFile()
             patchLibraryDirectory.mkdirs()
@@ -259,7 +259,7 @@ class PatchLayoutConstructorImplTest {
         }
         val oatDirectory = createTestDirectory()
         assertThrows(IllegalStateException::class.java) {
-            patchService.invalidConstruct(
+            deployService.invalidConstruct(
                 baseDirectory.absolutePath,
                 oatDirectory.absolutePath,
             )

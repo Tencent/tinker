@@ -74,10 +74,10 @@ class PatchLayoutConstructorTestOthersService : PatchLayoutConstructorTestServic
     }
 }
 
-class PatchLayoutConstructorTestPatchService : PatchLayoutConstructorTestService() {
+class PatchLayoutConstructorTestDeployService : PatchLayoutConstructorTestService() {
 
     override val binder by lazy {
-        object : IPatchLayoutConstructorTestPatchService.Stub() {
+        object : IPatchLayoutConstructorTestDeployService.Stub() {
 
             override fun invalidConstruct(
                 baseDirectoryPath: String,

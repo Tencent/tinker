@@ -5,8 +5,8 @@ import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.annotation.MainProcessOnly
-import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
-import com.tencent.tinker.internal.annotation.PatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
+import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
@@ -18,7 +18,7 @@ import com.tencent.tinker.internal.util.guardedContent
 import com.tencent.tinker.internal.util.guardedContentNullable
 import com.tencent.tinker.internal.util.guardedReadOrWriteContent
 import com.tencent.tinker.internal.util.isInMainProcess
-import com.tencent.tinker.internal.util.isInPatchProcess
+import com.tencent.tinker.internal.util.isInDeployProcess
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -104,7 +104,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     fun latestVersionFileForTesting(): File =
         context.latestVersionFile
 
-    @set:PatchProcessOnly
+    @set:DeployProcessOnly
     private var Context.latestVersion: String?
         get() = latestVersionFile
             .takeIf { it.exists() }
@@ -165,10 +165,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     }
 
     /**
-     * Acquires patch of [version] is prepared to be cleaned by patch process. The function returns
+     * Acquires patch of [version] is prepared to be cleaned by deploy process. The function returns
      * null if patch is now used by any process.
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     private fun Context.acquirePatchAsCleaning(version: String): EscapedGuardedContent? {
         val file = guardFile(version).ensureParentIsExistingDirectory()
         return file.escapedGuardedContentExclusiveNullable(
@@ -251,9 +251,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
      * A simple file to record unavailable patch versions.
      *
      * Each line in the file is a patch version. Once a patch version is marked as unavailable by
-     * non-patch processes using [requestUnavailable], it will be added to this file.
+     * non-deploy processes using [requestUnavailable], it will be added to this file.
      *
-     * While patch processes are cleaning up obsolete patch versions, non-remained patch versions
+     * While deploy processes are cleaning up obsolete patch versions, non-remained patch versions
      * will be removed from this file.
      */
     private val Context.unavailableFile: File
@@ -295,7 +295,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
      * content are same as process lifecycle.
      */
     @GuardedBy("this")
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     private var versionHolder: Pair<EscapedGuardedContent, AcquiringRecord>? = null
 
     private class AcquiringRecord(version: String) :
@@ -309,7 +309,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         }
     }
 
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     private fun releaseVersion() {
         versionHolder?.let { (guardedContent, _) ->
             guardedContent.close()
@@ -319,7 +319,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
 
     @VisibleForTesting
     @Synchronized
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     fun releaseAllHoldersForTesting() {
         unmarkMainAlive()
         releaseVersion()
@@ -329,7 +329,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     /**
      * Each patch version has its own independent directory to store patch files.
      *
-     * The patch directories are maintained by patch processes, and will be marked as non-writable
+     * The patch directories are maintained by deploy processes, and will be marked as non-writable
      * after it is created and until it is cleaned up. Other processes can only read or execute
      * files in these directories.
      */
@@ -343,7 +343,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     fun patchDirectoryForTesting(version: String): File =
         context.patchDirectory(version)
 
-    @PatchProcessOnly
+    @DeployProcessOnly
     private fun Context.cleanPatches(keep: (String) -> Boolean): List<String> {
         val patchDirectories = patchesDirectory
             .takeIf { it.exists() }
@@ -416,10 +416,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     }
 
     @Synchronized
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     override fun acquire(): RawPatch? {
-        check(!context.isInPatchProcess) {
-            "Cannot acquire patch in patch process"
+        check(!context.isInDeployProcess) {
+            "Cannot acquire patch in deploy process"
         }
         expected<ErrorType>("acquire patch") {
             versionHolder?.let { (_, lastAcquired) ->
@@ -519,10 +519,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     }
 
     @Synchronized
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     override fun requestUnavailable(version: String) {
-        check(!context.isInPatchProcess) {
-            "Cannot request patch as unavailable in patch process"
+        check(!context.isInDeployProcess) {
+            "Cannot request patch as unavailable in deploy process"
         }
         expected<ErrorType>("request patch as unavailable") {
             if (context.isInMainProcess) {
@@ -544,13 +544,13 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         }
     }
 
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     override fun addUnavailableRequestListener(listener: Runnable) {
         unavailableRequestListeners.add(listener)
     }
 
     @Synchronized
-    @PatchProcessOnly
+    @DeployProcessOnly
     override fun create(version: String, patch: File): RawPatch {
         require(!version.startsWith("#")) {
             "Version cannot start with '#'"
@@ -561,8 +561,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         require(patch.isDirectory) {
             "Provided directory is not a directory"
         }
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
+        check(context.isInDeployProcess) {
+            "Only available for deploy process"
         }
         expected<ErrorType>("create patch") {
             val patchDirectory = context.patchDirectory(version)
@@ -607,10 +607,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     }
 
     @Synchronized
-    @PatchProcessOnly
+    @DeployProcessOnly
     override fun latestVersion(): String? {
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
+        check(context.isInDeployProcess) {
+            "Only available for deploy process"
         }
         expected<ErrorType>("get latest version") {
             return try {
@@ -626,10 +626,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     }
 
     @Synchronized
-    @PatchProcessOnly
+    @DeployProcessOnly
     override fun getByVersion(version: String): RawPatch? {
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
+        check(context.isInDeployProcess) {
+            "Only available for deploy process"
         }
         expected<ErrorType>("get patch by version") {
             val patchDirectory = context.patchDirectory(version)
@@ -641,10 +641,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     }
 
     @Synchronized
-    @PatchProcessOnly
+    @DeployProcessOnly
     override fun cleanAll(): List<String> {
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
+        check(context.isInDeployProcess) {
+            "Only available for deploy process"
         }
         expected<ErrorType>("clean all patches") {
             try {
@@ -661,10 +661,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     }
 
     @Synchronized
-    @PatchProcessOnly
+    @DeployProcessOnly
     override fun cleanObsolete(): List<String> {
-        check(context.isInPatchProcess) {
-            "Only available for patch process"
+        check(context.isInDeployProcess) {
+            "Only available for deploy process"
         }
         expected<ErrorType>("clean obsolete patches") {
             // Patches that meets these conditions will be cleaned up:

@@ -6,7 +6,7 @@ import android.content.Intent
 import android.os.IBinder
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.annotation.PatchProcessOnly
+import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.deploy.legacy.LegacyDeployer
 import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.RawPatchManager
@@ -48,7 +48,7 @@ internal abstract class Deployer {
 /**
  * Creates patch with provided [version] and [diffPackage].
  */
-@PatchProcessOnly
+@DeployProcessOnly
 private fun deployPatch(
     context: Context,
     version: String,
@@ -118,7 +118,7 @@ private fun deployPatch(
 private const val DEPLOY_IPC_KEY_VERSION = "v"
 private const val DEPLOY_IPC_KEY_DIFF_PACKAGE = "d"
 
-@PatchProcessOnly
+@DeployProcessOnly
 class TinkerDeployService : Service() {
 
     private fun runTask(intent: Intent) {

@@ -71,13 +71,13 @@ class ProcessContextDetector : Detector(), Detector.UastScanner {
             )
         )
 
-        val ISSUE_PATCH_PROCESS_ONLY = Issue.create(
-            id = "PatchProcessOnlyViolation",
-            briefDescription = "Member annotated with @PatchProcessOnly called in wrong context",
+        val ISSUE_DEPLOY_PROCESS_ONLY = Issue.create(
+            id = "DeployProcessOnlyViolation",
+            briefDescription = "Member annotated with @DeployProcessOnly called in wrong context",
             explanation = """
-                Members, like functions and properties, annotated as patch process only can only be
-                called from another member annotated as patch process only, or a code branch where
-                android.content.Context.isInPatchProcess returns true.
+                Members, like functions and properties, annotated as deploy process only can only be
+                called from another member annotated as deploy process only, or a code branch where
+                android.content.Context.isInDeployProcess returns true.
             """.trimIndent().replace('\n', ' '),
             category = Category.CORRECTNESS,
             priority = 8,
@@ -88,14 +88,14 @@ class ProcessContextDetector : Detector(), Detector.UastScanner {
             )
         )
 
-        val ISSUE_NON_PATCH_PROCESS_ONLY = Issue.create(
-            id = "NonPatchProcessOnlyViolation",
-            briefDescription = "Member annotated with @NonPatchProcessOnly called in wrong context",
+        val ISSUE_NON_DEPLOY_PROCESS_ONLY = Issue.create(
+            id = "NonDeployProcessOnlyViolation",
+            briefDescription = "Member annotated with @NonDeployProcessOnly called in wrong context",
             explanation = """
-                Members, like functions and properties, annotated as non-patch process only can only
-                be called from another member annotated as main process only or non-patch process
+                Members, like functions and properties, annotated as non-deploy process only can only
+                be called from another member annotated as main process only or non-deploy process
                 only, or a code branch where android.content.Context.isInMainProcess returns true or
-                android.content.Context.isInPatchProcess returns false.
+                android.content.Context.isInDeployProcess returns false.
             """.trimIndent().replace('\n', ' '),
             category = Category.CORRECTNESS,
             priority = 8,
@@ -116,15 +116,15 @@ class ProcessContextDetector : Detector(), Detector.UastScanner {
 
         override val issues = listOf(
             ISSUE_MAIN_PROCESS_ONLY,
-            ISSUE_PATCH_PROCESS_ONLY,
-            ISSUE_NON_PATCH_PROCESS_ONLY,
+            ISSUE_DEPLOY_PROCESS_ONLY,
+            ISSUE_NON_DEPLOY_PROCESS_ONLY,
         )
     }
 
     private enum class ProcessAnnotations(val clazz: String) {
         MAIN_PROCESS_ONLY("com.tencent.tinker.internal.annotation.MainProcessOnly"),
-        PATCH_PROCESS_ONLY("com.tencent.tinker.internal.annotation.PatchProcessOnly"),
-        NON_PATCH_PROCESS_ONLY("com.tencent.tinker.internal.annotation.NonPatchProcessOnly");
+        DEPLOY_PROCESS_ONLY("com.tencent.tinker.internal.annotation.DeployProcessOnly"),
+        NON_DEPLOY_PROCESS_ONLY("com.tencent.tinker.internal.annotation.NonDeployProcessOnly");
 
         companion object {
 
@@ -141,7 +141,7 @@ class ProcessContextDetector : Detector(), Detector.UastScanner {
         val property: String,
     ) {
         IS_IN_MAIN_PROCESS("isInMainProcess"),
-        IS_IN_PATCH_PROCESS("isInPatchProcess");
+        IS_IN_DEPLOY_PROCESS("isInDeployProcess");
 
         companion object {
             const val DEFINE_CLASS_NAME = "com.tencent.tinker.internal.util.SystemKt"
@@ -170,11 +170,11 @@ class ProcessContextDetector : Detector(), Detector.UastScanner {
                         ProcessAnnotations.MAIN_PROCESS_ONLY ->
                             node.checkCallIsInMainProcess()
 
-                        ProcessAnnotations.PATCH_PROCESS_ONLY ->
-                            node.checkCallIsInPatchProcess()
+                        ProcessAnnotations.DEPLOY_PROCESS_ONLY ->
+                            node.checkCallIsInDeployProcess()
 
-                        ProcessAnnotations.NON_PATCH_PROCESS_ONLY ->
-                            node.checkCallIsInNonPatchProcess()
+                        ProcessAnnotations.NON_DEPLOY_PROCESS_ONLY ->
+                            node.checkCallIsInNonDeployProcess()
                     }
                 }
             }
@@ -203,48 +203,48 @@ class ProcessContextDetector : Detector(), Detector.UastScanner {
                 || isCheckedBy(ProcessCheckProperties.IS_IN_MAIN_PROCESS, true)
 
     context(JavaContext)
-    private fun UCallExpression.checkCallIsInPatchProcess() {
-        if (isInValidPatchProcessContext) {
+    private fun UCallExpression.checkCallIsInDeployProcess() {
+        if (isInValidDeployProcessContext) {
             return
         }
         report(
-            ISSUE_PATCH_PROCESS_ONLY,
+            ISSUE_DEPLOY_PROCESS_ONLY,
             this,
             getLocation(this),
             """
-                This member should only be called from a `@PatchProcessOnly` annotated member, or
-                when `Context.isInPatchProcess` returns `true`.
+                This member should only be called from a `@DeployProcessOnly` annotated member, or
+                when `Context.isInDeployProcess` returns `true`.
             """.trimIndent().replace('\n', ' '),
         )
     }
 
     context(JavaContext)
-    private val UCallExpression.isInValidPatchProcessContext: Boolean
-        get() = isInAnnotatedScope(ProcessAnnotations.PATCH_PROCESS_ONLY)
-                || isCheckedBy(ProcessCheckProperties.IS_IN_PATCH_PROCESS, true)
+    private val UCallExpression.isInValidDeployProcessContext: Boolean
+        get() = isInAnnotatedScope(ProcessAnnotations.DEPLOY_PROCESS_ONLY)
+                || isCheckedBy(ProcessCheckProperties.IS_IN_DEPLOY_PROCESS, true)
 
     context(JavaContext)
-    private fun UCallExpression.checkCallIsInNonPatchProcess() {
-        if (isInValidNonPatchProcessContext) {
+    private fun UCallExpression.checkCallIsInNonDeployProcess() {
+        if (isInValidNonDeployProcessContext) {
             return
         }
         report(
-            ISSUE_NON_PATCH_PROCESS_ONLY,
+            ISSUE_NON_DEPLOY_PROCESS_ONLY,
             this,
             getLocation(this),
             """
                 This member should only be called from a `@MainProcessOnly` annotated or
-                `@NonPatchProcessOnly` annotated member, or when `Context.isInMainProcess` returns
-                `true` or `Context.isInPatchProcess` returns `false`.
+                `@NonDeployProcessOnly` annotated member, or when `Context.isInMainProcess` returns
+                `true` or `Context.isInDeployProcess` returns `false`.
             """.trimIndent().replace('\n', ' '),
         )
     }
 
     context(JavaContext)
-    private val UCallExpression.isInValidNonPatchProcessContext: Boolean
-        get() = isInAnnotatedScope(ProcessAnnotations.NON_PATCH_PROCESS_ONLY)
+    private val UCallExpression.isInValidNonDeployProcessContext: Boolean
+        get() = isInAnnotatedScope(ProcessAnnotations.NON_DEPLOY_PROCESS_ONLY)
                 || isInAnnotatedScope(ProcessAnnotations.MAIN_PROCESS_ONLY)
-                || isCheckedBy(ProcessCheckProperties.IS_IN_PATCH_PROCESS, false)
+                || isCheckedBy(ProcessCheckProperties.IS_IN_DEPLOY_PROCESS, false)
                 || isCheckedBy(ProcessCheckProperties.IS_IN_MAIN_PROCESS, true)
 
     context(JavaContext)

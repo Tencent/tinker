@@ -97,10 +97,10 @@ class OatManagerTestMainService : OatManagerTestService() {
     }
 }
 
-class OatManagerTestPatchService : OatManagerTestService() {
+class OatManagerTestDeployService : OatManagerTestService() {
 
     override val binder by lazy {
-        object : IOatManagerTestPatchService.Stub() {
+        object : IOatManagerTestDeployService.Stub() {
             override fun generateIfNeeded(directoryPath: String) {
                 delegate.generateIfNeeded(directoryPath.let(::File))
             }

@@ -7,7 +7,7 @@ import com.tencent.tinker.internal.deploy.deployPatchByRemote
 import com.tencent.tinker.internal.deploy.legacy.globalCustomLegacyMerger
 import com.tencent.tinker.internal.load.load
 import com.tencent.tinker.internal.util.globalLogger
-import com.tencent.tinker.internal.util.isInPatchProcess
+import com.tencent.tinker.internal.util.isInDeployProcess
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -141,7 +141,7 @@ object Tinker {
 
         override fun attachBaseContext(base: Context) {
             super.attachBaseContext(base)
-            val appLikeClassLoader = if (!isInPatchProcess) {
+            val appLikeClassLoader = if (!isInDeployProcess) {
                 load(
                     hardening = hardening,
                     callback = loadCallback,

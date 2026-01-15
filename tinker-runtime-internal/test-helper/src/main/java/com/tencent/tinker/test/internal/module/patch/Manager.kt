@@ -94,9 +94,9 @@ class PatchManagerTestOthersService : PatchManagerTestService() {
     }
 }
 
-class PatchManagerTestPatchService : PatchManagerTestService() {
+class PatchManagerTestDeployService : PatchManagerTestService() {
     override val binder by lazy {
-        object : IPatchManagerTestPatchService.Stub() {
+        object : IPatchManagerTestDeployService.Stub() {
             override fun invalidAcquire(): ParcelableRawPatch? =
                 delegate.acquire()
 

@@ -101,10 +101,10 @@ class RawPatchManagerImplTest {
             .let(serviceRule::bindService)
             .let(IPatchManagerTestOthersService.Stub::asInterface)
 
-    private fun Context.patchService(): IPatchManagerTestPatchService =
-        Intent(this, PatchManagerTestPatchService::class.java)
+    private fun Context.deployService(): IPatchManagerTestDeployService =
+        Intent(this, PatchManagerTestDeployService::class.java)
             .let(serviceRule::bindService)
-            .let(IPatchManagerTestPatchService.Stub::asInterface)
+            .let(IPatchManagerTestDeployService.Stub::asInterface)
 
 
     @Before
@@ -129,7 +129,7 @@ class RawPatchManagerImplTest {
     fun createAndAcquirePatch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val version = "foo"
         val plainFileName = "content.txt"
         val plainFileContent = "Hello world!"
@@ -146,7 +146,7 @@ class RawPatchManagerImplTest {
             }
         // While creating patch, the manager should create its own copy, instead of just recording
         // the source directory.
-        patchService.create(version, sourceDir.absolutePath)
+        deployService.create(version, sourceDir.absolutePath)
         val patch = mainService.acquire()
         assertNotNull(patch)
         assertEquals(version, patch.version)
@@ -169,13 +169,13 @@ class RawPatchManagerImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val othersService = context.othersService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val fooVersion = "foo"
         val barVersion = "bar"
         // Main process gets nothing if none of patch is created.
         assertNull(mainService.acquire())
         // Creates patch "foo", and lets others process acquires it.
-        patchService.create(
+        deployService.create(
             fooVersion,
             createTestDirectory()
                 .absolutePath
@@ -184,7 +184,7 @@ class RawPatchManagerImplTest {
         assertNotNull(patchFromOthers)
         assertEquals(fooVersion, patchFromOthers.version)
         // Creates patch "bar" as latest version. Main process always get latest version.
-        patchService.create(
+        deployService.create(
             barVersion,
             createTestDirectory()
                 .absolutePath
@@ -202,13 +202,13 @@ class RawPatchManagerImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val othersService = context.othersService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val fooVersion = "foo"
         val barVersion = "bar"
         // Others process gets nothing if none of patch is created.
         assertNull(othersService.acquire())
         // Creates patch "foo", and lets main process acquires it.
-        patchService.create(
+        deployService.create(
             fooVersion,
             createTestDirectory()
                 .absolutePath
@@ -218,7 +218,7 @@ class RawPatchManagerImplTest {
         assertEquals(fooVersion, patchFromMain.version)
         // Creates patch "bar" as latest version. Others process cannot get latest version while
         // main process is alive and using patch "foo".
-        patchService.create(
+        deployService.create(
             barVersion,
             createTestDirectory()
                 .absolutePath
@@ -243,12 +243,12 @@ class RawPatchManagerImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val othersService = context.othersService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val fooVersion = "foo"
         val barVersion = "bar"
         val bazVersion = "baz"
         //  patch "foo", and lets others process acquires it.
-        patchService.create(
+        deployService.create(
             fooVersion,
             createTestDirectory()
                 .absolutePath
@@ -257,7 +257,7 @@ class RawPatchManagerImplTest {
         assertNotNull(patchFromOthers)
         assertEquals(fooVersion, patchFromOthers.version)
         // Creates patch "bar", and lets main process acquires it.
-        patchService.create(
+        deployService.create(
             barVersion,
             createTestDirectory()
                 .absolutePath
@@ -266,14 +266,14 @@ class RawPatchManagerImplTest {
         assertNotNull(patchFromMain)
         assertEquals(barVersion, patchFromMain.version)
         // Creates patch "baz" as latest version.
-        patchService.create(
+        deployService.create(
             bazVersion,
             createTestDirectory()
                 .absolutePath
         )
         // Cleans all patches. While patches "foo" and "bar" are used, "baz" is latest version, none
         // of them is cleaned.
-        val cleaned = patchService.cleanObsolete()
+        val cleaned = deployService.cleanObsolete()
         assertTrue(cleaned.isEmpty())
         assertTrue(mainService.patchDirectory(barVersion).let(::File).exists())
         assertTrue(mainService.patchDirectory(barVersion).let(::File).exists())
@@ -288,9 +288,9 @@ class RawPatchManagerImplTest {
     fun cleanObsoleteContainsUnavailableLatest() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val expectedVersion = "foo"
-        patchService.create(
+        deployService.create(
             expectedVersion,
             createTestDirectory()
                 .absolutePath
@@ -300,7 +300,7 @@ class RawPatchManagerImplTest {
         assertEquals(expectedVersion, patch.version)
         assertTrue(patch.directory.exists())
         mainService.requestUnavailable(expectedVersion)
-        patchService.cleanObsolete()
+        deployService.cleanObsolete()
         assertFalse(patch.directory.exists())
     }
 
@@ -312,8 +312,8 @@ class RawPatchManagerImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val othersService = context.othersService()
-        val patchService = context.patchService()
-        patchService.create(
+        val deployService = context.deployService()
+        deployService.create(
             "foo",
             createTestDirectory()
                 .absolutePath
@@ -332,7 +332,7 @@ class RawPatchManagerImplTest {
     }
 
     /**
-     * Tests if patch process skips cleaning unavailable patch if it is still used by other
+     * Tests if deploy process skips cleaning unavailable patch if it is still used by other
      * processes. Patch is requested as unavailable in others process while main process is using
      * it without any issues.
      */
@@ -341,8 +341,8 @@ class RawPatchManagerImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val othersService = context.othersService()
-        val patchService = context.patchService()
-        patchService.create(
+        val deployService = context.deployService()
+        deployService.create(
             "foo",
             createTestDirectory()
                 .absolutePath
@@ -356,9 +356,9 @@ class RawPatchManagerImplTest {
         assertNotNull(patchFromOthersBeforeCleaning)
         assertEquals(patchFromMain.version, patchFromOthersBeforeCleaning.version)
         assertEquals(patchFromMain.directory, patchFromOthersBeforeCleaning.directory)
-        // Patch process should not clean this unavailable patch while main process is still using.
+        // deploy process should not clean this unavailable patch while main process is still using.
         othersService.requestUnavailable(patchFromOthersBeforeCleaning.version)
-        patchService.cleanAll()
+        deployService.cleanAll()
         assertTrue(patchFromMain.directory.exists())
         // Others process still gets this unavailable patch while main process is still using.
         // Callers should handle errors caused by unavailable patch by themselves.
@@ -372,12 +372,12 @@ class RawPatchManagerImplTest {
         // Others process should not get this unavailable patch after main process is dead.
         assertNull(othersService.acquire())
         // The unavailable patch should be cleaned correctly while nobody is using it.
-        patchService.cleanAll()
+        deployService.cleanAll()
         assertFalse(patchFromMain.directory.exists())
     }
 
     /**
-     * Tests if patch process skips cleaning unavailable patch if it is still used by other
+     * Tests if deploy process skips cleaning unavailable patch if it is still used by other
      * processes. Patch is requested as unavailable in main process after others process start using
      * it.
      */
@@ -386,8 +386,8 @@ class RawPatchManagerImplTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         val othersService = context.othersService()
-        val patchService = context.patchService()
-        patchService.create(
+        val deployService = context.deployService()
+        deployService.create(
             "foo",
             createTestDirectory()
                 .absolutePath
@@ -399,14 +399,14 @@ class RawPatchManagerImplTest {
         val patchFromOthers = othersService.acquire()
         assertNotNull(patchFromOthers)
         assertEquals(patchFromMain.version, patchFromOthers.version)
-        // Main process requests patch as unavailable. Patch process should not clean this
+        // Main process requests patch as unavailable. deploy process should not clean this
         // unavailable patch while others process is still using.
         mainService.requestUnavailable(patchFromMain.version)
-        patchService.cleanAll()
+        deployService.cleanAll()
         assertTrue(patchFromOthers.directory.exists())
         // Unavailable patches should be cleaned until others process is dead.
         othersService.assumeProcessIsDead()
-        patchService.cleanAll()
+        deployService.cleanAll()
         assertFalse(patchFromOthers.directory.exists())
     }
 
@@ -427,16 +427,16 @@ class RawPatchManagerImplTest {
     fun requestUnavailableWithoutAcquiring() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val version = "foo"
-        patchService.create(
+        deployService.create(
             version,
             createTestDirectory()
                 .absolutePath
         )
         mainService.requestUnavailable(version)
         assertNull(mainService.acquire())
-        patchService.cleanAll()
+        deployService.cleanAll()
         assertFalse(mainService.patchDirectory(version).let(::File).exists())
     }
 
@@ -447,21 +447,21 @@ class RawPatchManagerImplTest {
     fun requestUnavailableNotLatest() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val oldVersion = "old"
         val newVersion = "new"
-        patchService.create(
+        deployService.create(
             oldVersion,
             createTestDirectory()
                 .absolutePath
         )
-        patchService.create(
+        deployService.create(
             newVersion,
             createTestDirectory()
                 .absolutePath
         )
         mainService.requestUnavailable(oldVersion)
-        patchService.cleanObsolete()
+        deployService.cleanObsolete()
         // Latest version should be kept.
         val patch = mainService.acquire()
         assertNotNull(patch)
@@ -477,8 +477,8 @@ class RawPatchManagerImplTest {
     fun requestUnavailableListenerIsInvoked() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
-        patchService.create(
+        val deployService = context.deployService()
+        deployService.create(
             "foo",
             createTestDirectory().absolutePath
         )
@@ -489,14 +489,14 @@ class RawPatchManagerImplTest {
     }
 
     /**
-     * Tests acquiring patch in patch process can raise error expectedly.
+     * Tests acquiring patch in deploy process can raise error expectedly.
      */
     @Test
-    fun acquireInPatchProcess() {
+    fun acquireInDeployProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         assertThrows(IllegalStateException::class.java) {
-            patchService.invalidAcquire()
+            deployService.invalidAcquire()
         }
     }
 
@@ -508,8 +508,8 @@ class RawPatchManagerImplTest {
     fun acquireTwiceWithoutUpdatingLatestVersion() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
-        patchService.create(
+        val deployService = context.deployService()
+        deployService.create(
             "foo",
             createTestDirectory().absolutePath
         )
@@ -531,13 +531,13 @@ class RawPatchManagerImplTest {
     fun acquireTwiceWithUpdatingLatestVersion() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
-        val patchService = context.patchService()
-        patchService.create(
+        val deployService = context.deployService()
+        deployService.create(
             "foo",
             createTestDirectory().absolutePath
         )
         mainService.acquire()
-        patchService.create(
+        deployService.create(
             "bar",
             createTestDirectory().absolutePath
         )
@@ -551,22 +551,22 @@ class RawPatchManagerImplTest {
     }
 
     /**
-     * Tests requesting unavailable in patch process can raise error expectedly.
+     * Tests requesting unavailable in deploy process can raise error expectedly.
      */
     @Test
-    fun requestUnavailableInPatchProcess() {
+    fun requestUnavailableInDeployProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         assertThrows(IllegalStateException::class.java) {
-            patchService.invalidRequestUnavailable("foo")
+            deployService.invalidRequestUnavailable("foo")
         }
     }
 
     /**
-     * Tests creating new patch in non-patch process can raise error expectedly.
+     * Tests creating new patch in non-deploy process can raise error expectedly.
      */
     @Test
-    fun createInNonPatchProcess() {
+    fun createInNonDeployProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         assertThrows(IllegalStateException::class.java) {
@@ -578,10 +578,10 @@ class RawPatchManagerImplTest {
     }
 
     /**
-     * Tests clean all patches in non-patch process can raise error expectedly.
+     * Tests clean all patches in non-deploy process can raise error expectedly.
      */
     @Test
-    fun cleanAllInNonPatchProcess() {
+    fun cleanAllInNonDeployProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         assertThrows(IllegalStateException::class.java) {
@@ -590,10 +590,10 @@ class RawPatchManagerImplTest {
     }
 
     /**
-     * Tests clean obsolete patches in non-patch process can raise error expectedly.
+     * Tests clean obsolete patches in non-deploy process can raise error expectedly.
      */
     @Test
-    fun cleanObsoleteInNonPatchProcess() {
+    fun cleanObsoleteInNonDeployProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val mainService = context.mainService()
         assertThrows(IllegalStateException::class.java) {
@@ -607,9 +607,9 @@ class RawPatchManagerImplTest {
     @Test
     fun createWithIllegalVersion() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         assertThrows(IllegalArgumentException::class.java) {
-            patchService.create(
+            deployService.create(
                 "#foo",
                 createTestDirectory()
                     .absolutePath
@@ -623,9 +623,9 @@ class RawPatchManagerImplTest {
     @Test
     fun createWithNonExistentPatch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         assertThrows(IllegalArgumentException::class.java) {
-            patchService.create(
+            deployService.create(
                 "foo",
                 createTestDirectory()
                     .apply { deleteRecursively() }
@@ -641,9 +641,9 @@ class RawPatchManagerImplTest {
     @Test
     fun createWithNotDirectoryPatch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         assertThrows(IllegalArgumentException::class.java) {
-            patchService.create(
+            deployService.create(
                 "foo",
                 File.createTempFile("tinker-test-", ".txt").absolutePath
             )
@@ -656,15 +656,15 @@ class RawPatchManagerImplTest {
     @Test
     fun createWithDuplicateVersion() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
-        patchService.create(
+        val deployService = context.deployService()
+        deployService.create(
             "foo",
             createTestDirectory()
                 .absolutePath
         )
         val errorCode =
             assertThrows(IllegalStateException::class.java) {
-                patchService.create(
+                deployService.create(
                     "foo",
                     createTestDirectory()
                         .absolutePath
@@ -684,7 +684,7 @@ class RawPatchManagerImplTest {
     @Test
     fun createWithInvalidPatch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val sourceDir = createTestDirectory()
             .apply {
                 resolve("content.txt").apply {
@@ -695,7 +695,7 @@ class RawPatchManagerImplTest {
             }
         val errorCode =
             assertThrows(IllegalStateException::class.java) {
-                patchService.create(
+                deployService.create(
                     "not-readable",
                     sourceDir.absolutePath,
                 )
@@ -724,10 +724,10 @@ class RawPatchManagerImplTest {
                 createNewFile()
                 setWritable(false)
             }
-        val patchService = context.patchService()
+        val deployService = context.deployService()
         val errorCode =
             assertThrows(IllegalStateException::class.java) {
-                patchService.create(
+                deployService.create(
                     "foo",
                     createTestDirectory()
                         .absolutePath

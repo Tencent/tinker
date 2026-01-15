@@ -3,7 +3,7 @@ package com.tencent.tinker.internal.module.layout
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
@@ -13,7 +13,7 @@ import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.currentProcess
 import com.tencent.tinker.internal.util.ensureIsExistingDirectory
 import com.tencent.tinker.internal.util.expected
-import com.tencent.tinker.internal.util.isInPatchProcess
+import com.tencent.tinker.internal.util.isInDeployProcess
 import com.tencent.tinker.internal.util.symlinkTo
 import java.io.File
 import kotlin.random.Random
@@ -170,13 +170,13 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
     }
 
     @Synchronized
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     override fun construct(
         baseDirectory: File,
         oatDirectory: File?,
     ): File {
-        check(!context.isInPatchProcess) {
-            "Cannot construct directory in patch process"
+        check(!context.isInDeployProcess) {
+            "Cannot construct directory in deploy process"
         }
         check(baseDirectory.isDirectory) {
             "Base directory is not a existence directory"

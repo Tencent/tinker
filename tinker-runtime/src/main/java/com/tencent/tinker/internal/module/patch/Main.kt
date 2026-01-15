@@ -1,8 +1,8 @@
 package com.tencent.tinker.internal.module.patch
 
 import android.content.Context
-import com.tencent.tinker.internal.annotation.NonPatchProcessOnly
-import com.tencent.tinker.internal.annotation.PatchProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
+import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.util.SynchronizedCache
 
 import java.io.File
@@ -57,9 +57,9 @@ internal abstract class RawPatchManager {
      *
      * The manager does not guarantee that the patch is valid. The caller should check if the patch
      * is valid manually. If the patch is corrupted, the caller should drop the returned result and
-     * use [requestUnavailable] to ask patch processes to clean up this patch.
+     * use [requestUnavailable] to ask deploy processes to clean up this patch.
      */
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     abstract fun acquire(): RawPatch?
 
     /**
@@ -71,37 +71,37 @@ internal abstract class RawPatchManager {
      * Once the function is called, the caller should not use anything returned by [acquire] any
      * more.
      */
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     abstract fun requestUnavailable(version: String)
 
     /**
      * Add listener to be notified when a patch is requested to be unavailable by
-     * [requestUnavailable]. It can be used to notify patch processes to clean up patches.
+     * [requestUnavailable]. It can be used to notify deploy processes to clean up patches.
      *
      * Listeners are only invoked in current process while [requestUnavailable] is called. While
-     * [requestUnavailable] cannot be invoked in patch process, the function is useless in patch
+     * [requestUnavailable] cannot be invoked in deploy process, the function is useless in patch
      * process.
      */
-    @NonPatchProcessOnly
+    @NonDeployProcessOnly
     abstract fun addUnavailableRequestListener(listener: Runnable)
 
     /**
      * Creates new patch with provided version and patch directory. The manager copies and stores
      * the patch directory as non-writable to its storage, and marks this version as latest.
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     abstract fun create(version: String, patch: File): RawPatch
 
     /**
      * Gets the latest version, or null if no patch is available.
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     abstract fun latestVersion(): String?
 
     /**
      * Gets patch with specified [version], or null if no patch is available.
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     abstract fun getByVersion(version: String): RawPatch?
 
     /**
@@ -110,7 +110,7 @@ internal abstract class RawPatchManager {
      *
      * The function returns list of patch versions are cleaned.
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     abstract fun cleanAll(): List<String>
 
     /**
@@ -119,6 +119,6 @@ internal abstract class RawPatchManager {
      *
      * The function returns list of patch versions are cleaned.
      */
-    @PatchProcessOnly
+    @DeployProcessOnly
     abstract fun cleanObsolete(): List<String>
 }
