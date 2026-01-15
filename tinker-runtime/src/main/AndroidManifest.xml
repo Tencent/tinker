@@ -60,6 +60,11 @@
         <activity android:name=".loader.hotplug.ActivityStubs$SIStub_01_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
         <activity android:name=".loader.hotplug.ActivityStubs$SIStub_02_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent" />
 
+        <service
+            android:name=".internal.deploy.TinkerDeployService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:process=":patch" />
 
         <service
             android:name=".lib.service.TinkerPatchForeService"

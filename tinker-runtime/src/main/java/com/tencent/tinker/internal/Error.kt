@@ -13,6 +13,7 @@ internal class TinkerError(
         LOAD_CODE_OLD,
         LOAD_CODE_NOUGAT,
         LOAD_RESOURCE,
+        DEPLOY,
         DEPLOY_LEGACY,
         DEPLOY_LEGACY_DEX,
         DEPLOY_LEGACY_LIBRARY,
