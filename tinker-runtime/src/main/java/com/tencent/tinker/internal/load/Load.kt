@@ -5,7 +5,6 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
-import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.load.code.InjectPathCodeLoader
 import com.tencent.tinker.internal.load.code.V24NonHardeningCodeLoader
@@ -18,23 +17,7 @@ import com.tencent.tinker.internal.module.patch.RawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManager
 import com.tencent.tinker.internal.module.validate.Validator
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
-import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.internal.util.expected
-
-private enum class LoadErrorType : TinkerError.Type {
-    UNEXPECTED,
-    UNRECOVERABLE_LOAD_FAILED;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.LOAD
-
-    override val typeCode: Int
-        get() = ordinal
-}
-
-@VisibleForTesting
-internal fun loadErrorTypeOfForTesting(type: String): TinkerError.Type =
-    LoadErrorType.valueOf(type)
 
 /**
  * Patch loader used to load patch in runtime.
@@ -67,14 +50,14 @@ internal abstract class Loader {
  */
 @NonDeployProcessOnly
 private fun Iterable<Loader.Factory>.tryLoad(patch: Patch) {
-    val loaders = expected<LoadErrorType, List<Loader>>("create loaders") {
+    val loaders = expected<Tinker.Error.Load, List<Loader>>("create loaders") {
         mapNotNull { it.createLoaderIfNeeded(patch) }
     }
     try {
         loaders.forEach { it.load() }
     } catch (throwable: Throwable) {
-        throw TinkerError(
-            LoadErrorType.UNRECOVERABLE_LOAD_FAILED,
+        throw Tinker.Error(
+            Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED,
             "Cannot load patch \"${patch.version}\", and it is unrecoverable.",
             throwable,
         )
@@ -173,19 +156,15 @@ internal fun Application.load(
     callback: Tinker.Callback?,
 ): ClassLoader? {
     val (classLoader, error) = try {
-        val classLoader = expected<LoadErrorType, ClassLoader?>("load patch") {
+        val classLoader = expected<Tinker.Error.Load, ClassLoader?>("load patch") {
             loadInternal(hardening)
         }
         classLoader to null
-    } catch (error: TinkerError) {
-        if (error.type == LoadErrorType.UNRECOVERABLE_LOAD_FAILED) {
+    } catch (error: Tinker.Error) {
+        if (error.type == Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED) {
             throw error
         }
-        null to Tinker.Error(
-            code = error.type.errorCode,
-            message = error.message,
-            reason = error,
-        )
+        null to error
     }
     callback?.onTaskComplete(error)
     return classLoader

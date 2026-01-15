@@ -1,6 +1,6 @@
 package com.tencent.tinker.internal.module.validate
 
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import java.io.File
 
 /**
@@ -15,8 +15,7 @@ internal abstract class Validator {
 
     /**
      * Validates fingerprint or content of given [directory] are modified or not. If modified, the function raises
-     * a [TinkerError].
+     * a [Tinker.Error].
      */
-    @Throws(TinkerError::class)
     abstract fun validate(directory: File)
 }

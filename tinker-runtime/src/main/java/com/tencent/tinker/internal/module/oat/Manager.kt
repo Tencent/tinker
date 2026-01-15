@@ -5,9 +5,9 @@ import android.os.Build
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
-import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.currentSdk
@@ -30,22 +30,6 @@ import java.util.Properties
 import java.util.zip.CRC32
 import kotlin.concurrent.thread
 import kotlin.random.Random
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    HAS_ACQUIRED_OAT,
-    GENERATE_OR_STORE_FAILED;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.MODULE_OAT
-
-    override val typeCode: Int
-        get() = ordinal
-}
-
-@VisibleForTesting
-internal fun oatErrorTypeOfForTesting(type: String): TinkerError.Type =
-    ErrorType.valueOf(type)
 
 /**
  * On Android 8 and above, interpreting dex files is unnecessary.
@@ -499,8 +483,8 @@ internal class OatManagerImpl(
                 if (hasFailure == null) {
                     return null
                 }
-                throw TinkerError(
-                    ErrorType.GENERATE_OR_STORE_FAILED,
+                throw Tinker.Error(
+                    Tinker.Error.Oat.GENERATE_OR_STORE_FAILED,
                     "Generates or stores OAT files failed.",
                     reason,
                 )
@@ -523,7 +507,7 @@ internal class OatManagerImpl(
         check(!context.isInDeployProcess) {
             "Cannot acquire OAT files in deploy process"
         }
-        expected<ErrorType>("acquire OAT files") {
+        expected<Tinker.Error.Oat>("acquire OAT files") {
             val skipGenerateStrategy =
                 if (skipGenerateIfMissing) SkipGenerateStrategy.SKIP_IF_MISSING else SkipGenerateStrategy.NO
             val (metadataGuardedContent, result) = getFilesOrNull(
@@ -533,8 +517,8 @@ internal class OatManagerImpl(
             ) ?: return null
             guardHolder?.let { (_, lastAcquired) ->
                 metadataGuardedContent.close()
-                throw TinkerError(
-                    ErrorType.HAS_ACQUIRED_OAT,
+                throw Tinker.Error(
+                    Tinker.Error.Oat.HAS_ACQUIRED_OAT,
                     "Cannot acquire OAT files while current process has already acquired one",
                     lastAcquired,
                 )
@@ -554,7 +538,7 @@ internal class OatManagerImpl(
         check(!context.isInDeployProcess) {
             "Cannot request OAT files in deploy process"
         }
-        expected<ErrorType>("release reference") {
+        expected<Tinker.Error.Oat>("release reference") {
             releaseGuard()
         }
     }
@@ -569,7 +553,7 @@ internal class OatManagerImpl(
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
-        expected<ErrorType>("generate OAT files") {
+        expected<Tinker.Error.Oat>("generate OAT files") {
             val action: () -> Unit = lambda@{
                 val metadataGuardedContent = getFilesOrNull(
                     directory,
@@ -595,7 +579,7 @@ internal class OatManagerImpl(
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
-        expected<ErrorType>("clean OAT files") {
+        expected<Tinker.Error.Oat>("clean OAT files") {
             val directoryPathHash = directory.pathHash
             val metadataFile = metadataFile(directoryPathHash)
             val contentBaseDirectory = contentBaseDirectory(directoryPathHash)

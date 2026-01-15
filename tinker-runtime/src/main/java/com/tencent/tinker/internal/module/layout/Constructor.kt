@@ -2,7 +2,7 @@ package com.tencent.tinker.internal.module.layout
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
@@ -17,21 +17,6 @@ import com.tencent.tinker.internal.util.isInDeployProcess
 import com.tencent.tinker.internal.util.symlinkTo
 import java.io.File
 import kotlin.random.Random
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    INVALID_SOURCE;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.MODULE_LAYOUT
-
-    override val typeCode: Int
-        get() = ordinal
-}
-
-@VisibleForTesting
-internal fun patchLayoutConstructErrorTypeOfForTesting(type: String): TinkerError.Type =
-    ErrorType.valueOf(type)
 
 internal class PatchLayoutConstructorImpl(private val context: Context) : PatchLayoutConstructor() {
 
@@ -150,15 +135,15 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
                 ?.let {
                     it.first.symlinkTo(it.second)
                 }
-                ?: throw TinkerError(
-                    ErrorType.INVALID_SOURCE,
+                ?: throw Tinker.Error(
+                    Tinker.Error.Layout.INVALID_SOURCE,
                     "Construct source with group $index is invalid.",
                 )
         }
         if (oatDirectory != null) {
             if (!oatDirectory.isDirectory) {
-                throw TinkerError(
-                    ErrorType.INVALID_SOURCE,
+                throw Tinker.Error(
+                    Tinker.Error.Layout.INVALID_SOURCE,
                     "Construct source \"${oatDirectory.absolutePath}\" is invalid."
                 )
             }
@@ -184,17 +169,17 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
         check(oatDirectory?.isDirectory != false) {
             "OAT directory is not a existence directory"
         }
-        expected<ErrorType>("construct layout") {
+        expected<Tinker.Error.Layout>("construct layout") {
             val contentDirectory = contentDirectory(generateRandomHash())
             try {
                 construct(contentDirectory, baseDirectory, oatDirectory)
             } catch (throwable: Throwable) {
                 cleanContentDirectory(contentDirectory)
-                if (throwable is TinkerError) {
+                if (throwable is Tinker.Error) {
                     throw throwable
                 }
-                throw TinkerError(
-                    ErrorType.UNEXPECTED,
+                throw Tinker.Error(
+                    Tinker.Error.Layout.UNEXPECTED,
                     "Construct patch directory failed with unexpected error.",
                     throwable,
                 )

@@ -19,7 +19,6 @@ import org.junit.Test
 import org.robolectric.annotation.Config
 import java.io.File
 import java.nio.file.Files
-import kotlin.intArrayOf
 
 private class TestClassLoaderInjector : NewClassLoaderCodeLoader.ClassLoaderInjector() {
     var injected = null as ClassLoader?

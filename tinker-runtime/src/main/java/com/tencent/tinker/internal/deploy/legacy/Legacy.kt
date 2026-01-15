@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.bsdiff.BSPatch
-import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.deploy.Deployer
 import com.tencent.tinker.internal.deploy.legacy.dex.dexDeployToApk
 import com.tencent.tinker.internal.deploy.legacy.library.libraryDeploy
@@ -16,18 +15,6 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.zip.ZipFile
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    MISSING_METADATA,
-    MISSING_CUSTOM_MERGER;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.DEPLOY_LEGACY
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 @Volatile
 internal var globalCustomLegacyMerger = null as Tinker.LegacyMerger?
@@ -55,8 +42,8 @@ internal class PackageMetadata(
 ) {
     val merger by lazy {
         if (useCustomMerger) {
-            globalCustomLegacyMerger ?: throw TinkerError(
-                ErrorType.MISSING_CUSTOM_MERGER,
+            globalCustomLegacyMerger ?: throw Tinker.Error(
+                Tinker.Error.Deploy.Legacy.MISSING_CUSTOM_MERGER,
                 "Custom merger is required but nothing is provided."
             )
         } else {
@@ -89,8 +76,8 @@ internal object LegacyDeployer : Deployer() {
             ?.let(diffPackage::getInputStream)
             ?.use { it.readBytes() }
             ?.parsePackageMetadata
-            ?: throw TinkerError(
-                ErrorType.MISSING_METADATA,
+            ?: throw Tinker.Error(
+                Tinker.Error.Deploy.Legacy.MISSING_METADATA,
                 "Cannot find package metadata in patch ${diffPackage.name}."
             )
         dexDeployToApk(

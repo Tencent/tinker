@@ -3,10 +3,11 @@ package com.tencent.tinker.internal.module.patch
 import android.content.Context
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
+import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.annotation.MainProcessOnly
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
-import com.tencent.tinker.internal.annotation.DeployProcessOnly
+import com.tencent.tinker.internal.module.patch.RawPatchManagerImpl.Companion.GUARD_CLEANING_CONTENT
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
@@ -17,41 +18,10 @@ import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.guardedContent
 import com.tencent.tinker.internal.util.guardedContentNullable
 import com.tencent.tinker.internal.util.guardedReadOrWriteContent
-import com.tencent.tinker.internal.util.isInMainProcess
 import com.tencent.tinker.internal.util.isInDeployProcess
+import com.tencent.tinker.internal.util.isInMainProcess
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    ACQUIRE_PATCH_AS_USING,
-    ACQUIRE_PATCH_AS_CLEANING,
-    HAS_ACQUIRED_PATCH,
-    READ_LATEST_VERSION,
-    WRITE_LATEST_VERSION,
-    READ_MAIN_VERSION,
-    WRITE_MAIN_VERSION,
-    READ_UNAVAILABLE,
-    APPEND_UNAVAILABLE,
-    CLEAN_UNAVAILABLE,
-    MARK_MAIN_ALIVE,
-    CHECK_MAIN_ALIVE,
-    CREATE_EXIST_PATCH,
-    CLONE_PATCH,
-    CLEAN_PATCH,
-    DROP_PATCH_WRITE_PERMISSION,
-    RECOVER_PATCH_WRITE_PERMISSION;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.MODULE_PATCH
-
-    override val typeCode: Int
-        get() = ordinal
-}
-
-@VisibleForTesting
-internal fun rawPatchErrorTypeOfForTesting(type: String): TinkerError.Type =
-    ErrorType.valueOf(type)
 
 private fun File.createNotWritableCopy(target: File) {
     if (isDirectory) {
@@ -359,8 +329,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             val guardedContent = try {
                 acquirePatchAsCleaning(version)
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.ACQUIRE_PATCH_AS_CLEANING,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.ACQUIRE_PATCH_AS_CLEANING,
                     "Cannot acquire patch \"${version}\" as clean",
                     throwable,
                 )
@@ -371,8 +341,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                         it.setWritable(true)
                     }
                 } catch (throwable: Throwable) {
-                    throw TinkerError(
-                        ErrorType.RECOVER_PATCH_WRITE_PERMISSION,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.RECOVER_PATCH_WRITE_PERMISSION,
                         "Cannot recover patch directory \"${dir.absolutePath}\" as writable",
                         throwable,
                     )
@@ -380,8 +350,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 try {
                     dir.deleteRecursively()
                 } catch (throwable: Throwable) {
-                    throw TinkerError(
-                        ErrorType.CLEAN_PATCH,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.CLEAN_PATCH,
                         "Cannot clean patch directory \"${dir.absolutePath}\"",
                         throwable,
                     )
@@ -405,8 +375,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                             }
                     }
                 } catch (throwable: Throwable) {
-                    throw TinkerError(
-                        ErrorType.CLEAN_UNAVAILABLE,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.CLEAN_UNAVAILABLE,
                         "Cannot clean unavailable records",
                         throwable,
                     )
@@ -421,10 +391,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(!context.isInDeployProcess) {
             "Cannot acquire patch in deploy process"
         }
-        expected<ErrorType>("acquire patch") {
+        expected<Tinker.Error.RawPatch>("acquire patch") {
             versionHolder?.let { (_, lastAcquired) ->
-                throw TinkerError(
-                    ErrorType.HAS_ACQUIRED_PATCH,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.HAS_ACQUIRED_PATCH,
                     "Cannot acquire patch while current process has already acquired a patch",
                     lastAcquired,
                 )
@@ -434,8 +404,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     val alive = try {
                         context.isMainAlive
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.CHECK_MAIN_ALIVE,
+                        throw Tinker.Error(
+                            Tinker.Error.RawPatch.CHECK_MAIN_ALIVE,
                             "Cannot check if main process is alive",
                             throwable,
                         )
@@ -444,8 +414,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                         try {
                             context.mainVersion?.let { return@run it }
                         } catch (throwable: Throwable) {
-                            throw TinkerError(
-                                ErrorType.READ_MAIN_VERSION,
+                            throw Tinker.Error(
+                                Tinker.Error.RawPatch.READ_MAIN_VERSION,
                                 "Cannot read main version",
                                 throwable,
                             )
@@ -455,8 +425,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 val latest = try {
                     context.latestVersion ?: return@run null
                 } catch (throwable: Throwable) {
-                    throw TinkerError(
-                        ErrorType.READ_LATEST_VERSION,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.READ_LATEST_VERSION,
                         "Cannot read latest version",
                         throwable,
                     )
@@ -464,8 +434,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 val unavailable = try {
                     context.unavailable
                 } catch (throwable: Throwable) {
-                    throw TinkerError(
-                        ErrorType.READ_UNAVAILABLE,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.READ_UNAVAILABLE,
                         "Cannot read unavailable",
                         throwable,
                     )
@@ -478,8 +448,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             val acquired = try {
                 context.acquirePatchAsUsing(version) ?: return null
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.ACQUIRE_PATCH_AS_USING,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.ACQUIRE_PATCH_AS_USING,
                     "Cannot acquire patch with version \"${version}\" for using",
                     throwable,
                 )
@@ -493,8 +463,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     context.mainVersion = version
                 } catch (throwable: Throwable) {
                     releaseVersion()
-                    throw TinkerError(
-                        ErrorType.WRITE_MAIN_VERSION,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.WRITE_MAIN_VERSION,
                         "Cannot update main version",
                         throwable,
                     )
@@ -504,8 +474,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 } catch (throwable: Throwable) {
                     releaseVersion()
                     unmarkMainAlive()
-                    throw TinkerError(
-                        ErrorType.MARK_MAIN_ALIVE,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.MARK_MAIN_ALIVE,
                         "Cannot mark main process is alive",
                         throwable,
                     )
@@ -524,7 +494,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(!context.isInDeployProcess) {
             "Cannot request patch as unavailable in deploy process"
         }
-        expected<ErrorType>("request patch as unavailable") {
+        expected<Tinker.Error.RawPatch>("request patch as unavailable") {
             if (context.isInMainProcess) {
                 unmarkMainAlive()
             }
@@ -534,8 +504,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     it + version
                 }
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.APPEND_UNAVAILABLE,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.APPEND_UNAVAILABLE,
                     "Cannot append \"$version\" as unavailable record",
                     throwable,
                 )
@@ -564,11 +534,11 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
-        expected<ErrorType>("create patch") {
+        expected<Tinker.Error.RawPatch>("create patch") {
             val patchDirectory = context.patchDirectory(version)
             if (patchDirectory.exists()) {
-                throw TinkerError(
-                    ErrorType.CREATE_EXIST_PATCH,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.CREATE_EXIST_PATCH,
                     "Patch directory \"${patchDirectory.absolutePath}\" already exists",
                     null,
                 )
@@ -576,8 +546,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             try {
                 patch.createNotWritableCopy(patchDirectory)
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.CLONE_PATCH,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.CLONE_PATCH,
                     "Cannot copy \"${patch.absolutePath}\" to patch directory \"${patchDirectory.absolutePath}\"",
                     throwable,
                 )
@@ -587,8 +557,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     it.setWritable(false)
                 }
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.DROP_PATCH_WRITE_PERMISSION,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.DROP_PATCH_WRITE_PERMISSION,
                     "Cannot update patch directory \"${patchDirectory.absolutePath}\" as non-writable",
                     throwable,
                 )
@@ -596,8 +566,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             try {
                 context.latestVersion = version
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.WRITE_LATEST_VERSION,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.WRITE_LATEST_VERSION,
                     "Cannot update latest version to \"${version}\"",
                     throwable,
                 )
@@ -612,12 +582,12 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
-        expected<ErrorType>("get latest version") {
+        expected<Tinker.Error.RawPatch>("get latest version") {
             return try {
                 context.latestVersion
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.READ_LATEST_VERSION,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.READ_LATEST_VERSION,
                     "Cannot read latest version",
                     throwable,
                 )
@@ -631,7 +601,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
-        expected<ErrorType>("get patch by version") {
+        expected<Tinker.Error.RawPatch>("get patch by version") {
             val patchDirectory = context.patchDirectory(version)
             if (!patchDirectory.exists()) {
                 return null
@@ -646,12 +616,12 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
-        expected<ErrorType>("clean all patches") {
+        expected<Tinker.Error.RawPatch>("clean all patches") {
             try {
                 context.latestVersion = null
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.WRITE_LATEST_VERSION,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.WRITE_LATEST_VERSION,
                     "Cannot remove latest version",
                     throwable,
                 )
@@ -666,7 +636,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
-        expected<ErrorType>("clean obsolete patches") {
+        expected<Tinker.Error.RawPatch>("clean obsolete patches") {
             // Patches that meets these conditions will be cleaned up:
             //   - inactive, a.k.a not used by any running process
             //   - not marked as latest version, or if marked as latest version, also marked as
@@ -674,8 +644,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             val latest = try {
                 context.latestVersion
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.READ_LATEST_VERSION,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.READ_LATEST_VERSION,
                     "Cannot read latest version",
                     throwable,
                 )
@@ -683,8 +653,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             val removeLatest = try {
                 context.unavailable.contains(latest)
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.READ_UNAVAILABLE,
+                throw Tinker.Error(
+                    Tinker.Error.RawPatch.READ_UNAVAILABLE,
                     "Cannot read unavailable records",
                     throwable,
                 )
@@ -693,8 +663,8 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 try {
                     context.latestVersion = null
                 } catch (throwable: Throwable) {
-                    throw TinkerError(
-                        ErrorType.WRITE_LATEST_VERSION,
+                    throw Tinker.Error(
+                        Tinker.Error.RawPatch.WRITE_LATEST_VERSION,
                         "Cannot remove latest version",
                         throwable,
                     )

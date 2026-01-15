@@ -1,9 +1,8 @@
 package com.tencent.tinker.test.internal.load.code
 
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
-import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.load.code.CodeLoader
-import com.tencent.tinker.internal.load.code.codeLoaderErrorTypeOfForTesting
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.test.internal.DexMockMode
 import com.tencent.tinker.test.internal.availableDexFileNamesAsSorted
@@ -73,11 +72,11 @@ class DexLoaderTest {
             Files.createTempDirectory("tinker-test-").toFile(),
         )
         val factory = TestLoader.Factory()
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             factory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            codeLoaderErrorTypeOfForTesting("NO_VALID_INPUTS"),
+            Tinker.Error.Load.Code.NO_VALID_INPUTS,
             error.type,
         )
     }
@@ -92,11 +91,11 @@ class DexLoaderTest {
             Files.createTempFile("tinker-test-", ".dir").toFile(),
         )
         val factory = TestLoader.Factory()
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             factory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            codeLoaderErrorTypeOfForTesting("NO_VALID_INPUTS"),
+            Tinker.Error.Load.Code.NO_VALID_INPUTS,
             error.type,
         )
     }
@@ -110,11 +109,11 @@ class DexLoaderTest {
             dexMockMode = DexMockMode.DEX,
         )
         val patch = Patch("foo", directory)
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             TestExceptionFactory.createLoaderIfNeeded(patch)
         }
         assertEquals(
-            codeLoaderErrorTypeOfForTesting("UNEXPECTED"),
+            Tinker.Error.Load.Code.UNEXPECTED,
             error.type,
         )
         assertSame(

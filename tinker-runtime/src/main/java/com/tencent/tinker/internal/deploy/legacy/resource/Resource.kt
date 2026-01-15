@@ -1,6 +1,6 @@
 package com.tencent.tinker.internal.deploy.legacy.resource
 
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.deploy.legacy.PackageMetadata
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5Hash
@@ -16,22 +16,6 @@ import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    INVALID_METADATA,
-    MISSING_MANIFEST,
-    MISSING_BASE_ENTRY,
-    INVALID_BASE_ENTRY,
-    MISSING_DIFF_ENTRY,
-    INVALID_DEPLOY_RESULT;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.DEPLOY_LEGACY_RESOURCE
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 private class ResourceMetadata(
 
@@ -58,8 +42,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
             val lines = inputs.toMutableList()
             val pop: MutableList<String>.() -> String = {
                 if (isEmpty()) {
-                    throw TinkerError(
-                        ErrorType.INVALID_METADATA,
+                    throw Tinker.Error(
+                        Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                         "Missing line in resource metadata."
                     )
                 }
@@ -72,8 +56,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     try {
                         baseArscCrc32 = parts[1].trim().toLong()
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                             "Hash of resource arsc file in base apk file is invalid.",
                             throwable,
                         )
@@ -82,8 +66,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     val count = try {
                         line.removePrefix("pattern:").toInt()
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                             "Pattern count is invalid.",
                             throwable,
                         )
@@ -100,8 +84,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     val count = try {
                         line.removePrefix("add:").toInt()
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                             "Added count is invalid.",
                             throwable,
                         )
@@ -113,8 +97,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     val count = try {
                         line.removePrefix("modify:").toInt()
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                             "Modified count is invalid.",
                             throwable,
                         )
@@ -126,8 +110,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     val count = try {
                         line.removePrefix("delete:").toInt()
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                             "Removed count is invalid.",
                             throwable,
                         )
@@ -139,8 +123,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     val count = try {
                         line.removePrefix("store:").toInt()
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                             "Stored count is invalid.",
                             throwable,
                         )
@@ -152,8 +136,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     val count = try {
                         line.removePrefix("large modify:").toInt()
                     } catch (throwable: Throwable) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                             "Large-modified count is invalid.",
                             throwable,
                         )
@@ -161,8 +145,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                     repeat(count) { index ->
                         val parts = lines.pop().split(",")
                         if (parts.size < 3) {
-                            throw TinkerError(
-                                ErrorType.INVALID_METADATA,
+                            throw Tinker.Error(
+                                Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                                 "Subline ${index + 1} of large-modified only has ${parts.size} parts.",
                             )
                         }
@@ -170,8 +154,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
                         val hash = try {
                             parts[1].trim().asMd5Hash
                         } catch (throwable: Throwable) {
-                            throw TinkerError(
-                                ErrorType.INVALID_METADATA,
+                            throw Tinker.Error(
+                                Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                                 "Hash of subline ${index + 1} of large-modified is invalid.",
                                 throwable,
                             )
@@ -182,8 +166,8 @@ private val ByteArray.parsedResourceMetadata: ResourceMetadata
             }
             return@let ResourceMetadata(
                 baseArscCrc32 = baseArscCrc32
-                    ?: throw TinkerError(
-                        ErrorType.INVALID_METADATA,
+                    ?: throw Tinker.Error(
+                        Tinker.Error.Deploy.Legacy.Resource.INVALID_METADATA,
                         "CRC32 checksum of resource arsc file in base apk file is not found.",
                     ),
                 patterns = patterns,
@@ -251,8 +235,8 @@ private fun ZipOutputStream.createResourceAsNewlyAdded(
     entryName: String,
     stored: Boolean
 ) {
-    val diffEntry = diffPackage.getEntry(entryName) ?: throw TinkerError(
-        ErrorType.MISSING_DIFF_ENTRY,
+    val diffEntry = diffPackage.getEntry(entryName) ?: throw Tinker.Error(
+        Tinker.Error.Deploy.Legacy.Resource.MISSING_DIFF_ENTRY,
         "Cannot find entry \"${entryName}\" in diff package \"${diffPackage.name}\".",
     )
     if (stored) {
@@ -274,8 +258,8 @@ private fun ZipOutputStream.createResourceAsNotModified(
     baseApk: ZipFile,
     entryName: String,
 ) {
-    val baseEntry = baseApk.getEntry(entryName) ?: throw TinkerError(
-        ErrorType.MISSING_BASE_ENTRY,
+    val baseEntry = baseApk.getEntry(entryName) ?: throw Tinker.Error(
+        Tinker.Error.Deploy.Legacy.Resource.MISSING_BASE_ENTRY,
         "Cannot find entry \"${entryName}\" in base apk file \"${baseApk.name}\".",
     )
     putNextEntry(baseEntry.forked)
@@ -295,12 +279,12 @@ private fun ZipOutputStream.createResourceByMerging(
     entryName: String,
     expectedPatchedHash: ByteArray,
 ) {
-    val baseEntry = baseApk.getEntry(entryName) ?: throw TinkerError(
-        ErrorType.MISSING_BASE_ENTRY,
+    val baseEntry = baseApk.getEntry(entryName) ?: throw Tinker.Error(
+        Tinker.Error.Deploy.Legacy.Resource.MISSING_BASE_ENTRY,
         "Cannot find entry \"${entryName}\" in base apk file \"${baseApk.name}\".",
     )
-    val diffEntry = diffPackage.getEntry(entryName) ?: throw TinkerError(
-        ErrorType.MISSING_DIFF_ENTRY,
+    val diffEntry = diffPackage.getEntry(entryName) ?: throw Tinker.Error(
+        Tinker.Error.Deploy.Legacy.Resource.MISSING_DIFF_ENTRY,
         "Cannot find entry \"${entryName}\" in diff package \"${diffPackage.name}\".",
     )
     withTemporaryFile { file ->
@@ -329,8 +313,8 @@ private fun ZipOutputStream.createResourceByMerging(
         }
         closeEntry()
         if (!hash.contentEquals(expectedPatchedHash)) {
-            throw TinkerError(
-                ErrorType.INVALID_DEPLOY_RESULT,
+            throw Tinker.Error(
+                Tinker.Error.Deploy.Legacy.Resource.INVALID_DEPLOY_RESULT,
                 "Hash \"${hash.asMd5String}\" of patch result \"${entryName}\" "
                         + "\"${diffPackage.name}\" is not match \"${expectedPatchedHash.asMd5String}\" in metadata.",
             )
@@ -353,8 +337,8 @@ private fun resourceDeployInternal(
         ?: return
     val baseArscCrc32 = baseApk.getEntry(RESOURCE_ARSC_ENTRY_NAME)?.crc
     if (baseArscCrc32 != metadata.baseArscCrc32) {
-        throw TinkerError(
-            ErrorType.INVALID_BASE_ENTRY,
+        throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Resource.INVALID_BASE_ENTRY,
             "CRC32 checksum \"${baseArscCrc32}\" of entry \"${RESOURCE_ARSC_ENTRY_NAME}\" in base apk file "
                     + "\"${baseApk.name}\" is not match \"${metadata.baseArscCrc32}\" in metadata.",
         )
@@ -366,8 +350,8 @@ private fun resourceDeployInternal(
         .use { output ->
             // Copies manifest to output apk file.
             val baseManifestEntry = baseApk.getEntry(MANIFEST_ENTRY_NAME)
-                ?: throw TinkerError(
-                    ErrorType.MISSING_MANIFEST,
+                ?: throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Resource.MISSING_MANIFEST,
                     "Cannot find entry manifest in base apk file \"${baseApk.name}\".",
                 )
             output.putNextEntry(baseManifestEntry.forked)
@@ -408,7 +392,7 @@ internal fun resourceDeploy(
     diffPackage: ZipFile,
     apk: File
 ) {
-    expected<ErrorType>("deploy resources") {
+    expected<Tinker.Error.Deploy.Legacy.Resource>("deploy resources") {
         resourceDeployInternal(
             packageMetadata,
             baseApk,

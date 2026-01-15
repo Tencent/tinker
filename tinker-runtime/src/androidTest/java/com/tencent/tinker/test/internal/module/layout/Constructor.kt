@@ -5,23 +5,28 @@ import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
+import com.tencent.tinker.Tinker
+import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.module.layout.PatchLayoutConstructorImpl
-import com.tencent.tinker.internal.module.layout.patchLayoutConstructErrorTypeOfForTesting
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchOatDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
-import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.test.createTestDirectory
 import com.tencent.tinker.test.isSymbolicLink
 import com.tencent.tinker.test.rethrowAsIllegalState
 import com.tencent.tinker.test.tinkerErrorCode
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.Assert.*
 import java.io.File
 
 @Suppress("unused")
@@ -327,7 +332,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            Tinker.Error.Layout.INVALID_SOURCE.code,
             errorCode,
         )
     }
@@ -353,7 +358,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            Tinker.Error.Layout.INVALID_SOURCE.code,
             errorCode,
         )
     }
@@ -379,7 +384,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            Tinker.Error.Layout.INVALID_SOURCE.code,
             errorCode,
         )
     }
@@ -405,7 +410,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            patchLayoutConstructErrorTypeOfForTesting("INVALID_SOURCE").errorCode,
+            Tinker.Error.Layout.INVALID_SOURCE.code,
             errorCode,
         )
     }

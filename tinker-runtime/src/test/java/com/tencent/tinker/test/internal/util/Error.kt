@@ -1,6 +1,6 @@
 package com.tencent.tinker.test.internal.util
 
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.util.expected
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -10,24 +10,13 @@ import org.junit.Test
 
 class ErrorTest {
 
-    private enum class TestErrorType : TinkerError.Type {
-        UNEXPECTED,
-        EXPECTED;
-
-        override val group: TinkerError.TypeGroup
-            get() = TinkerError.TypeGroup.UNEXPECTED
-
-        override val typeCode: Int
-            get() = ordinal
-    }
-
     /**
      * Tests if [expected] works as expected if no throwable is raised, and clanger is not called.
      */
     @Test
     fun withoutThrowable() {
         var cleaned = false
-        expected<TestErrorType>(
+        expected<Tinker.Error.Load>(
             "test action",
             cleaner = { cleaned = true },
         ) {
@@ -37,14 +26,14 @@ class ErrorTest {
     }
 
     /**
-     * Tests if unexpected exception being raised in [expected] can be converted to [TinkerError] with first error type.
+     * Tests if unexpected exception being raised in [expected] can be converted to [Tinker.Error] with first error type.
      */
     @Test
     fun convertToUnexpected() {
         val cause = IllegalStateException("This is an unexpected exception")
         var cleaned = false
-        val caught = assertThrows(TinkerError::class.java) {
-            expected<TestErrorType>(
+        val caught = assertThrows(Tinker.Error::class.java) {
+            expected<Tinker.Error.Load>(
                 "test action",
                 cleaner = { cleaned = true }
             ) {
@@ -53,21 +42,24 @@ class ErrorTest {
         }
         assertTrue(cleaned)
         assertSame(cause, caught.cause)
-        assertSame(TestErrorType.UNEXPECTED, caught.type)
+        assertSame(
+            Tinker.Error.Load.UNEXPECTED,
+            caught.type,
+        )
     }
 
     /**
-     * Tests if [TinkerError] being raised in [expected] can be raised as is.
+     * Tests if [Tinker.Error] being raised in [expected] can be raised as is.
      */
     @Test
     fun skipConvert() {
-        val cause = TinkerError(
-            TestErrorType.EXPECTED,
+        val cause = Tinker.Error(
+            Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED,
             "This is an expected exception.",
         )
         var cleaned = false
-        val caught = assertThrows(TinkerError::class.java) {
-            expected<TestErrorType>(
+        val caught = assertThrows(Tinker.Error::class.java) {
+            expected<Tinker.Error.Load>(
                 "test action",
                 cleaner = { cleaned = true },
             ) {
@@ -76,6 +68,9 @@ class ErrorTest {
         }
         assertTrue(cleaned)
         assertSame(cause, caught)
-        assertSame(TestErrorType.EXPECTED, caught.type)
+        assertSame(
+            Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED,
+            caught.type,
+        )
     }
 }

@@ -1,7 +1,6 @@
 package com.tencent.tinker.test.internal.load.resource
 
 import android.content.Context
-import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.core.app.launchActivity
 import androidx.test.ext.junit.runners.AndroidJUnit4

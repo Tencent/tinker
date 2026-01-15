@@ -1,29 +1,11 @@
 package com.tencent.tinker.internal.module.validate
 
 import androidx.annotation.VisibleForTesting
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.util.asMd5String
 import com.tencent.tinker.internal.util.expected
 import java.io.File
 import java.security.MessageDigest
-import kotlin.io.resolve
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    OPERATE_NON_DIRECTORY,
-    INVALID_FINGERPRINT,
-    VALIDATE_FAILED;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.MODULE_VALIDATE
-
-    override val typeCode: Int
-        get() = ordinal
-}
-
-@VisibleForTesting
-internal fun validateErrorTypeOfForTesting(type: String): TinkerError.Type =
-    ErrorType.valueOf(type)
 
 internal object ValidatorImpl : Validator() {
 
@@ -67,10 +49,10 @@ internal object ValidatorImpl : Validator() {
         }
 
     override fun createValidationFingerprint(directory: File) {
-        expected<ErrorType>("create validation fingerprint") {
+        expected<Tinker.Error.Validate>("create validation fingerprint") {
             if (!directory.isDirectory) {
-                throw TinkerError(
-                    ErrorType.OPERATE_NON_DIRECTORY,
+                throw Tinker.Error(
+                    Tinker.Error.Validate.OPERATE_NON_DIRECTORY,
                     "\"${directory.absolutePath}\" is not a directory."
                 )
             }
@@ -85,32 +67,32 @@ internal object ValidatorImpl : Validator() {
     }
 
     override fun validate(directory: File) {
-        expected<ErrorType>("validate") {
+        expected<Tinker.Error.Validate>("validate") {
             if (!directory.isDirectory) {
-                throw TinkerError(
-                    ErrorType.OPERATE_NON_DIRECTORY,
+                throw Tinker.Error(
+                    Tinker.Error.Validate.OPERATE_NON_DIRECTORY,
                     "\"${directory.absolutePath}\" is not a directory."
                 )
             }
             val fingerprintFile = directory.validationFingerprintFile
             if (!fingerprintFile.isFile) {
-                throw TinkerError(
-                    ErrorType.INVALID_FINGERPRINT,
+                throw Tinker.Error(
+                    Tinker.Error.Validate.INVALID_FINGERPRINT,
                     "Fingerprint file \"${fingerprintFile.absolutePath}\" is not an existing file."
                 )
             }
             val fingerprintFileLength = fingerprintFile.length()
             if (fingerprintFileLength != 16L) {
-                throw TinkerError(
-                    ErrorType.INVALID_FINGERPRINT,
+                throw Tinker.Error(
+                    Tinker.Error.Validate.INVALID_FINGERPRINT,
                     "Length $fingerprintFileLength of fingerprint file \"${fingerprintFile.absolutePath}\" is not same as a MD5 digest."
                 )
             }
             val expected = fingerprintFile.readBytes()
             val actual = directory.fingerprint
             if (!expected.contentEquals(actual)) {
-                throw TinkerError(
-                    ErrorType.VALIDATE_FAILED,
+                throw Tinker.Error(
+                    Tinker.Error.Validate.VALIDATE_FAILED,
                     "Expected fingerprint of directory \"${directory.absolutePath}\" is \"${expected.asMd5String}\" but actual is \"${actual.asMd5String}\".",
                 )
             }

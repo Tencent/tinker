@@ -5,7 +5,6 @@ import android.os.Build
 import com.tencent.tinker.internal.util.arkHotRunning
 import com.tencent.tinker.internal.util.currentInstructionSet
 import com.tencent.tinker.internal.util.currentSdk
-import com.tencent.tinker.internal.util.ensureIsExistingDirectory
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.errorLog
 import com.tencent.tinker.internal.util.isReadableNonEmptyFile

@@ -9,8 +9,7 @@ import android.content.res.Resources
 import android.os.Build
 import android.os.Handler
 import androidx.annotation.RequiresApi
-import androidx.annotation.VisibleForTesting
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.tryEach
 import java.io.File
@@ -60,18 +59,6 @@ import kotlin.reflect.KProperty
 // - setter / lazy     / non-self : T.() -> Unit
 // - setter / lazy     / self     : () -> Unit
 
-private enum class HiddenErrorType : TinkerError.Type {
-    UNEXPECTED,
-    NO_SUCH_ELEMENT,
-    CAST_FAILED;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.HIDDEN
-
-    override val typeCode: Int
-        get() = ordinal
-}
-
 private val Type.name: String
     get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         typeName
@@ -116,8 +103,8 @@ private fun Class<*>.fieldOrNull(name: String): Field? {
 
 private fun Class<*>.field(field: String): Field =
     fieldOrNull(field)
-        ?: throw TinkerError(
-            HiddenErrorType.NO_SUCH_ELEMENT,
+        ?: throw Tinker.Error(
+            Tinker.Error.Load.NO_SUCH_ELEMENT,
             "Cannot find field \"${name}.${field}\"."
         )
 
@@ -145,7 +132,7 @@ private fun Class<*>.method(method: String, vararg parameterTypes: Class<*>): Me
             append(parameterTypes.joinToString(",") { it.name })
             append(")\".")
         }.let {
-            throw TinkerError(HiddenErrorType.NO_SUCH_ELEMENT, it)
+            throw Tinker.Error(Tinker.Error.Load.NO_SUCH_ELEMENT, it)
         }
 
 private fun Class<*>.constructorOrNull(vararg parameterTypes: Class<*>): Constructor<*>? {
@@ -170,7 +157,7 @@ private fun Class<*>.constructor(vararg parameterTypes: Class<*>): Constructor<*
             append(parameterTypes.joinToString(",") { it.name })
             append(")\".")
         }.let {
-            throw TinkerError(HiddenErrorType.NO_SUCH_ELEMENT, it)
+            throw Tinker.Error(Tinker.Error.Load.NO_SUCH_ELEMENT, it)
         }
 
 /**
@@ -197,12 +184,12 @@ private class HiddenField(
         instance: HiddenClass,
         property: KProperty<*>
     ): T {
-        expected<HiddenErrorType>("get field value") {
+        expected<Tinker.Error.Load>("get field value") {
             try {
                 return instance.original.let(field::get) as T
             } catch (exception: ClassCastException) {
-                throw TinkerError(
-                    HiddenErrorType.CAST_FAILED,
+                throw Tinker.Error(
+                    Tinker.Error.Load.CAST_FAILED,
                     "Type of field \"${field.descriptor}\" is not \"${T::class.java.name}\".",
                     exception,
                 )
@@ -215,12 +202,12 @@ private class HiddenField(
         property: KProperty<*>,
         value: T
     ) {
-        expected<HiddenErrorType>("set field value") {
+        expected<Tinker.Error.Load>("set field value") {
             try {
                 field.set(instance.original, value)
             } catch (exception: ClassCastException) {
-                throw TinkerError(
-                    HiddenErrorType.CAST_FAILED,
+                throw Tinker.Error(
+                    Tinker.Error.Load.CAST_FAILED,
                     "Type of field \"${field.descriptor}\" is not \"${T::class.java.name}\".",
                     exception,
                 )
@@ -237,8 +224,8 @@ private class GetterWithInstanceDelegate<T : HiddenClass, V>(
             @Suppress("UNCHECKED_CAST")
             return field.get(instance.original) as V
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Type of field \"${field.descriptor}\" is not unexpected.",
                 exception,
             )
@@ -271,8 +258,8 @@ private class SelfGetter<V>(
             @Suppress("UNCHECKED_CAST")
             return field.get(instance) as V
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Type of field \"${field.descriptor}\" is not unexpected.",
                 exception,
             )
@@ -322,8 +309,8 @@ internal class ApplicationDelegate(override val original: Application) : HiddenC
             val original = try {
                 baseField.get(original)!! as Context
             } catch (exception: ClassCastException) {
-                throw TinkerError(
-                    HiddenErrorType.CAST_FAILED,
+                throw Tinker.Error(
+                    Tinker.Error.Load.CAST_FAILED,
                     "Type of field \"${baseField.descriptor}\" is not \"${Context::class.java.name}\".",
                     exception,
                 )
@@ -555,8 +542,8 @@ internal class DexPathListDelegate(override val original: Any) : HiddenClass() {
                 definingContext,
             ) as Array<Any>
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Return type of method \"${makeDexElementsMethodV24.descriptor}\" is not \"Array<Any>\".",
                 exception,
             )
@@ -588,8 +575,8 @@ internal class DexPathListDelegate(override val original: Any) : HiddenClass() {
                 suppressedExceptions,
             ) as Array<Any>
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Return type of method \"${makeDexElementsMethodV23.descriptor}\" is not \"Array<Any>\".",
                 exception,
             )
@@ -619,8 +606,8 @@ internal class DexPathListDelegate(override val original: Any) : HiddenClass() {
                 suppressedExceptions,
             ) as Array<Any>
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Return type of method \"${makeDexElementsOld.descriptor}\" is not \"Array<Any>\".",
                 exception,
             )
@@ -666,8 +653,8 @@ internal class DexPathListDelegate(override val original: Any) : HiddenClass() {
                 files,
             ) as Array<Any>
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Return type of method \"${makeLibraryElementsMethodV26.descriptor}\" is not \"Array<Any>\".",
                 exception,
             )
@@ -698,8 +685,8 @@ internal class DexPathListDelegate(override val original: Any) : HiddenClass() {
                 definingContext,
             ) as Array<Any>
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Return type of method \"${makeLibraryElementsMethodV24.descriptor}\" is not \"Array<Any>\".",
                 exception,
             )
@@ -730,8 +717,8 @@ internal class DexPathListDelegate(override val original: Any) : HiddenClass() {
                 suppressedExceptions,
             ) as Array<Any>
         } catch (exception: ClassCastException) {
-            throw TinkerError(
-                HiddenErrorType.CAST_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.CAST_FAILED,
                 "Return type of method \"${makeLibraryElementsMethodV23.descriptor}\" is not \"Array<Any>\".",
                 exception,
             )
@@ -799,8 +786,8 @@ internal class ActivityThreadDelegate(override val original: Any) : HiddenClass(
                             @Suppress("UNCHECKED_CAST")
                             it as Map<Any, WeakReference<Any?>>
                         } catch (exception: ClassCastException) {
-                            throw TinkerError(
-                                HiddenErrorType.CAST_FAILED,
+                            throw Tinker.Error(
+                                Tinker.Error.Load.CAST_FAILED,
                                 "Return type of field \"${field.descriptor}\" is not \"Map<Any, WeakReference<Any?>>\".",
                                 exception,
                             )
@@ -924,8 +911,8 @@ internal class ResourceManagerDelegate(override val original: Any) : HiddenClass
                             @Suppress("UNCHECKED_CAST")
                             it.get(instance.original) as List<WeakReference<Resources>>
                         } catch (exception: ClassCastException) {
-                            throw TinkerError(
-                                HiddenErrorType.CAST_FAILED,
+                            throw Tinker.Error(
+                                Tinker.Error.Load.CAST_FAILED,
                                 "Type of field \"${it.descriptor}\" is not \"List<WeakReference<Resources>>\".",
                                 exception,
                             )
@@ -950,8 +937,8 @@ internal class ResourceManagerDelegate(override val original: Any) : HiddenClass
                             @Suppress("UNCHECKED_CAST")
                             it.get(instance.original) as Map<Any, WeakReference<Resources>>
                         } catch (exception: ClassCastException) {
-                            throw TinkerError(
-                                HiddenErrorType.CAST_FAILED,
+                            throw Tinker.Error(
+                                Tinker.Error.Load.CAST_FAILED,
                                 "Type of field \"${it.descriptor}\" is not \"Map<Any, WeakReference<Resources>>\".",
                                 exception,
                             )
@@ -991,8 +978,8 @@ internal class ResourceManagerDelegate(override val original: Any) : HiddenClass
                         @Suppress("UNCHECKED_CAST")
                         field.get(instance.original) as Map<Any, WeakReference<Any>>
                     } catch (exception: ClassCastException) {
-                        throw TinkerError(
-                            HiddenErrorType.CAST_FAILED,
+                        throw Tinker.Error(
+                            Tinker.Error.Load.CAST_FAILED,
                             "Type of field \"${field.descriptor}\" is not \"Map<Any, WeakReference<Any>>\".",
                             exception,
                         )
@@ -1226,8 +1213,8 @@ internal class ClientTransactionDelegate(override val original: Any) : HiddenCla
                 @Suppress("UNCHECKED_CAST")
                 return method.invoke(instance.original)?.let { it as List<Any> }
             } catch (exception: ClassCastException) {
-                throw TinkerError(
-                    HiddenErrorType.CAST_FAILED,
+                throw Tinker.Error(
+                    Tinker.Error.Load.CAST_FAILED,
                     "Return type of method \"${method.descriptor}\" is unexpected.",
                     exception,
                 )

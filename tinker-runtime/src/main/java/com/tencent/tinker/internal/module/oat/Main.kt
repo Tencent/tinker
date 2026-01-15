@@ -1,8 +1,8 @@
 package com.tencent.tinker.internal.module.oat
 
 import android.content.Context
-import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
+import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.util.SynchronizedCache
 import java.io.File
 

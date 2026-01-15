@@ -1,8 +1,7 @@
 package com.tencent.tinker.test.internal.module.validate
 
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
-import com.tencent.tinker.internal.module.validate.validateErrorTypeOfForTesting
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -53,15 +52,11 @@ class ValidateTest {
     @Test
     fun createValidationFingerprintWithFile() {
         val file = Files.createTempFile("tinker-test-", ".txt").toFile()
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.createValidationFingerprint(file)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            error.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("OPERATE_NON_DIRECTORY"),
+            Tinker.Error.Validate.OPERATE_NON_DIRECTORY,
             error.type,
         )
     }
@@ -75,15 +70,11 @@ class ValidateTest {
             .apply {
                 deleteRecursively()
             }
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.createValidationFingerprint(directory)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            error.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("OPERATE_NON_DIRECTORY"),
+            Tinker.Error.Validate.OPERATE_NON_DIRECTORY,
             error.type,
         )
     }
@@ -136,15 +127,11 @@ class ValidateTest {
                 directory.copyRecursively(this, true)
                 resolve("new.txt").writeText("Hello new!")
             }
-        val errorForAddingFiles = assertThrows(TinkerError::class.java) {
+        val errorForAddingFiles = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.validate(directoryCopyForAddingFiles)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            errorForAddingFiles.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("VALIDATE_FAILED"),
+            Tinker.Error.Validate.VALIDATE_FAILED,
             errorForAddingFiles.type,
         )
 
@@ -154,15 +141,11 @@ class ValidateTest {
                 directory.copyRecursively(this, true)
                 resolve("foo.txt").delete()
             }
-        val errorForRemovingFiles = assertThrows(TinkerError::class.java) {
+        val errorForRemovingFiles = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.validate(directoryCopyForRemovingFiles)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            errorForRemovingFiles.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("VALIDATE_FAILED"),
+            Tinker.Error.Validate.VALIDATE_FAILED,
             errorForRemovingFiles.type,
         )
 
@@ -172,15 +155,11 @@ class ValidateTest {
                 directory.copyRecursively(this, true)
                 resolve("foo.txt").writeText("Hello qux!")
             }
-        val errorForModifyingFiles = assertThrows(TinkerError::class.java) {
+        val errorForModifyingFiles = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.validate(directoryCopyForModifyingFiles)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            errorForModifyingFiles.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("VALIDATE_FAILED"),
+            Tinker.Error.Validate.VALIDATE_FAILED,
             errorForModifyingFiles.type,
         )
 
@@ -191,15 +170,11 @@ class ValidateTest {
                 ValidatorImpl.validationFingerprintFileForTesting(this)
                     .writeBytes(ByteArray(16))
             }
-        val errorForModifyingFingerprint = assertThrows(TinkerError::class.java) {
+        val errorForModifyingFingerprint = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.validate(directoryCopyForModifyingFingerprint)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            errorForModifyingFingerprint.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("VALIDATE_FAILED"),
+            Tinker.Error.Validate.VALIDATE_FAILED,
             errorForModifyingFingerprint.type,
         )
     }
@@ -210,15 +185,11 @@ class ValidateTest {
     @Test
     fun validateWithFile() {
         val file = Files.createTempFile("tinker-test-", ".txt").toFile()
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.validate(file)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            error.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("OPERATE_NON_DIRECTORY"),
+            Tinker.Error.Validate.OPERATE_NON_DIRECTORY,
             error.type,
         )
     }
@@ -232,15 +203,11 @@ class ValidateTest {
             .apply {
                 deleteRecursively()
             }
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.validate(directory)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            error.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("OPERATE_NON_DIRECTORY"),
+            Tinker.Error.Validate.OPERATE_NON_DIRECTORY,
             error.type,
         )
     }
@@ -255,15 +222,11 @@ class ValidateTest {
                 ValidatorImpl.validationFingerprintFileForTesting(this)
                     .writeBytes(ByteArray(12))
             }
-        val error = assertThrows(TinkerError::class.java) {
+        val error = assertThrows(Tinker.Error::class.java) {
             ValidatorImpl.validate(directory)
         }
         assertEquals(
-            TinkerError.TypeGroup.MODULE_VALIDATE,
-            error.type.group,
-        )
-        assertEquals(
-            validateErrorTypeOfForTesting("INVALID_FINGERPRINT"),
+            Tinker.Error.Validate.INVALID_FINGERPRINT,
             error.type,
         )
     }

@@ -3,7 +3,7 @@ package com.tencent.tinker.internal.load.code
 import android.app.Application
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.DexPathListDelegate
 import com.tencent.tinker.internal.load.JavaMutableList
@@ -13,16 +13,6 @@ import java.io.IOException
 import kotlin.collections.filter
 import kotlin.collections.plus
 import java.lang.reflect.Array as JvmReflectArray
-
-private enum class LoadCodeInjectPathErrorType : TinkerError.Type {
-    UNEXPECTED;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.LOAD_CODE_INJECT_PATH
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 /**
  * Code loader which loads by injecting path into system class loader.
@@ -179,7 +169,7 @@ internal class InjectPathCodeLoader(
             jvmCodeFiles: List<File>,
             libraryDirectories: List<File>
         ): CodeLoader {
-            expected<LoadCodeInjectPathErrorType>("create code loader") {
+            expected<Tinker.Error.Load.Code.InjectPath>("create code loader") {
                 val actions = mutableListOf<() -> Unit>()
                 val dexPathList = source.delegated.pathList
                 createLoadActionsForJvmCodeFiles(

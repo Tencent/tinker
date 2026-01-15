@@ -5,17 +5,17 @@ import android.os.Build
 import android.os.Handler
 import android.os.Message
 import androidx.annotation.RequiresApi
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_REMOVED_ASSET_FILE_NAME
-import com.tencent.tinker.internal.TinkerError
-import com.tencent.tinker.internal.load.Loader
 import com.tencent.tinker.internal.load.ActivityThreadDelegate
 import com.tencent.tinker.internal.load.AssetManagerDelegate
 import com.tencent.tinker.internal.load.ClientTransactionDelegate
 import com.tencent.tinker.internal.load.ClientTransactionDelegate.Companion.delegatedAsClientTransaction
 import com.tencent.tinker.internal.load.LoadedApkDelegate
+import com.tencent.tinker.internal.load.Loader
 import com.tencent.tinker.internal.load.ResourceImplementationDelegate
 import com.tencent.tinker.internal.load.ResourceKeyDelegate
 import com.tencent.tinker.internal.load.ResourceManagerDelegate
@@ -26,18 +26,6 @@ import java.io.File
 import java.io.IOException
 
 private const val TAG = "Tinker.Loader.Res"
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    NO_VALID_INPUTS,
-    VERIFY_FAILED;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.LOAD_RESOURCE
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 private class CurrentActivityThreadUpdater(
     private val original: String,
@@ -179,8 +167,8 @@ internal class ResourceLoader(
             .use { it.readBytes() }
             .toString(Charsets.UTF_8)
         if (added != "patched") {
-            throw TinkerError(
-                ErrorType.VERIFY_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.Resource.VERIFY_FAILED,
                 "Cannot load patch-added test asset.",
             )
         }
@@ -189,8 +177,8 @@ internal class ResourceLoader(
             .use { it.readBytes() }
             .toString(Charsets.UTF_8)
         if (modified != "patched") {
-            throw TinkerError(
-                ErrorType.VERIFY_FAILED,
+            throw Tinker.Error(
+                Tinker.Error.Load.Resource.VERIFY_FAILED,
                 "Cannot load patch-modified test asset.",
             )
         }
@@ -328,13 +316,13 @@ internal class ResourceLoader(
         private fun searchResourceApk(patch: Patch): File =
             patch.resourceApkFile
                 .takeIf { it.isFile }
-                ?: throw TinkerError(
-                    ErrorType.NO_VALID_INPUTS,
+                ?: throw Tinker.Error(
+                    Tinker.Error.Load.Resource.NO_VALID_INPUTS,
                     "Missing valid input resource apk \"${patch.resourceApkFile.absolutePath}\".",
                 )
 
         override fun createLoaderIfNeeded(patch: Patch): ResourceLoader {
-            expected<ErrorType>("create resource loader") {
+            expected<Tinker.Error.Load.Resource>("create resource loader") {
                 return createLoader(
                     resourceApk = searchResourceApk(patch),
                 )

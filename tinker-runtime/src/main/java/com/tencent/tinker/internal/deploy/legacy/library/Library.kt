@@ -1,6 +1,6 @@
 package com.tencent.tinker.internal.deploy.legacy.library
 
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.deploy.legacy.PackageMetadata
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5Hash
@@ -13,22 +13,6 @@ import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.hashOf
 import java.io.File
 import java.util.zip.ZipFile
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    INVALID_METADATA,
-    MISSING_BASE_ENTRY,
-    INVALID_BASE_ENTRY,
-    MISSING_DIFF_ENTRY,
-    INVALID_DIFF_ENTRY,
-    INVALID_DEPLOY_RESULT;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.DEPLOY_LEGACY_LIBRARY
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 private class LibraryMetadata(
     /**
@@ -68,8 +52,8 @@ private val ByteArray.parsedLibraryMetadataList: List<LibraryMetadata>
         .mapIndexed { lineNumberMinusOne, line ->
             val parts = line.split(",")
             if (parts.size < 5) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Library.INVALID_METADATA,
                     "Line ${lineNumberMinusOne + 1} only has ${parts.size} parts.",
                 )
             }
@@ -78,14 +62,14 @@ private val ByteArray.parsedLibraryMetadataList: List<LibraryMetadata>
                 .split("/")
                 .let { pathParts ->
                     if (pathParts.size != 2) {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Library.INVALID_METADATA,
                             "Path of line ${lineNumberMinusOne + 1} is has ${pathParts.size} parts.",
                         )
                     }
                     if (pathParts[0] != "lib") {
-                        throw TinkerError(
-                            ErrorType.INVALID_METADATA,
+                        throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.Library.INVALID_METADATA,
                             "Path of line ${lineNumberMinusOne + 1} is not starts with \"lib/\"",
                         )
                     }
@@ -94,8 +78,8 @@ private val ByteArray.parsedLibraryMetadataList: List<LibraryMetadata>
             val patchedHash = try {
                 parts[2].trim().asMd5Hash
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Library.INVALID_METADATA,
                     "Patched hash of line ${lineNumberMinusOne + 1} is invalid.",
                     throwable,
                 )
@@ -103,8 +87,8 @@ private val ByteArray.parsedLibraryMetadataList: List<LibraryMetadata>
             val baseCrc32 = try {
                 parts[3].trim().toLong()
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Library.INVALID_METADATA,
                     "Base file CRC32 of line ${lineNumberMinusOne + 1} is invalid.",
                     throwable,
                 )
@@ -112,8 +96,8 @@ private val ByteArray.parsedLibraryMetadataList: List<LibraryMetadata>
             val diffHash = try {
                 parts[4].trim().asMd5Hash
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Library.INVALID_METADATA,
                     "Diff hash of line ${lineNumberMinusOne + 1} is invalid.",
                     throwable,
                 )
@@ -137,8 +121,8 @@ private fun File.createLibraryAsNewlyAdded(
     diffPackage: ZipFile,
 ): ByteArray {
     val entry = diffPackage.getEntry(metadata.entryName)
-        ?: throw TinkerError(
-            ErrorType.MISSING_DIFF_ENTRY,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Library.MISSING_DIFF_ENTRY,
             "Cannot find entry \"${metadata.entryName}\" in diff package \"${diffPackage.name}\"."
         )
     return diffPackage.getInputStream(entry)
@@ -163,26 +147,26 @@ private fun File.createLibraryByMerging(
     diffPackage: ZipFile,
 ): ByteArray {
     val baseEntry = baseApk.getEntry(metadata.entryName)
-        ?: throw TinkerError(
-            ErrorType.MISSING_BASE_ENTRY,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Library.MISSING_BASE_ENTRY,
             "Cannot find entry \"${metadata.entryName}\" in base apk file \"${baseApk.name}\"."
         )
     if (baseEntry.crc != metadata.baseCrc32) {
-        throw TinkerError(
-            ErrorType.INVALID_BASE_ENTRY,
+        throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Library.INVALID_BASE_ENTRY,
             "CRC32 checksum \"${baseEntry.crc}\" of entry \"${metadata.entryName}\" in base apk file "
                     + "\"${baseApk.name}\" is not match \"${metadata.baseCrc32}\" in metadata.",
         )
     }
     val diffEntry = diffPackage.getEntry(metadata.entryName)
-        ?: throw TinkerError(
-            ErrorType.MISSING_DIFF_ENTRY,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Library.MISSING_DIFF_ENTRY,
             "Cannot find entry \"${metadata.entryName}\" in diff package \"${diffPackage.name}\"."
         )
     val diffEntryHash = diffPackage.hashOf(diffEntry)
     if (!diffEntryHash.contentEquals(metadata.diffHash)) {
-        throw TinkerError(
-            ErrorType.INVALID_DIFF_ENTRY,
+        throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Library.INVALID_DIFF_ENTRY,
             "Hash \"${diffEntryHash.asMd5String}\" of entry \"${diffEntry.name}\" in diff package "
                     + "\"${diffPackage.name}\" is not match \"${metadata.diffHash.asMd5String}\" in metadata.",
         )
@@ -235,8 +219,8 @@ private fun libraryDeployInternal(
                     )
                 }
                 if (!hash.contentEquals(metadata.patchedHash)) {
-                    throw TinkerError(
-                        ErrorType.INVALID_DEPLOY_RESULT,
+                    throw Tinker.Error(
+                        Tinker.Error.Deploy.Legacy.Library.INVALID_DEPLOY_RESULT,
                         "Hash \"${hash.asMd5String}\" of patch result \"${metadata.name}(${metadata.abi})\" "
                                 + "\"${diffPackage.name}\" is not match \"${metadata.patchedHash.asMd5String}\" in metadata.",
                     )
@@ -280,7 +264,7 @@ internal fun libraryDeploy(
     diffPackage: ZipFile,
     directory: File
 ) {
-    expected<ErrorType>("deploy libraries") {
+    expected<Tinker.Error.Deploy.Legacy.Library>("deploy libraries") {
         libraryDeployInternal(
             packageMetadata,
             baseApk,

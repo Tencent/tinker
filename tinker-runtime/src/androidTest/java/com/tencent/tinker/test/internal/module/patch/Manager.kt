@@ -5,10 +5,10 @@ import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
+import com.tencent.tinker.Tinker
+import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.module.patch.RawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManagerImpl
-import com.tencent.tinker.internal.module.patch.rawPatchErrorTypeOfForTesting
-import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.test.createTestDirectory
 import com.tencent.tinker.test.rethrowAsIllegalState
 import com.tencent.tinker.test.tinkerErrorCode
@@ -518,7 +518,7 @@ class RawPatchManagerImplTest {
             mainService.acquire()
         }.tinkerErrorCode
         assertEquals(
-            rawPatchErrorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
+            Tinker.Error.RawPatch.HAS_ACQUIRED_PATCH.code,
             errorCode
         )
     }
@@ -545,7 +545,7 @@ class RawPatchManagerImplTest {
             mainService.acquire()
         }.tinkerErrorCode
         assertEquals(
-            rawPatchErrorTypeOfForTesting("HAS_ACQUIRED_PATCH").errorCode,
+            Tinker.Error.RawPatch.HAS_ACQUIRED_PATCH.code,
             errorCode
         )
     }
@@ -672,7 +672,7 @@ class RawPatchManagerImplTest {
             }?.tinkerErrorCode
         assertNotNull(errorCode)
         assertEquals(
-            rawPatchErrorTypeOfForTesting("CREATE_EXIST_PATCH").errorCode,
+            Tinker.Error.RawPatch.CREATE_EXIST_PATCH.code,
             errorCode,
         )
     }
@@ -701,7 +701,7 @@ class RawPatchManagerImplTest {
                 )
             }.tinkerErrorCode
         assertEquals(
-            rawPatchErrorTypeOfForTesting("CLONE_PATCH").errorCode,
+            Tinker.Error.RawPatch.CLONE_PATCH.code,
             errorCode
         )
         // Cleans up the source directory.
@@ -734,7 +734,7 @@ class RawPatchManagerImplTest {
                 )
             }.tinkerErrorCode
         assertEquals(
-            rawPatchErrorTypeOfForTesting("WRITE_LATEST_VERSION").errorCode,
+            Tinker.Error.RawPatch.WRITE_LATEST_VERSION.code,
             errorCode
         )
     }

@@ -68,11 +68,522 @@ object Tinker {
         globalCustomLegacyMerger = merger
     }
 
-    class Error(
-        val code: Int,
-        val message: String,
-        val reason: Throwable,
-    )
+    /**
+     * Error which is raised by Tinker.
+     */
+    class Error internal constructor(
+        /**
+         * Type of the error.
+         */
+        val type: Type,
+
+        /**
+         * Message of the error.
+         */
+        override val message: String,
+
+        /**
+         * Throwable which causes the error has occurred. It may be null if the error is not caused by a throwable.
+         */
+        cause: Throwable? = null,
+    ) : Exception(message, cause) {
+
+        /**
+         * Type of the error.
+         *
+         * Each error type can be represented by a unique 32-bit unsigned integer code getting by calling [Tinker.code].
+         * A code consists of two parts:
+         *
+         * - The higher 16 bits represent the group of error type.
+         * - The lower 16 bits represent the index of error type in its group.
+         */
+        sealed interface Type {
+            val groupCode: Int
+        }
+
+        /**
+         * Error type group of error caused by patch loading.
+         */
+        enum class Load : Type {
+            /**
+             * Type of error caused by raised unexpected throwable.
+             */
+            UNEXPECTED,
+
+            /**
+             * Type of error caused by unrecoverable failed patch loading.
+             *
+             * Error with this type is always thrown as an uncaught exception. Once error with this type is thrown, the
+             * process is in an unrecoverable damaged state and must be stopped immediately to prevent unexpected
+             * behavior.
+             */
+            UNRECOVERABLE_LOAD_FAILED,
+
+            /**
+             * Type of error caused by reflect-getting non-existing element.
+             */
+            NO_SUCH_ELEMENT,
+
+            /**
+             * Type of error caused by type cast failure.
+             */
+            CAST_FAILED;
+
+            override val groupCode: Int
+                get() = 0x1000
+
+            /**
+             * Error type group of error caused by patched code loading.
+             */
+            enum class Code : Type {
+                /**
+                 * Type of error caused by raised unexpected throwable.
+                 */
+                UNEXPECTED,
+
+                /**
+                 * Type of error caused by missing valid inputs.
+                 */
+                NO_VALID_INPUTS,
+
+                /**
+                 * Type of error caused by invalid library directory.
+                 */
+                INVALID_LIBRARY_DIRECTORY,
+
+                /**
+                 * Type of error caused by reading test resource but it is broken.
+                 */
+                TEST_RESOURCE_BROKEN,
+
+                /**
+                 * Type of error caused by failed verification.
+                 */
+                VERIFY_FAILED;
+
+                override val groupCode: Int
+                    get() = 0x1100
+
+                /**
+                 * Error type group of error caused by patched code loading with inject-path strategy.
+                 */
+                enum class InjectPath : Type {
+                    /**
+                     * Type of error caused by raised unexpected throwable.
+                     */
+                    UNEXPECTED;
+
+                    override val groupCode: Int
+                        get() = 0x1110
+                }
+
+                /**
+                 * Error type group of error caused by patched code loading with new-class-loader strategy.
+                 */
+                enum class NewClassLoader : Type {
+                    /**
+                     * Type of error caused by raised unexpected throwable.
+                     */
+                    UNEXPECTED;
+
+                    override val groupCode: Int
+                        get() = 0x1120
+                }
+            }
+
+            /**
+             * Error type group of error caused by patched resource loading.
+             */
+            enum class Resource : Type {
+                /**
+                 * Type of error caused by raised unexpected throwable.
+                 */
+                UNEXPECTED,
+
+                /**
+                 * Type of error caused by missing valid inputs.
+                 */
+                NO_VALID_INPUTS,
+
+                /**
+                 * Type of error caused by failed verification.
+                 */
+                VERIFY_FAILED;
+
+                override val groupCode: Int
+                    get() = 0x1200
+            }
+        }
+
+        /**
+         * Error type group of error caused by patch deploying.
+         */
+        enum class Deploy : Type {
+            /**
+             * Type of error caused by raised unexpected throwable.
+             */
+            UNEXPECTED,
+
+            /**
+             * Type of error caused by missing version while transferring data across processes.
+             */
+            MISSING_VERSION,
+
+            /**
+             * Type of error caused by missing diff package while transferring data across processes.
+             */
+            MISSING_DIFF_PACKAGE,
+
+            /**
+             * Type of error caused by unsupported diff package format or broken diff package.
+             */
+            INVALID_DIFF_PACKAGE;
+
+            override val groupCode: Int
+                get() = 0x2000
+
+            /**
+             * Error type group of error caused by legacy patch deploying.
+             */
+            enum class Legacy : Type {
+                /**
+                 * Type of error caused by raised unexpected throwable.
+                 */
+                UNEXPECTED,
+
+                /**
+                 * Type of error caused by missing metadata in diff package.
+                 */
+                MISSING_METADATA,
+
+                /**
+                 * Type of error caused by missing custom merger is required but not provided.
+                 */
+                MISSING_CUSTOM_MERGER;
+
+                override val groupCode: Int
+                    get() = 0x2100
+
+                /**
+                 * Error type group of error caused by legacy patch dex deploying.
+                 */
+                enum class Dex : Type {
+                    /**
+                     * Type of error caused by raised unexpected throwable.
+                     */
+                    UNEXPECTED,
+
+                    /**
+                     * Type of error caused by missing metadata in diff package.
+                     */
+                    MISSING_METADATA,
+
+                    /**
+                     * Type of error caused by invalid metadata in diff package.
+                     */
+                    INVALID_METADATA,
+
+                    /**
+                     * Type of error caused by unsupported dex mode which is defined in diff package.
+                     */
+                    UNSUPPORTED_DEX_MODE,
+
+                    /**
+                     * Type of error caused by missing base entry in base apk file.
+                     */
+                    MISSING_BASE_ENTRY,
+
+                    /**
+                     * Type of error caused by invalid base entry in base apk file.
+                     */
+                    INVALID_BASE_ENTRY,
+
+                    /**
+                     * Type of error caused by invalid diff entry in diff package.
+                     */
+                    MISSING_DIFF_ENTRY,
+
+                    /**
+                     * Type of error caused by missing test dex in base apk file.
+                     */
+                    MISSING_TEST_DEX,
+
+                    /**
+                     * Type of error caused by failure deploying, which may because hash of deployed file is mismatched.
+                     */
+                    INVALID_DEPLOY_RESULT,
+
+                    /**
+                     * Type of error caused by missing deployed result.
+                     */
+                    NO_DEPLOYED_DEX;
+
+                    override val groupCode: Int
+                        get() = 0x2110
+                }
+
+                /**
+                 * Error type group of error caused by legacy patch library deploying.
+                 */
+                enum class Library : Type {
+                    /**
+                     * Type of error caused by raised unexpected throwable.
+                     */
+                    UNEXPECTED,
+
+                    /**
+                     * Type of error caused by invalid metadata in diff package.
+                     */
+                    INVALID_METADATA,
+
+                    /**
+                     * Type of error caused by missing base entry in base apk file.
+                     */
+                    MISSING_BASE_ENTRY,
+
+                    /**
+                     * Type of error caused by invalid base entry in base apk file.
+                     */
+                    INVALID_BASE_ENTRY,
+
+                    /**
+                     * Type of error caused by missing diff entry in diff package.
+                     */
+                    MISSING_DIFF_ENTRY,
+
+                    /**
+                     * Type of error caused by invalid diff entry in diff package.
+                     */
+                    INVALID_DIFF_ENTRY,
+
+                    /**
+                     * Type of error caused by failure deploying, which may because hash of deployed file is mismatched.
+                     */
+                    INVALID_DEPLOY_RESULT;
+
+                    override val groupCode: Int
+                        get() = 0x2120
+                }
+
+                /**
+                 * Error type group of error caused by legacy patch resource deploying.
+                 */
+                enum class Resource : Type {
+                    /**
+                     * Type of error caused by raised unexpected throwable.
+                     */
+                    UNEXPECTED,
+
+                    /**
+                     * Type of error caused by invalid metadata in diff package.
+                     */
+                    INVALID_METADATA,
+
+                    /**
+                     * Type of error caused by missing manifest file (a.k.a. `AndroidManifest.xml`) in base apk file.
+                     */
+                    MISSING_MANIFEST,
+
+                    /**
+                     * Type of error caused by missing base entry in base apk file.
+                     */
+                    MISSING_BASE_ENTRY,
+
+                    /**
+                     * Type of error caused by invalid base entry in base apk file.
+                     */
+                    INVALID_BASE_ENTRY,
+
+                    /**
+                     * Type of error caused by missing diff entry in diff package.
+                     */
+                    MISSING_DIFF_ENTRY,
+
+                    /**
+                     * Type of error caused by failure deploying, which may because hash of deployed file is mismatched.
+                     */
+                    INVALID_DEPLOY_RESULT;
+
+                    override val groupCode: Int
+                        get() = 0x2130
+                }
+            }
+        }
+
+        /**
+         * Error type group of error caused by raw patch management.
+         */
+        enum class RawPatch : Type {
+            /**
+             * Type of error caused by raised unexpected throwable.
+             */
+            UNEXPECTED,
+
+            /**
+             * Type of error caused by throwable while acquiring raw patch with version as using.
+             */
+            ACQUIRE_PATCH_AS_USING,
+
+            /**
+             * Type of error caused by throwable while acquiring raw patch with version as cleaning.
+             */
+            ACQUIRE_PATCH_AS_CLEANING,
+
+            /**
+             * Type of error caused by acquiring raw patch more than once in same process.
+             */
+            HAS_ACQUIRED_PATCH,
+
+            /**
+             * Type of error caused by I/O exception while reading latest version.
+             */
+            READ_LATEST_VERSION,
+
+            /**
+             * Type of error caused by I/O exception while writing latest version.
+             */
+            WRITE_LATEST_VERSION,
+
+            /**
+             * Type of error caused by I/O exception while reading main version.
+             */
+            READ_MAIN_VERSION,
+
+            /**
+             * Type of error caused by I/O exception while writing main version.
+             */
+            WRITE_MAIN_VERSION,
+
+            /**
+             * Type of error caused by I/O exception while reading unavailable versions.
+             */
+            READ_UNAVAILABLE,
+
+            /**
+             * Type of error caused by I/O exception while appending unavailable versions.
+             */
+            APPEND_UNAVAILABLE,
+
+            /**
+             * Type of error caused by I/O exception while cleaning unavailable versions.
+             */
+            CLEAN_UNAVAILABLE,
+
+            /**
+             * Type of error caused by throwable while marking main process as alive.
+             */
+            MARK_MAIN_ALIVE,
+
+            /**
+             * Type of error caused by throwable while checking main process is alive.
+             */
+            CHECK_MAIN_ALIVE,
+
+            /**
+             * Type of error caused by throwable patch with version which already exists.
+             */
+            CREATE_EXIST_PATCH,
+
+            /**
+             * Type of error caused by throwable while cloning raw patch files.
+             */
+            CLONE_PATCH,
+
+            /**
+             * Type of error caused by throwable while cleaning raw patch files.
+             */
+            CLEAN_PATCH,
+
+            /**
+             * Type of error caused by throwable while dropping write permissions of raw patch files.
+             */
+            DROP_PATCH_WRITE_PERMISSION,
+
+            /**
+             * Type of error caused by throwable while recovering write permissions of raw patch files.
+             */
+            RECOVER_PATCH_WRITE_PERMISSION;
+
+            override val groupCode: Int
+                get() = 0x3000
+        }
+
+        /**
+         * Error type group of error caused by OAT file management.
+         */
+        enum class Oat : Type {
+            /**
+             * Type of error caused by raised unexpected throwable.
+             */
+            UNEXPECTED,
+
+            /**
+             * Type of error caused by acquiring OAT files with same directory more than once in same process.
+             */
+            HAS_ACQUIRED_OAT,
+
+            /**
+             * Type of error caused by exception while generating or storing OAT files.
+             */
+            GENERATE_OR_STORE_FAILED;
+
+            override val groupCode: Int
+                get() = 0x4000
+        }
+
+        /**
+         * Error type group of error caused by patch layout management.
+         */
+        enum class Layout : Type {
+            /**
+             * Type of error caused by raised unexpected throwable.
+             */
+            UNEXPECTED,
+
+            /**
+             * Type of error caused by invalid construct source.
+             */
+            INVALID_SOURCE;
+
+            override val groupCode: Int
+                get() = 0x5000
+        }
+
+        /**
+         * Error type group of error caused by validation.
+         */
+        enum class Validate : Type {
+            /**
+             * Type of error caused by raised unexpected throwable.
+             */
+            UNEXPECTED,
+
+            /**
+             * Type of error caused by validating a non-directory element.
+             */
+            OPERATE_NON_DIRECTORY,
+
+            /**
+             * Type of error caused by invalid fingerprint file.
+             */
+            INVALID_FINGERPRINT,
+
+            /**
+             * Type of error caused by failed validation.
+             */
+            VALIDATE_FAILED;
+
+            override val groupCode: Int
+                get() = 0x6000
+        }
+    }
+
+    /**
+     * Gets code of error type. See [Error.Type] for more details.
+     */
+    @get:JvmName("codeOfErrorType")
+    val <T: Error.Type> T.code: Int
+        get() = (groupCode shl 16) or (this as Enum<*>).ordinal
 
     /**
      * Callback to notify the result of task.

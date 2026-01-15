@@ -5,30 +5,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import com.tencent.tinker.Tinker
-import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.deploy.legacy.LegacyDeployer
 import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.RawPatchManager
 import com.tencent.tinker.internal.module.validate.Validator
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
-import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.withTemporaryDirectory
 import java.io.File
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    MISSING_VERSION,
-    MISSING_DIFF_PACKAGE,
-    INVALID_DIFF_PACKAGE;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.DEPLOY
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 /**
  * Patch deployer used to convert diff package to loadable patch files and store them persistently.
@@ -84,26 +69,26 @@ private fun deployPatch(
     intent: Intent,
 ) {
     val version = intent.getStringExtra(DEPLOY_IPC_KEY_VERSION)
-        ?: throw TinkerError(
-            ErrorType.MISSING_VERSION,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.MISSING_VERSION,
             "Version is missing while deploying patch."
         )
     val diffPackage = intent.getStringExtra(DEPLOY_IPC_KEY_DIFF_PACKAGE)
         ?.let(::File)
-        ?: throw TinkerError(
-            ErrorType.MISSING_DIFF_PACKAGE,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.MISSING_DIFF_PACKAGE,
             "Diff package is missing while deploying patch."
         )
     if (!diffPackage.isFile) {
-        throw TinkerError(
-            ErrorType.INVALID_DIFF_PACKAGE,
+        throw Tinker.Error(
+            Tinker.Error.Deploy.INVALID_DIFF_PACKAGE,
             "Diff package \"${diffPackage.path}\" is not an existing file."
         )
     }
     val deployer = when {
         diffPackage.isZipFile -> LegacyDeployer
-        else -> throw TinkerError(
-            ErrorType.INVALID_DIFF_PACKAGE,
+        else -> throw Tinker.Error(
+            Tinker.Error.Deploy.INVALID_DIFF_PACKAGE,
             "Format of diff package \"${diffPackage.path}\" is unsupported."
         )
     }
@@ -123,16 +108,12 @@ class TinkerDeployService : Service() {
 
     private fun runTask(intent: Intent) {
         val error = try {
-            expected<ErrorType>("deploy patch") {
+            expected<Tinker.Error.Deploy>("deploy patch") {
                 deployPatch(this, intent)
             }
             null
-        } catch (error: TinkerError) {
-            Tinker.Error(
-                code = error.type.errorCode,
-                message = error.message,
-                reason = error,
-            )
+        } catch (error: Tinker.Error) {
+            error
         }
         application
             .let { it as? Tinker.App }

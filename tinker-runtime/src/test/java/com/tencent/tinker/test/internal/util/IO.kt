@@ -1,8 +1,8 @@
 package com.tencent.tinker.test.internal.util
 
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusive
+import org.junit.Assert.assertFalse
 import org.junit.Test
-import org.junit.Assert.*
 import java.nio.file.Files
 
 class IOTest {

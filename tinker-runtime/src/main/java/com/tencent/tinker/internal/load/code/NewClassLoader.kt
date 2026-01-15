@@ -3,7 +3,7 @@ package com.tencent.tinker.internal.load.code
 import android.app.Application
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.tencent.tinker.internal.TinkerError
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.load.code.NewClassLoaderCodeLoader.ClassLoaderInjector
 import com.tencent.tinker.internal.load.ApplicationDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.ClassLoaderDelegate
@@ -13,16 +13,6 @@ import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.loader.TinkerClassLoader
 import dalvik.system.DelegateLastClassLoader
 import java.io.File
-
-private enum class LoadCodeNewClassLoaderErrorType : TinkerError.Type {
-    UNEXPECTED;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.LOAD_CODE_NEW_CLASS_LOADER
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 @RequiresApi(Build.VERSION_CODES.N)
 private object CurrentThreadContextClassLoaderInjector
@@ -112,7 +102,7 @@ internal abstract class NewClassLoaderCodeLoader(
             jvmCodeFiles: List<File>,
             libraryDirectories: List<File>,
         ): CodeLoader {
-            expected<LoadCodeNewClassLoaderErrorType>("create code loader") {
+            expected<Tinker.Error.Load.Code.NewClassLoader>("create code loader") {
                 val dexPathList =
                     source.delegated.pathList
                 val dexPaths =

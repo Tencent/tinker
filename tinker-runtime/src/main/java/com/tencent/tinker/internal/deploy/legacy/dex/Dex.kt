@@ -1,8 +1,8 @@
 package com.tencent.tinker.internal.deploy.legacy.dex
 
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
-import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5HashNullable
 import com.tencent.tinker.internal.util.asMd5String
@@ -18,25 +18,6 @@ import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream
 import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-
-private enum class ErrorType : TinkerError.Type {
-    UNEXPECTED,
-    MISSING_METADATA,
-    INVALID_METADATA,
-    UNSUPPORTED_DEX_MODE,
-    MISSING_BASE_ENTRY,
-    INVALID_BASE_ENTRY,
-    MISSING_DIFF_ENTRY,
-    MISSING_TEST_DEX,
-    INVALID_DEPLOY_RESULT,
-    NO_DEPLOYED_DEX;
-
-    override val group: TinkerError.TypeGroup
-        get() = TinkerError.TypeGroup.DEPLOY_LEGACY_DEX
-
-    override val typeCode: Int
-        get() = ordinal
-}
 
 private class DexMetadata(
     /**
@@ -69,8 +50,8 @@ private val ByteArray.parsedDexMetadataList: List<DexMetadata>
         .mapIndexedNotNull { lineNumberMinusOne, line ->
             val parts = line.split(",")
             if (parts.size < 8) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.INVALID_METADATA,
                     "Line ${lineNumberMinusOne + 1} only has ${parts.size} parts.",
                 )
             }
@@ -81,16 +62,16 @@ private val ByteArray.parsedDexMetadataList: List<DexMetadata>
             }
             val mode = parts[7].trim()
             if (mode != "raw") {
-                throw TinkerError(
-                    ErrorType.UNSUPPORTED_DEX_MODE,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.UNSUPPORTED_DEX_MODE,
                     "Mode \"$mode\" for dex \"$name\" is unsupported.",
                 )
             }
             val patchedHash = try {
                 parts[3].trim().asMd5HashNullable
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.INVALID_METADATA,
                     "Patched hash of line ${lineNumberMinusOne + 1} is invalid.",
                     throwable,
                 )
@@ -98,8 +79,8 @@ private val ByteArray.parsedDexMetadataList: List<DexMetadata>
             val diffHash = try {
                 parts[4].trim().asMd5HashNullable
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.INVALID_METADATA,
                     "Diff hash of line ${lineNumberMinusOne + 1} is invalid.",
                     throwable,
                 )
@@ -107,8 +88,8 @@ private val ByteArray.parsedDexMetadataList: List<DexMetadata>
             val baseCrc32 = try {
                 parts[5].trim().toLong()
             } catch (throwable: Throwable) {
-                throw TinkerError(
-                    ErrorType.INVALID_METADATA,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.INVALID_METADATA,
                     "Base file CRC32 of line ${lineNumberMinusOne + 1} is invalid.",
                     throwable,
                 )
@@ -131,8 +112,8 @@ private fun File.createDexAsNewlyAdded(
     diffPackage: ZipFile,
 ): ByteArray {
     val entry = diffPackage.getEntry(metadata.name)
-        ?: throw TinkerError(
-            ErrorType.MISSING_DIFF_ENTRY,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Dex.MISSING_DIFF_ENTRY,
             "Cannot find entry \"${metadata.name}\" in diff package \"${diffPackage.name}\"."
         )
     return diffPackage.getInputStream(entry)
@@ -156,13 +137,13 @@ private fun File.createDexAsNotModified(
     baseApk: ZipFile,
 ): ByteArray {
     val entry = baseApk.getEntry(metadata.name)
-        ?: throw TinkerError(
-            ErrorType.MISSING_BASE_ENTRY,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Dex.MISSING_BASE_ENTRY,
             "Cannot find entry \"${metadata.name}\" in base apk file \"${baseApk.name}\"."
         )
     if (entry.crc != metadata.baseCrc32) {
-        throw TinkerError(
-            ErrorType.INVALID_BASE_ENTRY,
+        throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Dex.INVALID_BASE_ENTRY,
             "CRC32 checksum \"${entry.crc}\" of entry \"${metadata.name}\" in base apk file "
                     + "\"${baseApk.name}\" is not match \"${metadata.baseCrc32}\" in metadata.",
         )
@@ -188,20 +169,20 @@ private fun File.createDexByMerging(
     diffPackage: ZipFile,
 ): ByteArray {
     val baseEntry = baseApk.getEntry(metadata.name)
-        ?: throw TinkerError(
-            ErrorType.MISSING_BASE_ENTRY,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Dex.MISSING_BASE_ENTRY,
             "Cannot find entry \"${metadata.name}\" in base apk file \"${baseApk.name}\"."
         )
     if (baseEntry.crc != metadata.baseCrc32) {
-        throw TinkerError(
-            ErrorType.INVALID_BASE_ENTRY,
+        throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Dex.INVALID_BASE_ENTRY,
             "CRC32 checksum \"${baseEntry.crc}\" of entry \"${metadata.name}\" in base apk file "
                     + "\"${baseApk.name}\" is not match \"${metadata.baseCrc32}\" in metadata.",
         )
     }
     val diffEntry = diffPackage.getEntry(metadata.name)
-        ?: throw TinkerError(
-            ErrorType.MISSING_DIFF_ENTRY,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Dex.MISSING_DIFF_ENTRY,
             "Cannot find entry \"${metadata.name}\" in diff package \"${diffPackage.name}\"."
         )
     return resolve(metadata.name)
@@ -231,8 +212,8 @@ private fun createDexFiles(
     extractedDirectory: File,
 ) {
     val metadataFile = diffPackage.getEntry("assets/dex_meta.txt")
-        ?: throw TinkerError(
-            ErrorType.MISSING_METADATA,
+        ?: throw Tinker.Error(
+            Tinker.Error.Deploy.Legacy.Dex.MISSING_METADATA,
             "Cannot find dex metadata in diff package ${diffPackage.name}."
         )
     val metadataList = diffPackage.getInputStream(metadataFile)
@@ -253,8 +234,8 @@ private fun createDexFiles(
                     extractedDirectory.createDexByMerging(metadata, baseApk, diffPackage)
                 }
                 if (!hash.contentEquals(metadata.patchedHash)) {
-                    throw TinkerError(
-                        ErrorType.INVALID_DEPLOY_RESULT,
+                    throw Tinker.Error(
+                        Tinker.Error.Deploy.Legacy.Dex.INVALID_DEPLOY_RESULT,
                         "Hash \"${hash.asMd5String}\" of patch result \"${metadata.name}\" "
                                 + "is not match \"${metadata.patchedHash?.asMd5String}\" in metadata.",
                     )
@@ -265,8 +246,8 @@ private fun createDexFiles(
             val output = extractedDirectory.resolve(TEST_DEX_FILE_NAME)
             // Since we need to get checksum by reading base apk, we just read test dex file from it instead of assets
             // API.
-            val testDexEntry = baseApk.getEntry("assets/tinker/${TEST_DEX_FILE_NAME}") ?: throw TinkerError(
-                ErrorType.MISSING_TEST_DEX,
+            val testDexEntry = baseApk.getEntry("assets/tinker/${TEST_DEX_FILE_NAME}") ?: throw Tinker.Error(
+                Tinker.Error.Deploy.Legacy.Dex.MISSING_TEST_DEX,
                 "Cannot find test dex file in base apk file \"${baseApk.name}\"."
             )
             baseApk.getInputStream(testDexEntry)
@@ -277,8 +258,8 @@ private fun createDexFiles(
                         .use(stream::copyTo)
                 }
             if (output.crc32 != testDexEntry.crc) {
-                throw TinkerError(
-                    ErrorType.INVALID_DEPLOY_RESULT,
+                throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.INVALID_DEPLOY_RESULT,
                     "CRC32 checksum \"${output.crc32}\" of test dex file as patch result "
                             + "is not match \"${testDexEntry.crc}\" in base apk file \"${baseApk.name}\".",
                 )
@@ -301,8 +282,8 @@ private fun dexDeployToApkInternal(
                 val dexIndex = match.groupValues[1].takeIf { it.isNotEmpty() }?.toInt() ?: 1
                 return@map dexIndex to dexName
             }
-            ?: throw TinkerError(
-                ErrorType.NO_DEPLOYED_DEX,
+            ?: throw Tinker.Error(
+                Tinker.Error.Deploy.Legacy.Dex.NO_DEPLOYED_DEX,
                 "No valid dex file found in directory \"${temporaryDirectory.absolutePath}\"."
             )
         var startIndex = sorted.maxOf { it.first ?: -1 } + 1
@@ -339,7 +320,7 @@ internal fun dexDeployToApk(
     diffPackage: ZipFile,
     apk: File
 ) {
-    expected<ErrorType>("deploy dex files") {
+    expected<Tinker.Error.Deploy.Legacy.Dex>("deploy dex files") {
         dexDeployToApkInternal(
             baseApk,
             diffPackage,

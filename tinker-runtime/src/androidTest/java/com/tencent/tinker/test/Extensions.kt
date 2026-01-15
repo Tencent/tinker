@@ -4,17 +4,17 @@ import android.content.Context
 import android.os.Build
 import android.system.Os
 import android.system.OsConstants
+import com.tencent.tinker.Tinker
+import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.TEST_JNI_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
-import com.tencent.tinker.internal.TinkerError
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
-import com.tencent.tinker.internal.util.errorCode
 import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream
 import java.io.File
 import java.nio.file.Files
@@ -35,8 +35,8 @@ internal fun createTestDirectory(): File =
 internal inline fun <T> rethrowAsIllegalState(action: () -> T) =
     try {
         action()
-    } catch (error: TinkerError) {
-        throw IllegalStateException("error#${error.type.errorCode.toString(16)}#${error.message}", error)
+    } catch (error: Tinker.Error) {
+        throw IllegalStateException("error#${error.type.code.toString(16)}#${error.message}", error)
     }
 
 private val rethrowMessagePattern = "error#([0-9a-f]+)#.*".toRegex()

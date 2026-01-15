@@ -1,9 +1,9 @@
 package com.tencent.tinker.test.internal.util
 
 import com.tencent.tinker.internal.util.CurrentSdk
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
-
-import org.junit.Assert.*
 
 class SystemTest {
 
