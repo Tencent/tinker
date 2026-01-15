@@ -29,6 +29,7 @@ private enum class ErrorType : TinkerError.Type {
         get() = ordinal
 }
 
+@Volatile
 internal var globalCustomLegacyMerger = null as Tinker.LegacyMerger?
 
 private object BSDiffMerger : Tinker.LegacyMerger {

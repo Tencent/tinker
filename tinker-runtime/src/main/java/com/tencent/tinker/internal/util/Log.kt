@@ -9,6 +9,7 @@ private object LoggerImpl : Tinker.Logger {
     }
 }
 
+@Volatile
 internal var globalLogger: Tinker.Logger = LoggerImpl
 
 internal fun infoLog(tag: String, message: String) {
