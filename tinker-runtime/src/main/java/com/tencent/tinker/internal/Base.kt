@@ -27,9 +27,6 @@ internal const val TEST_MODIFIED_ASSET_FILE_NAME = "test_modified_asset.txt"
 
 internal const val TEST_REMOVED_ASSET_FILE_NAME = "test_removed_asset.txt"
 
-internal val File.patchApkFile: File
-    get() = resolve("patch.apk")
-
 internal val File.patchDexApkFile: File
     get() = resolve("dex.apk")
 
