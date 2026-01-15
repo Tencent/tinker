@@ -29,9 +29,9 @@ private enum class ErrorType : TinkerError.Type {
         get() = ordinal
 }
 
-private var customMerger = null as Tinker.LegacyMerger?
+internal var globalCustomLegacyMerger = null as Tinker.LegacyMerger?
 
-private object BSDiffMerger : Tinker.LegacyMerger() {
+private object BSDiffMerger : Tinker.LegacyMerger {
     override fun merge(
         baseInput: InputStream,
         diffInput: InputStream,
@@ -54,7 +54,7 @@ internal class PackageMetadata(
 ) {
     val merger by lazy {
         if (useCustomMerger) {
-            customMerger ?: throw TinkerError(
+            globalCustomLegacyMerger ?: throw TinkerError(
                 ErrorType.MISSING_CUSTOM_MERGER,
                 "Custom merger is required but nothing is provided."
             )

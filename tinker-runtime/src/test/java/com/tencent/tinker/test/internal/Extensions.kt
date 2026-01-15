@@ -6,7 +6,7 @@ import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
-import com.tencent.tinker.internal.util.logger
+import com.tencent.tinker.internal.util.globalLogger
 import java.io.File
 import java.nio.file.Files
 
@@ -51,7 +51,7 @@ internal fun createTestPatchDirectoryWithMockFiles(dexMockMode: DexMockMode): Fi
             }
         }
 
-private object TestLogger : Tinker.Logger() {
+private object TestLogger : Tinker.Logger {
     override fun log(priority: Int, tag: String, message: String) {
         if (priority >= Log.WARN) {
             System.err.println("[$tag] $message")
@@ -62,5 +62,5 @@ private object TestLogger : Tinker.Logger() {
 }
 
 internal fun configTestLogger() {
-    logger = TestLogger
+    globalLogger = TestLogger
 }

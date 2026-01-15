@@ -53,3 +53,12 @@ internal fun Iterable<Loader.Factory>.tryLoad(patch: Patch): TinkerError? {
     loaders.forEach { it.load() }
     return null
 }
+
+/**
+ * Loads patch.
+ */
+internal fun Context.load(
+    appLikeClassName: String?,
+    callback: Tinker.Callback?,
+) {
+}

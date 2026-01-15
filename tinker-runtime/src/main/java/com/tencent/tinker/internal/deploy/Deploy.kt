@@ -17,3 +17,12 @@ internal abstract class Deployer {
         deployedDirectory: File,
     )
 }
+
+/**
+ * Deploy a patch with provided [version] and [diffPackage] by remote service.
+ */
+internal fun Context.deployPatchByRemote(
+    version: String,
+    diffPackage: File,
+) {
+}
