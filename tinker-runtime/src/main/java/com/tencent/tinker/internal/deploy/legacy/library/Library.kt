@@ -1,6 +1,7 @@
 package com.tencent.tinker.internal.deploy.legacy.library
 
 import com.tencent.tinker.Tinker
+import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.deploy.legacy.PackageMetadata
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5Hash
@@ -229,7 +230,7 @@ private fun libraryDeployInternal(
         }
         baseApk.entries()
             .asSequence()
-            .filter { !it.isDirectory && it.name.startsWith("assets/tinker/lib/") }
+            .filter { !it.isDirectory && it.name.startsWith("assets/${TEST_ASSETS_DIRECTORY_NAME}/lib/") }
             .map { entry ->
                 val parts = entry.name.split("/").drop(3)
                 val abi = parts[0]

@@ -15,6 +15,11 @@ internal val Context.rootDirectory: File
         return applicationInfo.dataDir.let(::File).resolve(name)
     }
 
+internal const val TEST_ASSETS_DIRECTORY_NAME = "tinker"
+
+internal val String.testAssetName: Boolean
+    get() = startsWith("assets/${TEST_ASSETS_DIRECTORY_NAME}")
+
 internal const val TEST_DEX_FILE_NAME = "test.dex"
 
 internal const val TEST_JNI_LIBRARY_FILE_NAME = "libtinker.test.jni.so"

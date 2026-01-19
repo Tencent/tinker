@@ -1,7 +1,9 @@
 package com.tencent.tinker.internal.deploy.legacy.resource
 
 import com.tencent.tinker.Tinker
+import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.deploy.legacy.PackageMetadata
+import com.tencent.tinker.internal.testAssetName
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5Hash
 import com.tencent.tinker.internal.util.asMd5String
@@ -198,13 +200,17 @@ private fun buildEntryStrategies(
         baseApk.entries()
             .asSequence()
             .map { it.name }
-            .filter { name -> metadata.patterns.any { it.matches(name) } }
+            .filter { name ->
+                metadata.patterns.any { it.matches(name) } && !name.testAssetName
+            }
             .toList()
             .let(::addAll)
         diffPackage.entries()
             .asSequence()
             .map { it.name }
-            .filter { name -> metadata.patterns.any { it.matches(name) } }
+            .filter { name ->
+                metadata.patterns.any { it.matches(name) } && !name.testAssetName
+            }
             .toList()
             .let(::addAll)
         remove(MANIFEST_ENTRY_NAME)

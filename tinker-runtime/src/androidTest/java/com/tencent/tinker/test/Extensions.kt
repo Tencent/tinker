@@ -7,6 +7,7 @@ import android.system.OsConstants
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
+import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.TEST_JNI_LIBRARY_FILE_NAME
@@ -96,7 +97,7 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
                     mkdirs()
                     resolve(TEST_DEX_FILE_NAME).apply {
                         outputStream().use { output ->
-                            assets.open("tinker/${TEST_DEX_FILE_NAME}").use { input ->
+                            assets.open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_DEX_FILE_NAME}").use { input ->
                                 input.copyTo(output)
                             }
                         }
@@ -105,7 +106,7 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
             } else if (dexMockMode == DexMockMode.APK) {
                 patchDexApkFile.apply {
                     outputStream().let(::AlignedZipOutputStream).use { zip ->
-                        val payload = assets.open("tinker/${TEST_DEX_FILE_NAME}").use { input ->
+                        val payload = assets.open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_DEX_FILE_NAME}").use { input ->
                             input.readBytes()
                         }
                         val entry = ZipEntry("classes.dex")
@@ -127,7 +128,7 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
                         mkdirs()
                         resolve(TEST_JNI_LIBRARY_FILE_NAME).apply {
                             outputStream().use { output ->
-                                assets.open("tinker/lib/${abi}/${TEST_JNI_LIBRARY_FILE_NAME}")
+                                assets.open("${TEST_ASSETS_DIRECTORY_NAME}/lib/${abi}/${TEST_JNI_LIBRARY_FILE_NAME}")
                                     .use { input ->
                                         input.copyTo(output)
                                     }
@@ -135,7 +136,7 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
                         }
                         resolve(TEST_DEPENDENCY_LIBRARY_FILE_NAME).apply {
                             outputStream().use { output ->
-                                assets.open("tinker/lib/${abi}/${TEST_DEPENDENCY_LIBRARY_FILE_NAME}")
+                                assets.open("${TEST_ASSETS_DIRECTORY_NAME}/lib/${abi}/${TEST_DEPENDENCY_LIBRARY_FILE_NAME}")
                                     .use { input ->
                                         input.copyTo(output)
                                     }

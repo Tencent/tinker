@@ -2,6 +2,7 @@ package com.tencent.tinker.internal.deploy.legacy.dex
 
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier
+import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5HashNullable
@@ -246,7 +247,7 @@ private fun createDexFiles(
             val output = extractedDirectory.resolve(TEST_DEX_FILE_NAME)
             // Since we need to get checksum by reading base apk, we just read test dex file from it instead of assets
             // API.
-            val testDexEntry = baseApk.getEntry("assets/tinker/${TEST_DEX_FILE_NAME}") ?: throw Tinker.Error(
+            val testDexEntry = baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_DEX_FILE_NAME}") ?: throw Tinker.Error(
                 Tinker.Error.Deploy.Legacy.Dex.MISSING_TEST_DEX,
                 "Cannot find test dex file in base apk file \"${baseApk.name}\"."
             )

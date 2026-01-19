@@ -8,6 +8,7 @@ import androidx.annotation.RequiresApi
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
+import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_REMOVED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.load.ActivityThreadDelegate
@@ -163,7 +164,7 @@ internal class ResourceLoader(
 
     private fun verify() {
         val added = context.assets
-            .open("tinker/${TEST_ADDED_ASSET_FILE_NAME}")
+            .open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_ADDED_ASSET_FILE_NAME}")
             .use { it.readBytes() }
             .toString(Charsets.UTF_8)
         if (added != "patched") {
@@ -173,7 +174,7 @@ internal class ResourceLoader(
             )
         }
         val modified = context.assets
-            .open("tinker/${TEST_MODIFIED_ASSET_FILE_NAME}")
+            .open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_MODIFIED_ASSET_FILE_NAME}")
             .use { it.readBytes() }
             .toString(Charsets.UTF_8)
         if (modified != "patched") {
@@ -183,7 +184,7 @@ internal class ResourceLoader(
             )
         }
         try {
-            context.assets.open("tinker/${TEST_REMOVED_ASSET_FILE_NAME}")
+            context.assets.open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_REMOVED_ASSET_FILE_NAME}")
             throw Tinker.Error(
                 Tinker.Error.Load.Resource.VERIFY_FAILED,
                 "Patch-removed test asset is still exists.",
