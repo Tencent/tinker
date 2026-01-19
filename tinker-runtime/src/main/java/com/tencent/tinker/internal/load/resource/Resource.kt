@@ -164,7 +164,7 @@ internal class ResourceLoader(
 
     private fun verify() {
         val added = context.assets
-            .open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_ADDED_ASSET_FILE_NAME}")
+            .open(TEST_ADDED_ASSET_FILE_NAME)
             .use { it.readBytes() }
             .toString(Charsets.UTF_8)
         if (added != "patched") {
@@ -174,7 +174,7 @@ internal class ResourceLoader(
             )
         }
         val modified = context.assets
-            .open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_MODIFIED_ASSET_FILE_NAME}")
+            .open(TEST_MODIFIED_ASSET_FILE_NAME)
             .use { it.readBytes() }
             .toString(Charsets.UTF_8)
         if (modified != "patched") {
@@ -184,7 +184,7 @@ internal class ResourceLoader(
             )
         }
         try {
-            context.assets.open("${TEST_ASSETS_DIRECTORY_NAME}/${TEST_REMOVED_ASSET_FILE_NAME}")
+            context.assets.open(TEST_REMOVED_ASSET_FILE_NAME)
             throw Tinker.Error(
                 Tinker.Error.Load.Resource.VERIFY_FAILED,
                 "Patch-removed test asset is still exists.",

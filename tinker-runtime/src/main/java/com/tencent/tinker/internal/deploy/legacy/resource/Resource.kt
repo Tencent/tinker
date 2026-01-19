@@ -1,9 +1,11 @@
 package com.tencent.tinker.internal.deploy.legacy.resource
 
 import com.tencent.tinker.Tinker
+import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
+import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
+import com.tencent.tinker.internal.TEST_REMOVED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.deploy.legacy.PackageMetadata
-import com.tencent.tinker.internal.testAssetName
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5Hash
 import com.tencent.tinker.internal.util.asMd5String
@@ -191,6 +193,12 @@ private sealed class DeployStrategy {
     class Merging(val patchedHash: ByteArray) : DeployStrategy()
 }
 
+private val String.testAssetName: Boolean
+    get() = startsWith("assets/${TEST_ASSETS_DIRECTORY_NAME}")
+            || this == "assets/${TEST_ADDED_ASSET_FILE_NAME}"
+            || this == "assets/${TEST_MODIFIED_ASSET_FILE_NAME}"
+            || this == "assets/${TEST_REMOVED_ASSET_FILE_NAME}"
+
 private fun buildEntryStrategies(
     metadata: ResourceMetadata,
     baseApk: ZipFile,
@@ -328,6 +336,47 @@ private fun ZipOutputStream.createResourceByMerging(
     }
 }
 
+private fun ZipOutputStream.createTestAssets(
+    baseApk: ZipFile
+) {
+    // Test added asset.
+    val testAddedAssetEntry =
+        baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_ADDED_ASSET_FILE_NAME}")
+            ?: throw Tinker.Error(
+                Tinker.Error.Deploy.Legacy.Resource.MISSING_TEST_ASSET,
+                "Cannot find test added asset file in base apk file \"${baseApk.name}\"."
+            )
+    ZipEntry("assets/${TEST_ADDED_ASSET_FILE_NAME}")
+        .apply {
+            this.method = testAddedAssetEntry.method
+            this.size = testAddedAssetEntry.size
+            this.crc = testAddedAssetEntry.crc
+        }
+        .let(::putNextEntry)
+    baseApk.getInputStream(testAddedAssetEntry).use { input ->
+        input.copyTo(this)
+    }
+    closeEntry()
+    // Test modified asset.
+    val testModifiedAssetEntry =
+        baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_MODIFIED_ASSET_FILE_NAME}")
+            ?: throw Tinker.Error(
+                Tinker.Error.Deploy.Legacy.Resource.MISSING_TEST_ASSET,
+                "Cannot find test modified asset file in base apk file \"${baseApk.name}\"."
+            )
+    ZipEntry("assets/${TEST_MODIFIED_ASSET_FILE_NAME}")
+        .apply {
+            this.method = testModifiedAssetEntry.method
+            this.size = testModifiedAssetEntry.size
+            this.crc = testModifiedAssetEntry.crc
+        }
+        .let(::putNextEntry)
+    baseApk.getInputStream(testModifiedAssetEntry).use { input ->
+        input.copyTo(this)
+    }
+    closeEntry()
+}
+
 private fun resourceDeployInternal(
     packageMetadata: PackageMetadata,
     baseApk: ZipFile,
@@ -389,6 +438,8 @@ private fun resourceDeployInternal(
                     )
                 }
             }
+            // Creates test assets.
+            output.createTestAssets(baseApk)
         }
 }
 

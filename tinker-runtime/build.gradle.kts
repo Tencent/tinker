@@ -286,7 +286,7 @@ abstract class CreateTestAssetsTask : DefaultTask() {
             .apply {
                 mkdirs()
                 resolve("test_added_asset.txt").writeText("patched")
-                resolve("test_modified_asset.txt").writeText("original")
+                resolve("test_modified_asset.txt").writeText("patched")
             }
     }
 }

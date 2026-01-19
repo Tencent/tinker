@@ -400,6 +400,11 @@ object Tinker {
                     MISSING_DIFF_ENTRY,
 
                     /**
+                     * Type of error caused by missing test asset in base apk file.
+                     */
+                    MISSING_TEST_ASSET,
+
+                    /**
                      * Type of error caused by failure deploying, which may because hash of deployed file is mismatched.
                      */
                     INVALID_DEPLOY_RESULT;
