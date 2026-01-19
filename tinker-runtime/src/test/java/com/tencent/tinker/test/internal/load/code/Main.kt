@@ -12,9 +12,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.io.File
 import java.nio.file.Files
 
+@RunWith(RobolectricTestRunner::class)
 class DexLoaderTest {
 
     private object TestClassLoader : ClassLoader()

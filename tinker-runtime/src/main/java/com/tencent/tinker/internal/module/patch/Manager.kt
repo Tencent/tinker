@@ -10,6 +10,7 @@ import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.module.patch.RawPatchManagerImpl.Companion.GUARD_CLEANING_CONTENT
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusive
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusiveNullable
@@ -18,10 +19,14 @@ import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.guardedContent
 import com.tencent.tinker.internal.util.guardedContentNullable
 import com.tencent.tinker.internal.util.guardedReadOrWriteContent
+import com.tencent.tinker.internal.util.infoLog
 import com.tencent.tinker.internal.util.isInDeployProcess
 import com.tencent.tinker.internal.util.isInMainProcess
+import com.tencent.tinker.internal.util.warnLog
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
+
+private const val TAG = "Tinker.RawPatch"
 
 private fun File.createNotWritableCopy(target: File) {
     if (isDirectory) {
@@ -82,6 +87,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             ?.toString(Charsets.UTF_8)
             ?.takeIf { it.isNotEmpty() }
         set(value) {
+            debugLog(TAG) {
+                "Try setting latest version to \"${value}\"."
+            }
             value?.let {
                 latestVersionFile
                     .ensureParentIsExistingDirectory()
@@ -178,6 +186,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             ?.guardedContentNullable
             ?.toString(Charsets.UTF_8)
         set(value) {
+            debugLog(TAG) {
+                "Try setting latest version to \"${value}\"."
+            }
             value?.let {
                 mainVersionFile
                     .ensureParentIsExistingDirectory()
@@ -198,6 +209,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     "Main process is already marked as alive"
                 }
                 mainAliveHolder = it
+                debugLog(TAG) {
+                    "Main process is marked as alive."
+                }
             }
     }
 
@@ -208,6 +222,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
     private fun unmarkMainAlive() {
         mainAliveHolder?.close()
         mainAliveHolder = null
+        debugLog(TAG) {
+            "Main process is unmarked as alive."
+        }
     }
 
     /**
@@ -242,17 +259,39 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             file.seek(0)
             val content = ByteArray(file.length().toInt())
                 .also(file::read)
-            val updated = content
+            val original = content
                 .toString(Charsets.UTF_8)
                 .lines()
+                .filter { it.isNotBlank() }
                 .toSet()
-                .let(action)
+            debugLog(TAG) {
+                buildList {
+                    add("Unavailable list before updating:")
+                    original.takeIf { it.isNotEmpty() }
+                        ?.forEach {
+                            add("  $it")
+                        }
+                        ?: add("  (empty)")
+                }.joinToString("\n")
+            }
+            val updated = action(original)
             file.seek(0)
             file.setLength(0)
-            updated.sorted()
+            val sorted = updated.sorted()
+            sorted
                 .joinToString("\n")
                 .toByteArray(Charsets.UTF_8)
                 .let(file::write)
+            debugLog(TAG) {
+                buildList {
+                    add("Unavailable list after updated:")
+                    sorted.takeIf { it.isNotEmpty() }
+                        ?.forEach {
+                            add("  $it")
+                        }
+                        ?: add("  (empty)")
+                }.joinToString("\n")
+            }
         }
     }
 
@@ -281,6 +320,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
 
     @NonDeployProcessOnly
     private fun releaseVersion() {
+        debugLog(TAG) {
+            "Releasing version holder \"${versionHolder?.hashCode()?.toString(16)}\" of current process."
+        }
         versionHolder?.let { (guardedContent, _) ->
             guardedContent.close()
         }
@@ -320,10 +362,21 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             ?.listFiles()
             ?.filter { it.isDirectory }
             ?: return emptyList()
+        debugLog(TAG) {
+            buildList {
+                add("Found raw patch directories prepare for cleaning:")
+                patchDirectories.forEach {
+                    add("  ${it.absolutePath}")
+                }
+            }.joinToString("\n")
+        }
         // Pairs of version and cleanable raw patch directory.
         val pairs = patchDirectories.mapNotNull { dir ->
             val version = dir.name
             if (keep(version)) {
+                debugLog(TAG) {
+                    "Skip cleaning raw patch directory \"${dir.absolutePath}\" as required."
+                }
                 return@mapNotNull Pair(version, null)
             }
             val guardedContent = try {
@@ -360,8 +413,14 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 } finally {
                     guardedContent.close()
                 }
+                debugLog(TAG) {
+                    "Raw patch directory \"${dir.absolutePath}\" is cleaned."
+                }
                 return@mapNotNull Pair(version, dir)
             } else {
+                warnLog(TAG) {
+                    "Skip cleaning raw patch directory \"${dir.absolutePath}\" because it is using."
+                }
                 return@mapNotNull Pair(version, null)
             }
         }
@@ -419,7 +478,12 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     }
                     if (alive) {
                         try {
-                            context.mainVersion?.let { return@run it }
+                            context.mainVersion?.let {
+                                debugLog(TAG) {
+                                    "Use \"${it}\" which is used by running main process."
+                                }
+                                return@run it
+                            }
                         } catch (throwable: Throwable) {
                             throw Tinker.Error(
                                 Tinker.Error.RawPatch.READ_MAIN_VERSION,
@@ -438,6 +502,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                         throwable,
                     )
                 }
+                debugLog(TAG) {
+                    "Found latest version \"${latest}\" for acquiring."
+                }
                 val unavailable = try {
                     context.unavailable
                 } catch (throwable: Throwable) {
@@ -447,13 +514,29 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                         throwable,
                     )
                 }
+                debugLog(TAG) {
+                    buildList {
+                        add("Current unavailable versions:")
+                        unavailable.forEach {
+                            add("  $it")
+                        }
+                    }.joinToString("\n")
+                }
                 if (latest in unavailable) {
+                    debugLog(TAG) {
+                        "Acquired nothing since latest version \"${latest}\" is unavailable."
+                    }
                     return@run null
                 }
                 return@run latest
             } ?: return null
             val acquired = try {
-                context.acquirePatchAsUsing(version) ?: return null
+                context.acquirePatchAsUsing(version) ?: run {
+                    warnLog(TAG) {
+                        "Acquired failed because raw patch directory of target version \"${version}\" is cleaning."
+                    }
+                    return null
+                }
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.ACQUIRE_PATCH_AS_USING,
@@ -550,23 +633,15 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     null,
                 )
             }
+            debugLog(TAG) {
+                "Raw patch directory \"${patchDirectory.absolutePath}\" is created for version \"${version}\"."
+            }
             try {
                 patch.createNotWritableCopy(patchDirectory)
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.CLONE_PATCH,
                     "Cannot copy \"${patch.absolutePath}\" to patch directory \"${patchDirectory.absolutePath}\"",
-                    throwable,
-                )
-            }
-            try {
-                patchDirectory.walk(direction = FileWalkDirection.BOTTOM_UP).forEach {
-                    it.setWritable(false)
-                }
-            } catch (throwable: Throwable) {
-                throw Tinker.Error(
-                    Tinker.Error.RawPatch.DROP_PATCH_WRITE_PERMISSION,
-                    "Cannot update patch directory \"${patchDirectory.absolutePath}\" as non-writable",
                     throwable,
                 )
             }
@@ -667,6 +742,9 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 )
             }
             if (removeLatest) {
+                infoLog(TAG) {
+                    "Latest version \"${latest}\" is cleanable because it is already marked as unavailable."
+                }
                 try {
                     context.latestVersion = null
                 } catch (throwable: Throwable) {

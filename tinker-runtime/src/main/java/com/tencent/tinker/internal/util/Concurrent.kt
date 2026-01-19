@@ -1,8 +1,11 @@
 package com.tencent.tinker.internal.util
 
+import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+
+private const val TAG = "Tinker.Util.Concurrent"
 
 internal class SynchronizedCache<T> {
 
@@ -25,8 +28,26 @@ private class AsyncScopeImpl<T>(
     private val executor: ExecutorService,
     private val futures: MutableList<Future<T>>
 ): AsyncScope<T>() {
+
+    private class Task<T>(private val original: () -> T) : Callable<T> {
+        override fun call(): T {
+            debugLog(TAG) {
+                "Start asynchronized task ${hashCode().toString(16)}."
+            }
+            try {
+                return original()
+            } finally {
+                debugLog(TAG) {
+                    "Complete asynchronized task ${hashCode().toString(16)}."
+                }
+            }
+        }
+    }
+
     override fun launch(action: () -> T) {
-        executor.submit(action).also(futures::add)
+        action.let(::Task)
+            .let(executor::submit)
+            .also(futures::add)
     }
 }
 

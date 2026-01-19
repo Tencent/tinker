@@ -17,7 +17,12 @@ import com.tencent.tinker.internal.module.patch.RawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManager
 import com.tencent.tinker.internal.module.validate.Validator
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
+import com.tencent.tinker.internal.util.currentProcess
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
+import com.tencent.tinker.internal.util.infoLog
+
+private const val TAG = "Tinker.Load"
 
 /**
  * Patch loader used to load patch in runtime.
@@ -102,6 +107,14 @@ private fun Application.loadWith(
             applicationContext = this@loadWith,
         ).let(::add)
     }
+    debugLog(TAG) {
+        buildList {
+            add("Load with loaders:")
+            loaders.forEach {
+                add("  ${it.javaClass.name}")
+            }
+        }.joinToString("\n")
+    }
     loaders.tryLoad(patch)
     return classLoaderReference[0]
 }
@@ -114,12 +127,25 @@ private fun Application.loadWith(
     oatManager: OatManager = OatManager.with(this),
     patchLayoutConstructor: PatchLayoutConstructor = PatchLayoutConstructor.with(this),
 ): ClassLoader? {
+    debugLog(TAG) {
+        "Validating \"${rawPatch.directory.absolutePath}\" with validator <${validator.javaClass.name}>."
+    }
     validator.validate(rawPatch.directory)
+    debugLog(TAG) {
+        "Acquiring OAT for \"${rawPatch.directory.absolutePath}\"" +
+                " with manager <${oatManager.javaClass.name}>."
+    }
     val oatDirectory = oatManager.acquire(rawPatch.directory)
+    debugLog(TAG) {
+        "Constructing layout with constructor <${patchLayoutConstructor.javaClass.name}>."
+    }
     val patchDirectory = patchLayoutConstructor.construct(
         baseDirectory = rawPatch.directory,
         oatDirectory = oatDirectory,
     )
+    debugLog(TAG) {
+        "Patch directory is \"${patchDirectory.absolutePath}\"."
+    }
     val patch = Patch(rawPatch.version, patchDirectory)
     return loadWith(
         hardening = hardening,
@@ -132,7 +158,15 @@ private fun Application.loadInternal(
     hardening: Boolean,
     rawPatchManager: RawPatchManager = RawPatchManager.with(this),
 ): ClassLoader? {
-    val rawPatch = rawPatchManager.acquire() ?: return null
+    val rawPatch = rawPatchManager.acquire() ?: run {
+        infoLog(TAG) {
+            "No loadable patch found, skip loading."
+        }
+        return null
+    }
+    infoLog(TAG) {
+        "Raw patch \"${rawPatch.version}\" is acquired, try loading."
+    }
     try {
         return loadWith(
             hardening = hardening,
@@ -155,6 +189,9 @@ internal fun Application.load(
     hardening: Boolean,
     callback: Tinker.Callback?,
 ): ClassLoader? {
+    infoLog(TAG) {
+        "Try loading patch in process \"${currentProcess}\"."
+    }
     val (classLoader, error) = try {
         val classLoader = expected<Tinker.Error.Load, ClassLoader?>("load patch") {
             loadInternal(hardening)

@@ -9,7 +9,9 @@ import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.CleanedRawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManager
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
+import com.tencent.tinker.internal.util.infoLog
 import com.tencent.tinker.internal.util.isInDeployProcess
 import kotlin.concurrent.thread
 
@@ -56,6 +58,9 @@ private fun cleanPatches(
             Tinker.Error.Clean.INVALID_STRATEGY,
             "Strategy index $strategyIndex is out of range."
         )
+    debugLog(TAG) {
+        "Cleaning patches with strategy \"${strategy.name.lowercase()}\"."
+    }
     cleanPatches(context, strategy)
 }
 
@@ -71,6 +76,9 @@ class TinkerCleanService : Service() {
 
     private fun runTask(intent: Intent) {
         thread(name = "tinker-clean") {
+            infoLog(TAG) {
+                "Cleaning request received. Start cleaning."
+            }
             val error = try {
                 expected<Tinker.Error.Clean>("clean patch") {
                     cleanPatches(this, intent)
@@ -99,6 +107,9 @@ class TinkerCleanService : Service() {
 }
 
 internal fun Context.cleanAllPatchesByRemote() {
+    infoLog(TAG) {
+        "Send clean all patches request to remote."
+    }
     Intent(this, TinkerCleanService::class.java)
         .apply {
             putExtra(CLEAN_IPC_KEY_STRATEGY, Strategy.CLEAN_ALL.ordinal)
@@ -107,6 +118,9 @@ internal fun Context.cleanAllPatchesByRemote() {
 }
 
 internal fun Context.cleanObsoletePatchesByRemote() {
+    infoLog(TAG) {
+        "Send clean obsolete patches request to remote."
+    }
     Intent(this, TinkerCleanService::class.java)
         .apply {
             putExtra(CLEAN_IPC_KEY_STRATEGY, Strategy.CLEAN_OBSOLETE.ordinal)
@@ -120,6 +134,9 @@ internal fun Context.requestPatchAsUnavailable(
 ) {
     require(!isInDeployProcess) {
         "Cannot request patch as unavailable in deploy process."
+    }
+    infoLog(TAG) {
+        "Request patch with version \"${version}\" as unavailable."
     }
     rawPatchManager.requestUnavailable(version)
 }

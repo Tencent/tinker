@@ -7,12 +7,15 @@ import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.DexPathListDelegate
 import com.tencent.tinker.internal.load.JavaMutableList
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import java.io.File
 import java.io.IOException
 import kotlin.collections.filter
 import kotlin.collections.plus
 import java.lang.reflect.Array as JvmReflectArray
+
+private const val TAG = "Tinker.Load.Code.IP"
 
 /**
  * Code loader which loads by injecting path into system class loader.
@@ -63,6 +66,14 @@ internal class InjectPathCodeLoader(
                 )
                 suppressedExceptions.forEach { throw it }
                 val originalDexElements = dexPathList.dexElements
+                debugLog(TAG) {
+                    buildList {
+                        add("Found original dex elements:")
+                        originalDexElements.forEach {
+                            add("  $it")
+                        }
+                    }.joinToString("\n")
+                }
                 val updatedDexElements = JvmReflectArray
                     .newInstance(
                         originalDexElements.javaClass.componentType!!,
@@ -88,6 +99,14 @@ internal class InjectPathCodeLoader(
                         @Suppress("UNCHECKED_CAST")
                         it as Array<Any>
                     }
+                debugLog(TAG) {
+                    buildList {
+                        add("Created updated dex elements:")
+                        updatedDexElements.forEach {
+                            add("  $it")
+                        }
+                    }.joinToString("\n")
+                }
                 dexPathList
                     .lazySelfSetDexElements(updatedDexElements)
                     .let(::add)
@@ -113,6 +132,18 @@ internal class InjectPathCodeLoader(
             buildList {
                 val originalNativeLibraryDirectories =
                     dexPathList.nativeLibraryDirectoriesV23
+                debugLog(TAG) {
+                    if (originalNativeLibraryDirectories != null) {
+                        buildList {
+                            add("Found original native library directories:")
+                            originalNativeLibraryDirectories.forEach {
+                                add("  ${it.absolutePath}")
+                            }
+                        }.joinToString("\n")
+                    } else {
+                        "Found none of original native library directories."
+                    }
+                }
                 val updatedNativeLibraryDirectories =
                     if (originalNativeLibraryDirectories != null) {
                         val inputPathsSet =
@@ -128,6 +159,14 @@ internal class InjectPathCodeLoader(
                             .let(::add)
                         libraryDirectories
                     }
+                debugLog(TAG) {
+                    buildList {
+                        add("Created updated native library directories:")
+                        updatedNativeLibraryDirectories.forEach {
+                            add("  ${it.absolutePath}")
+                        }
+                    }.joinToString("\n")
+                }
                 val suppressedExceptions =
                     ArrayList<IOException>()
                 val elements =
@@ -136,6 +175,14 @@ internal class InjectPathCodeLoader(
                         suppressedExceptions = suppressedExceptions,
                     )
                 suppressedExceptions.forEach { throw it }
+                debugLog(TAG) {
+                    buildList {
+                        add("Created updated library elements:")
+                        elements.forEach {
+                            add("  $it")
+                        }
+                    }.joinToString("\n")
+                }
                 elements.let(dexPathList::lazySelfSetNativeLibraryPathElements)
                     .let(::add)
             }
@@ -147,8 +194,24 @@ internal class InjectPathCodeLoader(
             buildList {
                 val originalNativeLibraryDirectories =
                     dexPathList.nativeLibraryDirectoriesOld
+                debugLog(TAG) {
+                    buildList {
+                        add("Found original native library directories:")
+                        originalNativeLibraryDirectories.forEach {
+                            add("  ${it.absolutePath}")
+                        }
+                    }.joinToString("\n")
+                }
                 val updatedNativeLibraryDirectories =
                     libraryDirectories.toTypedArray() + originalNativeLibraryDirectories
+                debugLog(TAG) {
+                    buildList {
+                        add("Created updated native library directories:")
+                        updatedNativeLibraryDirectories.forEach {
+                            add("  ${it.absolutePath}")
+                        }
+                    }.joinToString("\n")
+                }
                 dexPathList
                     .lazySelfSetNativeLibraryDirectoriesOld(updatedNativeLibraryDirectories)
                     .let(::add)
@@ -159,7 +222,13 @@ internal class InjectPathCodeLoader(
             libraryDirectories: List<File>,
         ): List<() -> Unit> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                debugLog(TAG) {
+                    "Creating load actions for library with v23 strategy."
+                }
                 return createLoadActionsForLibraryV23(dexPathList, libraryDirectories)
+            }
+            debugLog(TAG) {
+                "Creating load actions for library with old strategy."
             }
             return createLoadActionsForLibraryOld(dexPathList, libraryDirectories)
         }

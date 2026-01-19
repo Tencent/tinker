@@ -9,10 +9,13 @@ import com.tencent.tinker.internal.load.ApplicationDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.ClassLoaderDelegate
 import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.ResourcesDelegate.Companion.delegated
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.loader.TinkerClassLoader
 import dalvik.system.DelegateLastClassLoader
 import java.io.File
+
+private const val TAG = "Tinker.Load.Code.NCL"
 
 @RequiresApi(Build.VERSION_CODES.N)
 private object CurrentThreadContextClassLoaderInjector
@@ -107,8 +110,23 @@ internal abstract class NewClassLoaderCodeLoader(
                     source.delegated.pathList
                 val dexPaths =
                     jvmCodeFiles.joinToString(File.pathSeparator) { it.absolutePath }
+                debugLog(TAG) {
+                    "Created dex paths is \"${dexPaths}\"."
+                }
                 val sourceNativeLibraryDirectories =
                     dexPathList.nativeLibraryDirectoriesV23
+                debugLog(TAG) {
+                    if (sourceNativeLibraryDirectories != null) {
+                        buildList {
+                            add("Found original native library directories:")
+                            sourceNativeLibraryDirectories.forEach {
+                                add("  ${it.absolutePath}")
+                            }
+                        }.joinToString("\n")
+                    } else {
+                        "Found none of original native library directories."
+                    }
+                }
                 val updatedNativeLibraryDirectories =
                     if (sourceNativeLibraryDirectories != null) {
                         val pathsSet =
@@ -119,6 +137,9 @@ internal abstract class NewClassLoaderCodeLoader(
                     }
                 val libraryDirectoryPaths =
                     updatedNativeLibraryDirectories.joinToString(File.pathSeparator) { it.absolutePath }
+                debugLog(TAG) {
+                    "Created library directories paths is \"${libraryDirectoryPaths}\"."
+                }
                 return createLoaderByPaths(dexPaths, libraryDirectoryPaths)
             }
         }

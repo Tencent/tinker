@@ -16,6 +16,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
 import java.nio.file.Files
@@ -27,6 +29,7 @@ private class TestClassLoaderInjector : NewClassLoaderCodeLoader.ClassLoaderInje
     }
 }
 
+@RunWith(RobolectricTestRunner::class)
 class V27NonHardeningDexLoaderTest {
 
     private class TestClassLoader(
@@ -150,6 +153,7 @@ class V27NonHardeningDexLoaderTest {
     }
 }
 
+@RunWith(RobolectricTestRunner::class)
 class V24NonHardeningDexLoaderTest {
     private class TestClassLoader(
         val dexPaths: String,

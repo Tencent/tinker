@@ -26,7 +26,7 @@ import com.tencent.tinker.internal.util.warnLog
 import java.io.File
 import java.io.IOException
 
-private const val TAG = "Tinker.Loader.Res"
+private const val TAG = "Tinker.Load.Res"
 
 private class CurrentActivityThreadUpdater(
     private val original: String,
@@ -284,11 +284,10 @@ internal class ResourceLoader(
                         cachedCallbacksGetter = it
                     }
                 } catch (throwable: Throwable) {
-                    warnLog(
-                        TAG,
-                        "Cannot get \"getCallbacks\" method from transaction with type \"${transaction.javaClass.name}\"",
-                        throwable,
-                    )
+                    warnLog(TAG, throwable = throwable) {
+                        "Cannot get \"getCallbacks\" method from transaction" +
+                                " with type <${transaction.javaClass.name}>."
+                    }
                     interceptTransactingFuse = true
                     return false
                 }
@@ -299,11 +298,9 @@ internal class ResourceLoader(
                         it.javaClass.name == LAUNCH_ACTIVITY_ITEM_CLASS_NAME
                     } != null
             } catch (throwable: Throwable) {
-                warnLog(
-                    TAG,
-                    "Invokes \"getCallbacks\" failed.",
-                    throwable,
-                )
+                warnLog(TAG, throwable = throwable) {
+                    "Invokes \"getCallbacks\" failed."
+                }
                 interceptTransactingFuse = true
                 return false
             }

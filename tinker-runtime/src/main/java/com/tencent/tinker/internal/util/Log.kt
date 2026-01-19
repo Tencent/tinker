@@ -12,30 +12,55 @@ private object LoggerImpl : Tinker.Logger {
 @Volatile
 internal var globalLogger: Tinker.Logger = LoggerImpl
 
-internal fun infoLog(tag: String, message: String) {
-    globalLogger.log(Log.INFO, tag, message)
-}
+@Volatile
+internal var globalLogLevel: Int = Log.VERBOSE
 
-internal fun warnLog(tag: String, message: String, throwable: Throwable? = null) {
-    buildString {
-        append(message)
-        throwable?.let {
-            append("\n")
-            append(it.stackTraceToString())
+private inline fun log(level: Int, tag: String, throwable: Throwable?, message: () -> String) {
+    if (globalLogLevel <= level) {
+        buildString {
+            append(message())
+            throwable?.let {
+                append("\n")
+                append(it.stackTraceToString())
+            }
+        }.let {
+            globalLogger.log(level, tag, it)
         }
-    }.let {
-        globalLogger.log(Log.WARN, tag, it)
     }
 }
 
-internal fun errorLog(tag: String, message: String, throwable: Throwable? = null) {
-    buildString {
-        append(message)
-        throwable?.let {
-            append("\n")
-            append(it.stackTraceToString())
-        }
-    }.let {
-        globalLogger.log(Log.ERROR, tag, it)
-    }
+internal inline fun debugLog(tag: String, message: () -> String) {
+    log(
+        level = Log.DEBUG,
+        tag = tag,
+        throwable = null,
+        message = message,
+    )
+}
+
+internal inline fun infoLog(tag: String, message: () -> String) {
+    log(
+        level = Log.INFO,
+        tag = tag,
+        throwable = null,
+        message = message,
+    )
+}
+
+internal fun warnLog(tag: String, throwable: Throwable? = null, message: () -> String) {
+    log(
+        level = Log.WARN,
+        tag = tag,
+        throwable = throwable,
+        message = message,
+    )
+}
+
+internal fun errorLog(tag: String, throwable: Throwable? = null, message: () -> String) {
+    log(
+        level = Log.ERROR,
+        tag = tag,
+        throwable = throwable,
+        message = message,
+    )
 }

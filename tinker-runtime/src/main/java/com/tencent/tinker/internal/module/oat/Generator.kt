@@ -5,6 +5,7 @@ import android.os.Build
 import com.tencent.tinker.internal.util.arkHotRunning
 import com.tencent.tinker.internal.util.currentInstructionSet
 import com.tencent.tinker.internal.util.currentSdk
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.errorLog
 import com.tencent.tinker.internal.util.isReadableNonEmptyFile
@@ -13,6 +14,7 @@ import dalvik.system.DexFile
 import java.io.File
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
+import kotlin.concurrent.thread
 
 private fun File.odexOutputOf(input: File): File =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -63,17 +65,25 @@ internal sealed class DefaultGenerator : Generator() {
         val generated = try {
             generate(context, input, output)
         } catch (throwable: Throwable) {
-            errorLog(TAG, "Generates OAT file failed with throwable.", throwable)
+            errorLog(TAG, throwable = throwable) {
+                "Generates OAT file failed with throwable."
+            }
             return false
         }
         if (!generated) {
-            errorLog(TAG, "Generates OAT file failed with generator error.")
+            errorLog(TAG) {
+                "Generates OAT file failed with generator error."
+            }
             return false
         }
         if (!output.isReadableNonEmptyFile) {
-            warnLog(TAG, "Generates OAT file output is missing, not readable or empty.")
+            warnLog(TAG) {
+                "Generates OAT file output \"${output.absolutePath}\" is missing, not readable or empty."
+            }
             if (!missingOutputAccepted) {
-                errorLog(TAG, "Generates OAT file failed with illegal output.")
+                errorLog(TAG) {
+                    "Generates OAT file failed with illegal output \"${output.absolutePath}\"."
+                }
                 return false
             }
         }
@@ -94,10 +104,9 @@ internal sealed class DefaultGenerator : Generator() {
                     Callable {
                         val result = generatePerFile(context, input, outputDirectory)
                         if (!result) {
-                            errorLog(
-                                TAG,
+                            errorLog(TAG) {
                                 "Generates OAT file for \"${input.absolutePath}\" failed."
-                            )
+                            }
                         }
                         return@Callable result
                     }
@@ -107,11 +116,9 @@ internal sealed class DefaultGenerator : Generator() {
             try {
                 it.get()
             } catch (throwable: Throwable) {
-                errorLog(
-                    TAG,
-                    "OAT files generating subtask is corrupted.",
-                    throwable,
-                )
+                errorLog(TAG, throwable = throwable) {
+                    "OAT files generating subtask is corrupted."
+                }
                 false
             }
         }
@@ -153,22 +160,43 @@ internal object Interpreter : DefaultGenerator() {
                 .let(::add)
         }
 
+        val process = ProcessBuilder(command).start()
+
+        thread(name = "tinker-oat-interpret-stdout") {
+            process.inputStream.bufferedReader().useLines { lines ->
+                lines.forEach {
+                    debugLog(TAG) {
+                        it
+                    }
+                }
+            }
+        }
+        thread(name = "tinker-oat-interpret-stderr") {
+            process.errorStream.bufferedReader().useLines { lines ->
+                lines.forEach {
+                    errorLog(TAG) {
+                        it
+                    }
+                }
+            }
+        }
+
         val code = try {
-            ProcessBuilder(command)
-                .redirectErrorStream(true)
-                .start()
-                .waitFor()
+            process.waitFor()
         } catch (exception: InterruptedException) {
-            errorLog(
-                TAG,
-                "Generates OAT file failed because \"dex2oat\" is interrupted.",
-                exception,
-            )
+            errorLog(TAG, throwable = exception) {
+                "Generates OAT file failed because \"dex2oat\" is interrupted."
+            }
             return false
         }
         if (code != 0) {
-            errorLog(TAG, "Generates OAT file failed because \"dex2oat\" returns $code.")
+            errorLog(TAG) {
+                "Generates OAT file failed because \"dex2oat\" returns $code."
+            }
             return false
+        }
+        debugLog(TAG) {
+            "OAT file \"${output.absolutePath}\" for \"${input.absolutePath}\" is interpreted."
         }
         return true
     }
@@ -185,13 +213,14 @@ internal object Compiler : DefaultGenerator() {
         output: File
     ): Boolean = try {
         DexFile.loadDex(input.absolutePath, output.absolutePath, 0)
+        debugLog(TAG) {
+            "OAT file \"${output.absolutePath}\" for \"${input.absolutePath}\" is compiled."
+        }
         true
     } catch (throwable: Throwable) {
-        errorLog(
-            TAG,
-            "Generates OAT file failed with throwable.",
-            throwable,
-        )
+        errorLog(TAG, throwable = throwable) {
+            "Generates OAT file failed with throwable."
+        }
         false
     }
 }

@@ -9,11 +9,14 @@ import com.tencent.tinker.internal.util.asMd5String
 import com.tencent.tinker.internal.util.async
 import com.tencent.tinker.internal.util.copyAndGenerateHash
 import com.tencent.tinker.internal.util.crc32
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.hashOf
 import java.io.File
 import java.util.zip.ZipFile
+
+private const val TAG = "Tinker.Deploy.Legacy.Library"
 
 private class LibraryMetadata(
     /**
@@ -44,6 +47,16 @@ private class LibraryMetadata(
     val entryName by lazy {
         "lib/${abi}/${name}"
     }
+
+    override fun toString(): String = buildList {
+        add("library_metadata {")
+        add("  name: $name")
+        add("  abi: $abi")
+        add("  patched_hash: ${patchedHash.asMd5String}")
+        add("  base_crc32: ${baseCrc32.toString(16)}")
+        add("  diff_hash: ${diffHash.asMd5String}")
+        add("}")
+    }.joinToString("\n")
 }
 
 private val ByteArray.parsedLibraryMetadataList: List<LibraryMetadata>
@@ -121,6 +134,10 @@ private fun File.createLibraryAsNewlyAdded(
     metadata: LibraryMetadata,
     diffPackage: ZipFile,
 ): ByteArray {
+    val output = resolve(metadata.abi).resolve(metadata.name)
+    debugLog(TAG) {
+        "Creating library \"${metadata.entryName}\" as newly added to \"${output.absolutePath}\"."
+    }
     val entry = diffPackage.getEntry(metadata.entryName)
         ?: throw Tinker.Error(
             Tinker.Error.Deploy.Legacy.Library.MISSING_DIFF_ENTRY,
@@ -128,8 +145,7 @@ private fun File.createLibraryAsNewlyAdded(
         )
     return diffPackage.getInputStream(entry)
         .use { stream ->
-            resolve(metadata.abi).resolve(metadata.name)
-                .ensureParentIsExistingDirectory()
+            output.ensureParentIsExistingDirectory()
                 .outputStream()
                 .buffered()
                 .use(stream::copyAndGenerateHash)
@@ -147,6 +163,10 @@ private fun File.createLibraryByMerging(
     baseApk: ZipFile,
     diffPackage: ZipFile,
 ): ByteArray {
+    val outputFile = resolve(metadata.abi).resolve(metadata.name)
+    debugLog(TAG) {
+        "Creating library \"${metadata.entryName}\" by merging to \"${outputFile.absolutePath}\"."
+    }
     val baseEntry = baseApk.getEntry(metadata.entryName)
         ?: throw Tinker.Error(
             Tinker.Error.Deploy.Legacy.Library.MISSING_BASE_ENTRY,
@@ -172,7 +192,7 @@ private fun File.createLibraryByMerging(
                     + "\"${diffPackage.name}\" is not match \"${metadata.diffHash.asMd5String}\" in metadata.",
         )
     }
-    return resolve(metadata.abi).resolve(metadata.name)
+    return outputFile
         .ensureParentIsExistingDirectory()
         .outputStream()
         .buffered()
@@ -202,6 +222,12 @@ private fun libraryDeployInternal(
         }
         ?.parsedLibraryMetadataList
         ?: emptyList()
+    debugLog(TAG) {
+        buildList {
+            add("Read library metadata from ${diffPackage.name}:")
+            addAll(metadataList)
+        }.joinToString("\n")
+    }
     async {
         metadataList.forEach { metadata ->
             launch {
@@ -240,6 +266,9 @@ private fun libraryDeployInternal(
             .forEach { (abi, name, entry) ->
                 launch {
                     val output = directory.resolve(abi).resolve(name)
+                    debugLog(TAG) {
+                        "Creating test library to \"${output.absolutePath}\" by \"${entry.name}\" in \"${baseApk.name}\"."
+                    }
                     baseApk.getInputStream(entry)
                         .use { stream ->
                             output.ensureParentIsExistingDirectory()
@@ -265,6 +294,12 @@ internal fun libraryDeploy(
     diffPackage: ZipFile,
     directory: File
 ) {
+    debugLog(TAG) {
+        "Start deploying libraries of \"${diffPackage.name}\"" +
+                " with \"${baseApk.name}\"" +
+                " to \"${directory.absolutePath}\"" +
+                " via legacy way."
+    }
     expected<Tinker.Error.Deploy.Legacy.Library>("deploy libraries") {
         libraryDeployInternal(
             packageMetadata,

@@ -56,7 +56,7 @@ internal inline fun <T : AutoCloseable, R> T.use(block: (T) -> R): R {
 /**
  * Reads/writes file content with shared/exclusive lock.
  *
- * The caller must guarantee that the file is exists.
+ * The caller must guarantee that the file is exist.
  */
 internal var File.guardedContent: ByteArray
     get() = inputStream().use { stream ->
@@ -79,7 +79,7 @@ internal var File.guardedContent: ByteArray
 /**
  * Reads file content with shared lock. The function returns null if read lock cannot be acquired.
  *
- * The caller must guarantee that the file is exists.
+ * The caller must guarantee that the file is exist.
  */
 internal val File.guardedContentNullable: ByteArray?
     get() = inputStream().use { stream ->

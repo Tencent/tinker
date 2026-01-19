@@ -7,8 +7,9 @@ import android.os.Build
 
 private const val TAG = "Tinker.Utils.System"
 
-@get:SuppressLint("UnusedReceiverParameter", "PrivateApi")
+@Suppress("UnusedReceiverParameter")
 internal val Context.currentProcess: String
+    @SuppressLint("PrivateApi")
     get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         Application.getProcessName()
     } else {
@@ -53,10 +54,6 @@ internal val currentSdk by lazy {
     )
 }
 
-internal val currentAbi by lazy {
-    Build.SUPPORTED_ABIS.firstOrNull()
-}
-
 internal val currentInstructionSet by lazy {
     try {
         return@lazy Class.forName("dalvik.system.VMRuntime")
@@ -66,11 +63,9 @@ internal val currentInstructionSet by lazy {
             }
             .invoke(null) as String
     } catch (throwable: Throwable) {
-        warnLog(
-            TAG,
-            "Get \"currentInstructionSet\" failed, try to read CPU ABI directly.",
-            throwable,
-        )
+        warnLog(TAG, throwable = throwable) {
+            "Get \"currentInstructionSet\" failed, try to read CPU ABI directly."
+        }
         @Suppress("DEPRECATION")
         return@lazy when (Build.CPU_ABI) {
             "armeabi", "armeabi-v7a" -> "arm"
@@ -95,11 +90,9 @@ internal val arkHotRunning by lazy {
             }
             .invoke(null) as Boolean
     } catch (throwable: Throwable) {
-        warnLog(
-            TAG,
-            "Get \"arkHotRunning\" failed.",
-            throwable,
-        )
+        warnLog(TAG, throwable = throwable) {
+            "Get \"arkHotRunning\" failed."
+        }
         return@lazy false
     }
 }

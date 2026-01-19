@@ -9,6 +9,7 @@ import com.tencent.tinker.internal.clean.requestPatchAsUnavailable
 import com.tencent.tinker.internal.deploy.deployPatchByRemote
 import com.tencent.tinker.internal.deploy.legacy.globalCustomLegacyMerger
 import com.tencent.tinker.internal.load.load
+import com.tencent.tinker.internal.util.globalLogLevel
 import com.tencent.tinker.internal.util.globalLogger
 import com.tencent.tinker.internal.util.isInDeployProcess
 import java.io.File
@@ -39,6 +40,14 @@ object Tinker {
     @JvmStatic
     fun setLogger(logger: Logger) {
         globalLogger = logger
+    }
+
+    /**
+     * Set log level. All log messages with level lower than [level] will be ignored.
+     */
+    @JvmStatic
+    fun setLogLevel(level: Int) {
+        globalLogLevel = level
     }
 
     /**
@@ -524,11 +533,6 @@ object Tinker {
              * Type of error caused by throwable while cleaning raw patch files.
              */
             CLEAN_PATCH,
-
-            /**
-             * Type of error caused by throwable while dropping write permissions of raw patch files.
-             */
-            DROP_PATCH_WRITE_PERMISSION,
 
             /**
              * Type of error caused by throwable while recovering write permissions of raw patch files.

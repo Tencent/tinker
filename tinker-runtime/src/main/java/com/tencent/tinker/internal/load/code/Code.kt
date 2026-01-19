@@ -4,9 +4,12 @@ import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.load.Loader
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.searchAndSortDexFiles
 import java.io.File
+
+private const val TAG = "Tinker.Load.Code"
 
 internal abstract class CodeLoader : Loader() {
 
@@ -197,10 +200,25 @@ internal abstract class CodeLoader : Loader() {
 
         override fun createLoaderIfNeeded(patch: Patch): CodeLoader {
             expected<Tinker.Error.Load.Code>("create code loader") {
-                return createLoader(
-                    jvmCodeFiles = searchJvmCodeFiles(patch),
-                    libraryDirectories = searchLibraryDirectory(patch),
-                )
+                val jvmCodeFiles = searchJvmCodeFiles(patch)
+                debugLog(TAG) {
+                    buildList {
+                        add("Following JVM code files are used for creating code loader:")
+                        jvmCodeFiles.forEach {
+                            add("  ${it.absolutePath}")
+                        }
+                    }.joinToString("\n")
+                }
+                val libraryDirectories = searchLibraryDirectory(patch)
+                debugLog(TAG) {
+                    buildList {
+                        add("Following library directories are used for creating code loader:")
+                        libraryDirectories.forEach {
+                            add("  ${it.absolutePath}")
+                        }
+                    }.joinToString("\n")
+                }
+                return createLoader(jvmCodeFiles, libraryDirectories)
             }
         }
 

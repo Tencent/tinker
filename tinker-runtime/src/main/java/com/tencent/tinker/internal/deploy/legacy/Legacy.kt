@@ -11,6 +11,7 @@ import com.tencent.tinker.internal.deploy.legacy.resource.resourceDeploy
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
+import com.tencent.tinker.internal.util.debugLog
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -50,6 +51,12 @@ internal class PackageMetadata(
             BSDiffMerger
         }
     }
+
+    override fun toString(): String = buildList {
+        add("package_metadata {")
+        add("  use_custom_merger: $useCustomMerger")
+        add("}")
+    }.joinToString("\n")
 }
 
 private val ByteArray.parsePackageMetadata: PackageMetadata
@@ -65,11 +72,19 @@ private val ByteArray.parsePackageMetadata: PackageMetadata
 
 internal object LegacyDeployer : Deployer() {
 
+    private const val TAG = "Tinker.Deploy.Legacy"
+
     private fun deploy(
         baseApkFile: File,
         diffPackageFile: File,
         deployedDirectory: File,
     ) {
+        debugLog(TAG) {
+            "Start deploying \"${diffPackageFile.absolutePath}\"" +
+                    " with \"${baseApkFile.absolutePath}\"" +
+                    " to \"${deployedDirectory.absolutePath}\"" +
+                    " via legacy way."
+        }
         val baseApk = ZipFile(baseApkFile)
         val diffPackage = ZipFile(diffPackageFile)
         val packageMetadata = diffPackage.getEntry("assets/package_meta.txt")
@@ -80,6 +95,12 @@ internal object LegacyDeployer : Deployer() {
                 Tinker.Error.Deploy.Legacy.MISSING_METADATA,
                 "Cannot find package metadata in patch ${diffPackage.name}."
             )
+        debugLog(TAG) {
+            buildList {
+                add("Read package metadata from \"${diffPackage.name}\":")
+                add(packageMetadata)
+            }.joinToString("\n")
+        }
         dexDeployToApk(
             baseApk = baseApk,
             diffPackage = diffPackage,

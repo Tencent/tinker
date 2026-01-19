@@ -11,6 +11,7 @@ import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.currentSdk
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureIsExistingFile
 import com.tencent.tinker.internal.util.errorLog
 import com.tencent.tinker.internal.util.escapedGuardedContentExclusiveNullable
@@ -306,41 +307,36 @@ internal class OatManagerImpl(
         stored: Pair<Metadata, File>?,
     ): Boolean {
         if (stored == null) {
-            infoLog(
-                TAG,
+            infoLog(TAG) {
                 "Generating is required while metadata is not created or corrupted."
-            )
+            }
             return true
         }
         val (metadata, contentDirectory) = stored
         if (metadata.metadataVersion != Metadata.VERSION) {
-            infoLog(
-                TAG,
-                "Generating is required while metadata version \"${metadata.metadataVersion}\" is updated to \"${Metadata.VERSION}\".",
-            )
+            infoLog(TAG) {
+                "Generating is required while metadata version \"${metadata.metadataVersion}\" is updated to \"${Metadata.VERSION}\"."
+            }
             return true
         }
         if (metadata.androidFingerprint != Build.FINGERPRINT) {
-            infoLog(
-                TAG,
-                "Generating is required while android fingerprint \"${metadata.androidFingerprint}\" is updated to \"${Build.FINGERPRINT}\".",
-            )
+            infoLog(TAG) {
+                "Generating is required while android fingerprint \"${metadata.androidFingerprint}\" is updated to \"${Build.FINGERPRINT}\"."
+            }
             return true
         }
         if (metadata.state == State.DONE && !contentDirectory.isDirectory) {
             // Content directory missing or corrupted only available if state is skipped or failed.
-            warnLog(
-                TAG,
-                "Generating is required while metadata state is done but content directory is missing or corrupted.",
-            )
+            warnLog(TAG) {
+                "Generating is required while metadata state is done but content directory is missing or corrupted."
+            }
             return true
         }
         val expectedHash = inputs.inputsHash
         if (metadata.inputsHash != expectedHash) {
-            warnLog(
-                TAG,
-                "Generating is required while inputs are changed, hash \"${metadata.inputsHash}\" not equals to expected \"${expectedHash}\".",
-            )
+            warnLog(TAG) {
+                "Generating is required while inputs are changed, hash \"${metadata.inputsHash}\" not equals to expected \"${expectedHash}\"."
+            }
             return true
         }
         return false
@@ -392,16 +388,14 @@ internal class OatManagerImpl(
         val inputs = directory.oatInputs
             .takeIf { it.isNotEmpty() }
             ?: run {
-                infoLog(
-                    TAG,
-                    "skip getting OAT files for directory \"${directory.absolutePath}\" due to empty inputs"
-                )
+                infoLog(TAG) {
+                    "Skip getting OAT files for directory \"${directory.absolutePath}\" due to empty inputs."
+                }
                 return null
             }
         val inputsHash = inputs.inputsHash
         while (true) {
-            // Always check metadata file is exists in the loop. The metadata file may be cleaned by
-            // cleaner.
+            // Always check metadata file is exist in the loop. The metadata file may be cleaned by cleaner.
             metadataFile.ensureIsExistingFile()
             val guardedContent = metadataFile.escapedGuardedContentShared
             val originStored = guardedContent.content.let(Metadata::read)
@@ -411,13 +405,22 @@ internal class OatManagerImpl(
                 // failed.
                 val result = originStored?.second?.takeIf { it.isDirectory }
                 if (result != null) {
+                    infoLog(TAG) {
+                        "Generated OAT directory is \"${result.absolutePath}\"."
+                    }
                     return Pair(guardedContent, result)
                 }
                 guardedContent.close()
+                warnLog(TAG) {
+                    "Last generating is skipped or failed."
+                }
                 return null
             }
             guardedContent.close()
             if (skipGenerateStrategy == SkipGenerateStrategy.SKIP_IF_MISSING) {
+                infoLog(TAG) {
+                    "Skip generating since strategy is skip if missing."
+                }
                 return null
             }
             val contentDirectoryName = createRandomDirectoryName()
@@ -425,6 +428,10 @@ internal class OatManagerImpl(
             val generator = when (generateMode) {
                 GenerateMode.COMPILE -> compiler
                 GenerateMode.INTERPRET -> interpreter
+            }
+            debugLog(TAG) {
+                "Generating OAT files for directory \"${directory.absolutePath}\"" +
+                        " with generator <${generator.javaClass.name}>."
             }
             val (generated, reason) = try {
                 generator.generate(context, inputs, contentDirectory) to null
@@ -448,11 +455,9 @@ internal class OatManagerImpl(
                         inputsHash = inputsHash
                     ).encoded.let(file::write)
                 } catch (throwable: Throwable) {
-                    errorLog(
-                        TAG,
-                        "Stores metadata failed.",
-                        throwable,
-                    )
+                    errorLog(TAG, throwable = throwable) {
+                        "Stores metadata failed."
+                    }
                     return@action true
                 }
                 contentBaseDirectory(directoryPathHash)
@@ -462,11 +467,9 @@ internal class OatManagerImpl(
                             try {
                                 it.deleteRecursively()
                             } catch (throwable: Throwable) {
-                                errorLog(
-                                    TAG,
-                                    "Cleans obsolete content directory \"${it.absolutePath}\" failed.",
-                                    throwable,
-                                )
+                                errorLog(TAG, throwable = throwable) {
+                                    "Cleans obsolete content directory \"${it.absolutePath}\" failed."
+                                }
                             }
                         }
                     }
@@ -559,9 +562,15 @@ internal class OatManagerImpl(
                     directory,
                     SkipGenerateStrategy.SKIP_IF_USING,
                     GenerateMode.COMPILE
-                )
-                    ?.first
-                    ?: return@lambda
+                )?.first ?: run {
+                    warnLog(TAG) {
+                        "OAT files generating is skipped."
+                    }
+                    return@lambda
+                }
+                debugLog(TAG) {
+                    "OAT files are generated."
+                }
                 // deploy process does not use OAT files, so we can close the metadata file.
                 metadataGuardedContent.close()
             }
@@ -581,17 +590,39 @@ internal class OatManagerImpl(
         }
         expected<Tinker.Error.Oat>("clean OAT files") {
             val directoryPathHash = directory.pathHash
+            debugLog(TAG) {
+                "Hash of directory \"${directory.absolutePath}\" is \"${directoryPathHash}\"."
+            }
             val metadataFile = metadataFile(directoryPathHash)
+            debugLog(TAG) {
+                "Metadata file of \"${directory.absolutePath}\" is \"${metadataFile.absolutePath}\"."
+            }
             val contentBaseDirectory = contentBaseDirectory(directoryPathHash)
+            debugLog(TAG) {
+                "Content base directory of \"${directory.absolutePath}\" is \"${contentBaseDirectory.absolutePath}\"."
+            }
             if (metadataFile.exists()) {
-                return metadataFile
-                    .escapedGuardedContentExclusiveNullable(ByteArray(0))
-                    ?.use {
+                val guardedContent = metadataFile.escapedGuardedContentExclusiveNullable(ByteArray(0))
+                return if (guardedContent != null) {
+                    debugLog(TAG) {
+                        "Cleaning content directory and metadata file with acquired exclusive guarded content."
+                    }
+                    guardedContent.use {
                         contentBaseDirectory.deleteRecursively()
                         metadataFile.delete()
-                    } != null
+                    }
+                    true
+                } else {
+                    warnLog(TAG) {
+                        "Cannot acquire exclusive guarded content for metadata, maybe it is cleaned by other task."
+                    }
+                    false
+                }
             } else {
                 // Metadata is missing, but content directory remains.
+                warnLog(TAG) {
+                    "Cleaning content directory while missing metadata file."
+                }
                 contentBaseDirectory.deleteRecursively()
                 return true
             }

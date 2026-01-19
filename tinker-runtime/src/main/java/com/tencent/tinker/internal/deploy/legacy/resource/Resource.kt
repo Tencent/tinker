@@ -11,6 +11,7 @@ import com.tencent.tinker.internal.util.asMd5Hash
 import com.tencent.tinker.internal.util.asMd5String
 import com.tencent.tinker.internal.util.copyAndGenerateHash
 import com.tencent.tinker.internal.util.crc32
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.forked
@@ -21,16 +22,52 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
-private class ResourceMetadata(
+private const val TAG = "Tinker.Deploy.Legacy.Resource"
 
+private class ResourceMetadata(
+    /**
+     * CRC32 checksum of `resources.arsc` in base file.
+     */
     val baseArscCrc32: Long,
 
-
+    /**
+     * Patterns for matching which files are resources.
+     */
     val patterns: List<Regex>,
+
+    /**
+     * Mapping of newly added resources and if they are saved as stored in output patch resource apk file.
+     */
     val added: Map<String, Boolean>,
+
+    /**
+     * Set of removed resources.
+     */
     val removed: Set<String>,
+
+    /**
+     * Mapping of modified resources and their MD5 hash of patched file.
+     */
     val modified: Map<String, ByteArray>,
-)
+) {
+    override fun toString(): String = buildList {
+        add("resource_metadata {")
+        add("  base_arsc_crc32: ${baseArscCrc32.toString(16)}")
+        patterns.joinToString { it.pattern }
+            .let { "  patterns: $it" }
+            .let(::add)
+        added.entries.joinToString { "${it.key}=${it.value}" }
+            .let { "  added: $it" }
+            .let(::add)
+        removed.joinToString { it }
+            .let { "  removed: $it" }
+            .let(::add)
+        modified.entries.joinToString { "${it.key}=${it.value.asMd5String}" }
+            .let { "  modified: $it" }
+            .let(::add)
+        add("}")
+    }.joinToString("\n")
+}
 
 private val ByteArray.parsedResourceMetadata: ResourceMetadata
     get() = toString(Charsets.UTF_8)
@@ -249,6 +286,9 @@ private fun ZipOutputStream.createResourceAsNewlyAdded(
     entryName: String,
     stored: Boolean
 ) {
+    debugLog(TAG) {
+        "Creating resource \"${entryName}\" as newly added."
+    }
     val diffEntry = diffPackage.getEntry(entryName) ?: throw Tinker.Error(
         Tinker.Error.Deploy.Legacy.Resource.MISSING_DIFF_ENTRY,
         "Cannot find entry \"${entryName}\" in diff package \"${diffPackage.name}\".",
@@ -272,6 +312,9 @@ private fun ZipOutputStream.createResourceAsNotModified(
     baseApk: ZipFile,
     entryName: String,
 ) {
+    debugLog(TAG) {
+        "Creating resource \"${entryName}\" as not-modified."
+    }
     val baseEntry = baseApk.getEntry(entryName) ?: throw Tinker.Error(
         Tinker.Error.Deploy.Legacy.Resource.MISSING_BASE_ENTRY,
         "Cannot find entry \"${entryName}\" in base apk file \"${baseApk.name}\".",
@@ -293,6 +336,9 @@ private fun ZipOutputStream.createResourceByMerging(
     entryName: String,
     expectedPatchedHash: ByteArray,
 ) {
+    debugLog(TAG) {
+        "Creating resource \"${entryName}\" by merging."
+    }
     val baseEntry = baseApk.getEntry(entryName) ?: throw Tinker.Error(
         Tinker.Error.Deploy.Legacy.Resource.MISSING_BASE_ENTRY,
         "Cannot find entry \"${entryName}\" in base apk file \"${baseApk.name}\".",
@@ -390,6 +436,12 @@ private fun resourceDeployInternal(
         }
         ?.parsedResourceMetadata
         ?: return
+    debugLog(TAG) {
+        buildList {
+            add("Read resource metadata from \"${diffPackage.name}\":")
+            add(metadata)
+        }.joinToString("\n")
+    }
     val baseArscCrc32 = baseApk.getEntry(RESOURCE_ARSC_ENTRY_NAME)?.crc
     if (baseArscCrc32 != metadata.baseArscCrc32) {
         throw Tinker.Error(

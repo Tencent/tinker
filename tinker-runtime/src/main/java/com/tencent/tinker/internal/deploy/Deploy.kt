@@ -11,10 +11,14 @@ import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.RawPatchManager
 import com.tencent.tinker.internal.module.validate.Validator
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
+import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
+import com.tencent.tinker.internal.util.infoLog
 import com.tencent.tinker.internal.util.withTemporaryDirectory
 import java.io.File
 import kotlin.concurrent.thread
+
+private const val TAG = "Tinker.Deploy"
 
 /**
  * Patch deployer used to convert diff package to loadable patch files and store them persistently.
@@ -45,13 +49,30 @@ private fun deployPatch(
     oatManager: OatManager = OatManager.with(context),
 ) {
     withTemporaryDirectory { temporaryDirectory ->
+        debugLog(TAG) {
+            "Deploying diff package \"${diffPackage.absolutePath}\"" +
+                    " with version \"${version}\"" +
+                    " via deployer \"${deployer.javaClass.name}\"" +
+                    " to \"${temporaryDirectory.absolutePath}\"."
+        }
         deployer.deploy(
             context = context,
             diffPackage = diffPackage,
             deployedDirectory = temporaryDirectory,
         )
+        debugLog(TAG) {
+            "Creating validation fingerprint for \"${temporaryDirectory.absolutePath}\"" +
+                    " with validator <${validator.javaClass.name}>."
+        }
         validator.createValidationFingerprint(temporaryDirectory)
+        debugLog(TAG) {
+            "Creating raw patch \"${version}\" with \"${temporaryDirectory.absolutePath}\"."
+        }
         val rawPatch = rawPatchManager.create(version, temporaryDirectory)
+        debugLog(TAG) {
+            "Generating OAT for \"${rawPatch.directory.absolutePath}\" if needed" +
+                    " with manager <${oatManager.javaClass.name}>."
+        }
         oatManager.generateIfNeeded(rawPatch.directory)
     }
 }
@@ -74,6 +95,9 @@ private fun deployPatch(
             Tinker.Error.Deploy.MISSING_VERSION,
             "Version is missing while deploying patch."
         )
+    debugLog(TAG) {
+        "Version \"${version}\" from deploy request intent is read."
+    }
     val diffPackage = intent.getStringExtra(DEPLOY_IPC_KEY_DIFF_PACKAGE)
         ?.let(::File)
         ?: throw Tinker.Error(
@@ -86,8 +110,17 @@ private fun deployPatch(
             "Diff package \"${diffPackage.path}\" is not an existing file."
         )
     }
+    debugLog(TAG) {
+        "Diff package \"${diffPackage.absolutePath}\" from deploy request intent is read."
+    }
     val deployer = when {
-        diffPackage.isZipFile -> LegacyDeployer
+        diffPackage.isZipFile -> {
+            debugLog(TAG) {
+                "Diff package is legacy type. Using legacy deployer."
+            }
+            LegacyDeployer
+        }
+
         else -> throw Tinker.Error(
             Tinker.Error.Deploy.INVALID_DIFF_PACKAGE,
             "Format of diff package \"${diffPackage.path}\" is unsupported."
@@ -109,6 +142,9 @@ class TinkerDeployService : Service() {
 
     private fun runTask(intent: Intent) {
         thread(name = "tinker-deploy") {
+            infoLog(TAG) {
+                "Deploying request received. Start deploying."
+            }
             val error = try {
                 expected<Tinker.Error.Deploy>("deploy patch") {
                     deployPatch(this, intent)
@@ -143,6 +179,11 @@ internal fun Context.deployPatchByRemote(
     version: String,
     diffPackage: File,
 ) {
+    infoLog(TAG) {
+        "Send deploying request to remote" +
+                " with version \"${version}\"" +
+                " and diff package \"${diffPackage.absolutePath}\"."
+    }
     Intent(this, TinkerDeployService::class.java)
         .apply {
             putExtra(DEPLOY_IPC_KEY_VERSION, version)
