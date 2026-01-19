@@ -14,6 +14,7 @@ import com.tencent.tinker.internal.module.validate.ValidatorImpl
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.withTemporaryDirectory
 import java.io.File
+import kotlin.concurrent.thread
 
 /**
  * Patch deployer used to convert diff package to loadable patch files and store them persistently.
@@ -107,18 +108,20 @@ private const val DEPLOY_IPC_KEY_DIFF_PACKAGE = "d"
 class TinkerDeployService : Service() {
 
     private fun runTask(intent: Intent) {
-        val error = try {
-            expected<Tinker.Error.Deploy>("deploy patch") {
-                deployPatch(this, intent)
+        thread(name = "tinker-deploy") {
+            val error = try {
+                expected<Tinker.Error.Deploy>("deploy patch") {
+                    deployPatch(this, intent)
+                }
+                null
+            } catch (error: Tinker.Error) {
+                error
             }
-            null
-        } catch (error: Tinker.Error) {
-            error
+            application
+                .let { it as? Tinker.App }
+                ?.deployCallback
+                ?.onTaskComplete(error)
         }
-        application
-            .let { it as? Tinker.App }
-            ?.deployCallback
-            ?.onTaskComplete(error)
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
