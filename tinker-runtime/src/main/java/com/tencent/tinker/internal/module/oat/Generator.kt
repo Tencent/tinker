@@ -30,7 +30,10 @@ internal object EmptyGenerator : Generator() {
         context: Context,
         inputs: List<File>,
         outputDirectory: File
-    ): Boolean = true
+    ): Boolean {
+        outputDirectory.mkdirs()
+        return true
+    }
 }
 
 internal sealed class DefaultGenerator : Generator() {

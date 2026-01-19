@@ -15,7 +15,7 @@ internal abstract class OatManager {
         private val implCache = SynchronizedCache<OatManager>()
 
         fun with(context: Context): OatManager =
-            implCache.getOrPut { OatManagerImpl(context.applicationContext) }
+            implCache.getOrPut { OatManagerImpl(context) }
     }
 
     /**
