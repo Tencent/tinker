@@ -38,8 +38,14 @@ internal abstract class RawPatchManager {
     companion object {
         private val implCache = SynchronizedCache<RawPatchManager>()
 
-        fun with(context: Context): RawPatchManager =
-            implCache.getOrPut { RawPatchManagerImpl(context.applicationContext) }
+        /**
+         * Gets raw patch manager instance by context.
+         *
+         * Noticed that provided context may be referenced by manager implementation, so use application context is
+         * recommended.
+         */
+        fun with(applicationContext: Context): RawPatchManager =
+            implCache.getOrPut { RawPatchManagerImpl(applicationContext) }
     }
 
     /**

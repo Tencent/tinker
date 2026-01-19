@@ -22,7 +22,7 @@ internal abstract class PatchLayoutConstructor {
         private val implCache = SynchronizedCache<PatchLayoutConstructor>()
 
         fun with(context: Context): PatchLayoutConstructor =
-            implCache.getOrPut { PatchLayoutConstructorImpl(context.applicationContext) }
+            implCache.getOrPut { PatchLayoutConstructorImpl(context) }
     }
 
     /**

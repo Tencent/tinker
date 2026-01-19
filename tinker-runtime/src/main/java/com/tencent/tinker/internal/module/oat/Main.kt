@@ -14,8 +14,14 @@ internal abstract class OatManager {
     companion object {
         private val implCache = SynchronizedCache<OatManager>()
 
-        fun with(context: Context): OatManager =
-            implCache.getOrPut { OatManagerImpl(context) }
+        /**
+         * Gets OAT manager instance by context.
+         *
+         * Noticed that provided context may be referenced by manager implementation, so use application context is
+         * recommended.
+         */
+        fun with(applicationContext: Context): OatManager =
+            implCache.getOrPut { OatManagerImpl(applicationContext) }
     }
 
     /**
