@@ -78,3 +78,11 @@ internal class Patch(
     val oatDirectory: File
         get() = directory.patchOatDirectory
 }
+
+private val validVersionPattern = "[a-zA-Z0-9-_.]+".toRegex()
+
+internal fun checkIfVersionIsValid(version: String) {
+    require(validVersionPattern.matches(version)) {
+        "Version \"${version}\" is invalid. Only letters, numbers, hyphens (-), underscores (_) and dots (.) are allowed."
+    }
+}
