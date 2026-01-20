@@ -1,5 +1,7 @@
 package com.tencent.tinker.build.config
 
+import com.android.build.api.variant.AndroidComponentsExtension
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.DslLifecycle
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.JavaVersion
@@ -45,7 +47,15 @@ private const val ANDROID_LIBRARY_PLUGIN_ID = "com.android.library"
 private val Project.appliedAndroidLibraryPlugin: Boolean
     get() = plugins.hasPlugin(ANDROID_LIBRARY_PLUGIN_ID)
 
-private fun Project.androidIfExists(action: LibraryAndroidComponentsExtension.() -> Unit) {
+private fun Project.androidIfExists(action: AndroidComponentsExtension<*, *, *>.() -> Unit) {
+    extensions.findByType(AndroidComponentsExtension::class.java)?.action()
+}
+
+private fun Project.androidApplicationIfExists(action: ApplicationAndroidComponentsExtension.() -> Unit) {
+    extensions.findByType(ApplicationAndroidComponentsExtension::class.java)?.action()
+}
+
+private fun Project.androidLibraryIfExists(action: LibraryAndroidComponentsExtension.() -> Unit) {
     extensions.findByType(LibraryAndroidComponentsExtension::class.java)?.action()
 }
 
@@ -104,12 +114,41 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
                     sourceCompatibility = JavaVersion.VERSION_11
                     targetCompatibility = JavaVersion.VERSION_11
                 }
+                project.layout.projectDirectory
+                    .dir("src")
+                    .dir("main")
+                    .dir("cpp")
+                    .file("CMakeLists.txt")
+                    .asFile
+                    .takeIf { it.isFile }
+                    ?.let(externalNativeBuild.cmake::path)
+            }
+        }
+        androidApplicationIfExists {
+            finalizeDslCompat {
+                layout.projectDirectory
+                    .file("proguard-rules.pro")
+                    .asFile
+                    .takeIf { it.isFile }
+                    ?.let { ruleFile ->
+                        buildTypes.getByName("release").apply {
+                            isMinifyEnabled = true
+                            proguardFiles.add(ruleFile)
+                        }
+                    }
+            }
+        }
+        androidLibraryIfExists {
+            finalizeDslCompat {
                 publishing {
                     singleVariant("release") {
                         withSourcesJar()
                     }
                 }
-                layout.projectDirectory.file("consumer-rules.pro").asFile.takeIf { it.isFile }
+                layout.projectDirectory
+                    .file("consumer-rules.pro")
+                    .asFile
+                    .takeIf { it.isFile }
                     ?.let { ruleFile ->
                         buildTypes.getByName("release")
                             .consumerProguardFiles.add(ruleFile)

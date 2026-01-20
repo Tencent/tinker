@@ -40,6 +40,10 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 osdetector-gradle-plugin = { module = "com.google.gradle:osdetector-gradle-plugin", version.ref = "osdetector" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
+# for example projects
+tinker-cli = { module = "com.tencent.tinker:tinker-cli" }
+tinker-runtime = { module = "com.tencent.tinker:tinker-runtime" }
+
 [plugins]
 tinker-build-config = { id = "com.tencent.tinker.build.config" }
 android-application = { id = "com.android.application", version.ref = "agp" }

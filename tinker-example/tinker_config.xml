@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tinkerPatch>
+
+    <issue id="property">
+        <ignoreWarning value="true"/>
+        <useSign value="false"/>
+        <supportHotplugComponent value="false"/>
+        <allowLoaderInAnyDex value="true" />
+        <removeLoaderForAllDex value="true" />
+    </issue>
+
+    <issue id="dex">
+        <dexMode value="raw"/>
+        <pattern value="classes*.dex"/>
+        <loader value="kotlin.*"/>
+        <loader value="com.tencent.tinker.Tinker"/>
+        <loader value="com.tencent.tinker.Tinker$*"/>
+        <loader value="com.tencent.tinker.internal.*"/>
+        <loader value="com.tencent.tinker.android.*"/>
+        <loader value="com.tencent.tinker.commons.*"/>
+        <loader value="com.tencent.tinker.loader.*"/>
+        <loader value="com.tencent.tinker.bsdiff.*"/>
+        <loader value="com.tencent.tinker.ziputils.*"/>
+        <loader value="com.tencent.tinker.example.MainApp"/>
+        <loader value="com.tencent.tinker.example.Callbacks$*"/>
+    </issue>
+
+    <issue id="lib">
+        <pattern value="lib/*/*.so"/>
+    </issue>
+
+    <issue id="resource">
+        <pattern value="res/*"/>
+        <pattern value="assets/*"/>
+        <pattern value="resources.arsc"/>
+        <pattern value="AndroidManifest.xml"/>
+        <ignoreChangeWarning value="" />
+        <largeModSize value="100"/>
+    </issue>
+
+</tinkerPatch>

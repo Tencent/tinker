@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Tinker Example</string>
+    <string name="dex_added_class">Dex · Added Class</string>
+    <string name="dex_modified_class">Dex · Modified Class</string>
+    <string name="dex_removed_class">Dex · Removed Class</string>
+    <string name="library_jni">Library · JNI</string>
+    <string name="library_dependency">Library · Dependency</string>
+    <string name="asset_added">Asset · Added</string>
+    <string name="asset_modified">Asset · Modified</string>
+    <string name="asset_removed">Asset · Removed</string>
+    <string name="resource">Resource</string>
+    <string name="clean_patch">Clean Patch</string>
+    <string name="deploy_patch">Deploy Patch</string>
+    <string name="missing_diff_package">Cannot find diff package at: &lt;br>&lt;br>&lt;i>%1$s&lt;/i>&lt;br>&lt;br>Please push diff package to specified path via adb.</string>
+    <string name="start_deploying_patch">Start deploying patch.</string>
+    <string name="start_cleaning_patch">Start cleaning patch.</string>
+</resources>

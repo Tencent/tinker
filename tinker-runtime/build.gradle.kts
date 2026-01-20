@@ -26,17 +26,6 @@ android {
             enableAndroidTestCoverage = true
         }
     }
-    externalNativeBuild {
-        cmake {
-            path(
-                project.layout.projectDirectory
-                    .dir("src")
-                    .dir("main")
-                    .dir("cpp")
-                    .file("CMakeLists.txt")
-            )
-        }
-    }
     buildFeatures {
         buildConfig = true
         aidl = true

@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/deploy_patch"
+        android:icon="@drawable/deploy_patch"
+        android:title="@string/deploy_patch"
+        android:showAsAction="ifRoom"/>
+
+    <item android:id="@+id/clean_patch"
+        android:icon="@drawable/clean_patch"
+        android:title="@string/clean_patch"
+        android:showAsAction="ifRoom"/>
+
+</menu>
