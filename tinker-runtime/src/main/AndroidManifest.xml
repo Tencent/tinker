@@ -70,6 +70,16 @@
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:process=":patch" />
 
+        <!--
+            For compatible with legacy version of Tinker, the suffix of deploy process is still ":patch".
+            TODO: Move suffix to ":tinker.deploy".
+        -->
+        <service
+            android:name=".internal.clean.TinkerCleanService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:process=":patch" />
+
         <service
             android:name=".lib.service.TinkerPatchForeService"
             android:enabled="true"

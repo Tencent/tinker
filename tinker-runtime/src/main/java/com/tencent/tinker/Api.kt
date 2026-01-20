@@ -3,6 +3,9 @@ package com.tencent.tinker
 import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
+import com.tencent.tinker.internal.clean.cleanAllPatchesByRemote
+import com.tencent.tinker.internal.clean.cleanObsoletePatchesByRemote
+import com.tencent.tinker.internal.clean.requestPatchAsUnavailable
 import com.tencent.tinker.internal.deploy.deployPatchByRemote
 import com.tencent.tinker.internal.deploy.legacy.globalCustomLegacyMerger
 import com.tencent.tinker.internal.load.load
@@ -416,6 +419,29 @@ object Tinker {
         }
 
         /**
+         * Error type group of error caused by patch cleaning.
+         */
+        enum class Clean : Type {
+            /**
+             * Type of error caused by raised unexpected throwable.
+             */
+            UNEXPECTED,
+
+            /**
+             * Type of error caused by missing strategy while transferring data across processes.
+             */
+            MISSING_STRATEGY,
+
+            /**
+             * Type of error caused by invalid strategy while transferring data across processes.
+             */
+            INVALID_STRATEGY;
+
+            override val groupCode: Int
+                get() = 0x3000
+        }
+
+        /**
          * Error type group of error caused by raw patch management.
          */
         enum class RawPatch : Type {
@@ -510,7 +536,7 @@ object Tinker {
             RECOVER_PATCH_WRITE_PERMISSION;
 
             override val groupCode: Int
-                get() = 0x3000
+                get() = 0x4000
         }
 
         /**
@@ -533,7 +559,7 @@ object Tinker {
             GENERATE_OR_STORE_FAILED;
 
             override val groupCode: Int
-                get() = 0x4000
+                get() = 0x5000
         }
 
         /**
@@ -551,7 +577,7 @@ object Tinker {
             INVALID_SOURCE;
 
             override val groupCode: Int
-                get() = 0x5000
+                get() = 0x6000
         }
 
         /**
@@ -579,7 +605,7 @@ object Tinker {
             VALIDATE_FAILED;
 
             override val groupCode: Int
-                get() = 0x6000
+                get() = 0x7000
         }
     }
 
@@ -645,6 +671,13 @@ object Tinker {
          * The callback is only called in patch deploying process.
          */
         abstract val deployCallback: Callback?
+
+        /**
+         * Gets callback of patch cleaning task.
+         *
+         * The callback is only called in patch deploying process.
+         */
+        abstract val cleanCallback: Callback?
 
         /**
          * Whether current application is hardening. Tinker will try to use special strategy for loading hardening
@@ -750,5 +783,39 @@ object Tinker {
     @JvmStatic
     fun deployPatch(context: Context, version: String, diffPackage: File) {
         context.deployPatchByRemote(version, diffPackage)
+    }
+
+    /**
+     * Asks Tinker to clean all patches **except patches are in use**.
+     *
+     * For cleaning using patches, using processes should be terminated, and a new patch should be deployed to
+     * overwrite, or using [requestPatchAsUnavailable] to mark patch as unavailable, so that the process does not use
+     * target patch when it starts again.
+     */
+    @JvmStatic
+    fun cleanAllPatches(context: Context) {
+        context.cleanAllPatchesByRemote()
+    }
+
+    /**
+     * Asks Tinker to clean obsolete patches **except patches are in use**.
+     *
+     * Different from [cleanAllPatches], latest version is kept, unless latest version is marked as unavailable.
+     */
+    @JvmStatic
+    fun cleanObsoletePatches(context: Context) {
+        context.cleanObsoletePatchesByRemote()
+    }
+
+    /**
+     * Requests Tinker marks provided patch version as unavailable to clean up this patch, and does not provide this
+     * patch anymore.
+     *
+     * If marking current using patch as unavailable, the patch is still unable to be cleaned up until the process is
+     * terminated. See [cleanAllPatches] or [cleanObsoletePatches].
+     */
+    @JvmStatic
+    fun requestPatchAsUnavailable(context: Context, version: String) {
+        context.requestPatchAsUnavailable(version)
     }
 }

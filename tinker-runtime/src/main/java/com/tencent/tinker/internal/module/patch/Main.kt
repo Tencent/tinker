@@ -31,6 +31,21 @@ internal class RawPatch(
 )
 
 /**
+ * Information about a cleaned raw patch managed by [RawPatchManager].
+ */
+internal class CleanedRawPatch(
+    /**
+     * Version of this patch.
+     */
+    val version: String,
+
+    /**
+     * Base directory of this patch. The instance is only a path, the pointed directory is already cleaned.
+     */
+    val directory: File,
+)
+
+/**
  * Manager for raw patches.
  */
 internal abstract class RawPatchManager {
@@ -113,17 +128,17 @@ internal abstract class RawPatchManager {
      * Cleans all inactive patch directories. Inactive patches are those which are not used by any
      * running process.
      *
-     * The function returns list of patch versions are cleaned.
+     * The function returns list of patch are cleaned.
      */
     @DeployProcessOnly
-    abstract fun cleanAll(): List<String>
+    abstract fun cleanAll(): List<CleanedRawPatch>
 
     /**
      * Cleans all obsolete patch directories. Different from [cleanAll], latest version is kept,
      * unless latest version is marked as unavailable.
      *
-     * The function returns list of patch versions are cleaned.
+     * The function returns list of patch are cleaned.
      */
     @DeployProcessOnly
-    abstract fun cleanObsolete(): List<String>
+    abstract fun cleanObsolete(): List<CleanedRawPatch>
 }

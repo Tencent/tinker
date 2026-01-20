@@ -76,12 +76,12 @@ internal class PatchManagerDelegate(
 
     override fun cleanAll(): Array<String> =
         rethrowAsIllegalState {
-            managerImpl.cleanAll().toTypedArray()
+            managerImpl.cleanAll().map { it.version }.toTypedArray()
         }
 
     override fun cleanObsolete(): Array<String> =
         rethrowAsIllegalState {
-            managerImpl.cleanObsolete().toTypedArray()
+            managerImpl.cleanObsolete().map { it.version }.toTypedArray()
         }
 }
 

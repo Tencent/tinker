@@ -314,17 +314,17 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
         context.patchDirectory(version)
 
     @DeployProcessOnly
-    private fun Context.cleanPatches(keep: (String) -> Boolean): List<String> {
+    private fun Context.cleanPatches(keep: (String) -> Boolean): List<CleanedRawPatch> {
         val patchDirectories = patchesDirectory
             .takeIf { it.exists() }
             ?.listFiles()
             ?.filter { it.isDirectory }
             ?: return emptyList()
-        // A pair of version and whether the patch is cleaned.
+        // Pairs of version and cleanable raw patch directory.
         val pairs = patchDirectories.mapNotNull { dir ->
             val version = dir.name
             if (keep(version)) {
-                return@mapNotNull Pair(version, false)
+                return@mapNotNull Pair(version, null)
             }
             val guardedContent = try {
                 acquirePatchAsCleaning(version)
@@ -337,33 +337,36 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
             }
             if (guardedContent != null) {
                 try {
-                    dir.walk(direction = FileWalkDirection.TOP_DOWN).forEach {
-                        it.setWritable(true)
+                    try {
+                        dir.walk(direction = FileWalkDirection.TOP_DOWN).forEach {
+                            it.setWritable(true)
+                        }
+                    } catch (throwable: Throwable) {
+                        throw Tinker.Error(
+                            Tinker.Error.RawPatch.RECOVER_PATCH_WRITE_PERMISSION,
+                            "Cannot recover patch directory \"${dir.absolutePath}\" as writable",
+                            throwable,
+                        )
                     }
-                } catch (throwable: Throwable) {
-                    throw Tinker.Error(
-                        Tinker.Error.RawPatch.RECOVER_PATCH_WRITE_PERMISSION,
-                        "Cannot recover patch directory \"${dir.absolutePath}\" as writable",
-                        throwable,
-                    )
+                    try {
+                        dir.deleteRecursively()
+                    } catch (throwable: Throwable) {
+                        throw Tinker.Error(
+                            Tinker.Error.RawPatch.CLEAN_PATCH,
+                            "Cannot clean patch directory \"${dir.absolutePath}\"",
+                            throwable,
+                        )
+                    }
+                } finally {
+                    guardedContent.close()
                 }
-                try {
-                    dir.deleteRecursively()
-                } catch (throwable: Throwable) {
-                    throw Tinker.Error(
-                        Tinker.Error.RawPatch.CLEAN_PATCH,
-                        "Cannot clean patch directory \"${dir.absolutePath}\"",
-                        throwable,
-                    )
-                }
-                guardedContent.close()
-                return@mapNotNull Pair(version, true)
+                return@mapNotNull Pair(version, dir)
             } else {
-                return@mapNotNull Pair(version, false)
+                return@mapNotNull Pair(version, null)
             }
         }
         // Remove unavailable records except those that are still remaining.
-        pairs.filter { !it.second }
+        pairs.filter { it.second == null }
             .map { it.first }
             .let { remaining ->
                 try {
@@ -382,7 +385,11 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                     )
                 }
             }
-        return pairs.filter { it.second }.map { it.first }
+        return pairs.mapNotNull {
+            val dir = it.second ?: return@mapNotNull null
+            val version = it.first
+            return@mapNotNull CleanedRawPatch(version, dir)
+        }
     }
 
     @Synchronized
@@ -612,7 +619,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
 
     @Synchronized
     @DeployProcessOnly
-    override fun cleanAll(): List<String> {
+    override fun cleanAll(): List<CleanedRawPatch> {
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
@@ -632,7 +639,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
 
     @Synchronized
     @DeployProcessOnly
-    override fun cleanObsolete(): List<String> {
+    override fun cleanObsolete(): List<CleanedRawPatch> {
         check(context.isInDeployProcess) {
             "Only available for deploy process"
         }
