@@ -8,7 +8,6 @@ import androidx.annotation.RequiresApi
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
-import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_REMOVED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.load.ActivityThreadDelegate

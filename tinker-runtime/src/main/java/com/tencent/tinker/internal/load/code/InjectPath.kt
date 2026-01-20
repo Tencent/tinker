@@ -11,8 +11,6 @@ import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import java.io.File
 import java.io.IOException
-import kotlin.collections.filter
-import kotlin.collections.plus
 import java.lang.reflect.Array as JvmReflectArray
 
 private const val TAG = "Tinker.Load.Code.IP"

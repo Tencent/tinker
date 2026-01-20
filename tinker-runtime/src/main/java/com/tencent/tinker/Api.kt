@@ -3,6 +3,9 @@ package com.tencent.tinker
 import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
+import com.tencent.tinker.Tinker.cleanAllPatches
+import com.tencent.tinker.Tinker.cleanObsoletePatches
+import com.tencent.tinker.Tinker.requestPatchAsUnavailable
 import com.tencent.tinker.internal.clean.cleanAllPatchesByRemote
 import com.tencent.tinker.internal.clean.cleanObsoletePatchesByRemote
 import com.tencent.tinker.internal.clean.requestPatchAsUnavailable

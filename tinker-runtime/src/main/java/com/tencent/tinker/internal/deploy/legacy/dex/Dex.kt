@@ -4,7 +4,6 @@ import com.tencent.tinker.Tinker
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier
 import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
-import com.tencent.tinker.internal.deploy.legacy.LegacyDeployer
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5HashNullable
 import com.tencent.tinker.internal.util.asMd5String
