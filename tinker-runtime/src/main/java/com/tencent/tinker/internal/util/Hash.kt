@@ -59,6 +59,17 @@ internal val File.md5: ByteArray
         return calculator.digest()
     }
 
+
+/**
+ * Gets the CRC32 checksum of this byte array.
+ */
+internal val ByteArray.crc32: Long
+    get() = CRC32()
+        .apply {
+            update(this@crc32)
+        }
+        .value
+
 /**
  * Gets the CRC32 checksum of this file.
  */

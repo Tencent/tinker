@@ -275,7 +275,17 @@ object Tinker {
                 /**
                  * Type of error caused by missing custom merger is required but not provided.
                  */
-                MISSING_CUSTOM_MERGER;
+                MISSING_CUSTOM_MERGER,
+
+                /**
+                 * Type of error caused by reading base apk signature failed.
+                 */
+                READ_BASE_APK_SIGNATURE_FAILED,
+
+                /**
+                 * Type of error caused by checking signature failed.
+                 */
+                CHECK_SIGNATURE_FAILED;
 
                 override val groupCode: Int
                     get() = 0x2100
@@ -621,7 +631,7 @@ object Tinker {
      * Gets code of error type. See [Error.Type] for more details.
      */
     @get:JvmName("codeOfErrorType")
-    val <T: Error.Type> T.code: Int
+    val <T : Error.Type> T.code: Int
         get() = (groupCode shl 16) or (this as Enum<*>).ordinal
 
     /**
@@ -671,21 +681,31 @@ object Tinker {
          *
          * The callback is called in patch loading process.
          */
-        abstract val loadCallback: Callback?
+        open val loadCallback: Callback?
+            get() = null
 
         /**
          * Gets callback of patch deploying task.
          *
          * The callback is only called in patch deploying process.
          */
-        abstract val deployCallback: Callback?
+        open val deployCallback: Callback?
+            get() = null
 
         /**
          * Gets callback of patch cleaning task.
          *
          * The callback is only called in patch deploying process.
          */
-        abstract val cleanCallback: Callback?
+        open val cleanCallback: Callback?
+            get() = null
+
+        /**
+         * Whether to skip validating patch files while loading, which may speed up loading if application is huge.
+         * However, patch files may be corrupted if application code modifies patch files unexpectedly.
+         */
+        open val skipValidating: Boolean
+            get() = false
 
         /**
          * Whether current application is hardening. Tinker will try to use special strategy for loading hardening
@@ -701,6 +721,7 @@ object Tinker {
             val appLikeClassLoader = if (!isInDeployProcess) {
                 load(
                     hardening = hardening,
+                    skipValidating = skipValidating,
                     callback = loadCallback,
                 ) ?: classLoader
             } else {
@@ -787,11 +808,20 @@ object Tinker {
 
     /**
      * Asks Tinker to create a patch with provided [version] and [diffPackage].
+     *
+     * If [skipCheckingSignature], Tinker will treat diff package is trusted, otherwise, diff package should have same
+     * signature as base apk file.
      */
     @JvmStatic
-    fun deployPatch(context: Context, version: String, diffPackage: File) {
+    @JvmOverloads
+    fun deployPatch(
+        context: Context,
+        version: String,
+        diffPackage: File,
+        skipCheckingSignature: Boolean = false,
+    ) {
         checkIfVersionIsValid(version)
-        context.deployPatchByRemote(version, diffPackage)
+        context.deployPatchByRemote(version, diffPackage, skipCheckingSignature)
     }
 
     /**

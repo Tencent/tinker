@@ -123,14 +123,16 @@ private fun Application.loadWith(
 private fun Application.loadWith(
     hardening: Boolean,
     rawPatch: RawPatch,
-    validator: Validator = ValidatorImpl,
+    validator: Validator?,
     oatManager: OatManager = OatManager.with(this),
     patchLayoutConstructor: PatchLayoutConstructor = PatchLayoutConstructor.with(this),
 ): ClassLoader? {
-    debugLog(TAG) {
-        "Validating \"${rawPatch.directory.absolutePath}\" with validator <${validator.javaClass.name}>."
+    validator?.run {
+        debugLog(TAG) {
+            "Validating \"${rawPatch.directory.absolutePath}\" with validator <${javaClass.name}>."
+        }
+        validate(rawPatch.directory)
     }
-    validator.validate(rawPatch.directory)
     debugLog(TAG) {
         "Acquiring OAT for \"${rawPatch.directory.absolutePath}\"" +
                 " with manager <${oatManager.javaClass.name}>."
@@ -156,6 +158,7 @@ private fun Application.loadWith(
 @NonDeployProcessOnly
 private fun Application.loadInternal(
     hardening: Boolean,
+    skipValidating: Boolean,
     rawPatchManager: RawPatchManager = RawPatchManager.with(this),
 ): ClassLoader? {
     val rawPatch = rawPatchManager.acquire() ?: run {
@@ -171,6 +174,7 @@ private fun Application.loadInternal(
         return loadWith(
             hardening = hardening,
             rawPatch = rawPatch,
+            validator = if (skipValidating) null else ValidatorImpl,
         )
     } catch (throwable: Throwable) {
         rawPatchManager.requestUnavailable(rawPatch.version)
@@ -187,6 +191,7 @@ private fun Application.loadInternal(
 @NonDeployProcessOnly
 internal fun Application.load(
     hardening: Boolean,
+    skipValidating: Boolean,
     callback: Tinker.Callback?,
 ): ClassLoader? {
     infoLog(TAG) {
@@ -194,7 +199,10 @@ internal fun Application.load(
     }
     val (classLoader, error) = try {
         val classLoader = expected<Tinker.Error.Load, ClassLoader?>("load patch") {
-            loadInternal(hardening)
+            loadInternal(
+                hardening = hardening,
+                skipValidating = skipValidating,
+            )
         }
         classLoader to null
     } catch (error: Tinker.Error) {

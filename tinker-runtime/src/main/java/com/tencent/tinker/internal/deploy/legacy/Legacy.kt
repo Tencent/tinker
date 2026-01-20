@@ -1,7 +1,9 @@
 package com.tencent.tinker.internal.deploy.legacy
 
 import android.content.Context
-import androidx.annotation.VisibleForTesting
+import android.content.pm.PackageManager
+import android.content.pm.Signature
+import android.os.Build
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.bsdiff.BSPatch
 import com.tencent.tinker.internal.deploy.Deployer
@@ -11,10 +13,12 @@ import com.tencent.tinker.internal.deploy.legacy.resource.resourceDeploy
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
+import com.tencent.tinker.internal.util.crc32
 import com.tencent.tinker.internal.util.debugLog
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.jar.JarFile
 import java.util.zip.ZipFile
 
 @Volatile
@@ -70,12 +74,62 @@ private val ByteArray.parsePackageMetadata: PackageMetadata
             )
         }
 
+private val Context.apkSignature: Signature?
+    get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+            .signingInfo
+            ?.signingCertificateHistory
+            ?.firstOrNull()
+    } else {
+        @Suppress("DEPRECATION")
+        packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+            .signatures
+            ?.firstOrNull()
+    }
+
 internal object LegacyDeployer : Deployer() {
 
     private const val TAG = "Tinker.Deploy.Legacy"
 
+    private fun checkSignature(
+        baseApkSignature: Signature,
+        diffPackageFile: File
+    ) {
+        val expected = baseApkSignature.toByteArray().crc32
+        val diffPackage = JarFile(diffPackageFile)
+        diffPackage.entries()
+            .asSequence()
+            .filter {
+                !it.name.startsWith("META-INF/")
+            }
+            .forEach { entry ->
+                diffPackage.getInputStream(entry)
+                    .use {
+                        // Read entry content and just drop it for loading certificates.
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            val read = it.read(buffer)
+                            if (read < 0) {
+                                break
+                            }
+                        }
+                    }
+                val pass = entry.certificates
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.any { it.encoded.crc32 == expected }
+                    ?: false
+                if (!pass) {
+                    throw Tinker.Error(
+                        Tinker.Error.Deploy.Legacy.CHECK_SIGNATURE_FAILED,
+                        "Entry \"${entry.name}\" has different signature with base APK."
+                    )
+                }
+            }
+    }
+
     private fun deploy(
         baseApkFile: File,
+        baseApkSignature: Signature?,
         diffPackageFile: File,
         deployedDirectory: File,
     ) {
@@ -84,6 +138,9 @@ internal object LegacyDeployer : Deployer() {
                     " with \"${baseApkFile.absolutePath}\"" +
                     " to \"${deployedDirectory.absolutePath}\"" +
                     " via legacy way."
+        }
+        if (baseApkSignature != null) {
+            checkSignature(baseApkSignature, diffPackageFile)
         }
         val baseApk = ZipFile(baseApkFile)
         val diffPackage = ZipFile(diffPackageFile)
@@ -120,23 +177,24 @@ internal object LegacyDeployer : Deployer() {
         )
     }
 
-    @VisibleForTesting
-    fun deployForTesting(
-        baseApkFile: File,
-        diffPackageFile: File,
+    override fun deploy(
+        context: Context,
+        diffPackage: File,
+        skipCheckingSignature: Boolean,
         deployedDirectory: File,
     ) {
         deploy(
-            baseApkFile = baseApkFile,
-            diffPackageFile = diffPackageFile,
-            deployedDirectory = deployedDirectory
-        )
-    }
-
-    override fun deploy(context: Context, diffPackage: File, deployedDirectory: File) {
-        deploy(
             baseApkFile = context.applicationInfo.sourceDir.let(::File),
             diffPackageFile = diffPackage,
+            baseApkSignature = if (skipCheckingSignature) {
+                null
+            } else {
+                context.apkSignature
+                    ?: throw Tinker.Error(
+                        Tinker.Error.Deploy.Legacy.READ_BASE_APK_SIGNATURE_FAILED,
+                        "Cannot read base APK signature.",
+                    )
+            },
             deployedDirectory = deployedDirectory
         )
     }

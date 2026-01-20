@@ -31,6 +31,7 @@ internal abstract class Deployer {
     abstract fun deploy(
         context: Context,
         diffPackage: File,
+        skipCheckingSignature: Boolean,
         deployedDirectory: File,
     )
 }
@@ -43,6 +44,7 @@ private fun deployPatch(
     context: Context,
     version: String,
     diffPackage: File,
+    skipCheckingSignature: Boolean,
     deployer: Deployer,
     validator: Validator = ValidatorImpl,
     rawPatchManager: RawPatchManager = RawPatchManager.with(context),
@@ -58,6 +60,7 @@ private fun deployPatch(
         deployer.deploy(
             context = context,
             diffPackage = diffPackage,
+            skipCheckingSignature = skipCheckingSignature,
             deployedDirectory = temporaryDirectory,
         )
         debugLog(TAG) {
@@ -113,6 +116,13 @@ private fun deployPatch(
     debugLog(TAG) {
         "Diff package \"${diffPackage.absolutePath}\" from deploy request intent is read."
     }
+    val skipCheckingSignature = intent.getBooleanExtra(
+        DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE,
+        false,
+    )
+    debugLog(TAG) {
+        "Skip checking signature \"${skipCheckingSignature}\" from deploy request intent is read."
+    }
     val deployer = when {
         diffPackage.isZipFile -> {
             debugLog(TAG) {
@@ -130,12 +140,14 @@ private fun deployPatch(
         context = context,
         version = version,
         diffPackage = diffPackage,
+        skipCheckingSignature = skipCheckingSignature,
         deployer = deployer,
     )
 }
 
 private const val DEPLOY_IPC_KEY_VERSION = "v"
 private const val DEPLOY_IPC_KEY_DIFF_PACKAGE = "d"
+private const val DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE = "c"
 
 @DeployProcessOnly
 class TinkerDeployService : Service() {
@@ -178,6 +190,7 @@ class TinkerDeployService : Service() {
 internal fun Context.deployPatchByRemote(
     version: String,
     diffPackage: File,
+    skipCheckingSignature: Boolean,
 ) {
     infoLog(TAG) {
         "Send deploying request to remote" +
@@ -188,6 +201,7 @@ internal fun Context.deployPatchByRemote(
         .apply {
             putExtra(DEPLOY_IPC_KEY_VERSION, version)
             putExtra(DEPLOY_IPC_KEY_DIFF_PACKAGE, diffPackage.absolutePath)
+            putExtra(DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE, skipCheckingSignature)
         }
         .let(::startService)
 }
