@@ -10,6 +10,7 @@ import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchOatDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
 import com.tencent.tinker.internal.rootDirectory
+import com.tencent.tinker.internal.util.crc32
 import com.tencent.tinker.internal.util.currentProcess
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureIsExistingDirectory
@@ -83,11 +84,11 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
      * Encoded process name, which is used as a valid directory name for process base directory.
      */
     @OptIn(ExperimentalStdlibApi::class)
-    private val encodedProcessName by lazy {
+    private val processHash by lazy {
         context.currentProcess
             .toByteArray(Charsets.UTF_8)
-            .toHexString() // The conversion is just for avoiding illegal characters.
-            .let(baseDirectory::resolve)
+            .crc32
+            .toString(16)
     }
 
     /**
@@ -97,7 +98,7 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
      * reconstructed.
      */
     private val processBaseDirectory by lazy {
-        baseDirectory.resolve(encodedProcessName).apply {
+        baseDirectory.resolve(processHash).apply {
             refreshProcessBaseDirectory(this)
         }
     }
@@ -124,7 +125,7 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
         val currentTime = System.currentTimeMillis()
         val randomSuffix = Random.nextBytes(4)
         return buildString {
-            currentTime.toHexString().let(::append)
+            currentTime.toString(Character.MAX_RADIX).let(::append)
             "-".let(::append)
             randomSuffix.toHexString().let(::append)
         }

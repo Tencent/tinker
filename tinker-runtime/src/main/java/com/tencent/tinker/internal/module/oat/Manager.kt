@@ -12,6 +12,7 @@ import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
+import com.tencent.tinker.internal.util.crc32
 import com.tencent.tinker.internal.util.currentSdk
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureIsExistingFile
@@ -28,7 +29,6 @@ import com.tencent.tinker.internal.util.warnLog
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.RandomAccessFile
-import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.CRC32
 import kotlin.concurrent.thread
@@ -199,10 +199,7 @@ internal class OatManagerImpl(
 
     @OptIn(ExperimentalStdlibApi::class)
     private val File.pathHash: String
-        get() = MessageDigest.getInstance("MD5").run {
-            update(canonicalPath.toByteArray())
-            digest().toHexString()
-        }
+        get() = canonicalPath.toByteArray().crc32.toString(Character.MAX_RADIX)
 
 
     /**
