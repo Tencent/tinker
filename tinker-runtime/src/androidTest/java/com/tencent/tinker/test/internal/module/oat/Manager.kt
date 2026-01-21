@@ -9,6 +9,8 @@ import com.tencent.tinker.Tinker
 import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.module.oat.Generator
 import com.tencent.tinker.internal.module.oat.OatManagerImpl
+import com.tencent.tinker.internal.patchDexApkFile
+import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.util.isInDeployProcess
 import com.tencent.tinker.test.createTestDirectory
 import com.tencent.tinker.test.rethrowAsIllegalState
@@ -243,10 +245,11 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
-            resolve("bar.jar").createNewFile()
-            resolve("baz.apk").createNewFile()
-            resolve("qux.txt").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+                resolve("bar.txt").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
         assertTrue(deployService.isCompilerGenerated)
@@ -256,11 +259,9 @@ class OatManagerImplTest {
         assertFalse(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
         assertTrue(acquired!!.exists())
-        // Only dex, jar, apk files are used to generate.
+        // Only dex files are used to generate.
         assertTrue(acquired.resolve("foo.dex.oat").exists())
-        assertTrue(acquired.resolve("bar.jar.oat").exists())
-        assertTrue(acquired.resolve("baz.apk.oat").exists())
-        assertFalse(acquired.resolve("qux.txt.oat").exists())
+        assertFalse(acquired.resolve("bar.txt.oat").exists())
         // No other files or directories remains in base directory, except metadata and OAT files
         // content directory.
         val baseDirectory = mainService.baseDirectory().let(::File)
@@ -282,10 +283,11 @@ class OatManagerImplTest {
         val mainService = context.mainService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
-            resolve("bar.jar").createNewFile()
-            resolve("baz.apk").createNewFile()
-            resolve("qux.txt").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+                resolve("bar.txt").createNewFile()
+            }
         }
         val acquired = mainService
             .acquire(inputDirectory.absolutePath, false)
@@ -293,11 +295,9 @@ class OatManagerImplTest {
         assertTrue(mainService.isInterpreterGenerated)
         assertNotNull(acquired)
         assertTrue(acquired!!.exists())
-        // Only dex, jar, apk files are used to generate.
+        // Only dex files are used to generate.
         assertTrue(acquired.resolve("foo.dex.oat").exists())
-        assertTrue(acquired.resolve("bar.jar.oat").exists())
-        assertTrue(acquired.resolve("baz.apk.oat").exists())
-        assertFalse(acquired.resolve("qux.txt.oat").exists())
+        assertFalse(acquired.resolve("bar.txt.oat").exists())
     }
 
     /**
@@ -309,16 +309,41 @@ class OatManagerImplTest {
         val mainService = context.mainService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
-            resolve("bar.jar").createNewFile()
-            resolve("baz.apk").createNewFile()
-            resolve("qux.txt").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         val acquired = mainService
             .acquire(inputDirectory.absolutePath, true)
             ?.let(::File)
         assertFalse(mainService.isInterpreterGenerated)
         assertNull(acquired)
+    }
+
+    /**
+     * Tests if generating OAT files with dex apk instead of dex files are work expectedly.
+     */
+    @Test
+    fun generateWithApk() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mainService = context.mainService()
+        val inputDirectory = createTestDirectory().apply {
+            mkdirs()
+            patchDexApkFile.createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
+        }
+        val acquired = mainService
+            .acquire(inputDirectory.absolutePath, false)
+            ?.let(::File)
+        assertNotNull(acquired)
+        assertTrue(acquired!!.exists())
+        // Only apk are used to generate.
+        assertTrue(acquired.resolve("dex.apk.oat").exists())
+        assertFalse(acquired.resolve("foo.dex.oat").exists())
     }
 
     /**
@@ -331,7 +356,10 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
@@ -374,7 +402,10 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
@@ -418,7 +449,10 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
 
@@ -447,7 +481,10 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
@@ -498,7 +535,10 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Make sure there are existing OAT files.
@@ -549,12 +589,13 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
-        inputDirectory.apply {
-            resolve("bar.dex").createNewFile()
-        }
+        inputDirectory.patchDexDirectory.resolve("bar.dex").createNewFile()
 
         val acquired = mainService
             .acquire(inputDirectory.absolutePath, false)
@@ -576,13 +617,19 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         val generatedByMain = mainService.acquire(inputDirectory.absolutePath, false)
             ?.let(::File)
         assertNotNull(generatedByMain)
         inputDirectory.apply {
-            resolve("bar.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("bar.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
         assertFalse(generatedByMain!!.resolve("bar.dex.oat").exists())
@@ -598,7 +645,10 @@ class OatManagerImplTest {
         mainService.useFailureGenerator()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         val errorCode = assertThrows(IllegalStateException::class.java) {
             mainService.acquire(inputDirectory.absolutePath, false)
@@ -625,7 +675,10 @@ class OatManagerImplTest {
         deployService.useFailureGenerator()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         val errorCode = assertThrows(IllegalStateException::class.java) {
             deployService.generateIfNeeded(inputDirectory.absolutePath)
@@ -651,7 +704,10 @@ class OatManagerImplTest {
         mainService.useExceptionGenerator()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         val errorCode = assertThrows(IllegalStateException::class.java) {
             mainService.acquire(inputDirectory.absolutePath, false)
@@ -678,7 +734,10 @@ class OatManagerImplTest {
         deployService.useExceptionGenerator()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         val errorCode = assertThrows(IllegalStateException::class.java) {
             deployService.generateIfNeeded(inputDirectory.absolutePath)
@@ -704,7 +763,10 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         deployService.generateIfNeeded(inputDirectory.absolutePath)
         // Checks if files generated successfully. It is to make sure files are cleaned after
@@ -736,7 +798,10 @@ class OatManagerImplTest {
         val deployService = context.deployService()
         val inputDirectory = createTestDirectory().apply {
             mkdirs()
-            resolve("foo.dex").createNewFile()
+            patchDexDirectory.apply {
+                mkdirs()
+                resolve("foo.dex").createNewFile()
+            }
         }
         val generated = mainService.acquire(inputDirectory.absolutePath, false)
         assertNotNull(generated)

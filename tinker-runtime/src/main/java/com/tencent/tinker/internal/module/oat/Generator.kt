@@ -212,6 +212,7 @@ internal object Compiler : DefaultGenerator() {
         input: File,
         output: File
     ): Boolean = try {
+        output.ensureParentIsExistingDirectory()
         DexFile.loadDex(input.absolutePath, output.absolutePath, 0)
         debugLog(TAG) {
             "OAT file \"${output.absolutePath}\" for \"${input.absolutePath}\" is compiled."

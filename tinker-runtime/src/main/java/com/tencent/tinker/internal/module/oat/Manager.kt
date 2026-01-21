@@ -8,6 +8,8 @@ import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
+import com.tencent.tinker.internal.patchDexApkFile
+import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.currentSdk
@@ -275,12 +277,17 @@ internal class OatManagerImpl(
     }
 
     private val File.oatInputs: List<File>
-        get() = takeIf { it.isDirectory }
-            ?.listFiles()
-            ?.filter {
-                it.extension == "dex" || it.extension == "jar" || it.extension == "apk"
+        get() {
+            if (patchDexApkFile.isFile) {
+                return listOf(patchDexApkFile)
             }
-            ?: emptyList()
+            if (patchDexDirectory.isDirectory) {
+                return patchDexDirectory.listFiles()
+                    ?.filter { it.extension == "dex" }
+                    ?: emptyList()
+            }
+            return emptyList()
+        }
 
     private val Collection<File>.inputsHash: Long
         get() = CRC32().let { calculator ->
