@@ -345,12 +345,13 @@ internal class ResourceLoader(
                         .apply {
                             addAssetPath(resourceApk.absolutePath)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                applicationContext.applicationInfo.sharedLibraryFiles.forEach { path ->
-                                    if (!path.endsWith(".apk")) {
-                                        return@forEach
+                                applicationContext.applicationInfo.sharedLibraryFiles
+                                    ?.forEach { path ->
+                                        if (!path.endsWith(".apk")) {
+                                            return@forEach
+                                        }
+                                        addAssetPathAsSharedLibrary(path)
                                     }
-                                    addAssetPathAsSharedLibrary(path)
-                                }
                             }
                             initializeStringBlocksIfNeeded()
                         }
