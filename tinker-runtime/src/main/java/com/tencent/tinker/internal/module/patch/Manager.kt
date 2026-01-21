@@ -125,7 +125,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
      * Acquires patch of [version] is used by current process. The function returns null if patch
      * process is holding patch to clean up.
      */
-    private fun Context.acquirePatchAsUsing(version: String): EscapedGuardedContent? {
+    private fun Context.acquireGuardAsUsing(version: String): EscapedGuardedContent? {
         val file = guardFile(version)
             .apply {
                 if (!exists()) {
@@ -147,11 +147,19 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
      * null if patch is now used by any process.
      */
     @DeployProcessOnly
-    private fun Context.acquirePatchAsCleaning(version: String): EscapedGuardedContent? {
+    private fun Context.acquireGuardAsCleaning(version: String): EscapedGuardedContent? {
         val file = guardFile(version).ensureParentIsExistingDirectory()
         return file.escapedGuardedContentExclusiveNullable(
             ByteArray(1) { GUARD_CLEANING_CONTENT }
         )
+    }
+
+    /**
+     * Drop guard file after patch of [version] is cleaned.
+     */
+    @DeployProcessOnly
+    private fun Context.dropGuard(version: String) {
+        guardFile(version).delete()
     }
 
 
@@ -380,7 +388,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 return@mapNotNull Pair(version, null)
             }
             val guardedContent = try {
-                acquirePatchAsCleaning(version)
+                acquireGuardAsCleaning(version)
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.ACQUIRE_PATCH_AS_CLEANING,
@@ -415,6 +423,10 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 }
                 debugLog(TAG) {
                     "Raw patch directory \"${dir.absolutePath}\" is cleaned."
+                }
+                dropGuard(version)
+                debugLog(TAG) {
+                    "Guard of \"${version}\" is dropped."
                 }
                 return@mapNotNull Pair(version, dir)
             } else {
@@ -531,7 +543,7 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
                 return@run latest
             } ?: return null
             val acquired = try {
-                context.acquirePatchAsUsing(version) ?: run {
+                context.acquireGuardAsUsing(version) ?: run {
                     warnLog(TAG) {
                         "Acquired failed because raw patch directory of target version \"${version}\" is cleaning."
                     }
