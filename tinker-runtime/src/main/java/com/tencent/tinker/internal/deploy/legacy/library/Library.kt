@@ -13,6 +13,8 @@ import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.hashOf
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
 import java.io.File
 import java.util.zip.ZipFile
 
@@ -215,13 +217,15 @@ private fun libraryDeployInternal(
     diffPackage: ZipFile,
     directory: File
 ) {
-    val metadataList = diffPackage.getEntry("assets/so_meta.txt")
-        ?.let(diffPackage::getInputStream)
-        ?.use {
-            it.readBytes()
-        }
-        ?.parsedLibraryMetadataList
-        ?: emptyList()
+    val metadataList = traceE("deploy.legacy.library.read_metadata") {
+        diffPackage.getEntry("assets/so_meta.txt")
+            ?.let(diffPackage::getInputStream)
+            ?.use {
+                it.readBytes()
+            }
+            ?.parsedLibraryMetadataList
+            ?: emptyList()
+    }
     debugLog(TAG) {
         buildList {
             add("Read library metadata from ${diffPackage.name}:")
@@ -233,17 +237,21 @@ private fun libraryDeployInternal(
             launch {
                 val hash = if (metadata.baseCrc32 == 0L) {
                     // No base library file, the patched library file is newly added.
-                    directory.createLibraryAsNewlyAdded(
-                        metadata = metadata,
-                        diffPackage = diffPackage,
-                    )
+                    traceE("deploy.legacy.library.create(name = ${metadata.name}, strategy = newly_added)") {
+                        directory.createLibraryAsNewlyAdded(
+                            metadata = metadata,
+                            diffPackage = diffPackage,
+                        )
+                    }
                 } else {
-                    directory.createLibraryByMerging(
-                        packageMetadata = packageMetadata,
-                        metadata = metadata,
-                        baseApk = baseApk,
-                        diffPackage = diffPackage,
-                    )
+                    traceE("deploy.legacy.library.create(name = ${metadata.name}, strategy = merging)") {
+                        directory.createLibraryByMerging(
+                            packageMetadata = packageMetadata,
+                            metadata = metadata,
+                            baseApk = baseApk,
+                            diffPackage = diffPackage,
+                        )
+                    }
                 }
                 if (!hash.contentEquals(metadata.patchedHash)) {
                     throw Tinker.Error(
@@ -265,23 +273,25 @@ private fun libraryDeployInternal(
             }
             .forEach { (abi, name, entry) ->
                 launch {
-                    val output = directory.resolve(abi).resolve(name)
-                    debugLog(TAG) {
-                        "Creating test library to \"${output.absolutePath}\" by \"${entry.name}\" in \"${baseApk.name}\"."
-                    }
-                    baseApk.getInputStream(entry)
-                        .use { stream ->
-                            output.ensureParentIsExistingDirectory()
-                                .outputStream()
-                                .buffered()
-                                .use(stream::copyTo)
+                    traceS("deploy.legacy.library.create_test(name = ${name}, abi = ${abi})") {
+                        val output = directory.resolve(abi).resolve(name)
+                        debugLog(TAG) {
+                            "Creating test library to \"${output.absolutePath}\" by \"${entry.name}\" in \"${baseApk.name}\"."
                         }
-                    if (output.crc32 != entry.crc) {
-                        throw Tinker.Error(
-                            Tinker.Error.Deploy.Legacy.Library.INVALID_DEPLOY_RESULT,
-                            "CRC32 checksum \"${output.crc32}\" of test library file as patch result "
-                                    + "is not match \"${entry.crc}\" in base apk file \"${baseApk.name}\".",
-                        )
+                        baseApk.getInputStream(entry)
+                            .use { stream ->
+                                output.ensureParentIsExistingDirectory()
+                                    .outputStream()
+                                    .buffered()
+                                    .use(stream::copyTo)
+                            }
+                        if (output.crc32 != entry.crc) {
+                            throw Tinker.Error(
+                                Tinker.Error.Deploy.Legacy.Library.INVALID_DEPLOY_RESULT,
+                                "CRC32 checksum \"${output.crc32}\" of test library file as patch result "
+                                        + "is not match \"${entry.crc}\" in base apk file \"${baseApk.name}\".",
+                            )
+                        }
                     }
                 }
             }

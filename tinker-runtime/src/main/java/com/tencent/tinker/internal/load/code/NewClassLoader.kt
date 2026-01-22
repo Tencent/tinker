@@ -9,8 +9,11 @@ import com.tencent.tinker.internal.load.ClassLoaderDelegate
 import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.ResourcesDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.code.NewClassLoaderCodeLoader.ClassLoaderInjector
+import com.tencent.tinker.internal.util.className
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.loader.TinkerClassLoader
 import dalvik.system.DelegateLastClassLoader
 import java.io.File
@@ -86,13 +89,18 @@ internal abstract class NewClassLoaderCodeLoader(
 
     protected abstract fun createClassLoader(): ClassLoader
 
-    override fun doLoad(): ClassLoader =
-        createClassLoader().also { classLoader ->
-            classLoaderInjectors.forEach { injector ->
+    override fun doLoad(): ClassLoader {
+        val classLoader = traceE("load.load.code.new_cl.create_cl") {
+            createClassLoader()
+        }
+        classLoaderInjectors.forEach { injector ->
+            traceS("load.load.code.new_cl.inject_cl(injector = ${injector.javaClass.className}@${injector.hashCode().toString(16)})") {
                 injector.inject(classLoader)
             }
-            reference[0] = classLoader
         }
+        reference[0] = classLoader
+        return classLoader
+    }
 
     internal abstract class Factory(
         protected val reference: Array<ClassLoader?>,

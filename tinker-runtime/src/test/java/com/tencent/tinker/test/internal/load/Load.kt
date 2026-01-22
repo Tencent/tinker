@@ -10,8 +10,11 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.nio.file.Files
 
+@RunWith(RobolectricTestRunner::class)
 class LoadTest {
 
     private class SuccessLoader : Loader() {
@@ -143,6 +146,7 @@ class LoadTest {
             Tinker.Error.Load.UNEXPECTED,
             actual!!.type,
         )
+        actual.printStackTrace()
         assertSame(expected, actual.cause)
     }
 }

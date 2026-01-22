@@ -27,25 +27,30 @@ internal abstract class AsyncScope<T> {
 private class AsyncScopeImpl<T>(
     private val executor: ExecutorService,
     private val futures: MutableList<Future<T>>
-): AsyncScope<T>() {
+) : AsyncScope<T>() {
 
-    private class Task<T>(private val original: () -> T) : Callable<T> {
+    private class Task<T>(
+        private val collector: TraceContext?,
+        private val original: () -> T,
+    ) : Callable<T> {
         override fun call(): T {
             debugLog(TAG) {
                 "Start asynchronized task ${hashCode().toString(16)}."
             }
-            try {
-                return original()
-            } finally {
-                debugLog(TAG) {
-                    "Complete asynchronized task ${hashCode().toString(16)}."
+            inheritTraceContext(collector) {
+                try {
+                    return original()
+                } finally {
+                    debugLog(TAG) {
+                        "Complete asynchronized task ${hashCode().toString(16)}."
+                    }
                 }
             }
         }
     }
 
     override fun launch(action: () -> T) {
-        action.let(::Task)
+        Task(currentTraceContextForInherit, action)
             .let(executor::submit)
             .also(futures::add)
     }

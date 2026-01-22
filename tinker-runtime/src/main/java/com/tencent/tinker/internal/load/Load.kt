@@ -6,6 +6,7 @@ import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
+import com.tencent.tinker.internal.errorTypeShouldBeThrown
 import com.tencent.tinker.internal.load.code.InjectPathCodeLoader
 import com.tencent.tinker.internal.load.code.V24NonHardeningCodeLoader
 import com.tencent.tinker.internal.load.code.V27NonHardeningCodeLoader
@@ -21,6 +22,9 @@ import com.tencent.tinker.internal.util.currentProcess
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.infoLog
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
+import com.tencent.tinker.internal.util.traceTask
 
 private const val TAG = "Tinker.Load"
 
@@ -56,10 +60,18 @@ internal abstract class Loader {
 @NonDeployProcessOnly
 private fun Iterable<Loader.Factory>.tryLoad(patch: Patch) {
     val loaders = expected<Tinker.Error.Load, List<Loader>>("create loaders") {
-        mapNotNull { it.createLoaderIfNeeded(patch) }
+        mapNotNull {
+            traceE("load.factor(factory = ${it.javaClass.simpleName}@${it.hashCode().toString(16)})") {
+                it.createLoaderIfNeeded(patch)
+            }
+        }
     }
     try {
-        loaders.forEach { it.load() }
+        loaders.forEach {
+            traceS("load.load(loader = ${it.javaClass.simpleName}@${it.hashCode().toString(16)})") {
+                it.load()
+            }
+        }
     } catch (throwable: Throwable) {
         throw Tinker.Error(
             Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED,
@@ -80,42 +92,52 @@ private fun Application.loadWith(
     patch: Patch,
 ): ClassLoader? {
     val classLoaderReference = arrayOfNulls<ClassLoader>(1)
-    val loaders = buildList {
+    val factories = buildList {
         if (!hardening && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            V31NonHardeningCodeLoader.Factory(
-                reference = classLoaderReference,
-                application = this@loadWith
-            ).let(::add)
+            traceS("load.create_factory(type = code#v31_non_hardening)") {
+                V31NonHardeningCodeLoader.Factory(
+                    reference = classLoaderReference,
+                    application = this@loadWith
+                ).let(::add)
+            }
         } else if (!hardening && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            V27NonHardeningCodeLoader.Factory(
-                reference = classLoaderReference,
-                application = this@loadWith
-            ).let(::add)
+            traceS("load.create_factory(type = code#v27_non_hardening)") {
+                V27NonHardeningCodeLoader.Factory(
+                    reference = classLoaderReference,
+                    application = this@loadWith
+                ).let(::add)
+            }
         } else if (!hardening && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            V24NonHardeningCodeLoader.Factory(
-                reference = classLoaderReference,
-                application = this@loadWith,
-                outputDirectory = patch.oatDirectory,
-            ).let(::add)
+            traceS("load.create_factory(type = code#v24_non_hardening)") {
+                V24NonHardeningCodeLoader.Factory(
+                    reference = classLoaderReference,
+                    application = this@loadWith,
+                    outputDirectory = patch.oatDirectory,
+                ).let(::add)
+            }
         } else {
-            InjectPathCodeLoader.Factory(
-                application = this@loadWith,
-                outputDirectory = patch.oatDirectory,
+            traceS("load.create_factory(type = code#inject_path)") {
+                InjectPathCodeLoader.Factory(
+                    application = this@loadWith,
+                    outputDirectory = patch.oatDirectory,
+                ).let(::add)
+            }
+        }
+        traceS("load.create_factory(type = resource)") {
+            ResourceLoader.Factory(
+                applicationContext = this@loadWith,
             ).let(::add)
         }
-        ResourceLoader.Factory(
-            applicationContext = this@loadWith,
-        ).let(::add)
     }
     debugLog(TAG) {
         buildList {
             add("Load with loaders:")
-            loaders.forEach {
+            factories.forEach {
                 add("  ${it.javaClass.name}")
             }
         }.joinToString("\n")
     }
-    loaders.tryLoad(patch)
+    factories.tryLoad(patch)
     return classLoaderReference[0]
 }
 
@@ -127,24 +149,30 @@ private fun Application.loadWith(
     oatManager: OatManager = OatManager.with(this),
     patchLayoutConstructor: PatchLayoutConstructor = PatchLayoutConstructor.with(this),
 ): ClassLoader? {
-    validator?.run {
-        debugLog(TAG) {
-            "Validating \"${rawPatch.directory.absolutePath}\" with validator <${javaClass.name}>."
+    traceS("load.validate.validate") {
+        validator?.run {
+            debugLog(TAG) {
+                "Validating \"${rawPatch.directory.absolutePath}\" with validator <${javaClass.name}>."
+            }
+            validate(rawPatch.directory)
         }
-        validate(rawPatch.directory)
     }
     debugLog(TAG) {
         "Acquiring OAT for \"${rawPatch.directory.absolutePath}\"" +
                 " with manager <${oatManager.javaClass.name}>."
     }
-    val oatDirectory = oatManager.acquire(rawPatch.directory)
+    val oatDirectory = traceE("load.oat.acquire") {
+        oatManager.acquire(rawPatch.directory)
+    }
     debugLog(TAG) {
         "Constructing layout with constructor <${patchLayoutConstructor.javaClass.name}>."
     }
-    val patchDirectory = patchLayoutConstructor.construct(
-        baseDirectory = rawPatch.directory,
-        oatDirectory = oatDirectory,
-    )
+    val patchDirectory = traceE("load.layout.construct") {
+        patchLayoutConstructor.construct(
+            baseDirectory = rawPatch.directory,
+            oatDirectory = oatDirectory,
+        )
+    }
     debugLog(TAG) {
         "Patch directory is \"${patchDirectory.absolutePath}\"."
     }
@@ -161,11 +189,13 @@ private fun Application.loadInternal(
     skipValidating: Boolean,
     rawPatchManager: RawPatchManager = RawPatchManager.with(this),
 ): ClassLoader? {
-    val rawPatch = rawPatchManager.acquire() ?: run {
-        infoLog(TAG) {
-            "No loadable patch found, skip loading."
+    val rawPatch = traceE("load.raw_patch.acquire") {
+        rawPatchManager.acquire() ?: run {
+            infoLog(TAG) {
+                "No loadable patch found, skip loading."
+            }
+            return null
         }
-        return null
     }
     infoLog(TAG) {
         "Raw patch \"${rawPatch.version}\" is acquired, try loading."
@@ -197,20 +227,30 @@ internal fun Application.load(
     infoLog(TAG) {
         "Try loading patch in process \"${currentProcess}\"."
     }
-    val (classLoader, error) = try {
-        val classLoader = expected<Tinker.Error.Load, ClassLoader?>("load patch") {
-            loadInternal(
-                hardening = hardening,
-                skipValidating = skipValidating,
-            )
+    val (pair, events) = traceTask("load") {
+        try {
+            val classLoader = expected<Tinker.Error.Load, ClassLoader?>("load patch") {
+                loadInternal(
+                    hardening = hardening,
+                    skipValidating = skipValidating,
+                )
+            }
+            classLoader to null
+        } catch (error: Tinker.Error) {
+            if (error.type in errorTypeShouldBeThrown) {
+                throw error
+            }
+            null to error
         }
-        classLoader to null
-    } catch (error: Tinker.Error) {
-        if (error.type == Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED) {
-            throw error
-        }
-        null to error
     }
-    callback?.onTaskComplete(error)
+    val (classLoader, error) = pair
+    callback?.apply {
+        onTaskComplete(
+            Tinker.TaskSummary(
+                error = error,
+                events = events,
+            )
+        )
+    }
     return classLoader
 }

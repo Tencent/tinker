@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.IBinder
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
+import com.tencent.tinker.internal.errorTypeShouldBeThrown
 import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.CleanedRawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManager
@@ -13,6 +14,9 @@ import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.infoLog
 import com.tencent.tinker.internal.util.isInDeployProcess
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
+import com.tencent.tinker.internal.util.traceTask
 import kotlin.concurrent.thread
 
 private const val TAG = "Tinker.Clean"
@@ -24,7 +28,9 @@ private fun cleanOatDirectories(
     oatManager: OatManager = OatManager.with(context),
 ) {
     cleaned.forEach {
-        oatManager.clean(it.directory)
+        traceS("clean.oat.clean(dir = ${it.version})") {
+            oatManager.clean(it.directory)
+        }
     }
 }
 
@@ -34,9 +40,11 @@ private fun cleanPatches(
     strategy: Strategy,
     rawPatchManager: RawPatchManager = RawPatchManager.with(context),
 ) {
-    val cleaned = when (strategy) {
-        Strategy.CLEAN_ALL -> rawPatchManager.cleanAll()
-        Strategy.CLEAN_OBSOLETE -> rawPatchManager.cleanObsolete()
+    val cleaned = traceE("clean.clean(strategy = ${strategy.key})") {
+        when (strategy) {
+            Strategy.CLEAN_ALL -> rawPatchManager.cleanAll()
+            Strategy.CLEAN_OBSOLETE -> rawPatchManager.cleanObsolete()
+        }
     }
     cleanOatDirectories(context, cleaned)
 }
@@ -66,9 +74,9 @@ private fun cleanPatches(
 
 private const val CLEAN_IPC_KEY_STRATEGY = "s"
 
-private enum class Strategy {
-    CLEAN_ALL,
-    CLEAN_OBSOLETE,
+private enum class Strategy(val key: String) {
+    CLEAN_ALL("clean_all"),
+    CLEAN_OBSOLETE("clean_obsolete"),
 }
 
 @DeployProcessOnly
@@ -79,18 +87,30 @@ class TinkerCleanService : Service() {
             infoLog(TAG) {
                 "Cleaning request received. Start cleaning."
             }
-            val error = try {
-                expected<Tinker.Error.Clean>("clean patch") {
-                    cleanPatches(this, intent)
+            val (error, events) = traceTask("clean") {
+                try {
+                    expected<Tinker.Error.Clean>("clean patch") {
+                        cleanPatches(this, intent)
+                    }
+                    null
+                } catch (error: Tinker.Error) {
+                    if (error.type in errorTypeShouldBeThrown) {
+                        throw error
+                    }
+                    error
                 }
-                null
-            } catch (error: Tinker.Error) {
-                error
             }
             application
                 .let { it as? Tinker.App }
                 ?.cleanCallback
-                ?.onTaskComplete(error)
+                ?.apply {
+                    onTaskComplete(
+                        Tinker.TaskSummary(
+                            error = error,
+                            events = events,
+                        )
+                    )
+                }
         }
     }
 

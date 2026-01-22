@@ -20,7 +20,9 @@ import com.tencent.tinker.internal.load.ResourceImplementationDelegate
 import com.tencent.tinker.internal.load.ResourceKeyDelegate
 import com.tencent.tinker.internal.load.ResourceManagerDelegate
 import com.tencent.tinker.internal.load.ResourcesDelegate
+import com.tencent.tinker.internal.util.className
 import com.tencent.tinker.internal.util.expected
+import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.warnLog
 import java.io.File
 import java.io.IOException
@@ -156,40 +158,44 @@ internal class ResourceLoader(
     private fun doLoad() {
         val initialUpdatedTimestamp = resourceApk.lastModified()
         loaders.forEach {
-            it.invoke()
+            traceS("load.load.res.load.${it.javaClass.className}@${it.hashCode().toString(16)}") {
+                it.invoke()
+            }
         }
         injectInsuranceCallback?.invoke(initialUpdatedTimestamp)
     }
 
     private fun verify() {
-        val added = context.assets
-            .open(TEST_ADDED_ASSET_FILE_NAME)
-            .use { it.readBytes() }
-            .toString(Charsets.UTF_8)
-        if (added != "patched") {
-            throw Tinker.Error(
-                Tinker.Error.Load.Resource.VERIFY_FAILED,
-                "Cannot load patch-added test asset.",
-            )
-        }
-        val modified = context.assets
-            .open(TEST_MODIFIED_ASSET_FILE_NAME)
-            .use { it.readBytes() }
-            .toString(Charsets.UTF_8)
-        if (modified != "patched") {
-            throw Tinker.Error(
-                Tinker.Error.Load.Resource.VERIFY_FAILED,
-                "Cannot load patch-modified test asset.",
-            )
-        }
-        try {
-            context.assets.open(TEST_REMOVED_ASSET_FILE_NAME)
-            throw Tinker.Error(
-                Tinker.Error.Load.Resource.VERIFY_FAILED,
-                "Patch-removed test asset is still exists.",
-            )
-        } catch (_: IOException) {
-            // Expected.
+        traceS("load.load.res.verify") {
+            val added = context.assets
+                .open(TEST_ADDED_ASSET_FILE_NAME)
+                .use { it.readBytes() }
+                .toString(Charsets.UTF_8)
+            if (added != "patched") {
+                throw Tinker.Error(
+                    Tinker.Error.Load.Resource.VERIFY_FAILED,
+                    "Cannot load patch-added test asset.",
+                )
+            }
+            val modified = context.assets
+                .open(TEST_MODIFIED_ASSET_FILE_NAME)
+                .use { it.readBytes() }
+                .toString(Charsets.UTF_8)
+            if (modified != "patched") {
+                throw Tinker.Error(
+                    Tinker.Error.Load.Resource.VERIFY_FAILED,
+                    "Cannot load patch-modified test asset.",
+                )
+            }
+            try {
+                context.assets.open(TEST_REMOVED_ASSET_FILE_NAME)
+                throw Tinker.Error(
+                    Tinker.Error.Load.Resource.VERIFY_FAILED,
+                    "Patch-removed test asset is still exists.",
+                )
+            } catch (_: IOException) {
+                // Expected.
+            }
         }
     }
 

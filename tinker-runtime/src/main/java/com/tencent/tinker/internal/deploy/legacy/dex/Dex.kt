@@ -15,6 +15,8 @@ import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.searchAndSortDexFiles
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.withTemporaryDirectory
 import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream
 import java.io.File
@@ -187,9 +189,9 @@ private fun File.createDexByMerging(
     baseApk: ZipFile,
     diffPackage: ZipFile,
 ): ByteArray {
-    val output = resolve(metadata.name)
+    val outputFile = resolve(metadata.name)
     debugLog(TAG) {
-        "Creating dex file \"${metadata.name}\" by merging to \"${output.absolutePath}\"."
+        "Creating dex file \"${metadata.name}\" by merging to \"${outputFile.absolutePath}\"."
     }
     val baseEntry = baseApk.getEntry(metadata.name)
         ?: throw Tinker.Error(
@@ -208,7 +210,7 @@ private fun File.createDexByMerging(
             Tinker.Error.Deploy.Legacy.Dex.MISSING_DIFF_ENTRY,
             "Cannot find entry \"${metadata.name}\" in diff package \"${diffPackage.name}\"."
         )
-    return output
+    return outputFile
         .ensureParentIsExistingDirectory()
         .outputStream()
         .buffered()
@@ -239,11 +241,13 @@ private fun createDexFiles(
             Tinker.Error.Deploy.Legacy.Dex.MISSING_METADATA,
             "Cannot find dex metadata in diff package ${diffPackage.name}."
         )
-    val metadataList = diffPackage.getInputStream(metadataFile)
-        .use {
-            it.readBytes()
-        }
-        .parsedDexMetadataList
+    val metadataList = traceE("deploy.legacy.dex.read_metadata") {
+        diffPackage.getInputStream(metadataFile)
+            .use {
+                it.readBytes()
+            }
+            .parsedDexMetadataList
+    }
     debugLog(TAG) {
         buildList {
             add("Read dex metadata from ${diffPackage.name}:")
@@ -255,12 +259,18 @@ private fun createDexFiles(
             launch {
                 val hash = if (metadata.baseCrc32 == 0L) {
                     // No base dex file, the patched dex file is newly added.
-                    extractedDirectory.createDexAsNewlyAdded(metadata, diffPackage)
+                    traceE("deploy.legacy.dex.create(name = ${metadata.name}, strategy = newly_added)") {
+                        extractedDirectory.createDexAsNewlyAdded(metadata, diffPackage)
+                    }
                 } else if (metadata.diffHash == null) {
                     // No diff file, the patched dex file is not modified.
-                    extractedDirectory.createDexAsNotModified(metadata, baseApk)
+                    traceE("deploy.legacy.dex.create(name = ${metadata.name}, strategy = not_modified)") {
+                        extractedDirectory.createDexAsNotModified(metadata, baseApk)
+                    }
                 } else {
-                    extractedDirectory.createDexByMerging(metadata, baseApk, diffPackage)
+                    traceE("deploy.legacy.dex.create(name = ${metadata.name}, strategy = merging)") {
+                        extractedDirectory.createDexByMerging(metadata, baseApk, diffPackage)
+                    }
                 }
                 if (!hash.contentEquals(metadata.patchedHash)) {
                     throw Tinker.Error(
@@ -272,29 +282,31 @@ private fun createDexFiles(
             }
         }
         launch {
-            val output = extractedDirectory.resolve(TEST_DEX_FILE_NAME)
-            debugLog(TAG) {
-                "Creating test dex file to \"${output.absolutePath}\"."
-            }
-            // Since we need to get checksum by reading base apk, we just read test dex file from it instead of assets
-            // API.
-            val testDexEntry = baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_DEX_FILE_NAME}") ?: throw Tinker.Error(
-                Tinker.Error.Deploy.Legacy.Dex.MISSING_TEST_DEX,
-                "Cannot find test dex file in base apk file \"${baseApk.name}\"."
-            )
-            baseApk.getInputStream(testDexEntry)
-                .use { stream ->
-                    output.ensureParentIsExistingDirectory()
-                        .outputStream()
-                        .buffered()
-                        .use(stream::copyTo)
+            traceS("deploy.legacy.dex.create_test") {
+                val output = extractedDirectory.resolve(TEST_DEX_FILE_NAME)
+                debugLog(TAG) {
+                    "Creating test dex file to \"${output.absolutePath}\"."
                 }
-            if (output.crc32 != testDexEntry.crc) {
-                throw Tinker.Error(
-                    Tinker.Error.Deploy.Legacy.Dex.INVALID_DEPLOY_RESULT,
-                    "CRC32 checksum \"${output.crc32}\" of test dex file as patch result "
-                            + "is not match \"${testDexEntry.crc}\" in base apk file \"${baseApk.name}\".",
+                // Since we need to get checksum by reading base apk, we just read test dex file from it instead of assets
+                // API.
+                val testDexEntry = baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_DEX_FILE_NAME}") ?: throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.MISSING_TEST_DEX,
+                    "Cannot find test dex file in base apk file \"${baseApk.name}\"."
                 )
+                baseApk.getInputStream(testDexEntry)
+                    .use { stream ->
+                        output.ensureParentIsExistingDirectory()
+                            .outputStream()
+                            .buffered()
+                            .use(stream::copyTo)
+                    }
+                if (output.crc32 != testDexEntry.crc) {
+                    throw Tinker.Error(
+                        Tinker.Error.Deploy.Legacy.Dex.INVALID_DEPLOY_RESULT,
+                        "CRC32 checksum \"${output.crc32}\" of test dex file as patch result "
+                                + "is not match \"${testDexEntry.crc}\" in base apk file \"${baseApk.name}\".",
+                    )
+                }
             }
         }
     }
@@ -310,17 +322,19 @@ private fun dexDeployToApkInternal(
             "Creating dex files to \"${temporaryDirectory.absolutePath}\"."
         }
         createDexFiles(baseApk, diffPackage, temporaryDirectory)
-        val sorted = temporaryDirectory.searchAndSortDexFiles()
-            ?.map { dexName ->
-                val match = classesDexWithIndexPattern.matchEntire(dexName.name)
-                    ?: return@map null to dexName
-                val dexIndex = match.groupValues[1].takeIf { it.isNotEmpty() }?.toInt() ?: 1
-                return@map dexIndex to dexName
-            }
-            ?: throw Tinker.Error(
-                Tinker.Error.Deploy.Legacy.Dex.NO_DEPLOYED_DEX,
-                "No valid dex file found in directory \"${temporaryDirectory.absolutePath}\"."
-            )
+        val sorted = traceE("deploy.legacy.dex.search_and_sort") {
+            temporaryDirectory.searchAndSortDexFiles()
+                ?.map { dexName ->
+                    val match = classesDexWithIndexPattern.matchEntire(dexName.name)
+                        ?: return@map null to dexName
+                    val dexIndex = match.groupValues[1].takeIf { it.isNotEmpty() }?.toInt() ?: 1
+                    return@map dexIndex to dexName
+                }
+                ?: throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Dex.NO_DEPLOYED_DEX,
+                    "No valid dex file found in directory \"${temporaryDirectory.absolutePath}\"."
+                )
+        }
         debugLog(TAG) {
             buildList {
                 add("Sorted dex files with mapping indexes:")
@@ -330,36 +344,38 @@ private fun dexDeployToApkInternal(
             }.joinToString("\n")
         }
         var startIndex = sorted.maxOf { it.first ?: -1 } + 1
-        apk.ensureParentIsExistingDirectory()
-            .outputStream()
-            .buffered()
-            .let(::AlignedZipOutputStream)
-            .use { zip ->
-                sorted.forEach { (index, dex) ->
-                    val actualIndex = index ?: startIndex++
-                    val name = if (actualIndex == 1) {
-                        "classes.dex"
-                    } else {
-                        "classes$actualIndex.dex"
-                    }
-                    debugLog(TAG) {
-                        "Adding dex file \"${dex.absolutePath}\"" +
-                                " to apk \"${apk.absolutePath}\"" +
-                                " with name \"$name\"."
-                    }
-                    ZipEntry(name)
-                        .apply {
-                            method = ZipEntry.STORED
-                            size = dex.length()
-                            crc = dex.crc32
+        traceS("deploy.legacy.dex.write_apk") {
+            apk.ensureParentIsExistingDirectory()
+                .outputStream()
+                .buffered()
+                .let(::AlignedZipOutputStream)
+                .use { zip ->
+                    sorted.forEach { (index, dex) ->
+                        val actualIndex = index ?: startIndex++
+                        val name = if (actualIndex == 1) {
+                            "classes.dex"
+                        } else {
+                            "classes$actualIndex.dex"
                         }
-                        .let(zip::putNextEntry)
-                    dex.inputStream().use { stream ->
-                        stream.copyTo(zip)
+                        debugLog(TAG) {
+                            "Adding dex file \"${dex.absolutePath}\"" +
+                                    " to apk \"${apk.absolutePath}\"" +
+                                    " with name \"$name\"."
+                        }
+                        ZipEntry(name)
+                            .apply {
+                                method = ZipEntry.STORED
+                                size = dex.length()
+                                crc = dex.crc32
+                            }
+                            .let(zip::putNextEntry)
+                        dex.inputStream().use { stream ->
+                            stream.copyTo(zip)
+                        }
+                        zip.closeEntry()
                     }
-                    zip.closeEntry()
                 }
-            }
+        }
     }
 }
 

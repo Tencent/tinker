@@ -15,6 +15,8 @@ import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
 import com.tencent.tinker.internal.util.crc32
 import com.tencent.tinker.internal.util.debugLog
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -144,37 +146,45 @@ internal object LegacyDeployer : Deployer() {
         }
         val baseApk = ZipFile(baseApkFile)
         val diffPackage = ZipFile(diffPackageFile)
-        val packageMetadata = diffPackage.getEntry("assets/package_meta.txt")
-            ?.let(diffPackage::getInputStream)
-            ?.use { it.readBytes() }
-            ?.parsePackageMetadata
-            ?: throw Tinker.Error(
-                Tinker.Error.Deploy.Legacy.MISSING_METADATA,
-                "Cannot find package metadata in patch ${diffPackage.name}."
-            )
+        val packageMetadata = traceE("deploy.legacy.read_metadata") {
+            diffPackage.getEntry("assets/package_meta.txt")
+                ?.let(diffPackage::getInputStream)
+                ?.use { it.readBytes() }
+                ?.parsePackageMetadata
+                ?: throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.MISSING_METADATA,
+                    "Cannot find package metadata in patch ${diffPackage.name}."
+                )
+        }
         debugLog(TAG) {
             buildList {
                 add("Read package metadata from \"${diffPackage.name}\":")
                 add(packageMetadata)
             }.joinToString("\n")
         }
-        dexDeployToApk(
-            baseApk = baseApk,
-            diffPackage = diffPackage,
-            apk = deployedDirectory.patchDexApkFile,
-        )
-        libraryDeploy(
-            packageMetadata = packageMetadata,
-            baseApk = baseApk,
-            diffPackage = diffPackage,
-            directory = deployedDirectory.patchLibraryDirectory,
-        )
-        resourceDeploy(
-            packageMetadata = packageMetadata,
-            baseApk = baseApk,
-            diffPackage = diffPackage,
-            apk = deployedDirectory.patchResourceApkFile,
-        )
+        traceS("deploy.legacy.dex") {
+            dexDeployToApk(
+                baseApk = baseApk,
+                diffPackage = diffPackage,
+                apk = deployedDirectory.patchDexApkFile,
+            )
+        }
+        traceS("deploy.legacy.library") {
+            libraryDeploy(
+                packageMetadata = packageMetadata,
+                baseApk = baseApk,
+                diffPackage = diffPackage,
+                directory = deployedDirectory.patchLibraryDirectory,
+            )
+        }
+        traceS("deploy.legacy.resource") {
+            resourceDeploy(
+                packageMetadata = packageMetadata,
+                baseApk = baseApk,
+                diffPackage = diffPackage,
+                apk = deployedDirectory.patchResourceApkFile,
+            )
+        }
     }
 
     override fun deploy(

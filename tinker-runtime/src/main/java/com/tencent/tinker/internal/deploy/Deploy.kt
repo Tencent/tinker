@@ -7,6 +7,7 @@ import android.os.IBinder
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.deploy.legacy.LegacyDeployer
+import com.tencent.tinker.internal.errorTypeShouldBeThrown
 import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.RawPatchManager
 import com.tencent.tinker.internal.module.validate.Validator
@@ -14,6 +15,9 @@ import com.tencent.tinker.internal.module.validate.ValidatorImpl
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.infoLog
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
+import com.tencent.tinker.internal.util.traceTask
 import com.tencent.tinker.internal.util.withTemporaryDirectory
 import java.io.File
 import kotlin.concurrent.thread
@@ -57,26 +61,34 @@ private fun deployPatch(
                     " via deployer \"${deployer.javaClass.name}\"" +
                     " to \"${temporaryDirectory.absolutePath}\"."
         }
-        deployer.deploy(
-            context = context,
-            diffPackage = diffPackage,
-            skipCheckingSignature = skipCheckingSignature,
-            deployedDirectory = temporaryDirectory,
-        )
+        traceS("deploy.deploy(deployer = ${deployer.javaClass.simpleName}@${deployer.hashCode().toString(16)})") {
+            deployer.deploy(
+                context = context,
+                diffPackage = diffPackage,
+                skipCheckingSignature = skipCheckingSignature,
+                deployedDirectory = temporaryDirectory,
+            )
+        }
         debugLog(TAG) {
             "Creating validation fingerprint for \"${temporaryDirectory.absolutePath}\"" +
                     " with validator <${validator.javaClass.name}>."
         }
-        validator.createValidationFingerprint(temporaryDirectory)
+        traceS("deploy.validate.create_fingerprint") {
+            validator.createValidationFingerprint(temporaryDirectory)
+        }
         debugLog(TAG) {
             "Creating raw patch \"${version}\" with \"${temporaryDirectory.absolutePath}\"."
         }
-        val rawPatch = rawPatchManager.create(version, temporaryDirectory)
+        val rawPatch = traceE("deploy.raw_patch.create") {
+            rawPatchManager.create(version, temporaryDirectory)
+        }
         debugLog(TAG) {
             "Generating OAT for \"${rawPatch.directory.absolutePath}\" if needed" +
                     " with manager <${oatManager.javaClass.name}>."
         }
-        oatManager.generateIfNeeded(rawPatch.directory)
+        traceS("deploy.oat.generate") {
+            oatManager.generateIfNeeded(rawPatch.directory)
+        }
     }
 }
 
@@ -157,18 +169,30 @@ class TinkerDeployService : Service() {
             infoLog(TAG) {
                 "Deploying request received. Start deploying."
             }
-            val error = try {
-                expected<Tinker.Error.Deploy>("deploy patch") {
-                    deployPatch(this, intent)
+            val (error, events) = traceTask("deploy") {
+                try {
+                    expected<Tinker.Error.Deploy>("deploy patch") {
+                        deployPatch(this, intent)
+                    }
+                    null
+                } catch (error: Tinker.Error) {
+                    if (error.type in errorTypeShouldBeThrown) {
+                        throw error
+                    }
+                    error
                 }
-                null
-            } catch (error: Tinker.Error) {
-                error
             }
             application
                 .let { it as? Tinker.App }
                 ?.deployCallback
-                ?.onTaskComplete(error)
+                ?.apply {
+                    onTaskComplete(
+                        Tinker.TaskSummary(
+                            error = error,
+                            events = events,
+                        )
+                    )
+                }
         }
     }
 

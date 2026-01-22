@@ -7,8 +7,10 @@ import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.DexPathListDelegate
 import com.tencent.tinker.internal.load.JavaMutableList
+import com.tencent.tinker.internal.util.className
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
+import com.tencent.tinker.internal.util.traceS
 import java.io.File
 import java.io.IOException
 import java.lang.reflect.Array as JvmReflectArray
@@ -28,7 +30,9 @@ internal class InjectPathCodeLoader(
 
     override fun doLoad(): ClassLoader {
         actions.forEach {
-            it.invoke()
+            traceS("load.load.code.inject.action(action = ${it.javaClass.className}@${it.hashCode().toString(16)})") {
+                it.invoke()
+            }
         }
         return source
     }

@@ -4,9 +4,12 @@ import androidx.annotation.VisibleForTesting
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.Patch
 import com.tencent.tinker.internal.load.Loader
+import com.tencent.tinker.internal.util.className
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.searchAndSortDexFiles
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
 import java.io.File
 
 private const val TAG = "Tinker.Load.Code"
@@ -62,8 +65,12 @@ internal abstract class CodeLoader : Loader() {
     open val verifyDependencyLibraryLoading: Boolean = true
 
     private fun verify(classLoader: ClassLoader) {
-        verifyDex(classLoader)
-        verifyLibrary(classLoader)
+        traceS("load.load.code.verify.dex") {
+            verifyDex(classLoader)
+        }
+        traceS("load.load.code.verify.library") {
+            verifyLibrary(classLoader)
+        }
     }
 
     private fun verifyDex(classLoader: ClassLoader) {

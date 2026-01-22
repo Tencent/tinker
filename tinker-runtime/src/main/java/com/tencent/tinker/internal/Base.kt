@@ -2,6 +2,7 @@ package com.tencent.tinker.internal
 
 import android.content.Context
 import android.os.Build
+import com.tencent.tinker.Tinker
 import java.io.File
 
 internal val Context.rootDirectory: File
@@ -84,5 +85,12 @@ private val validVersionPattern = "[a-zA-Z0-9-_.]+".toRegex()
 internal fun checkIfVersionIsValid(version: String) {
     require(validVersionPattern.matches(version)) {
         "Version \"${version}\" is invalid. Only letters, numbers, hyphens (-), underscores (_) and dots (.) are allowed."
+    }
+}
+
+internal val errorTypeShouldBeThrown by lazy {
+    buildSet {
+        Tinker.Error.Unexpected.Trace.entries.let(::addAll)
+        Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED.let(::add)
     }
 }

@@ -3,6 +3,7 @@ package com.tencent.tinker
 import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
+import androidx.annotation.WorkerThread
 import com.tencent.tinker.Tinker.cleanAllPatches
 import com.tencent.tinker.Tinker.cleanObsoletePatches
 import com.tencent.tinker.Tinker.requestPatchAsUnavailable
@@ -16,6 +17,7 @@ import com.tencent.tinker.internal.load.load
 import com.tencent.tinker.internal.util.globalLogLevel
 import com.tencent.tinker.internal.util.globalLogger
 import com.tencent.tinker.internal.util.isInDeployProcess
+import com.tencent.tinker.internal.util.use
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -115,6 +117,33 @@ object Tinker {
          */
         sealed interface Type {
             val groupCode: Int
+        }
+
+        /**
+         * Error type groups of unexpected error, which may be caused by faulty code design.
+         *
+         * If errors with these types are raised, please report to developers via
+         * [GitHub Issues](https://github.com/Tencent/tinker/issues/new).
+         */
+        object Unexpected {
+
+            /**
+             * Error type group of calling trace functions incorrectly.
+             */
+            enum class Trace : Type {
+                /**
+                 * Type of error caused by raised unexpected throwable.
+                 */
+                UNEXPECTED,
+
+                /**
+                 * Type of error caused by starting a task tracing inside another task.
+                 */
+                TRACE_TASK_INSIDE_A_TASK;
+
+                override val groupCode: Int
+                    get() = 0x0100
+            }
         }
 
         /**
@@ -630,9 +659,96 @@ object Tinker {
     /**
      * Gets code of error type. See [Error.Type] for more details.
      */
+    @get:JvmStatic
     @get:JvmName("codeOfErrorType")
     val <T : Error.Type> T.code: Int
         get() = (groupCode shl 16) or (this as Enum<*>).ordinal
+
+    /**
+     * Event of the traced task procedure.
+     */
+    class TraceEvent internal constructor(
+        /**
+         * Name of the event.
+         */
+        val name: String,
+
+        /**
+         * PID of the process which the procedure is running on.
+         */
+        val pid: Int,
+
+        /**
+         * TID of the thread which the procedure is running on.
+         */
+        val tid: Int,
+
+        /**
+         * Start time since boot of the procedure in microseconds.
+         */
+        val timestamp: Long,
+
+        /**
+         * Duration of the procedure in microseconds.
+         */
+        val duration: Long,
+    )
+
+    /**
+     * Dumps trace events as
+     * [Chromium JSON trace format](https://perfetto.dev/docs/getting-started/other-formats#chrome-json-format)
+     * to [file].
+     */
+    @WorkerThread
+    @JvmStatic
+    @JvmName("dumpTraceEventsToFile")
+    fun Iterable<TraceEvent>.dumpToFile(file: File) {
+        val events = toList()
+        file.bufferedWriter().use { writer ->
+            writer.write("{")
+            writer.write("\"traceEvents\":[")
+            events.forEachIndexed { index, event ->
+                if (index == 0) {
+                    writer.write("{")
+                } else {
+                    writer.write(",{")
+                }
+                writer.write("\"ph\":\"X\",")
+                writer.write("\"name\":\"${event.name}\",")
+                writer.write("\"pid\":${event.pid},")
+                writer.write("\"tid\":${event.tid},")
+                writer.write("\"ts\":${event.timestamp},")
+                writer.write("\"dur\":${event.duration}")
+                writer.write("}")
+            }
+            writer.write("]")
+            writer.write("}")
+        }
+    }
+
+    /**
+     * Summary of the task.
+     */
+    class TaskSummary internal constructor(
+        /**
+         * Error raised during task. If task is successful, [error] is `null`.
+         */
+        val error: Error?,
+
+        /**
+         * Event of traced task procedures.
+         *
+         * If [system tracing](https://developer.android.com/topic/performance/tracing) is enabled, events are also
+         * recorded as system trace events.
+         */
+        val events: List<TraceEvent>,
+    ) {
+        /**
+         * Whether the task is successful.
+         */
+        val success: Boolean
+            get() = error == null
+    }
 
     /**
      * Callback to notify the result of task.
@@ -641,10 +757,8 @@ object Tinker {
 
         /**
          * Once the task is complete, this function will be called.
-         *
-         * If task is successful, [error] is `null`.
          */
-        fun onTaskComplete(error: Error?)
+        fun onTaskComplete(summary: TaskSummary)
     }
 
     /**

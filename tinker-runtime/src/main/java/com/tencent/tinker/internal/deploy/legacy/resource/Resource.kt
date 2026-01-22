@@ -16,6 +16,8 @@ import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.forked
 import com.tencent.tinker.internal.util.forkedStored
+import com.tencent.tinker.internal.util.traceE
+import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.withTemporaryFile
 import java.io.File
 import java.util.zip.ZipEntry
@@ -223,11 +225,22 @@ private const val MANIFEST_ENTRY_NAME = "AndroidManifest.xml"
 
 private sealed class DeployStrategy {
 
-    class NewlyAdded(val stored: Boolean) : DeployStrategy()
+    abstract val key: String
 
-    object NotModified : DeployStrategy()
+    class NewlyAdded(val stored: Boolean) : DeployStrategy() {
+        override val key: String
+            get() = "newly_added"
+    }
 
-    class Merging(val patchedHash: ByteArray) : DeployStrategy()
+    object NotModified : DeployStrategy() {
+        override val key: String
+            get() = "not_modified"
+    }
+
+    class Merging(val patchedHash: ByteArray) : DeployStrategy() {
+        override val key: String
+            get() = "merging"
+    }
 }
 
 private val String.testAssetName: Boolean
@@ -386,41 +399,45 @@ private fun ZipOutputStream.createTestAssets(
     baseApk: ZipFile
 ) {
     // Test added asset.
-    val testAddedAssetEntry =
-        baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_ADDED_ASSET_FILE_NAME}")
-            ?: throw Tinker.Error(
-                Tinker.Error.Deploy.Legacy.Resource.MISSING_TEST_ASSET,
-                "Cannot find test added asset file in base apk file \"${baseApk.name}\"."
-            )
-    ZipEntry("assets/${TEST_ADDED_ASSET_FILE_NAME}")
-        .apply {
-            this.method = testAddedAssetEntry.method
-            this.size = testAddedAssetEntry.size
-            this.crc = testAddedAssetEntry.crc
+    traceS("deploy.legacy.resource.create_test(type = added)") {
+        val testAddedAssetEntry =
+            baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_ADDED_ASSET_FILE_NAME}")
+                ?: throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Resource.MISSING_TEST_ASSET,
+                    "Cannot find test added asset file in base apk file \"${baseApk.name}\"."
+                )
+        ZipEntry("assets/${TEST_ADDED_ASSET_FILE_NAME}")
+            .apply {
+                this.method = testAddedAssetEntry.method
+                this.size = testAddedAssetEntry.size
+                this.crc = testAddedAssetEntry.crc
+            }
+            .let(::putNextEntry)
+        baseApk.getInputStream(testAddedAssetEntry).use { input ->
+            input.copyTo(this)
         }
-        .let(::putNextEntry)
-    baseApk.getInputStream(testAddedAssetEntry).use { input ->
-        input.copyTo(this)
+        closeEntry()
     }
-    closeEntry()
     // Test modified asset.
-    val testModifiedAssetEntry =
-        baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_MODIFIED_ASSET_FILE_NAME}")
-            ?: throw Tinker.Error(
-                Tinker.Error.Deploy.Legacy.Resource.MISSING_TEST_ASSET,
-                "Cannot find test modified asset file in base apk file \"${baseApk.name}\"."
-            )
-    ZipEntry("assets/${TEST_MODIFIED_ASSET_FILE_NAME}")
-        .apply {
-            this.method = testModifiedAssetEntry.method
-            this.size = testModifiedAssetEntry.size
-            this.crc = testModifiedAssetEntry.crc
+    traceS("deploy.legacy.resource.create_test(type = modified)") {
+        val testModifiedAssetEntry =
+            baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/${TEST_MODIFIED_ASSET_FILE_NAME}")
+                ?: throw Tinker.Error(
+                    Tinker.Error.Deploy.Legacy.Resource.MISSING_TEST_ASSET,
+                    "Cannot find test modified asset file in base apk file \"${baseApk.name}\"."
+                )
+        ZipEntry("assets/${TEST_MODIFIED_ASSET_FILE_NAME}")
+            .apply {
+                this.method = testModifiedAssetEntry.method
+                this.size = testModifiedAssetEntry.size
+                this.crc = testModifiedAssetEntry.crc
+            }
+            .let(::putNextEntry)
+        baseApk.getInputStream(testModifiedAssetEntry).use { input ->
+            input.copyTo(this)
         }
-        .let(::putNextEntry)
-    baseApk.getInputStream(testModifiedAssetEntry).use { input ->
-        input.copyTo(this)
+        closeEntry()
     }
-    closeEntry()
 }
 
 private fun resourceDeployInternal(
@@ -468,26 +485,31 @@ private fun resourceDeployInternal(
             output.closeEntry()
             // Creates entries by their strategies.
             entryStrategies.forEach { (entryName, strategy) ->
-                when (strategy) {
+                traceE("deploy.legacy.resource.create(name = ${entryName}, strategy = ${strategy.key})") {
+                    when (strategy) {
 
-                    is DeployStrategy.NewlyAdded -> output.createResourceAsNewlyAdded(
-                        diffPackage = diffPackage,
-                        entryName = entryName,
-                        stored = strategy.stored
-                    )
+                        is DeployStrategy.NewlyAdded ->
+                            output.createResourceAsNewlyAdded(
+                                diffPackage = diffPackage,
+                                entryName = entryName,
+                                stored = strategy.stored
+                            )
 
-                    is DeployStrategy.NotModified -> output.createResourceAsNotModified(
-                        baseApk = baseApk,
-                        entryName = entryName,
-                    )
+                        is DeployStrategy.NotModified ->
+                            output.createResourceAsNotModified(
+                                baseApk = baseApk,
+                                entryName = entryName,
+                            )
 
-                    is DeployStrategy.Merging -> output.createResourceByMerging(
-                        packageMetadata = packageMetadata,
-                        baseApk = baseApk,
-                        diffPackage = diffPackage,
-                        entryName = entryName,
-                        expectedPatchedHash = strategy.patchedHash,
-                    )
+                        is DeployStrategy.Merging ->
+                            output.createResourceByMerging(
+                                packageMetadata = packageMetadata,
+                                baseApk = baseApk,
+                                diffPackage = diffPackage,
+                                entryName = entryName,
+                                expectedPatchedHash = strategy.patchedHash,
+                            )
+                    }
                 }
             }
             // Creates test assets.
