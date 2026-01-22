@@ -5,8 +5,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
-private const val TAG = "Tinker.Util.Concurrent"
-
 internal class SynchronizedCache<T> {
 
     private var content = null as T?
@@ -28,6 +26,10 @@ private class AsyncScopeImpl<T>(
     private val executor: ExecutorService,
     private val futures: MutableList<Future<T>>
 ) : AsyncScope<T>() {
+
+    companion object {
+        private const val TAG = "Tinker.Async"
+    }
 
     private class Task<T>(
         private val collector: TraceContext?,

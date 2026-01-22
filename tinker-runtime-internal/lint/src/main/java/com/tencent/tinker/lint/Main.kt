@@ -144,7 +144,7 @@ class ProcessContextDetector : Detector(), Detector.UastScanner {
         IS_IN_DEPLOY_PROCESS("isInDeployProcess");
 
         companion object {
-            const val DEFINE_CLASS_NAME = "com.tencent.tinker.internal.util.SystemKt"
+            const val DEFINE_CLASS_NAME = "com.tencent.tinker.internal.util.OthersKt"
             const val RECEIVER_CLASS_NAME = "android.content.Context"
         }
     }

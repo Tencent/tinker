@@ -4,8 +4,27 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import java.util.zip.ZipEntry
 
-private const val TAG = "Tinker.Utils.System"
+/**
+ * Returns a new [ZipEntry] with the same name as this entry.
+ */
+internal val ZipEntry.forked: ZipEntry
+    get() = ZipEntry(name).apply {
+        method = this@forked.method
+        size = this@forked.size
+        crc = this@forked.crc
+    }
+
+/**
+ * Returns a new [ZipEntry] with the same name as this entry, but with the stored method.
+ */
+internal val ZipEntry.forkedStored: ZipEntry
+    get() = ZipEntry(name).apply {
+        method = ZipEntry.STORED
+        size = this@forkedStored.size
+        crc = this@forkedStored.crc
+    }
 
 @Suppress("UnusedReceiverParameter")
 internal val Context.currentProcess: String
@@ -63,7 +82,7 @@ internal val currentInstructionSet by lazy {
             }
             .invoke(null) as String
     } catch (throwable: Throwable) {
-        warnLog(TAG, throwable = throwable) {
+        warnLog("Tinker", throwable = throwable) {
             "Get \"currentInstructionSet\" failed, try to read CPU ABI directly."
         }
         @Suppress("DEPRECATION")
@@ -90,9 +109,12 @@ internal val arkHotRunning by lazy {
             }
             .invoke(null) as Boolean
     } catch (throwable: Throwable) {
-        warnLog(TAG, throwable = throwable) {
+        warnLog("Tinker", throwable = throwable) {
             "Get \"arkHotRunning\" failed."
         }
         return@lazy false
     }
 }
+
+internal val Class<*>.className: String
+    get() = name.substringAfterLast('.')
