@@ -1,12 +1,13 @@
 [versions]
-agp = "8.1.4"
-agp-tools = "31.1.4"
+agp = "8.13.2"
+agp-for-plugin = "8.1.4"
+agp-tools = "31.13.2"
 androidx-annotation = "1.9.1"
 androidx-orchestrator = "1.6.1"
 androidx-test = "1.7.0"
 androidx-test-junit = "1.3.0"
 apk-parser-lib = "1.2.3"
-asm = "9.9"
+asm = "9.9.1"
 commons-codec = "1.20.0"
 dexlib2 = "2.5.2"
 dom4j = "2.2.0"
@@ -18,7 +19,7 @@ osdetector = "1.7.3"
 robolectric = "4.15"
 
 [libraries]
-agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+agp = { module = "com.android.tools.build:gradle", version.ref = "agp-for-plugin" }
 android-lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "agp-tools" }
 android-lint-checks = { module = "com.android.tools.lint:lint-checks", version.ref = "agp-tools" }
 android-lint-tests = { module = "com.android.tools.lint:lint-tests", version.ref = "agp-tools" }

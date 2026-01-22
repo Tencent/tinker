@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 import com.android.build.api.artifact.SingleArtifact
 import com.tencent.tinker.patch.CliMain
 import groovy.json.JsonSlurper
@@ -28,10 +26,12 @@ android {
         create("original") {
             dimension = "type"
             isDefault = true
+            @Suppress("UnstableApiUsage")
             externalNativeBuild.cmake.arguments.add("-DUPDATED=OFF")
         }
         create("updated") {
             dimension = "type"
+            @Suppress("UnstableApiUsage")
             externalNativeBuild.cmake.arguments.add("-DUPDATED=ON")
         }
     }

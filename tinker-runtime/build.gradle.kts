@@ -33,7 +33,6 @@ android {
     testCoverage {
         jacocoVersion = "0.8.14"
     }
-    @Suppress("UnstableApiUsage")
     testOptions {
         // Isolates each test case to separate process to avoid interference between test cases that
         // modify system state.
