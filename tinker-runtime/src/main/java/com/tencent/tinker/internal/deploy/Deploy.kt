@@ -12,6 +12,7 @@ import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.RawPatchManager
 import com.tencent.tinker.internal.module.validate.Validator
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
+import com.tencent.tinker.internal.util.className
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.infoLog
@@ -61,7 +62,7 @@ private fun deployPatch(
                     " via deployer \"${deployer.javaClass.name}\"" +
                     " to \"${temporaryDirectory.absolutePath}\"."
         }
-        traceS("deploy.deploy(deployer = ${deployer.javaClass.simpleName}@${deployer.hashCode().toString(16)})") {
+        traceS("deploy.deploy(deployer = ${deployer.javaClass.className}@${deployer.hashCode().toString(16)})") {
             deployer.deploy(
                 context = context,
                 diffPackage = diffPackage,

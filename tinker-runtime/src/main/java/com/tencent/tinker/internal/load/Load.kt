@@ -18,6 +18,7 @@ import com.tencent.tinker.internal.module.patch.RawPatch
 import com.tencent.tinker.internal.module.patch.RawPatchManager
 import com.tencent.tinker.internal.module.validate.Validator
 import com.tencent.tinker.internal.module.validate.ValidatorImpl
+import com.tencent.tinker.internal.util.className
 import com.tencent.tinker.internal.util.currentProcess
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
@@ -61,14 +62,14 @@ internal abstract class Loader {
 private fun Iterable<Loader.Factory>.tryLoad(patch: Patch) {
     val loaders = expected<Tinker.Error.Load, List<Loader>>("create loaders") {
         mapNotNull {
-            traceE("load.factor(factory = ${it.javaClass.simpleName}@${it.hashCode().toString(16)})") {
+            traceE("load.factor(factory = ${it.javaClass.className}@${it.hashCode().toString(16)})") {
                 it.createLoaderIfNeeded(patch)
             }
         }
     }
     try {
         loaders.forEach {
-            traceS("load.load(loader = ${it.javaClass.simpleName}@${it.hashCode().toString(16)})") {
+            traceS("load.load(loader = ${it.javaClass.className}@${it.hashCode().toString(16)})") {
                 it.load()
             }
         }
