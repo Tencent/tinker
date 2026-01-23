@@ -10,6 +10,7 @@ import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.searchAndSortDexFiles
 import com.tencent.tinker.internal.util.traceE
 import com.tencent.tinker.internal.util.traceS
+import com.tencent.tinker.internal.util.warnLog
 import java.io.File
 
 private const val TAG = "Tinker.Load.Code"
@@ -187,15 +188,22 @@ internal abstract class CodeLoader : Loader() {
 
         private fun searchLibraryDirectory(patch: Patch): List<File> =
             abiList
-                .map { abi ->
+                .mapNotNull { abi ->
                     patch.libraryDirectory.resolve(abi)
-                        .also {
+                        .takeIf { it.exists() }
+                        ?.also {
                             if (!it.isDirectory) {
                                 throw Tinker.Error(
                                     Tinker.Error.Load.Code.INVALID_LIBRARY_DIRECTORY,
                                     "Path \"${it.absolutePath}\" is not an existing directory."
                                 )
                             }
+                        }
+                        ?: run {
+                            warnLog(TAG) {
+                                "Cannot find library directory for supported ABI \"${abi}\"."
+                            }
+                            return@run null
                         }
                 }
                 .takeIf { it.isNotEmpty() }

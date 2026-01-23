@@ -21,6 +21,7 @@ import java.io.File
 import java.nio.file.Files
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
 internal fun createTestDirectory(): File =
@@ -123,12 +124,17 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
             }
             patchLibraryDirectory.apply {
                 mkdirs()
+                val baseApk = ZipFile(applicationInfo.sourceDir)
                 Build.SUPPORTED_ABIS.forEach { abi ->
+                    val jniLibraryEntry = baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/lib/${abi}/${TEST_JNI_LIBRARY_FILE_NAME}")
+                        ?: return@forEach
+                    val dependencyLibraryEntry = baseApk.getEntry("assets/${TEST_ASSETS_DIRECTORY_NAME}/lib/${abi}/${TEST_DEPENDENCY_LIBRARY_FILE_NAME}")
+                        ?: return@forEach
                     resolve(abi).apply {
                         mkdirs()
                         resolve(TEST_JNI_LIBRARY_FILE_NAME).apply {
                             outputStream().use { output ->
-                                assets.open("${TEST_ASSETS_DIRECTORY_NAME}/lib/${abi}/${TEST_JNI_LIBRARY_FILE_NAME}")
+                                baseApk.getInputStream(jniLibraryEntry)
                                     .use { input ->
                                         input.copyTo(output)
                                     }
@@ -136,7 +142,7 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
                         }
                         resolve(TEST_DEPENDENCY_LIBRARY_FILE_NAME).apply {
                             outputStream().use { output ->
-                                assets.open("${TEST_ASSETS_DIRECTORY_NAME}/lib/${abi}/${TEST_DEPENDENCY_LIBRARY_FILE_NAME}")
+                                baseApk.getInputStream(dependencyLibraryEntry)
                                     .use { input ->
                                         input.copyTo(output)
                                     }
