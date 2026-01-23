@@ -62,9 +62,7 @@ internal fun <T> async(
     name: String? = null,
     scope: AsyncScope<T>.() -> Unit,
 ): List<T> {
-    val executor = Executors.newFixedThreadPool(
-        Runtime.getRuntime().availableProcessors()
-    ) {
+    val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()) {
         Thread(it, name ?: "tinker-async")
     }
     val futures = mutableListOf<Future<T>>()

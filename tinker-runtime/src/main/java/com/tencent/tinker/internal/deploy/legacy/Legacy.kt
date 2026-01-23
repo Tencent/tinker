@@ -13,6 +13,7 @@ import com.tencent.tinker.internal.deploy.legacy.resource.resourceDeploy
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
+import com.tencent.tinker.internal.util.async
 import com.tencent.tinker.internal.util.crc32
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.traceE
@@ -162,28 +163,36 @@ internal object LegacyDeployer : Deployer() {
                 add(packageMetadata)
             }.joinToString("\n")
         }
-        traceS("deploy.legacy.dex") {
-            dexDeployToApk(
-                baseApk = baseApk,
-                diffPackage = diffPackage,
-                apk = deployedDirectory.patchDexApkFile,
-            )
-        }
-        traceS("deploy.legacy.library") {
-            libraryDeploy(
-                packageMetadata = packageMetadata,
-                baseApk = baseApk,
-                diffPackage = diffPackage,
-                directory = deployedDirectory.patchLibraryDirectory,
-            )
-        }
-        traceS("deploy.legacy.resource") {
-            resourceDeploy(
-                packageMetadata = packageMetadata,
-                baseApk = baseApk,
-                diffPackage = diffPackage,
-                apk = deployedDirectory.patchResourceApkFile,
-            )
+        async {
+            launch {
+                traceS("deploy.legacy.dex") {
+                    dexDeployToApk(
+                        baseApk = baseApk,
+                        diffPackage = diffPackage,
+                        apk = deployedDirectory.patchDexApkFile,
+                    )
+                }
+            }
+            launch {
+                traceS("deploy.legacy.library") {
+                    libraryDeploy(
+                        packageMetadata = packageMetadata,
+                        baseApk = baseApk,
+                        diffPackage = diffPackage,
+                        directory = deployedDirectory.patchLibraryDirectory,
+                    )
+                }
+            }
+            launch {
+                traceS("deploy.legacy.resource") {
+                    resourceDeploy(
+                        packageMetadata = packageMetadata,
+                        baseApk = baseApk,
+                        diffPackage = diffPackage,
+                        apk = deployedDirectory.patchResourceApkFile,
+                    )
+                }
+            }
         }
     }
 
