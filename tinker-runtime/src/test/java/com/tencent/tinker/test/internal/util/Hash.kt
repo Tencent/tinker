@@ -27,4 +27,25 @@ class HashTest {
         expectedCalculator.update(data)
         assertArrayEquals(expectedCalculator.digest(), actualHash)
     }
+
+    /**
+     * Tests calculating the hash with a huge size of data.
+     */
+    @Test
+    fun calculateWithHugeData() {
+        val data = ByteArray(DEFAULT_BUFFER_SIZE * 2) {
+            (it % 256).toByte()
+        }
+        val file = Files.createTempFile("tinker-test-", ".txt")
+        val actualHash = file.outputStream().use { stream ->
+            HashOutputStream(stream)
+                .apply {
+                    write(data)
+                }
+                .digest
+        }
+        val expectedCalculator = MessageDigest.getInstance("MD5")
+        expectedCalculator.update(data)
+        assertArrayEquals(expectedCalculator.digest(), actualHash)
+    }
 }

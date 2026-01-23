@@ -128,11 +128,26 @@ internal class HashOutputStream(
 
     private val calculator = MessageDigest.getInstance("MD5")
 
+    private val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
+    private var cursor = 0
+
     override fun write(byte: Int) {
         output.write(byte)
-        calculator.update(byte.toByte())
+        if (cursor >= buffer.size) {
+            calculator.update(buffer)
+            cursor = 0
+        }
+        buffer[cursor] = byte.toByte()
+        cursor++
     }
 
     val digest: ByteArray
-        get() = calculator.digest()
+        get() {
+            if (cursor > 0) {
+                calculator.update(buffer, 0, cursor)
+                cursor = 0
+            }
+            return calculator.digest()
+        }
 }
