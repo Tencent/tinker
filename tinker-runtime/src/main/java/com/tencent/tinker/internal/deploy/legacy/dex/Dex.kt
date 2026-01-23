@@ -1,9 +1,9 @@
 package com.tencent.tinker.internal.deploy.legacy.dex
 
 import com.tencent.tinker.Tinker
-import com.tencent.tinker.commons.dexpatcher.DexPatchApplier
 import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_DEX_FILE_NAME
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.DexPatchApplier
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5HashNullable
 import com.tencent.tinker.internal.util.asMd5String
@@ -18,7 +18,7 @@ import com.tencent.tinker.internal.util.searchAndSortDexFiles
 import com.tencent.tinker.internal.util.traceE
 import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.withTemporaryDirectory
-import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream
+import com.tencent.tinker.internal.ziputil.AlignedZipOutputStream
 import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile

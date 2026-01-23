@@ -17,9 +17,9 @@
 package com.tencent.tinker.build.decoder;
 
 
-import com.tencent.tinker.android.dex.ClassDef;
-import com.tencent.tinker.android.dex.Dex;
-import com.tencent.tinker.android.dex.DexFormat;
+import com.tencent.tinker.internal.android.dex.ClassDef;
+import com.tencent.tinker.internal.android.dex.Dex;
+import com.tencent.tinker.internal.android.dex.DexFormat;
 import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
 import com.tencent.tinker.build.dexpatcher.util.ChangedClassesDexClassInfoCollector;
 import com.tencent.tinker.build.dexpatcher.util.PatternUtils;
@@ -35,8 +35,8 @@ import com.tencent.tinker.build.util.MD5;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
-import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
-import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.DexPatchApplier;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
 
 import org.jf.dexlib2.AccessFlags;
 import org.jf.dexlib2.DexFileFactory;

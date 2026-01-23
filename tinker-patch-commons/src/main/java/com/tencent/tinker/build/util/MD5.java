@@ -16,7 +16,7 @@
 
 package com.tencent.tinker.build.util;
 
-import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.internal.legacy.commons.util.IOHelper;
 
 import java.io.File;
 import java.io.FileInputStream;

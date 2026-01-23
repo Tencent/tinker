@@ -15,7 +15,7 @@ import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
-import com.tencent.tinker.ziputils.ziputil.AlignedZipOutputStream
+import com.tencent.tinker.internal.ziputil.AlignedZipOutputStream
 import java.io.File
 import java.nio.file.Files
 import java.util.zip.CRC32

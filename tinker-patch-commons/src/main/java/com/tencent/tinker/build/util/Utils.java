@@ -18,11 +18,11 @@ package com.tencent.tinker.build.util;
 
 import com.tencent.tinker.build.decoder.ResDiffDecoder;
 import com.tencent.tinker.build.patch.Configuration;
-import com.tencent.tinker.commons.util.IOHelper;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipEntry;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipFile;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipOutputStream;
-import com.tencent.tinker.ziputils.ziputil.TinkerZipUtil;
+import com.tencent.tinker.internal.legacy.commons.util.IOHelper;
+import com.tencent.tinker.internal.ziputil.TinkerZipEntry;
+import com.tencent.tinker.internal.ziputil.TinkerZipFile;
+import com.tencent.tinker.internal.ziputil.TinkerZipOutputStream;
+import com.tencent.tinker.internal.ziputil.TinkerZipUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;

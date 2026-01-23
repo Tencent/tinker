@@ -21,7 +21,7 @@ import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.FileOperation;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TypedValue;
-import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.internal.legacy.commons.util.IOHelper;
 
 import java.io.BufferedInputStream;
 import java.io.File;

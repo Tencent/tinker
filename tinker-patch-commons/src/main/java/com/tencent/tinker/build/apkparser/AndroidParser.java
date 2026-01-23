@@ -17,7 +17,7 @@
 package com.tencent.tinker.build.apkparser;
 
 import com.tencent.tinker.build.patch.Configuration;
-import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.internal.legacy.commons.util.IOHelper;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;

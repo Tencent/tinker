@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.tencent.tinker.Tinker
+import com.tencent.tinker.internal.legacy.loader.TinkerClassLoader
 import com.tencent.tinker.internal.load.ApplicationDelegate.Companion.delegated
 import com.tencent.tinker.internal.load.ClassLoaderDelegate
 import com.tencent.tinker.internal.load.ClassLoaderDelegate.Companion.delegated
@@ -14,7 +15,6 @@ import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.traceE
 import com.tencent.tinker.internal.util.traceS
-import com.tencent.tinker.loader.TinkerClassLoader
 import dalvik.system.DelegateLastClassLoader
 import java.io.File
 

@@ -2,7 +2,7 @@ package com.tencent.tinker.patch;
 
 import com.tencent.tinker.build.dexpatcher.DexPatchGenerator;
 import com.tencent.tinker.build.util.DexClassesComparator;
-import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.DexPatchApplier;
 
 import java.io.File;
 

@@ -1,11 +1,11 @@
 package com.tencent.tinker.build.dexpatcher.algorithms.diff;
 
-import com.tencent.tinker.android.dex.CallSiteId;
-import com.tencent.tinker.android.dex.Dex;
-import com.tencent.tinker.android.dex.TableOfContents;
-import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
-import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
+import com.tencent.tinker.internal.android.dex.CallSiteId;
+import com.tencent.tinker.internal.android.dex.Dex;
+import com.tencent.tinker.internal.android.dex.TableOfContents;
+import com.tencent.tinker.internal.android.dex.io.DexDataBuffer;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.util.SparseIndexMap;
 
 public class CallSiteIdSectionDiffAlgorithm extends DexSectionDiffAlgorithm<CallSiteId> {
     public CallSiteIdSectionDiffAlgorithm(Dex oldDex, Dex newDex, SparseIndexMap oldToNewIndexMap,

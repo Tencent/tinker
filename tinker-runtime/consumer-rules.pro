@@ -1,20 +1,3 @@
-# Understand the Tinker @Keep annotation.
--keep class com.tencent.tinker.anno.Keep
-
--keep @com.tencent.tinker.anno.Keep class * {*;}
-
--keepclasseswithmembers class * {
-    @com.tencent.tinker.anno.Keep <methods>;
-}
-
--keepclasseswithmembers class * {
-    @com.tencent.tinker.anno.Keep <fields>;
-}
-
--keepclasseswithmembers class * {
-    @com.tencent.tinker.anno.Keep <init>(...);
-}
-
 -dontwarn android.content.pm.PackageManager$DexModuleRegisterCallback
 
 -keep class * extends android.content.pm.PackageManager$DexModuleRegisterCallback {
@@ -22,13 +5,14 @@
     <methods>;
 }
 
--keepclassmembernames class com.tencent.tinker.loader.** {
-    <fields>;
-    <methods>;
+# TODO: Remove if legacy code is refactored.
+-keep class com.tencent.tinker.internal.legacy.loader.TinkerClassLoader {
+    *;
 }
 
--keep,allowobfuscation class com.tencent.tinker.loader.TinkerLoader {
-    private static Guard sProcessGuardRef;
+# TODO: Remove if legacy code is refactored.
+-keep class com.tencent.tinker.internal.legacy.loader.TinkerClassLoader$CompoundEnumeration {
+    *;
 }
 
 -keepnames class com.tencent.tinker.internal.load.code.test.TestLibrary {

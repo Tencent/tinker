@@ -16,15 +16,15 @@
 
 package com.tencent.tinker.build.dexpatcher.algorithms.diff;
 
-import com.tencent.tinker.android.dex.Dex;
-import com.tencent.tinker.android.dex.SizeOf;
-import com.tencent.tinker.android.dex.TableOfContents;
-import com.tencent.tinker.android.dex.TableOfContents.Section.Item;
-import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dex.util.CompareUtils;
-import com.tencent.tinker.commons.dexpatcher.struct.PatchOperation;
-import com.tencent.tinker.commons.dexpatcher.util.AbstractIndexMap;
-import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
+import com.tencent.tinker.internal.android.dex.Dex;
+import com.tencent.tinker.internal.android.dex.SizeOf;
+import com.tencent.tinker.internal.android.dex.TableOfContents;
+import com.tencent.tinker.internal.android.dex.TableOfContents.Section.Item;
+import com.tencent.tinker.internal.android.dex.io.DexDataBuffer;
+import com.tencent.tinker.internal.android.dex.util.CompareUtils;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.struct.PatchOperation;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.util.AbstractIndexMap;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.util.SparseIndexMap;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;

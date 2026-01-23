@@ -16,9 +16,9 @@
 
 package com.tencent.tinker.build.util;
 
-import com.tencent.tinker.android.dex.ClassDef;
-import com.tencent.tinker.android.dex.Dex;
-import com.tencent.tinker.android.dex.DexFormat;
+import com.tencent.tinker.internal.android.dex.ClassDef;
+import com.tencent.tinker.internal.android.dex.Dex;
+import com.tencent.tinker.internal.android.dex.DexFormat;
 import com.tencent.tinker.build.dexpatcher.util.PatternUtils;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.DexClassesComparator.DexClassInfo;

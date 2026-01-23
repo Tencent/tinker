@@ -5,7 +5,7 @@ import android.content.pm.PackageManager
 import android.content.pm.Signature
 import android.os.Build
 import com.tencent.tinker.Tinker
-import com.tencent.tinker.bsdiff.BSPatch
+import com.tencent.tinker.internal.bsdiff.BSPatch
 import com.tencent.tinker.internal.deploy.Deployer
 import com.tencent.tinker.internal.deploy.legacy.dex.dexDeployToApk
 import com.tencent.tinker.internal.deploy.legacy.library.libraryDeploy

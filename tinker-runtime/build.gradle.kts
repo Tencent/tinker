@@ -17,8 +17,6 @@ tinkerBuildConfig {
 android {
     namespace = "com.tencent.tinker"
     defaultConfig {
-        buildConfigField("String", "TINKER_VERSION", "\"${version}\"")
-        manifestPlaceholders["TINKER_VERSION"] = version
         ndk {
             abiFilters.add("arm64-v8a")
         }
@@ -40,10 +38,6 @@ android {
             dimension = "tinkerType"
         }
     }
-    buildFeatures {
-        buildConfig = true
-        aidl = true
-    }
     testCoverage {
         jacocoVersion = "0.8.14"
     }
@@ -52,23 +46,18 @@ android {
         // modify system state.
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
-    lint {
-        baseline = file("lint-baseline.xml")
-        disable.add("LongLogTag")
-    }
 }
 
 dependencies {
-    compileOnly(fileTree(mapOf("dir" to "stubs", "include" to "*.jar")))
     transformImplementation(libs.androidx.annotation)
     transformImplementation(kotlin("stdlib"))
     implementation(project(":tinker-commons"))
-    implementation(project(":tinker-annotation-processor"))
     testImplementation(kotlin("stdlib"))
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     lintChecks(project(":tinker-runtime-internal-lint"))
     androidTestImplementation(project(":tinker-runtime-internal-test-helper"))
+    androidTestImplementation(project(":third-party:tinker-ziputils"))
     androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)

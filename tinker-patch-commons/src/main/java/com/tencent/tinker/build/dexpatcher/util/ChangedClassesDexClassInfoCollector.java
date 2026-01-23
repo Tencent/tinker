@@ -16,19 +16,19 @@
 
 package com.tencent.tinker.build.dexpatcher.util;
 
-import com.tencent.tinker.android.dex.ClassData;
-import com.tencent.tinker.android.dex.ClassDef;
-import com.tencent.tinker.android.dex.Code;
-import com.tencent.tinker.android.dex.Dex;
-import com.tencent.tinker.android.dex.FieldId;
-import com.tencent.tinker.android.dex.MethodId;
-import com.tencent.tinker.android.dex.ProtoId;
-import com.tencent.tinker.android.dx.instruction.InstructionCodec;
-import com.tencent.tinker.android.dx.instruction.InstructionReader;
-import com.tencent.tinker.android.dx.instruction.InstructionVisitor;
-import com.tencent.tinker.android.dx.instruction.ShortArrayCodeInput;
+import com.tencent.tinker.internal.android.dex.ClassData;
+import com.tencent.tinker.internal.android.dex.ClassDef;
+import com.tencent.tinker.internal.android.dex.Code;
+import com.tencent.tinker.internal.android.dex.Dex;
+import com.tencent.tinker.internal.android.dex.FieldId;
+import com.tencent.tinker.internal.android.dex.MethodId;
+import com.tencent.tinker.internal.android.dex.ProtoId;
+import com.tencent.tinker.internal.android.dx.instruction.InstructionCodec;
+import com.tencent.tinker.internal.android.dx.instruction.InstructionReader;
+import com.tencent.tinker.internal.android.dx.instruction.InstructionVisitor;
+import com.tencent.tinker.internal.android.dx.instruction.ShortArrayCodeInput;
 import com.tencent.tinker.build.util.DexClassesComparator;
-import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger;
+import com.tencent.tinker.internal.legacy.commons.dexpatcher.DexPatcherLogger;
 
 import java.io.EOFException;
 import java.util.Collection;

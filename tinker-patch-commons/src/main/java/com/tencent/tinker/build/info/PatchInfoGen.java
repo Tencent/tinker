@@ -20,7 +20,7 @@ import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.build.util.TypedValue;
-import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.internal.legacy.commons.util.IOHelper;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

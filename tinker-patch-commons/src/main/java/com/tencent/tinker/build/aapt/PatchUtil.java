@@ -18,7 +18,7 @@ package com.tencent.tinker.build.aapt;
 
 import com.tencent.tinker.build.aapt.RDotTxtEntry.IdType;
 import com.tencent.tinker.build.aapt.RDotTxtEntry.RType;
-import com.tencent.tinker.commons.util.IOHelper;
+import com.tencent.tinker.internal.legacy.commons.util.IOHelper;
 
 import java.io.BufferedReader;
 import java.io.File;

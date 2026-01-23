@@ -1,6 +1,6 @@
 package com.tencent.tinker.build.util;
 
-import com.tencent.tinker.bsdiff.BSDiff;
+import com.tencent.tinker.internal.bsdiff.BSDiff;
 import com.tencent.tinker.build.patch.Configuration;
 
 import java.io.BufferedReader;
