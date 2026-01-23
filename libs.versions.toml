@@ -15,11 +15,13 @@ guava = "33.5.0-android"
 jetbrains-annotations = "26.0.2-1"
 junit = "4.13.2"
 kotlin = "1.9.25"
+kotlinx-coroutines = "1.8.1"
 osdetector = "1.7.3"
 robolectric = "4.15"
 
 [libraries]
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp-for-plugin" }
+agp-api = { module = "com.android.tools.build:gradle-api", version.ref = "agp" }
 android-lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "agp-tools" }
 android-lint-checks = { module = "com.android.tools.lint:lint-checks", version.ref = "agp-tools" }
 android-lint-tests = { module = "com.android.tools.lint:lint-tests", version.ref = "agp-tools" }
@@ -38,6 +40,7 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 osdetector-gradle-plugin = { module = "com.google.gradle:osdetector-gradle-plugin", version.ref = "osdetector" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
@@ -47,6 +50,7 @@ tinker-runtime = { module = "com.tencent.tinker:tinker-runtime" }
 
 [plugins]
 tinker-build-config = { id = "com.tencent.tinker.build.config" }
+tinker-runtime-build-helper = { id = "com.tencent.tinker.runtime.build.helper" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
