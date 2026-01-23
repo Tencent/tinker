@@ -23,7 +23,6 @@ import com.tencent.tinker.internal.util.guardedReadOrWriteContent
 import com.tencent.tinker.internal.util.guardedReadOrWriteContentNullable
 import com.tencent.tinker.internal.util.infoLog
 import com.tencent.tinker.internal.util.isInDeployProcess
-import com.tencent.tinker.internal.util.use
 import com.tencent.tinker.internal.util.warnLog
 import java.io.ByteArrayOutputStream
 import java.io.File

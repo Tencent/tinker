@@ -1,7 +1,7 @@
 [versions]
-agp = "8.13.2"
+agp = "9.0.0"
 agp-for-plugin = "8.1.4"
-agp-tools = "31.13.2"
+agp-tools = "32.0.0"
 androidx-annotation = "1.9.1"
 androidx-orchestrator = "1.6.1"
 androidx-test = "1.7.0"
@@ -14,8 +14,8 @@ dom4j = "2.2.0"
 guava = "33.5.0-android"
 jetbrains-annotations = "26.0.2-1"
 junit = "4.13.2"
-kotlin = "1.9.25"
-kotlinx-coroutines = "1.8.1"
+kotlin = "2.3.10"
+kotlinx-coroutines = "1.10.2"
 osdetector = "1.7.3"
 robolectric = "4.15"
 
@@ -53,5 +53,4 @@ tinker-build-config = { id = "com.tencent.tinker.build.config" }
 tinker-runtime-build-helper = { id = "com.tencent.tinker.runtime.build.helper" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

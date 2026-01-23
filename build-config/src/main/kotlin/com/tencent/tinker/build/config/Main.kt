@@ -1,6 +1,5 @@
 package com.tencent.tinker.build.config
 
-import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.DslLifecycle
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
@@ -20,6 +19,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 private fun Project.publishingIfExists(action: PublishingExtension.() -> Unit) {
     extensions.findByType(PublishingExtension::class.java)?.action()
@@ -47,10 +47,6 @@ private const val ANDROID_LIBRARY_PLUGIN_ID = "com.android.library"
 
 private val Project.appliedAndroidLibraryPlugin: Boolean
     get() = plugins.hasPlugin(ANDROID_LIBRARY_PLUGIN_ID)
-
-private fun Project.androidIfExists(action: AndroidComponentsExtension<*, *, *>.() -> Unit) {
-    extensions.findByType(AndroidComponentsExtension::class.java)?.action()
-}
 
 private fun Project.androidApplicationIfExists(action: ApplicationAndroidComponentsExtension.() -> Unit) {
     extensions.findByType(ApplicationAndroidComponentsExtension::class.java)?.action()
@@ -119,13 +115,15 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
             targetCompatibility = JavaVersion.VERSION_11
         }
         kotlinJvmIfExists {
-            compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
+            compilerOptions {
+                jvmTarget.set(JvmTarget.JVM_11)
+            }
         }
-        androidIfExists {
+        androidApplicationIfExists {
             finalizeDslCompat {
                 compileSdk = 36
                 defaultConfig {
-                    minSdk = 21
+                    minSdk = 24
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                 }
                 compileOptions {
@@ -140,10 +138,6 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
                     .asFile
                     .takeIf { it.isFile }
                     ?.let(externalNativeBuild.cmake::path)
-            }
-        }
-        androidApplicationIfExists {
-            finalizeDslCompat {
                 layout.projectDirectory
                     .file("proguard-rules.pro")
                     .asFile
@@ -158,6 +152,22 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
         }
         androidLibraryIfExists {
             finalizeDslCompat {
+                compileSdk = 36
+                defaultConfig {
+                    minSdk = 21
+                }
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_11
+                    targetCompatibility = JavaVersion.VERSION_11
+                }
+                project.layout.projectDirectory
+                    .dir("src")
+                    .dir("main")
+                    .dir("cpp")
+                    .file("CMakeLists.txt")
+                    .asFile
+                    .takeIf { it.isFile }
+                    ?.let(externalNativeBuild.cmake::path)
                 publishing {
                     singleVariant(extension.publishVariant.orNull ?: "release") {
                         withSourcesJar()
@@ -174,7 +184,9 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
             }
         }
         kotlinAndroidIfExists {
-            compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
+            compilerOptions {
+                jvmTarget.set(JvmTarget.JVM_11)
+            }
         }
         publishingIfExists {
             publications.create("maven", MavenPublication::class.java).apply {

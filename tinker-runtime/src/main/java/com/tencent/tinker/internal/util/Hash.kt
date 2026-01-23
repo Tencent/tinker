@@ -7,7 +7,6 @@ import java.security.MessageDigest
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-import kotlin.io.use
 
 /**
  * Converts a MD5 hash string to byte array format.

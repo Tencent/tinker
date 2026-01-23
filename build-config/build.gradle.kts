@@ -23,7 +23,7 @@ kotlin {
 
 dependencies {
     compileOnly(gradleApi())
-    compileOnly(libs.agp)
+    compileOnly(libs.agp.api)
     compileOnly(libs.kotlin.gradle.plugin)
 }
 

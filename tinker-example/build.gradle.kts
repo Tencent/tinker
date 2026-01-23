@@ -4,7 +4,6 @@ import groovy.json.JsonSlurper
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.tinker.build.config)
 }
 

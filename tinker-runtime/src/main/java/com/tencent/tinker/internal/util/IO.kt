@@ -11,7 +11,6 @@ import java.nio.file.Files
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
-import kotlin.io.use
 
 /**
  * Some old versions of Android throws `IOException` with errno `EAGAIN` instead of returning null
@@ -37,19 +36,6 @@ internal fun AutoCloseable.closeQuietly() {
     try {
         close()
     } catch (_: Throwable) {
-    }
-}
-
-/**
- * Executes the given block function on this resource and then closes it down.
- *
- * The function returns the result of the [block] function.
- */
-internal inline fun <T : AutoCloseable, R> T.use(block: (T) -> R): R {
-    try {
-        return block(this)
-    } finally {
-        this.close()
     }
 }
 

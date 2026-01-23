@@ -2,7 +2,6 @@ import com.tencent.tinker.build.config.tinkerBuildConfig
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     jacoco
     `maven-publish`
     alias(libs.plugins.tinker.build.config)
