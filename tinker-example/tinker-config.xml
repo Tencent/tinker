@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tinkerPatch>
+
+    <issue id="property">
+        <ignoreWarning value="true"/>
+        <useSign value="false"/>
+        <supportHotplugComponent value="false"/>
+        <allowLoaderInAnyDex value="true" />
+        <removeLoaderForAllDex value="true" />
+    </issue>
+
+    <issue id="dex">
+        <dexMode value="raw"/>
+        <pattern value="classes*.dex"/>
+
+        <!--
+            Tinker runtime classes should always be treated as loader classes.
+
+            ProGuard rules from Tinker runtime already make sure that all internal classes of Tinker runtime are in
+            `com.tencent.tinker.internal` package, and all API classes are `com.tencent.tinker.Tinker` and its
+            classes (Except Kotlin classes, see rules below). If you are using legacy tinker patch generator (including
+            Gradle plugin and CLI), just copy these rules to your configuration.
+
+            TODO: New tinker patch generator should automatically add these rules, it is developing.
+        -->
+        <loader value="com.tencent.tinker.Tinker"/>
+        <loader value="com.tencent.tinker.Tinker$*"/>
+        <loader value="com.tencent.tinker.internal.*"/>
+
+        <!--
+            While we are using Tinker runtime by composite build, which is same as project dependency, the package
+            transform is not applied. Kotlin standard library classes which are used by Tinker runtime that have to be
+            treated as loader classes that cannot be obfuscated and patched.
+
+            If you are using Tinker runtime by prebuilt AAR from Maven, this configuration is unneeded.
+        -->
+        <loader value="kotlin.*"/>
+
+        <!--
+            The application class and callback classes are used in loading, these are loader classes.
+        -->
+        <loader value="com.tencent.tinker.example.MainApp"/>
+        <loader value="com.tencent.tinker.example.Callbacks*"/>
+    </issue>
+
+    <issue id="lib">
+        <pattern value="lib/*/*.so"/>
+    </issue>
+
+    <issue id="resource">
+        <pattern value="res/*"/>
+        <pattern value="assets/*"/>
+        <pattern value="resources.arsc"/>
+        <pattern value="AndroidManifest.xml"/>
+        <ignoreChangeWarning value="" />
+        <largeModSize value="100"/>
+    </issue>
+
+</tinkerPatch>

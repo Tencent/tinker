@@ -1,12 +1,19 @@
+import com.tencent.tinker.build.config.tinkerBuildConfig
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     jacoco
     `maven-publish`
     alias(libs.plugins.tinker.build.config)
+    alias(libs.plugins.tinker.runtime.build.helper)
 }
 
 description = "Tinker Android runtime."
+
+tinkerBuildConfig {
+    publishVariant("productionRelease")
+}
 
 android {
     namespace = "com.tencent.tinker"
@@ -21,6 +28,16 @@ android {
         debug {
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
+        }
+    }
+    flavorDimensions.add("tinkerType")
+    productFlavors {
+        create("production") {
+            dimension = "tinkerType"
+            isDefault = true
+        }
+        create("independent") {
+            dimension = "tinkerType"
         }
     }
     buildFeatures {
@@ -43,9 +60,11 @@ android {
 
 dependencies {
     compileOnly(fileTree(mapOf("dir" to "stubs", "include" to "*.jar")))
+    transformImplementation(libs.androidx.annotation)
+    transformImplementation(kotlin("stdlib"))
     implementation(project(":tinker-commons"))
     implementation(project(":tinker-annotation-processor"))
-    implementation(libs.androidx.annotation)
+    testImplementation(kotlin("stdlib"))
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     lintChecks(project(":tinker-runtime-internal-lint"))

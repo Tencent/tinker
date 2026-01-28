@@ -10,3 +10,7 @@ android {
         aidl = true
     }
 }
+
+dependencies {
+    implementation(kotlin("stdlib"))
+}

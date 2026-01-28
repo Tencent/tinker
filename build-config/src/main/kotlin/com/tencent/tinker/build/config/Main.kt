@@ -8,6 +8,7 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.provider.Property
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPom
 import org.gradle.api.publish.maven.MavenPomDeveloper
@@ -91,9 +92,26 @@ private fun MavenPomDeveloperSpec.dslDeveloper(action: MavenPomDeveloper.() -> U
     developer { it.action() }
 }
 
+fun Project.tinkerBuildConfig(action: TinkerBuildConfigExtension.() -> Unit) {
+    extensions.findByType(TinkerBuildConfigExtension::class.java)?.action()
+}
+
+abstract class TinkerBuildConfigExtension {
+
+    abstract val publishVariant: Property<String>
+
+    fun publishVariant(variant: String) {
+        publishVariant.set(variant)
+    }
+}
+
 @Suppress("unused")
 class TinkerBuildConfigPlugin : Plugin<Project> {
     override fun apply(project: Project): Unit = project.run {
+
+        val extension =
+            extensions.create("tinkerBuildConfig", TinkerBuildConfigExtension::class.java)
+
         group = "com.tencent.tinker"
         version = "1.9.15.2"
         javaIfExists {
@@ -141,7 +159,7 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
         androidLibraryIfExists {
             finalizeDslCompat {
                 publishing {
-                    singleVariant("release") {
+                    singleVariant(extension.publishVariant.orNull ?: "release") {
                         withSourcesJar()
                     }
                 }
@@ -162,10 +180,18 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
             publications.create("maven", MavenPublication::class.java).apply {
                 if (project.appliedAndroidLibraryPlugin) {
                     project.afterEvaluate { evaluated ->
-                        from(evaluated.components.getByName("release"))
+                        from(
+                            evaluated.components.getByName(
+                                extension.publishVariant.orNull ?: "release"
+                            )
+                        )
                     }
                 } else if (project.appliedJavaPlugin && !project.appliedJavaGradlePluginPlugin) {
-                    from(project.components.getByName("java"))
+                    from(
+                        project.components.getByName(
+                            extension.publishVariant.orNull ?: "java"
+                        )
+                    )
                 }
                 dslPom {
                     url.set("https://github.com/Tencent/tinker")

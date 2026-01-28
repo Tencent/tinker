@@ -20,6 +20,25 @@ android {
         applicationId = "com.tencent.tinker.example"
         versionCode = 1
         versionName = "1.0"
+        /**
+         * Since we use composite build for using Tinker runtime, we need to specify using its production variant.
+         *
+         * If you are using Tinker runtime by prebuilt AAR from Maven, this configuration is unneeded.
+         */
+        missingDimensionStrategy("tinkerType", "production")
+    }
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.keystore")
+            storePassword = "tinker-example"
+            keyAlias = "tinker-example"
+            keyPassword = "tinker-example"
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
     flavorDimensions.add("type")
     productFlavors {
@@ -93,7 +112,7 @@ abstract class DiffPackageGenerateTask : DefaultTask() {
             "-new",
             updatedApk.absolutePath,
             "-config",
-            project.layout.projectDirectory.file("tinker_config.xml").asFile.absolutePath,
+            project.layout.projectDirectory.file("tinker-config.xml").asFile.absolutePath,
             "-out",
             outputDirectory.get().asFile.absolutePath,
         ).let(CliMain::main)
