@@ -6,7 +6,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.Tinker
-import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.module.layout.PatchLayoutConstructorImpl
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
@@ -34,7 +33,14 @@ internal class PatchLayoutConstructorDelegate(
     context: Context
 ) : PatchLayoutConstructorTestService.Delegate {
 
-    private val constructorImpl = PatchLayoutConstructorImpl(context)
+    private val baseDirectory by lazy {
+        context.applicationContext.filesDir.resolve("tinker-test-layout")
+    }
+
+    private val constructorImpl = PatchLayoutConstructorImpl(
+        context = context,
+        baseDirectory = baseDirectory,
+    )
 
     override val processBaseDirectory: File
         get() = rethrowAsIllegalState {
@@ -332,7 +338,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Layout.INVALID_SOURCE.code,
+            Tinker.codeOfErrorType(Tinker.Error.Layout.INVALID_SOURCE),
             errorCode,
         )
     }
@@ -358,7 +364,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Layout.INVALID_SOURCE.code,
+            Tinker.codeOfErrorType(Tinker.Error.Layout.INVALID_SOURCE),
             errorCode,
         )
     }
@@ -384,7 +390,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Layout.INVALID_SOURCE.code,
+            Tinker.codeOfErrorType(Tinker.Error.Layout.INVALID_SOURCE),
             errorCode,
         )
     }
@@ -410,7 +416,7 @@ class PatchLayoutConstructorImplTest {
             )
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Layout.INVALID_SOURCE.code,
+            Tinker.codeOfErrorType(Tinker.Error.Layout.INVALID_SOURCE),
             errorCode,
         )
     }

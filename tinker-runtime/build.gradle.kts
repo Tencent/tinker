@@ -23,6 +23,7 @@ android {
         ndk {
             abiFilters.add("arm64-v8a")
         }
+        testInstrumentationRunner = "com.tencent.tinker.test.TinkerTestRunner"
     }
     buildTypes {
         debug {

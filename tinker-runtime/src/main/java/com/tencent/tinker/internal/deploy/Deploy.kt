@@ -34,7 +34,7 @@ internal abstract class Deployer {
      * Converts [diffPackage] to loadable patch files and store them into [deployedDirectory].
      */
     abstract fun deploy(
-        context: Context,
+        applicationContext: Context,
         diffPackage: File,
         skipCheckingSignature: Boolean,
         deployedDirectory: File,
@@ -46,14 +46,14 @@ internal abstract class Deployer {
  */
 @DeployProcessOnly
 private fun deployPatch(
-    context: Context,
+    applicationContext: Context,
     version: String,
     diffPackage: File,
     skipCheckingSignature: Boolean,
     deployer: Deployer,
     validator: Validator = ValidatorImpl,
-    rawPatchManager: RawPatchManager = RawPatchManager.with(context),
-    oatManager: OatManager = OatManager.with(context),
+    rawPatchManager: RawPatchManager = RawPatchManager.with(applicationContext),
+    oatManager: OatManager = OatManager.with(applicationContext),
 ) {
     withTemporaryDirectory { temporaryDirectory ->
         debugLog(TAG) {
@@ -64,7 +64,7 @@ private fun deployPatch(
         }
         traceS("deploy.deploy(deployer = ${deployer.javaClass.className}@${deployer.hashCode().toString(16)})") {
             deployer.deploy(
-                context = context,
+                applicationContext = applicationContext,
                 diffPackage = diffPackage,
                 skipCheckingSignature = skipCheckingSignature,
                 deployedDirectory = temporaryDirectory,
@@ -101,11 +101,16 @@ private val File.isZipFile: Boolean
         return magic.contentEquals(byteArrayOf(0x50, 0x4B, 0x03, 0x04))
     }
 
+private class DeployResult(
+    val version: String,
+    val sourceDiffPackage: File,
+)
+
 @DeployProcessOnly
 private fun deployPatch(
-    context: Context,
+    applicationContext: Context,
     intent: Intent,
-) {
+): DeployResult {
     val version = intent.getStringExtra(DEPLOY_IPC_KEY_VERSION)
         ?: throw Tinker.Error(
             Tinker.Error.Deploy.MISSING_VERSION,
@@ -150,11 +155,15 @@ private fun deployPatch(
         )
     }
     deployPatch(
-        context = context,
+        applicationContext = applicationContext,
         version = version,
         diffPackage = diffPackage,
         skipCheckingSignature = skipCheckingSignature,
         deployer = deployer,
+    )
+    return DeployResult(
+        version = version,
+        sourceDiffPackage = diffPackage,
     )
 }
 
@@ -170,30 +179,33 @@ class TinkerDeployService : Service() {
             infoLog(TAG) {
                 "Deploying request received. Start deploying."
             }
-            val (error, events) = traceTask("deploy") {
+            val (pair, events) = traceTask("deploy") {
                 try {
-                    expected<Tinker.Error.Deploy>("deploy patch") {
-                        deployPatch(this, intent)
+                    val result = expected<Tinker.Error.Deploy, DeployResult>("deploy patch") {
+                        deployPatch(applicationContext, intent)
                     }
-                    null
+                    result to null
                 } catch (error: Tinker.Error) {
                     if (error.type in errorTypeShouldBeThrown) {
                         throw error
                     }
-                    error
+                    null to error
                 }
             }
-            application
-                .let { it as? Tinker.App }
-                ?.deployCallback
-                ?.apply {
-                    onTaskComplete(
-                        Tinker.TaskSummary(
-                            error = error,
-                            events = events,
-                        )
-                    )
-                }
+            val (result, error) = pair
+            val app = application as? Tinker.App
+                ?: throw Tinker.Error(
+                    Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
+                    "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
+                )
+            app.deployCallback()?.onTaskComplete(
+                Tinker.TaskSummary.Deploy(
+                    error,
+                    events,
+                    result?.version,
+                    result?.sourceDiffPackage,
+                )
+            )
         }
     }
 

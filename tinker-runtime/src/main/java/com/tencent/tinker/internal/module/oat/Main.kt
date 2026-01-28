@@ -1,6 +1,7 @@
 package com.tencent.tinker.internal.module.oat
 
 import android.content.Context
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.util.SynchronizedCache
@@ -21,7 +22,18 @@ internal abstract class OatManager {
          * recommended.
          */
         fun with(applicationContext: Context): OatManager =
-            implCache.getOrPut { OatManagerImpl(applicationContext) }
+            implCache.getOrPut {
+                OatManagerImpl(
+                    context = applicationContext,
+                    baseDirectory = (applicationContext as? Tinker.App)
+                        ?.baseDirectory()
+                        ?.resolve("oat")
+                        ?: throw Tinker.Error(
+                            Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
+                            "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
+                        )
+                )
+            }
     }
 
     /**

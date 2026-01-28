@@ -23,9 +23,9 @@ private const val TAG = "Tinker.Clean"
 
 @DeployProcessOnly
 private fun cleanOatDirectories(
-    context: Context,
+    applicationContext: Context,
     cleaned: Iterable<CleanedRawPatch>,
-    oatManager: OatManager = OatManager.with(context),
+    oatManager: OatManager = OatManager.with(applicationContext),
 ) {
     cleaned.forEach {
         traceS("clean.oat.clean(dir = ${it.version})") {
@@ -36,24 +36,25 @@ private fun cleanOatDirectories(
 
 @DeployProcessOnly
 private fun cleanPatches(
-    context: Context,
+    applicationContext: Context,
     strategy: Strategy,
-    rawPatchManager: RawPatchManager = RawPatchManager.with(context),
-) {
+    rawPatchManager: RawPatchManager = RawPatchManager.with(applicationContext),
+): List<String> {
     val cleaned = traceE("clean.clean(strategy = ${strategy.key})") {
         when (strategy) {
             Strategy.CLEAN_ALL -> rawPatchManager.cleanAll()
             Strategy.CLEAN_OBSOLETE -> rawPatchManager.cleanObsolete()
         }
     }
-    cleanOatDirectories(context, cleaned)
+    cleanOatDirectories(applicationContext, cleaned)
+    return cleaned.map { it.version }
 }
 
 @DeployProcessOnly
 private fun cleanPatches(
-    context: Context,
+    applicationContext: Context,
     intent: Intent,
-) {
+): List<String> {
     val strategyIndex = intent.getIntExtra(CLEAN_IPC_KEY_STRATEGY, -1)
     if (strategyIndex == -1) {
         throw Tinker.Error(
@@ -69,7 +70,7 @@ private fun cleanPatches(
     debugLog(TAG) {
         "Cleaning patches with strategy \"${strategy.name.lowercase()}\"."
     }
-    cleanPatches(context, strategy)
+    return cleanPatches(applicationContext, strategy)
 }
 
 private const val CLEAN_IPC_KEY_STRATEGY = "s"
@@ -87,30 +88,32 @@ class TinkerCleanService : Service() {
             infoLog(TAG) {
                 "Cleaning request received. Start cleaning."
             }
-            val (error, events) = traceTask("clean") {
+            val (pair, events) = traceTask("clean") {
                 try {
-                    expected<Tinker.Error.Clean>("clean patch") {
-                        cleanPatches(this, intent)
+                    val versions = expected<Tinker.Error.Clean, List<String>>("clean patch") {
+                        cleanPatches(applicationContext, intent)
                     }
-                    null
+                    versions to null
                 } catch (error: Tinker.Error) {
                     if (error.type in errorTypeShouldBeThrown) {
                         throw error
                     }
-                    error
+                    null to error
                 }
             }
-            application
-                .let { it as? Tinker.App }
-                ?.cleanCallback
-                ?.apply {
-                    onTaskComplete(
-                        Tinker.TaskSummary(
-                            error = error,
-                            events = events,
-                        )
-                    )
-                }
+            val (versions, error) = pair
+            val app = application as? Tinker.App
+                ?: throw Tinker.Error(
+                    Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
+                    "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
+                )
+            app.cleanCallback()?.onTaskComplete(
+                Tinker.TaskSummary.Clean(
+                    error,
+                    events,
+                    versions,
+                )
+            )
         }
     }
 
@@ -148,9 +151,10 @@ internal fun Context.cleanObsoletePatchesByRemote() {
         .let(::startService)
 }
 
+@JvmOverloads
 internal fun Context.requestPatchAsUnavailable(
     version: String,
-    rawPatchManager: RawPatchManager = RawPatchManager.with(this),
+    rawPatchManager: RawPatchManager = RawPatchManager.with(this.applicationContext),
 ) {
     require(!isInDeployProcess) {
         "Cannot request patch as unavailable in deploy process."

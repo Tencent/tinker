@@ -8,7 +8,6 @@ import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.annotation.MainProcessOnly
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.module.patch.RawPatchManagerImpl.Companion.GUARD_CLEANING_CONTENT
-import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
@@ -43,7 +42,10 @@ private fun File.createNotWritableCopy(target: File) {
     target.setExecutable(canExecute())
 }
 
-internal class RawPatchManagerImpl(private val context: Context) : RawPatchManager() {
+internal class RawPatchManagerImpl(
+    private val context: Context,
+    private val baseDirectory: File,
+) : RawPatchManager() {
 
     @VisibleForTesting
     fun contextForTesting(): Context = context
@@ -54,17 +56,6 @@ internal class RawPatchManagerImpl(private val context: Context) : RawPatchManag
          */
         private const val GUARD_CLEANING_CONTENT = 1.toByte()
     }
-
-    /**
-     * Base directory of patch files.
-     */
-    private val Context.baseDirectory: File
-        get() = rootDirectory.resolve("patches-isolated")
-
-    @VisibleForTesting
-    fun baseDirectoryForTesting(): File =
-        context.baseDirectory
-
 
     /**
      * A simple file to record latest patch version.

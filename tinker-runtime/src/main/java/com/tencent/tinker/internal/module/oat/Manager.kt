@@ -10,7 +10,6 @@ import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
-import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.EscapedGuardedContent
 import com.tencent.tinker.internal.util.crc32
 import com.tencent.tinker.internal.util.currentSdk
@@ -54,6 +53,7 @@ private val defaultCompiler
 
 internal class OatManagerImpl(
     private val context: Context,
+    private val baseDirectory: File,
     private val interpreter: Generator = defaultInterpreter,
     private val compiler: Generator = defaultCompiler,
 ) : OatManager() {
@@ -185,17 +185,6 @@ internal class OatManagerImpl(
                         }
                 }
     }
-
-
-    /**
-     * Base directory of OAT files.
-     */
-    private val baseDirectory: File
-        get() = context.rootDirectory.resolve("oat-isolated")
-
-    @VisibleForTesting
-    fun baseDirectoryForTesting(): File =
-        baseDirectory
 
     @OptIn(ExperimentalStdlibApi::class)
     private val File.pathHash: String

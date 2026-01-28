@@ -51,7 +51,7 @@ internal fun createTestPatchDirectoryWithMockFiles(dexMockMode: DexMockMode): Fi
             }
         }
 
-private object TestLogger : Tinker.Logger {
+private object TestLogger : Tinker.Logger() {
     override fun log(priority: Int, tag: String, message: String) {
         if (priority >= Log.WARN) {
             System.err.println("[$tag] $message")

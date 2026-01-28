@@ -5,17 +5,6 @@ import android.os.Build
 import com.tencent.tinker.Tinker
 import java.io.File
 
-internal val Context.rootDirectory: File
-    get() {
-        val name =
-            if ("oppo" == Build.MANUFACTURER.lowercase() && Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
-                "wc_tinker_dir"
-            } else {
-                "tinker"
-            }
-        return applicationInfo.dataDir.let(::File).resolve(name)
-    }
-
 internal const val TEST_ASSETS_DIRECTORY_NAME = "tinker"
 
 internal const val TEST_DEX_FILE_NAME = "test.dex"
@@ -91,6 +80,18 @@ internal fun checkIfVersionIsValid(version: String) {
 internal val errorTypeShouldBeThrown by lazy {
     buildSet {
         Tinker.Error.Unexpected.Trace.entries.let(::addAll)
+        Tinker.Error.Usage.entries.let(::addAll)
         Tinker.Error.Load.UNRECOVERABLE_LOAD_FAILED.let(::add)
     }
 }
+
+internal val Context.defaultBaseDirectory: File
+    get() {
+        val name =
+            if ("oppo" == Build.MANUFACTURER.lowercase() && Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
+                "wc_tinker_dir"
+            } else {
+                "tinker"
+            }
+        return applicationInfo.dataDir.let(::File).resolve(name)
+    }

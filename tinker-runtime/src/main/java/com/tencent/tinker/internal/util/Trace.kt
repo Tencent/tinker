@@ -4,6 +4,7 @@ import android.os.Process
 import android.os.SystemClock
 import android.os.Trace
 import com.tencent.tinker.Tinker
+import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
@@ -83,11 +84,11 @@ internal inline fun <T> traceE(event: String, action: () -> T): T {
         currentTraceContext.get()
             ?.collect(
                 Tinker.TraceEvent(
-                    name = name,
-                    pid = Process.myPid(),
-                    tid = Process.myTid(),
-                    timestamp = timestamp,
-                    duration = duration,
+                    name,
+                    Process.myPid(),
+                    Process.myTid(),
+                    timestamp,
+                    duration,
                 )
             )
     }
@@ -102,4 +103,28 @@ internal inline fun traceS(event: String, action: () -> Unit) {
         callsInPlace(action, InvocationKind.EXACTLY_ONCE)
     }
     traceE(event, action)
+}
+
+internal fun Iterable<Tinker.TraceEvent>.dumpToFile(file: File) {
+    val events = toList()
+    file.bufferedWriter().use { writer ->
+        writer.write("{")
+        writer.write("\"traceEvents\":[")
+        events.forEachIndexed { index, event ->
+            if (index == 0) {
+                writer.write("{")
+            } else {
+                writer.write(",{")
+            }
+            writer.write("\"ph\":\"X\",")
+            writer.write("\"name\":\"${event.name}\",")
+            writer.write("\"pid\":${event.pid},")
+            writer.write("\"tid\":${event.tid},")
+            writer.write("\"ts\":${event.timestamp},")
+            writer.write("\"dur\":${event.duration}")
+            writer.write("}")
+        }
+        writer.write("]")
+        writer.write("}")
+    }
 }

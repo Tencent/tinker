@@ -1,10 +1,12 @@
 package com.tencent.tinker.internal.module.patch
 
 import android.content.Context
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.util.SynchronizedCache
 import java.io.File
+import kotlin.io.resolve
 
 /**
  * Information about a raw patch managed by [RawPatchManager].
@@ -60,7 +62,18 @@ internal abstract class RawPatchManager {
          * recommended.
          */
         fun with(applicationContext: Context): RawPatchManager =
-            implCache.getOrPut { RawPatchManagerImpl(applicationContext) }
+            implCache.getOrPut {
+                RawPatchManagerImpl(
+                    context = applicationContext,
+                    baseDirectory = (applicationContext as? Tinker.App)
+                        ?.baseDirectory()
+                        ?.resolve("patches")
+                        ?: throw Tinker.Error(
+                            Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
+                            "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
+                        )
+                )
+            }
     }
 
     /**

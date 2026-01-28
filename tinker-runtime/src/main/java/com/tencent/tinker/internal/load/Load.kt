@@ -23,9 +23,11 @@ import com.tencent.tinker.internal.util.currentProcess
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.infoLog
+import com.tencent.tinker.internal.util.isInDeployProcess
 import com.tencent.tinker.internal.util.traceE
 import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.traceTask
+import java.io.File
 
 private const val TAG = "Tinker.Load"
 
@@ -149,7 +151,7 @@ private fun Application.loadWith(
     validator: Validator?,
     oatManager: OatManager = OatManager.with(this),
     patchLayoutConstructor: PatchLayoutConstructor = PatchLayoutConstructor.with(this),
-): ClassLoader? {
+): Pair<ClassLoader, File>? {
     traceS("load.validate.validate") {
         validator?.run {
             debugLog(TAG) {
@@ -178,18 +180,25 @@ private fun Application.loadWith(
         "Patch directory is \"${patchDirectory.absolutePath}\"."
     }
     val patch = Patch(rawPatch.version, patchDirectory)
-    return loadWith(
+    val classLoader = loadWith(
         hardening = hardening,
         patch = patch,
-    )
+    ) ?: return null
+    return classLoader to patchDirectory
 }
+
+private class LoadResult(
+    val classLoader: ClassLoader,
+    val version: String,
+    val patchDirectory: File
+)
 
 @NonDeployProcessOnly
 private fun Application.loadInternal(
     hardening: Boolean,
     skipValidating: Boolean,
     rawPatchManager: RawPatchManager = RawPatchManager.with(this),
-): ClassLoader? {
+): LoadResult? {
     val rawPatch = traceE("load.raw_patch.acquire") {
         rawPatchManager.acquire() ?: run {
             infoLog(TAG) {
@@ -201,16 +210,21 @@ private fun Application.loadInternal(
     infoLog(TAG) {
         "Raw patch \"${rawPatch.version}\" is acquired, try loading."
     }
-    try {
-        return loadWith(
+    val (classLoader, patchDirectory) = try {
+        loadWith(
             hardening = hardening,
             rawPatch = rawPatch,
             validator = if (skipValidating) null else ValidatorImpl,
-        )
+        ) ?: return null
     } catch (throwable: Throwable) {
         rawPatchManager.requestUnavailable(rawPatch.version)
         throw throwable
     }
+    return LoadResult(
+        classLoader = classLoader,
+        version = rawPatch.version,
+        patchDirectory = patchDirectory,
+    )
 }
 
 /**
@@ -220,23 +234,23 @@ private fun Application.loadInternal(
  * function returns null.
  */
 @NonDeployProcessOnly
-internal fun Application.load(
+private fun Application.load(
     hardening: Boolean,
     skipValidating: Boolean,
-    callback: Tinker.Callback?,
+    callback: Tinker.Callback<Tinker.TaskSummary.Load>?,
 ): ClassLoader? {
     infoLog(TAG) {
         "Try loading patch in process \"${currentProcess}\"."
     }
     val (pair, events) = traceTask("load") {
         try {
-            val classLoader = expected<Tinker.Error.Load, ClassLoader?>("load patch") {
+            val result = expected<Tinker.Error.Load, LoadResult?>("load patch") {
                 loadInternal(
                     hardening = hardening,
                     skipValidating = skipValidating,
                 )
             }
-            classLoader to null
+            result to null
         } catch (error: Tinker.Error) {
             if (error.type in errorTypeShouldBeThrown) {
                 throw error
@@ -244,14 +258,43 @@ internal fun Application.load(
             null to error
         }
     }
-    val (classLoader, error) = pair
+    val (result, error) = pair
     callback?.apply {
         onTaskComplete(
-            Tinker.TaskSummary(
-                error = error,
-                events = events,
+            Tinker.TaskSummary.Load(
+                error,
+                events,
+                result?.version,
+                result?.patchDirectory,
             )
         )
     }
-    return classLoader
+    return result?.classLoader
+}
+
+internal fun Tinker.App.load(
+    disabled: Boolean,
+    hardening: Boolean,
+    skipValidating: Boolean,
+): Tinker.AppLike? {
+    val appLikeClassLoader = if (disabled || isInDeployProcess) {
+        classLoader
+    } else {
+        load(
+            hardening = hardening,
+            skipValidating = skipValidating,
+            callback = loadCallback(),
+        ) ?: classLoader
+    }
+    // Do not catch any throwable while creating delegate application class. It should be fail-fast if user
+    // provides an invalid delegate application class name.
+    return appLikeClassName()
+        ?.let {
+            appLikeClassLoader.loadClass(it)
+        }
+        ?.getConstructor(Application::class.java)
+        ?.newInstance(this)
+        ?.let {
+            it as Tinker.AppLike
+        }
 }

@@ -1,6 +1,7 @@
 package com.tencent.tinker.internal.module.layout
 
 import android.content.Context
+import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.annotation.NonDeployProcessOnly
 import com.tencent.tinker.internal.util.SynchronizedCache
 import java.io.File
@@ -21,8 +22,19 @@ internal abstract class PatchLayoutConstructor {
     companion object {
         private val implCache = SynchronizedCache<PatchLayoutConstructor>()
 
-        fun with(context: Context): PatchLayoutConstructor =
-            implCache.getOrPut { PatchLayoutConstructorImpl(context) }
+        fun with(applicationContext: Context): PatchLayoutConstructor =
+            implCache.getOrPut {
+                PatchLayoutConstructorImpl(
+                    context = applicationContext,
+                    baseDirectory = (applicationContext as? Tinker.App)
+                        ?.baseDirectory()
+                        ?.resolve("layout")
+                        ?: throw Tinker.Error(
+                            Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
+                            "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
+                        )
+                )
+            }
     }
 
     /**

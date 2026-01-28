@@ -197,18 +197,18 @@ internal object LegacyDeployer : Deployer() {
     }
 
     override fun deploy(
-        context: Context,
+        applicationContext: Context,
         diffPackage: File,
         skipCheckingSignature: Boolean,
         deployedDirectory: File,
     ) {
         deploy(
-            baseApkFile = context.applicationInfo.sourceDir.let(::File),
+            baseApkFile = applicationContext.applicationInfo.sourceDir.let(::File),
             diffPackageFile = diffPackage,
             baseApkSignature = if (skipCheckingSignature) {
                 null
             } else {
-                context.apkSignature
+                applicationContext.apkSignature
                     ?: throw Tinker.Error(
                         Tinker.Error.Deploy.Legacy.READ_BASE_APK_SIGNATURE_FAILED,
                         "Cannot read base APK signature.",

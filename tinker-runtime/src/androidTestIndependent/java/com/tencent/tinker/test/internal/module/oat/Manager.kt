@@ -6,7 +6,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.Tinker
-import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.module.oat.Generator
 import com.tencent.tinker.internal.module.oat.OatManagerImpl
 import com.tencent.tinker.internal.patchDexApkFile
@@ -38,8 +37,13 @@ internal class OatManagerDelegate(
 
     private var compiler: Generator = SuccessGenerator
 
+    override val baseDirectory by lazy {
+        context.applicationContext.filesDir.resolve("tinker-test–oat")
+    }
+
     private val managerImpl = OatManagerImpl(
         context = context,
+        baseDirectory = baseDirectory,
         interpreter = if (context.isInDeployProcess) {
             IllegalGenerator("patch", "interpreter")
         } else {
@@ -63,9 +67,6 @@ internal class OatManagerDelegate(
             }
         }
     )
-
-    override val baseDirectory: File
-        get() = managerImpl.baseDirectoryForTesting()
 
     override fun metadataFile(directory: File): File =
         managerImpl.metadataFileForTesting(directory)
@@ -109,7 +110,7 @@ internal class OatManagerDelegate(
 
     override fun reset() {
         rethrowAsIllegalState {
-            managerImpl.baseDirectoryForTesting().apply {
+            baseDirectory.apply {
                 walk(direction = FileWalkDirection.TOP_DOWN).forEach {
                     it.setWritable(true)
                 }
@@ -654,7 +655,7 @@ class OatManagerImplTest {
             mainService.acquire(inputDirectory.absolutePath, false)
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Oat.GENERATE_OR_STORE_FAILED.code,
+            Tinker.codeOfErrorType(Tinker.Error.Oat.GENERATE_OR_STORE_FAILED),
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -684,7 +685,7 @@ class OatManagerImplTest {
             deployService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Oat.GENERATE_OR_STORE_FAILED.code,
+            Tinker.codeOfErrorType(Tinker.Error.Oat.GENERATE_OR_STORE_FAILED),
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -713,7 +714,7 @@ class OatManagerImplTest {
             mainService.acquire(inputDirectory.absolutePath, false)
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Oat.GENERATE_OR_STORE_FAILED.code,
+            Tinker.codeOfErrorType(Tinker.Error.Oat.GENERATE_OR_STORE_FAILED),
             errorCode
         )
         // Make sure none of temporary files remains.
@@ -743,7 +744,7 @@ class OatManagerImplTest {
             deployService.generateIfNeeded(inputDirectory.absolutePath)
         }.tinkerErrorCode
         assertEquals(
-            Tinker.Error.Oat.GENERATE_OR_STORE_FAILED.code,
+            Tinker.codeOfErrorType(Tinker.Error.Oat.GENERATE_OR_STORE_FAILED),
             errorCode
         )
         // Make sure none of temporary files remains.

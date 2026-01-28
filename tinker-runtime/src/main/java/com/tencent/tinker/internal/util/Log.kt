@@ -3,7 +3,8 @@ package com.tencent.tinker.internal.util
 import android.util.Log
 import com.tencent.tinker.Tinker
 
-private object LoggerImpl : Tinker.Logger {
+private object LoggerImpl : Tinker.Logger() {
+
     override fun log(priority: Int, tag: String, message: String) {
         Log.println(priority, tag, message)
     }
@@ -12,11 +13,8 @@ private object LoggerImpl : Tinker.Logger {
 @Volatile
 internal var globalLogger: Tinker.Logger = LoggerImpl
 
-@Volatile
-internal var globalLogLevel: Int = Log.VERBOSE
-
 private inline fun log(level: Int, tag: String, throwable: Throwable?, message: () -> String) {
-    if (globalLogLevel <= level) {
+    if (globalLogger.filterLogLevel() <= level) {
         buildString {
             append(message())
             throwable?.let {

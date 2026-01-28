@@ -9,7 +9,6 @@ import com.tencent.tinker.internal.patchDexDirectory
 import com.tencent.tinker.internal.patchLibraryDirectory
 import com.tencent.tinker.internal.patchOatDirectory
 import com.tencent.tinker.internal.patchResourceApkFile
-import com.tencent.tinker.internal.rootDirectory
 import com.tencent.tinker.internal.util.crc32
 import com.tencent.tinker.internal.util.currentProcess
 import com.tencent.tinker.internal.util.debugLog
@@ -23,7 +22,10 @@ import kotlin.random.Random
 
 private const val TAG = "Tinker.Layout"
 
-internal class PatchLayoutConstructorImpl(private val context: Context) : PatchLayoutConstructor() {
+internal class PatchLayoutConstructorImpl(
+    private val context: Context,
+    private val baseDirectory: File
+) : PatchLayoutConstructor() {
 
     @VisibleForTesting
     fun contextForTesting(): Context = context
@@ -76,9 +78,6 @@ internal class PatchLayoutConstructorImpl(private val context: Context) : PatchL
             }
         }
     }
-
-    private val baseDirectory: File
-        get() = context.rootDirectory.resolve("layout")
 
     /**
      * Encoded process name, which is used as a valid directory name for process base directory.

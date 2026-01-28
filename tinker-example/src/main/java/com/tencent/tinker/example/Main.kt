@@ -14,8 +14,6 @@ import android.view.MenuItem
 import android.widget.ImageView
 import android.widget.Toast
 import com.tencent.tinker.Tinker
-import com.tencent.tinker.Tinker.code
-import com.tencent.tinker.Tinker.dumpToFile
 import com.tencent.tinker.example.cases.Library
 import com.tencent.tinker.example.cases.ModifiedClass
 import java.io.File
@@ -24,23 +22,20 @@ import kotlin.concurrent.thread
 
 class MainApp : Tinker.App() {
 
-    init {
-        Tinker.setLogLevel(Log.DEBUG)
-    }
+    override fun appLikeClassName(): String =
+        "com.tencent.tinker.example.MainAppLike"
 
-    override val appLikeClassName: String
-        get() = "com.tencent.tinker.example.MainAppLike"
+    override fun loadCallback(): Tinker.Callback<Tinker.TaskSummary.Load> =
+        Callbacks.Load(this)
 
-    override val loadCallback: Tinker.Callback
-        get() = Callbacks.Load(this)
+    override fun deployCallback(): Tinker.Callback<Tinker.TaskSummary.Deploy> =
+        Callbacks.Deploy(this)
 
-    override val deployCallback: Tinker.Callback
-        get() = Callbacks.Deploy(this)
-
-    override val cleanCallback: Tinker.Callback
-        get() = Callbacks.Clean(this)
+    override fun cleanCallback(): Tinker.Callback<Tinker.TaskSummary.Clean> =
+        Callbacks.Clean(this)
 }
 
+@Suppress("unused")
 class MainAppLike(application: Application) : Tinker.AppLike(application) {
 
     companion object {
@@ -74,64 +69,64 @@ class MainAppLike(application: Application) : Tinker.AppLike(application) {
 
 private object Callbacks {
 
-    class Load(private val context: Context) : Tinker.Callback {
+    class Load(private val context: Context) : Tinker.Callback<Tinker.TaskSummary.Load> {
 
         companion object {
             private const val TAG = "Tinker.Example.Load"
         }
 
-        override fun onTaskComplete(summary: Tinker.TaskSummary) {
+        override fun onTaskComplete(summary: Tinker.TaskSummary.Load) {
             val error = summary.error
             if (error != null) {
-                Log.e(TAG, "Load with error ${error.type.code}.", error)
+                Log.e(TAG, "Load with error ${Tinker.codeOfErrorType(error.type)}.", error)
             } else {
                 Log.d(TAG, "Complete loading without error.")
             }
             thread {
                 val traceFile = context.filesDir.resolve("tinker_load_trace.json")
-                summary.events.dumpToFile(traceFile)
+                Tinker.dumpTraceEventsToFile(summary.events, traceFile)
                 Log.i(TAG, "Dump load trace to \"${traceFile.absolutePath}\".")
             }
         }
     }
 
-    class Deploy(private val context: Context) : Tinker.Callback {
+    class Deploy(private val context: Context) : Tinker.Callback<Tinker.TaskSummary.Deploy> {
 
         companion object {
             private const val TAG = "Tinker.Example.Deploy"
         }
 
-        override fun onTaskComplete(summary: Tinker.TaskSummary) {
+        override fun onTaskComplete(summary: Tinker.TaskSummary.Deploy) {
             val error = summary.error
             if (error != null) {
-                Log.e(TAG, "Deploy with error ${error.type.code}.", error)
+                Log.e(TAG, "Deploy with error ${Tinker.codeOfErrorType(error.type)}.", error)
             } else {
                 Log.d(TAG, "Complete deploying without error.")
             }
             thread {
                 val traceFile = context.filesDir.resolve("tinker_deploy_trace.json")
-                summary.events.dumpToFile(traceFile)
+                Tinker.dumpTraceEventsToFile(summary.events, traceFile)
                 Log.i(TAG, "Dump deploy trace to \"${traceFile.absolutePath}\".")
             }
         }
     }
 
-    class Clean(private val context: Context) : Tinker.Callback {
+    class Clean(private val context: Context) : Tinker.Callback<Tinker.TaskSummary.Clean> {
 
         companion object {
             private const val TAG = "Tinker.Example.Clean"
         }
 
-        override fun onTaskComplete(summary: Tinker.TaskSummary) {
+        override fun onTaskComplete(summary: Tinker.TaskSummary.Clean) {
             val error = summary.error
             if (error != null) {
-                Log.e(TAG, "Clean with error ${error.type.code}.", error)
+                Log.e(TAG, "Clean with error ${Tinker.codeOfErrorType(error.type)}.", error)
             } else {
                 Log.d(TAG, "Complete cleaning without error.")
             }
             thread {
                 val traceFile = context.filesDir.resolve("tinker_clean_trace.json")
-                summary.events.dumpToFile(traceFile)
+                Tinker.dumpTraceEventsToFile(summary.events, traceFile)
                 Log.i(TAG, "Dump clean trace to \"${traceFile.absolutePath}\".")
             }
         }
@@ -283,10 +278,10 @@ class MainActivity : Activity() {
                 Toast.makeText(this, R.string.start_deploying_patch, Toast.LENGTH_SHORT).show()
             }
             Tinker.deployPatch(
-                context = this,
-                version = "updated",
-                diffPackage = diffPackage,
-                skipCheckingSignature = true,
+                this,
+                "updated",
+                diffPackage,
+                true,
             )
         }
     }

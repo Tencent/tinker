@@ -5,7 +5,6 @@ import android.os.Build
 import android.system.Os
 import android.system.OsConstants
 import com.tencent.tinker.Tinker
-import com.tencent.tinker.Tinker.code
 import com.tencent.tinker.internal.TEST_ADDED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_DEPENDENCY_LIBRARY_FILE_NAME
@@ -38,7 +37,7 @@ internal inline fun <T> rethrowAsIllegalState(action: () -> T) =
     try {
         action()
     } catch (error: Tinker.Error) {
-        throw IllegalStateException("error#${error.type.code.toString(16)}#${error.message}", error)
+        throw IllegalStateException("error#${Tinker.codeOfErrorType(error.type).toString(16)}#${error.message}", error)
     }
 
 private val rethrowMessagePattern = "error#([0-9a-f]+)#.*".toRegex()
