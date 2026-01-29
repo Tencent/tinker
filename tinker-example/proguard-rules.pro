@@ -1,12 +1,18 @@
--keep class com.tencent.tinker.example.MainAppLike {
-    public void attachBaseContext(android.content.Context);
-    public void onCreate();
-    public void onTerminate();
-    public void onLowMemory();
-    public void onTrimMemory(int);
-    public void onConfigurationChanged(android.content.res.Configuration);
+# While we are using Tinker runtime by composite build, which is same as project dependency, the package transform is
+# not applied. Kotlin standard library classes which are used by Tinker runtime that have to be treated as loader
+# classes that cannot be obfuscated and patched.
+#
+# If you are using Tinker runtime by prebuilt AAR from Maven, this configuration is unneeded.
+-keepnames class kotlin.** {
+    *;
 }
 
+# Callbacks are used by loading. While they are configured in Tinker config, obfuscation should be disabled.
+-keepnames class com.tencent.tinker.example.Callbacks* {
+    *;
+}
+
+#
 -keep class com.tencent.tinker.example.cases.** {
     *;
 }
