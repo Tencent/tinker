@@ -1,6 +1,5 @@
 pluginManagement {
     includeBuild("build-config")
-    includeBuild("tinker-runtime-internal/build-helper")
     repositories {
         google {
             content {

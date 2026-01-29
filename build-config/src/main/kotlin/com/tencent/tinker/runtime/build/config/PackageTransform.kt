@@ -1,8 +1,10 @@
-package com.tencent.tinker.build
+package com.tencent.tinker.runtime.build.config
 
 import com.android.build.api.artifact.ScopedArtifact
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.api.variant.ScopedArtifacts
+import com.tencent.tinker.build.config.tinkerBuildConfig
+import com.tencent.tinker.capitalized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -40,20 +42,61 @@ import java.util.Collections
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.JarOutputStream
-import kotlin.collections.asSequence
-import kotlin.collections.forEach
 
+/*
+ * Build logic for transforming any classes used by Tinker runtime, but class package is not based on
+ * `com.tencent.tinker.internal`, for example, Kotlin standard library classes, to sub-package of
+ * `com.tencent.tinker.internal`.
+ *
+ * Classes being loaded in Tinker runtime loading procedure are called "loader classes". Because they are loaded by
+ * original class loader, not patch class loader created by Tinker runtime, they are unable to be patched. Which causes:
+ *
+ * - If application uses classes what Tinker runtime are using, like Kotlin standard library classes, behavior of code
+ *   using these classes may be unexpected for application designers.
+ * - To avoid issues above but without transforming, Tinker runtime have to implement all code without any 3rd-party
+ *   libraries or language features, which is not practical.
+ *
+ * In order to make a third-party library "transform-able", `transformImplementation()` should be used instead of
+ * `implementation()` in dependencies blocks.
+ */
+
+/**
+ * Add dependency like `implementation()`, but transform class packages and include them into target artifact, like a
+ * Fat-AAR.
+ */
 @Suppress("unused")
 fun Project.transformImplementation(dependency: Any) {
     dependencies.add("transformImplementation", dependency)
 }
 
+private const val PACKAGE_TRANSFORM_FLAVOR_DIMENSION = "tinkerType"
+
 @Suppress("UnstableApiUsage")
 internal fun Project.applyPackageTransform() {
     val transformImplementationConfiguration = configurations.dependencyScope("transformImplementation")
     val androidComponents = extensions.getByType(LibraryAndroidComponentsExtension::class.java)
+    tinkerBuildConfig {
+        publishVariant("productionRelease")
+    }
+    androidComponents.finalizeDsl { android ->
+        android.apply {
+            flavorDimensions.add(PACKAGE_TRANSFORM_FLAVOR_DIMENSION)
+            productFlavors {
+                create("production") { flavor ->
+                    flavor.apply {
+                        dimension = PACKAGE_TRANSFORM_FLAVOR_DIMENSION
+                        isDefault = true
+                    }
+                }
+                create("independent") { flavor ->
+                    flavor.dimension = PACKAGE_TRANSFORM_FLAVOR_DIMENSION
+                }
+            }
+        }
+    }
     androidComponents.onVariants { variant ->
-        val production = variant.productFlavors.any { it.first == "tinkerType" && it.second == "production" }
+        val production =
+            variant.productFlavors.any { it.first == PACKAGE_TRANSFORM_FLAVOR_DIMENSION && it.second == "production" }
         if (!production) {
             configurations.named("${variant.name}Implementation").configure {
                 it.extendsFrom(transformImplementationConfiguration.get())

@@ -25,13 +25,18 @@ dependencies {
     compileOnly(gradleApi())
     compileOnly(libs.agp.api)
     compileOnly(libs.kotlin.gradle.plugin)
+    implementation(libs.kotlinx.coroutines.core)
 }
 
 gradlePlugin {
     plugins {
-        create("plugin") {
+        create("tinkerBuildConfigPlugin") {
             id = "com.tencent.tinker.build.config"
             implementationClass = "com.tencent.tinker.build.config.TinkerBuildConfigPlugin"
+        }
+        create("tinkerRuntimeBuildConfigPlugin") {
+            id = "com.tencent.tinker.runtime.build.config"
+            implementationClass = "com.tencent.tinker.runtime.build.config.TinkerRuntimeBuildConfigPlugin"
         }
     }
 }

@@ -1,7 +1,8 @@
-package com.tencent.tinker.build
+package com.tencent.tinker.runtime.build.config
 
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
+import com.tencent.tinker.capitalized
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
@@ -15,7 +16,10 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.compile.JavaCompile
 
-@Suppress("UnstableApiUsage")
+/*
+ * Build logic for creating test assets for testing in runtime.
+ */
+
 internal fun Project.applyTestAssets() {
     val androidComponents =
         project.extensions.findByType(LibraryAndroidComponentsExtension::class.java)

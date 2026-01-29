@@ -1,92 +1,25 @@
 package com.tencent.tinker.build.config
 
-import com.android.build.api.variant.ApplicationAndroidComponentsExtension
-import com.android.build.api.variant.DslLifecycle
-import com.android.build.api.variant.LibraryAndroidComponentsExtension
+import com.tencent.tinker.androidApplicationIfExists
+import com.tencent.tinker.androidLibraryIfExists
+import com.tencent.tinker.appliedAndroidLibraryPlugin
+import com.tencent.tinker.dslDeveloper
+import com.tencent.tinker.dslDevelopers
+import com.tencent.tinker.dslLicense
+import com.tencent.tinker.dslLicenses
+import com.tencent.tinker.dslPom
+import com.tencent.tinker.dslScm
+import com.tencent.tinker.finalizeDslCompat
+import com.tencent.tinker.javaIfExists
+import com.tencent.tinker.kotlinAndroidIfExists
+import com.tencent.tinker.kotlinJvmIfExists
+import com.tencent.tinker.publishingIfExists
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPom
-import org.gradle.api.publish.maven.MavenPomDeveloper
-import org.gradle.api.publish.maven.MavenPomDeveloperSpec
-import org.gradle.api.publish.maven.MavenPomLicense
-import org.gradle.api.publish.maven.MavenPomLicenseSpec
-import org.gradle.api.publish.maven.MavenPomScm
 import org.gradle.api.publish.maven.MavenPublication
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
-
-private fun Project.publishingIfExists(action: PublishingExtension.() -> Unit) {
-    extensions.findByType(PublishingExtension::class.java)?.action()
-}
-
-private const val JAVA_PLUGIN_ID = "org.gradle.java"
-
-private val Project.appliedJavaPlugin: Boolean
-    get() = plugins.hasPlugin(JAVA_PLUGIN_ID)
-
-private const val JAVA_GRADLE_PLUGIN_PLUGIN_ID = "org.gradle.java-gradle-plugin"
-
-private val Project.appliedJavaGradlePluginPlugin: Boolean
-    get() = plugins.hasPlugin(JAVA_GRADLE_PLUGIN_PLUGIN_ID)
-
-private fun Project.javaIfExists(action: JavaPluginExtension.() -> Unit) {
-    extensions.findByType(JavaPluginExtension::class.java)?.action()
-}
-
-private fun Project.kotlinJvmIfExists(action: KotlinJvmProjectExtension.() -> Unit) {
-    extensions.findByType(KotlinJvmProjectExtension::class.java)?.action()
-}
-
-private const val ANDROID_LIBRARY_PLUGIN_ID = "com.android.library"
-
-private val Project.appliedAndroidLibraryPlugin: Boolean
-    get() = plugins.hasPlugin(ANDROID_LIBRARY_PLUGIN_ID)
-
-private fun Project.androidApplicationIfExists(action: ApplicationAndroidComponentsExtension.() -> Unit) {
-    extensions.findByType(ApplicationAndroidComponentsExtension::class.java)?.action()
-}
-
-private fun Project.androidLibraryIfExists(action: LibraryAndroidComponentsExtension.() -> Unit) {
-    extensions.findByType(LibraryAndroidComponentsExtension::class.java)?.action()
-}
-
-private fun Project.kotlinAndroidIfExists(action: KotlinAndroidProjectExtension.() -> Unit) {
-    extensions.findByType(KotlinAndroidProjectExtension::class.java)?.action()
-}
-
-private fun <T> DslLifecycle<T>.finalizeDslCompat(action: T.() -> Unit) {
-    finalizeDsl { it.action() }
-}
-
-private fun MavenPublication.dslPom(action: MavenPom.() -> Unit) {
-    pom.action()
-}
-
-private fun MavenPom.dslScm(action: MavenPomScm.() -> Unit) {
-    scm { it.action() }
-}
-
-private fun MavenPom.dslLicenses(action: MavenPomLicenseSpec.() -> Unit) {
-    licenses { it.action() }
-}
-
-private fun MavenPomLicenseSpec.dslLicense(action: MavenPomLicense.() -> Unit) {
-    license { it.action() }
-}
-
-private fun MavenPom.dslDevelopers(action: MavenPomDeveloperSpec.() -> Unit) {
-    developers { it.action() }
-}
-
-private fun MavenPomDeveloperSpec.dslDeveloper(action: MavenPomDeveloper.() -> Unit) {
-    developer { it.action() }
-}
 
 fun Project.tinkerBuildConfig(action: TinkerBuildConfigExtension.() -> Unit) {
     extensions.findByType(TinkerBuildConfigExtension::class.java)?.action()
