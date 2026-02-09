@@ -1,0 +1,20 @@
+default:
+  name: tinker
+  version: 1.9.15.2
+  authors:
+    - tomystang
+    - aurorani
+
+android:
+  build:
+    system: gradle
+    variants:
+      - name: tinker-runtime
+        gradle_project: tinker-runtime
+        variant: production-release
+
+  outputs:
+    release_shared:
+      multiple:
+        - name: tinker-runtime
+          gradle_project: tinker-runtime
