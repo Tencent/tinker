@@ -431,6 +431,7 @@ internal class ClassLoaderDelegate(override val original: ClassLoader) : HiddenC
         get() = pathListField.get(original)!!.let(::DexPathListDelegate)
 }
 
+@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
 internal typealias JavaMutableList<T> = java.util.List<T>
 
 /**
@@ -470,6 +471,7 @@ internal class DexPathListDelegate(override val original: Any) : HiddenClass() {
         original.javaClass.field("nativeLibraryDirectories")
     }
 
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     @get:RequiresApi(Build.VERSION_CODES.M)
     val nativeLibraryDirectoriesV23: JavaMutableList<File>? by HiddenField {
         nativeLibraryDirectoriesField

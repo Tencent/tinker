@@ -32,6 +32,7 @@ internal val Context.currentProcess: String
     get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         Application.getProcessName()
     } else {
+        @Suppress("DiscouragedPrivateApi")
         Class.forName("android.app.ActivityThread")
             .getDeclaredMethod("currentProcessName")
             .apply {
@@ -75,6 +76,7 @@ internal val currentSdk by lazy {
 
 internal val currentInstructionSet by lazy {
     try {
+        @Suppress("DiscouragedPrivateApi")
         return@lazy Class.forName("dalvik.system.VMRuntime")
             .getDeclaredMethod("getCurrentInstructionSet")
             .apply {

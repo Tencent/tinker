@@ -115,10 +115,12 @@ internal class InjectPathCodeLoader(
             }
 
         private class ListUpdater<T>(
+            @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
             private val source: JavaMutableList<T>,
             private val target: List<T>,
         ) : () -> Unit {
             override fun invoke() {
+                @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
                 source.apply {
                     clear()
                     addAll(target)
