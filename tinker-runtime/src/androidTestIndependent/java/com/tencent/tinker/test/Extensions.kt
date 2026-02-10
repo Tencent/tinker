@@ -101,6 +101,10 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
                                 input.copyTo(output)
                             }
                         }
+                        // Test dex should be non-writable if enforcing read-only dex is enabled while application is
+                        // targeting 14 or above.
+                        // See: https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading
+                        setWritable(false)
                     }
                 }
             } else if (dexMockMode == DexMockMode.APK) {
@@ -119,6 +123,10 @@ internal fun Context.createLoadableTestPatchDirectory(dexMockMode: DexMockMode):
                         zip.write(payload)
                         zip.closeEntry()
                     }
+                    // Test dex should be non-writable if enforcing read-only dex is enabled while application is
+                    // targeting 14 or above.
+                    // See: https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading
+                    setWritable(false)
                 }
             }
             patchLibraryDirectory.apply {
