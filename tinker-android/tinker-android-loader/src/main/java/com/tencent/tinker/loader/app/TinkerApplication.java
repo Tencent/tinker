@@ -178,9 +178,16 @@ public abstract class TinkerApplication extends Application {
         }
     }
 
+    protected boolean fullDisabled() {
+        return false;
+    }
+
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        if (fullDisabled()) {
+            return;
+        }
         final long applicationStartElapsedTime = SystemClock.elapsedRealtime();
         final long applicationStartMillisTime = System.currentTimeMillis();
         Thread.setDefaultUncaughtExceptionHandler(new TinkerUncaughtHandler(this));
