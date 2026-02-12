@@ -910,6 +910,117 @@ public final class Tinker {
     }
 
     /**
+     * Config class for testing Tinker V2 with legacy Tinker.
+     * <p>
+     * TODO: Remove this interface when test is complete.
+     */
+    public interface AppConfig {
+
+        /**
+         * Gets base directory of Tinker, which is used for storing files created by Tinker.
+         * <p>
+         * Since Tinker is implemented based on file system, key files are required to be protected by Tinker users.
+         * Returned directory must be guaranteed by Tinker caller that it is neither modified nor deleted.
+         */
+        File baseDirectory();
+
+        /**
+         * Gets class name of delegate class implementing {@link AppLike} which is used for current application.
+         * <p>
+         * Always implement this property by returning a string constant value, instead of getting name by class
+         * instance, which causes class loading.
+         * <p>
+         * If the property returns <code>null</code>, none of delegate class is used.
+         */
+        String appLikeClassName();
+
+        /**
+         * Gets callback of patch loading task.
+         * <p>
+         * The callback is called in patch loading process.
+         */
+        Callback<TaskSummary.Load> loadCallback();
+
+        /**
+         * Gets callback of patch deploying task.
+         * <p>
+         * The callback is only called in patch deploying process.
+         */
+        Callback<TaskSummary.Deploy> deployCallback();
+
+        /**
+         * Gets callback of patch cleaning task.
+         * <p>
+         * The callback is only called in patch deploying process.
+         */
+        Callback<TaskSummary.Clean> cleanCallback();
+
+        /**
+         * Whether to disable loading patch for current process.
+         * <p>
+         * The function is called at an early stage since base context is not attached to application.
+         * {@code baseContext} is provided.
+         */
+        boolean disabled(Context baseContext);
+
+        /**
+         * Whether to skip validating patch files while loading, which may speed up loading if application is huge.
+         * However, patch files may be corrupted if application code modifies patch files unexpectedly.
+         * <p>
+         * The function is called at an early stage since base context is not attached to application.
+         * {@code baseContext} is provided.
+         */
+        boolean skipValidating(Context baseContext);
+
+        /**
+         * Whether current application is hardening. Tinker will try to use special strategy for loading hardening
+         * application.
+         * <p>
+         * The function is called at an early stage since base context is not attached to application.
+         * {@code baseContext} is provided.
+         */
+        boolean hardening(Context baseContext);
+
+        /**
+         * Gets logger implementation.
+         * <p>
+         * If {@code null} is returned, default logger implementation is used.
+         * <p>
+         * The function is called at an early stage since base context is not attached to application.
+         * {@code baseContext} is provided.
+         */
+        Logger logger(Context baseContext);
+
+        /**
+         * Gets custom legacy merger implementation.
+         * <p>
+         * The API will be deprecated once new patch format is ready.
+         * <p>
+         * The function is called at an early stage since base context is not attached to application.
+         * {@code baseContext} is provided.
+         */
+        // TODO: Deprecate legacy merger once new patch format is ready.
+        LegacyMerger customLegacyMerger(Context baseContext);
+    }
+
+    public static AppLike legacyAttachBaseContext(
+            Application application,
+            Context baseContext,
+            AppConfig appConfig
+    ) {
+        final AppLike appLike = LoadKt.legacyLoad(
+                application,
+                appConfig.disabled(baseContext),
+                appConfig.hardening(baseContext),
+                appConfig.skipValidating(baseContext)
+        );
+        if (appLike != null) {
+            appLike.attachBaseContext(baseContext);
+        }
+        return appLike;
+    }
+
+    /**
      * The application base class for setting up Tinker.
      * <p>
      * Following these steps to set up Tinker:
@@ -933,7 +1044,7 @@ public final class Tinker {
      * If implementing {@link App} by self and overriding {@link Application#attachBaseContext}, make sure
      * <code>super.attachBaseContext(base)</code> is called before any other code.
      */
-    public static abstract class App extends Application {
+    public static abstract class App extends Application implements AppConfig {
 
         /**
          * Gets base directory of Tinker, which is used for storing files created by Tinker.
@@ -941,6 +1052,7 @@ public final class Tinker {
          * Since Tinker is implemented based on file system, key files are required to be protected by Tinker users.
          * Returned directory must be guaranteed by Tinker caller that it is neither modified nor deleted.
          */
+        @Override
         public File baseDirectory() {
             return BaseKt.getDefaultBaseDirectory(this);
         }
@@ -953,6 +1065,7 @@ public final class Tinker {
          * <p>
          * If the property returns <code>null</code>, none of delegate class is used.
          */
+        @Override
         public String appLikeClassName() {
             return "com.tencent.tinker.Tinker$AppLike";
         }
@@ -962,6 +1075,7 @@ public final class Tinker {
          * <p>
          * The callback is called in patch loading process.
          */
+        @Override
         public Callback<TaskSummary.Load> loadCallback() {
             return null;
         }
@@ -971,6 +1085,7 @@ public final class Tinker {
          * <p>
          * The callback is only called in patch deploying process.
          */
+        @Override
         public Callback<TaskSummary.Deploy> deployCallback() {
             return null;
         }
@@ -980,6 +1095,7 @@ public final class Tinker {
          * <p>
          * The callback is only called in patch deploying process.
          */
+        @Override
         public Callback<TaskSummary.Clean> cleanCallback() {
             return null;
         }
@@ -990,6 +1106,7 @@ public final class Tinker {
          * The function is called at an early stage since base context is not attached to application.
          * {@code baseContext} is provided.
          */
+        @Override
         public boolean disabled(Context baseContext) {
             return false;
         }
@@ -1001,6 +1118,7 @@ public final class Tinker {
          * The function is called at an early stage since base context is not attached to application.
          * {@code baseContext} is provided.
          */
+        @Override
         public boolean skipValidating(Context baseContext) {
             return false;
         }
@@ -1012,6 +1130,7 @@ public final class Tinker {
          * The function is called at an early stage since base context is not attached to application.
          * {@code baseContext} is provided.
          */
+        @Override
         public boolean hardening(Context baseContext) {
             return false;
         }
@@ -1024,6 +1143,7 @@ public final class Tinker {
          * The function is called at an early stage since base context is not attached to application.
          * {@code baseContext} is provided.
          */
+        @Override
         public Logger logger(Context baseContext) {
             return null;
         }
@@ -1037,6 +1157,7 @@ public final class Tinker {
          * {@code baseContext} is provided.
          */
         // TODO: Deprecate legacy merger once new patch format is ready.
+        @Override
         public LegacyMerger customLegacyMerger(Context baseContext) {
             return null;
         }

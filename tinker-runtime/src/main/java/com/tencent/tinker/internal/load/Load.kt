@@ -272,29 +272,56 @@ private fun Application.load(
     return result?.classLoader
 }
 
-internal fun Tinker.App.load(
+private fun loadInternal(
+    application: Application,
+    config: Tinker.AppConfig,
     disabled: Boolean,
     hardening: Boolean,
     skipValidating: Boolean,
 ): Tinker.AppLike? {
-    val appLikeClassLoader = if (disabled || isInDeployProcess) {
-        classLoader
+    val appLikeClassLoader = if (disabled || application.isInDeployProcess) {
+        application.classLoader
     } else {
-        load(
+        application.load(
             hardening = hardening,
             skipValidating = skipValidating,
-            callback = loadCallback(),
-        ) ?: classLoader
+            callback = config.loadCallback(),
+        ) ?: application.classLoader
     }
     // Do not catch any throwable while creating delegate application class. It should be fail-fast if user
     // provides an invalid delegate application class name.
-    return appLikeClassName()
+    return config.appLikeClassName()
         ?.let {
             appLikeClassLoader.loadClass(it)
         }
         ?.getConstructor(Application::class.java)
-        ?.newInstance(this)
+        ?.newInstance(application)
         ?.let {
             it as Tinker.AppLike
         }
 }
+
+internal fun Tinker.App.load(
+    disabled: Boolean,
+    hardening: Boolean,
+    skipValidating: Boolean,
+): Tinker.AppLike? = loadInternal(
+    application = this,
+    config = this,
+    disabled = disabled,
+    hardening = hardening,
+    skipValidating = skipValidating,
+)
+
+internal fun Application.legacyLoad(
+    disabled: Boolean,
+    hardening: Boolean,
+    skipValidating: Boolean,
+): Tinker.AppLike? = loadInternal(
+    application = this,
+    config = this as? Tinker.AppConfig
+        ?: throw IllegalArgumentException("Application must be a Tinker.AppConfig"),
+    disabled = disabled,
+    hardening = hardening,
+    skipValidating = skipValidating,
+)

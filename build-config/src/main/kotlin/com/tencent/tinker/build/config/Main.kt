@@ -46,7 +46,7 @@ class TinkerBuildConfigPlugin : Plugin<Project> {
             extensions.create("tinkerBuildConfig", TinkerBuildConfigExtension::class.java)
 
         group = "com.tencent.tinker"
-        version = "2.0.0-alpha"
+        version = "2.0.0-alpha-legacy-compat"
         javaIfExists {
             sourceCompatibility = JavaVersion.VERSION_11
             targetCompatibility = JavaVersion.VERSION_11

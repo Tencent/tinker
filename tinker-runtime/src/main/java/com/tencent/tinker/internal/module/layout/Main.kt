@@ -26,7 +26,7 @@ internal abstract class PatchLayoutConstructor {
             implCache.getOrPut {
                 PatchLayoutConstructorImpl(
                     context = applicationContext,
-                    baseDirectory = (applicationContext as? Tinker.App)
+                    baseDirectory = (applicationContext as? Tinker.AppConfig)
                         ?.baseDirectory()
                         ?.resolve("layout")
                         ?: throw Tinker.Error(

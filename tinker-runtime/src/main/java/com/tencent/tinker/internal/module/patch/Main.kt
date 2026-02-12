@@ -65,7 +65,7 @@ internal abstract class RawPatchManager {
             implCache.getOrPut {
                 RawPatchManagerImpl(
                     context = applicationContext,
-                    baseDirectory = (applicationContext as? Tinker.App)
+                    baseDirectory = (applicationContext as? Tinker.AppConfig)
                         ?.baseDirectory()
                         ?.resolve("patches")
                         ?: throw Tinker.Error(

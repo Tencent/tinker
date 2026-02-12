@@ -104,7 +104,7 @@ class TinkerCleanService : JobService() {
                 }
             }
             val (versions, error) = pair
-            val app = application as? Tinker.App
+            val app = application as? Tinker.AppConfig
                 ?: throw Tinker.Error(
                     Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
                     "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
@@ -126,7 +126,7 @@ class TinkerCleanService : JobService() {
     }
 
     override fun onStopJob(params: JobParameters): Boolean {
-        val app = application as? Tinker.App
+        val app = application as? Tinker.AppConfig
             ?: throw Tinker.Error(
                 Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
                 "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."

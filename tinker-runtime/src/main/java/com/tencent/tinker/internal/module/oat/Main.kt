@@ -25,7 +25,7 @@ internal abstract class OatManager {
             implCache.getOrPut {
                 OatManagerImpl(
                     context = applicationContext,
-                    baseDirectory = (applicationContext as? Tinker.App)
+                    baseDirectory = (applicationContext as? Tinker.AppConfig)
                         ?.baseDirectory()
                         ?.resolve("oat")
                         ?: throw Tinker.Error(
