@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.SystemClock;
 
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
+import com.tencent.tinker.commons.dexpatcher.struct.DexPatchFile;
 import com.tencent.tinker.commons.util.DigestUtil;
 import com.tencent.tinker.commons.util.IOHelper;
 import com.tencent.tinker.lib.service.PatchResult;
@@ -550,6 +551,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.rawName, type);
                         return false;
                     }
+                    // Gradle 8 / AGP 8 may change dex count; ensure "new dex" content is full DEX, not dexdiff
+                    if (SharePatchFileUtil.isRawDexFile(info.rawName) && isDexDiffMagicFile(extractedFile)) {
+                        ShareTinkerLog.e(TAG, "Patch entry %s is marked as new dex (oldCrc=0) but content is dexdiff. " +
+                                "Rebuild patch with correct base APK (same dex count as installed app), or use isProtectedApp=true.", info.rawName);
+                        manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.rawName, type);
+                        return false;
+                    }
                 } else if (dexDiffMd5.equals("0")) {
                     // skip process old dex for real dalvik vm
                     if (!isVmArt) {
@@ -608,6 +616,13 @@ public class DexDiffPatchInternal extends BasePatchInternal {
 
                     patchDexFile(apk, patch, rawApkFileEntry, patchFileEntry, info, extractedFile);
 
+                    // G8/AGP8 may produce dex that yields invalid patched output; fail fast with clear message
+                    if (SharePatchFileUtil.isRawDexFile(info.rawName) && !info.isJarMode && !isValidDexMagicFile(extractedFile)) {
+                        ShareTinkerLog.e(TAG, "Patched dex %s has invalid DEX magic (e.g. AGP8/R8 format). Try isProtectedApp=true.", info.rawName);
+                        manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.rawName, type);
+                        SharePatchFileUtil.safeDeleteFile(extractedFile);
+                        return false;
+                    }
                     if (!SharePatchFileUtil.verifyDexFileMd5(extractedFile, extractedFileMd5)) {
                         ShareTinkerLog.w(TAG, "Failed to recover dex file when verify patched dex: " + extractedFile.getPath());
                         manager.getPatchReporter().onPatchTypeExtractFail(patchFile, extractedFile, info.rawName, type);
@@ -699,6 +714,59 @@ public class DexDiffPatchInternal extends BasePatchInternal {
     //         throw new TinkerRuntimeException(ShareConstants.CHECK_VM_PROPERTY_FAIL + ", it is dalvik vm, but sdk version " + Build.VERSION.SDK_INT + " is larger than 21!");
     //     }
     // }
+
+    /** Standard DEX magic prefix "dex\n" (4 bytes). */
+    private static final byte[] DEX_MAGIC = {0x64, 0x65, 0x78, 0x0a};
+
+    /** Returns true if file starts with valid DEX magic. */
+    private static boolean isValidDexMagicFile(File file) {
+        if (file == null || !file.exists() || file.length() < DEX_MAGIC.length) {
+            return false;
+        }
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(file);
+            byte[] magic = new byte[DEX_MAGIC.length];
+            if (fis.read(magic) != magic.length) {
+                return false;
+            }
+            for (int i = 0; i < DEX_MAGIC.length; i++) {
+                if (magic[i] != DEX_MAGIC[i]) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (IOException e) {
+            return false;
+        } finally {
+            IOHelper.closeQuietly(fis);
+        }
+    }
+
+    /** Returns true if file starts with DXDIFF magic (patch content mistaken as full dex). */
+    private static boolean isDexDiffMagicFile(File file) {
+        if (file == null || !file.exists() || file.length() < DexPatchFile.MAGIC.length) {
+            return false;
+        }
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(file);
+            byte[] magic = new byte[DexPatchFile.MAGIC.length];
+            if (fis.read(magic) != magic.length) {
+                return false;
+            }
+            for (int i = 0; i < DexPatchFile.MAGIC.length; i++) {
+                if (magic[i] != DexPatchFile.MAGIC[i]) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (IOException e) {
+            return false;
+        } finally {
+            IOHelper.closeQuietly(fis);
+        }
+    }
 
     private static boolean extractDexFile(ZipFile zipFile, ZipEntry entryFile, File extractTo, ShareDexDiffPatchInfo dexInfo) throws IOException {
         final String fileMd5 = isVmArt ? dexInfo.destMd5InArt : dexInfo.destMd5InDvm;
