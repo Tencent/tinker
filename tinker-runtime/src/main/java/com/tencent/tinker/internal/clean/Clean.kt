@@ -1,10 +1,11 @@
 package com.tencent.tinker.internal.clean
 
-import android.app.Service
+import android.app.job.JobParameters
+import android.app.job.JobService
 import android.content.Context
-import android.content.Intent
-import android.os.IBinder
+import android.os.Build
 import com.tencent.tinker.Tinker
+import com.tencent.tinker.internal.JobId
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.errorTypeShouldBeThrown
 import com.tencent.tinker.internal.module.oat.OatManager
@@ -14,6 +15,7 @@ import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.infoLog
 import com.tencent.tinker.internal.util.isInDeployProcess
+import com.tencent.tinker.internal.util.scheduleJob
 import com.tencent.tinker.internal.util.traceE
 import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.traceTask
@@ -53,9 +55,9 @@ private fun cleanPatches(
 @DeployProcessOnly
 private fun cleanPatches(
     applicationContext: Context,
-    intent: Intent,
+    params: JobParameters
 ): List<String> {
-    val strategyIndex = intent.getIntExtra(CLEAN_IPC_KEY_STRATEGY, -1)
+    val strategyIndex = params.extras.getInt(CLEAN_IPC_KEY_STRATEGY, -1)
     if (strategyIndex == -1) {
         throw Tinker.Error(
             Tinker.Error.Clean.MISSING_STRATEGY,
@@ -81,9 +83,9 @@ private enum class Strategy(val key: String) {
 }
 
 @DeployProcessOnly
-class TinkerCleanService : Service() {
+class TinkerCleanService : JobService() {
 
-    private fun runTask(intent: Intent) {
+    private fun runTask(params: JobParameters) {
         thread(name = "tinker-clean") {
             infoLog(TAG) {
                 "Cleaning request received. Start cleaning."
@@ -91,7 +93,7 @@ class TinkerCleanService : Service() {
             val (pair, events) = traceTask("clean") {
                 try {
                     val versions = expected<Tinker.Error.Clean, List<String>>("clean patch") {
-                        cleanPatches(applicationContext, intent)
+                        cleanPatches(applicationContext, params)
                     }
                     versions to null
                 } catch (error: Tinker.Error) {
@@ -114,41 +116,61 @@ class TinkerCleanService : Service() {
                     versions,
                 )
             )
+            jobFinished(params, false)
         }
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        try {
-            runTask(intent)
-        } finally {
-            stopSelfResult(startId)
-        }
-        return START_NOT_STICKY
+    override fun onStartJob(params: JobParameters): Boolean {
+        runTask(params)
+        return true
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onStopJob(params: JobParameters): Boolean {
+        val app = application as? Tinker.App
+            ?: throw Tinker.Error(
+                Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
+                "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
+            )
+        app.cleanCallback()?.onTaskComplete(
+            Tinker.TaskSummary.Clean(
+                Tinker.Error(
+                    Tinker.Error.Clean.INTERRUPTED,
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        "Clean task is interrupted with code ${params.stopReason}."
+                    } else {
+                        "Clean task is interrupted."
+                    }
+                ),
+                emptyList<Tinker.TraceEvent>(),
+                emptyList<String>(),
+            )
+        )
+        return false
+    }
 }
 
 internal fun Context.cleanAllPatchesByRemote() {
     infoLog(TAG) {
         "Send clean all patches request to remote."
     }
-    Intent(this, TinkerCleanService::class.java)
-        .apply {
-            putExtra(CLEAN_IPC_KEY_STRATEGY, Strategy.CLEAN_ALL.ordinal)
-        }
-        .let(::startService)
+    scheduleJob(
+        JobId.CLEAN.id,
+        TinkerCleanService::class.java,
+    ) {
+        putInt(CLEAN_IPC_KEY_STRATEGY, Strategy.CLEAN_ALL.ordinal)
+    }
 }
 
 internal fun Context.cleanObsoletePatchesByRemote() {
     infoLog(TAG) {
         "Send clean obsolete patches request to remote."
     }
-    Intent(this, TinkerCleanService::class.java)
-        .apply {
-            putExtra(CLEAN_IPC_KEY_STRATEGY, Strategy.CLEAN_OBSOLETE.ordinal)
-        }
-        .let(::startService)
+    scheduleJob(
+        JobId.CLEAN.id,
+        TinkerCleanService::class.java,
+    ) {
+        putInt(CLEAN_IPC_KEY_STRATEGY, Strategy.CLEAN_OBSOLETE.ordinal)
+    }
 }
 
 @JvmOverloads

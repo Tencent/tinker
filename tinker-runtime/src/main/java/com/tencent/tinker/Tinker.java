@@ -269,7 +269,12 @@ public final class Tinker {
             /**
              * Type of error caused by unsupported diff package format or broken diff package.
              */
-            INVALID_DIFF_PACKAGE;
+            INVALID_DIFF_PACKAGE,
+
+            /**
+             * Type of error caused by system interruption.
+             */
+            INTERRUPTED;
 
             @Override
             public int groupCode() {
@@ -484,7 +489,12 @@ public final class Tinker {
             /**
              * Type of error caused by invalid strategy while transferring data across processes.
              */
-            INVALID_STRATEGY;
+            INVALID_STRATEGY,
+
+            /**
+             * Type of error caused by system interruption.
+             */
+            INTERRUPTED;
 
             @Override
             public int groupCode() {

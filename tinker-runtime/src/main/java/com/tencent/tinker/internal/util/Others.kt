@@ -2,8 +2,13 @@ package com.tencent.tinker.internal.util
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.app.job.JobInfo
+import android.app.job.JobScheduler
+import android.app.job.JobService
+import android.content.ComponentName
 import android.content.Context
 import android.os.Build
+import android.os.PersistableBundle
 import java.util.zip.ZipEntry
 
 /**
@@ -120,3 +125,21 @@ internal val arkHotRunning by lazy {
 
 internal val Class<*>.className: String
     get() = name.substringAfterLast('.')
+
+internal fun Context.scheduleJob(
+    jobId: Int,
+    serviceClass: Class<out JobService>,
+    extrasBuilder: PersistableBundle.() -> Unit,
+) {
+    val extras = PersistableBundle().apply(extrasBuilder)
+    val jobInfo = JobInfo
+        .Builder(jobId, ComponentName(this, serviceClass))
+        .setExtras(extras)
+        .build()
+    val scheduler = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        getSystemService(JobScheduler::class.java)
+    } else {
+        getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+    }
+    scheduler.schedule(jobInfo)
+}

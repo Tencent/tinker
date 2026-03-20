@@ -34,6 +34,19 @@ internal val File.patchResourceApkFile: File
 internal val File.patchOatDirectory: File
     get() = resolve("oat")
 
+internal enum class JobId {
+    DEPLOY,
+    CLEAN;
+
+    companion object {
+        // Which is the last 24 bits of string "tinker" md5 checksum.
+        private const val BASE = 0x5aa3ce
+    }
+
+    internal val id: Int
+        get() = (BASE shl 2) + ordinal
+}
+
 /**
  * Information about a patch.
  *

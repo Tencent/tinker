@@ -1,10 +1,11 @@
 package com.tencent.tinker.internal.deploy
 
-import android.app.Service
+import android.app.job.JobParameters
+import android.app.job.JobService
 import android.content.Context
-import android.content.Intent
-import android.os.IBinder
+import android.os.Build
 import com.tencent.tinker.Tinker
+import com.tencent.tinker.internal.JobId
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.deploy.legacy.LegacyDeployer
 import com.tencent.tinker.internal.errorTypeShouldBeThrown
@@ -16,6 +17,7 @@ import com.tencent.tinker.internal.util.className
 import com.tencent.tinker.internal.util.debugLog
 import com.tencent.tinker.internal.util.expected
 import com.tencent.tinker.internal.util.infoLog
+import com.tencent.tinker.internal.util.scheduleJob
 import com.tencent.tinker.internal.util.traceE
 import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.traceTask
@@ -109,17 +111,17 @@ private class DeployResult(
 @DeployProcessOnly
 private fun deployPatch(
     applicationContext: Context,
-    intent: Intent,
+    params: JobParameters,
 ): DeployResult {
-    val version = intent.getStringExtra(DEPLOY_IPC_KEY_VERSION)
+    val version = params.extras.getString(DEPLOY_IPC_KEY_VERSION)
         ?: throw Tinker.Error(
             Tinker.Error.Deploy.MISSING_VERSION,
             "Version is missing while deploying patch."
         )
     debugLog(TAG) {
-        "Version \"${version}\" from deploy request intent is read."
+        "Version \"${version}\" from deploy request parameters is read."
     }
-    val diffPackage = intent.getStringExtra(DEPLOY_IPC_KEY_DIFF_PACKAGE)
+    val diffPackage = params.extras.getString(DEPLOY_IPC_KEY_DIFF_PACKAGE)
         ?.let(::File)
         ?: throw Tinker.Error(
             Tinker.Error.Deploy.MISSING_DIFF_PACKAGE,
@@ -132,14 +134,11 @@ private fun deployPatch(
         )
     }
     debugLog(TAG) {
-        "Diff package \"${diffPackage.absolutePath}\" from deploy request intent is read."
+        "Diff package \"${diffPackage.absolutePath}\" from deploy request parameters is read."
     }
-    val skipCheckingSignature = intent.getBooleanExtra(
-        DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE,
-        false,
-    )
+    val skipCheckingSignature = params.extras.getInt(DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE) == 1
     debugLog(TAG) {
-        "Skip checking signature \"${skipCheckingSignature}\" from deploy request intent is read."
+        "Skip checking signature \"${skipCheckingSignature}\" from deploy request parameters is read."
     }
     val deployer = when {
         diffPackage.isZipFile -> {
@@ -172,9 +171,9 @@ private const val DEPLOY_IPC_KEY_DIFF_PACKAGE = "d"
 private const val DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE = "c"
 
 @DeployProcessOnly
-class TinkerDeployService : Service() {
+class TinkerDeployService : JobService() {
 
-    private fun runTask(intent: Intent) {
+    private fun runTask(params: JobParameters) {
         thread(name = "tinker-deploy") {
             infoLog(TAG) {
                 "Deploying request received. Start deploying."
@@ -182,7 +181,7 @@ class TinkerDeployService : Service() {
             val (pair, events) = traceTask("deploy") {
                 try {
                     val result = expected<Tinker.Error.Deploy, DeployResult>("deploy patch") {
-                        deployPatch(applicationContext, intent)
+                        deployPatch(applicationContext, params)
                     }
                     result to null
                 } catch (error: Tinker.Error) {
@@ -206,19 +205,38 @@ class TinkerDeployService : Service() {
                     result?.sourceDiffPackage,
                 )
             )
+            jobFinished(params, false)
         }
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        try {
-            runTask(intent)
-        } finally {
-            stopSelfResult(startId)
-        }
-        return START_NOT_STICKY
+    override fun onStartJob(params: JobParameters): Boolean {
+        runTask(params)
+        return true
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onStopJob(params: JobParameters): Boolean {
+        val app = application as? Tinker.App
+            ?: throw Tinker.Error(
+                Tinker.Error.Usage.APP_IS_NOT_TINKER_APP,
+                "Application instance is not a \"${Tinker.App::class.java.name}\" subclass instance."
+            )
+        app.deployCallback()?.onTaskComplete(
+            Tinker.TaskSummary.Deploy(
+                Tinker.Error(
+                    Tinker.Error.Deploy.INTERRUPTED,
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        "Clean task is interrupted with code ${params.stopReason}."
+                    } else {
+                        "Clean task is interrupted."
+                    }
+                ),
+                emptyList<Tinker.TraceEvent>(),
+                null,
+                null,
+            )
+        )
+        return false
+    }
 }
 
 /**
@@ -234,11 +252,12 @@ internal fun Context.deployPatchByRemote(
                 " with version \"${version}\"" +
                 " and diff package \"${diffPackage.absolutePath}\"."
     }
-    Intent(this, TinkerDeployService::class.java)
-        .apply {
-            putExtra(DEPLOY_IPC_KEY_VERSION, version)
-            putExtra(DEPLOY_IPC_KEY_DIFF_PACKAGE, diffPackage.absolutePath)
-            putExtra(DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE, skipCheckingSignature)
-        }
-        .let(::startService)
+    scheduleJob(
+        JobId.DEPLOY.id,
+        TinkerDeployService::class.java,
+    ) {
+        putString(DEPLOY_IPC_KEY_VERSION, version)
+        putString(DEPLOY_IPC_KEY_DIFF_PACKAGE, diffPackage.absolutePath)
+        putInt(DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE, if (skipCheckingSignature) 1 else 0)
+    }
 }
