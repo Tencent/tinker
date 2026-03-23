@@ -79,7 +79,8 @@ internal class RawPatchManagerImpl(
             ?.takeIf { it.isNotEmpty() }
         set(value) {
             debugLog(TAG) {
-                "Try setting latest version to \"${value}\"."
+                val valueReadable = if (value != null) "\"${value}\"" else "<null>"
+                "Try setting latest version to ${valueReadable}."
             }
             value?.let {
                 latestVersionFile
@@ -186,7 +187,8 @@ internal class RawPatchManagerImpl(
             ?.toString(Charsets.UTF_8)
         set(value) {
             debugLog(TAG) {
-                "Try setting latest version to \"${value}\"."
+                val valueReadable = if (value != null) "\"${value}\"" else "<null>"
+                "Try setting latest version to ${valueReadable}."
             }
             value?.let {
                 mainVersionFile
@@ -320,7 +322,12 @@ internal class RawPatchManagerImpl(
     @NonDeployProcessOnly
     private fun releaseVersion() {
         debugLog(TAG) {
-            "Releasing version holder \"${versionHolder?.hashCode()?.toString(16)}\" of current process."
+            val versionHolderReadable = versionHolder
+                ?.hashCode()
+                ?.toString(16)
+                ?.let { "\"${it}\"" }
+                ?: "<null>"
+            "Releasing version holder $versionHolderReadable of current process."
         }
         versionHolder?.let { (guardedContent, _) ->
             guardedContent.close()
