@@ -176,7 +176,7 @@ public final class Tinker {
                 INVALID_LIBRARY_DIRECTORY,
 
                 /**
-                 * Type of error caused by reading test resource but it is broken.
+                 * Type of error caused by reading test resource, but it is broken.
                  */
                 TEST_RESOURCE_BROKEN,
 
@@ -527,7 +527,7 @@ public final class Tinker {
             HAS_ACQUIRED_PATCH,
 
             /**
-             * Type of error caused by I/O exception while reading latest version.
+             * Type of error caused by I/O exception while reading the latest version.
              */
             READ_LATEST_VERSION,
 

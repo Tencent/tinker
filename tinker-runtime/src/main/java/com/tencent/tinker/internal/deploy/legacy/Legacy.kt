@@ -44,7 +44,7 @@ private object BSDiffMerger : Tinker.LegacyMerger {
 
 internal class PackageMetadata(
     /**
-     * Whether use custom merger.
+     * Whether to use custom merger.
      */
     private val useCustomMerger: Boolean,
 ) {

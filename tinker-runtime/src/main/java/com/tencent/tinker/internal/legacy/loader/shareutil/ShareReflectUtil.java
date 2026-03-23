@@ -85,7 +85,7 @@ public class ShareReflectUtil {
     }
 
     /**
-     * Replace the value of a field containing a non null array, by a new array containing the
+     * Replace the value of a field containing a non-null array, by a new array containing the
      * elements of the original array plus the elements of extraElements.
      *
      * @param instance      the instance whose field is to be modified.

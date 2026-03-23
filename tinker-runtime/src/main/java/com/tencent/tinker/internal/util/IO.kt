@@ -42,7 +42,7 @@ internal fun AutoCloseable.closeQuietly() {
 /**
  * Reads/writes file content with shared/exclusive lock.
  *
- * The caller must guarantee that the file is exist.
+ * The caller must guarantee that the file is existed.
  */
 internal var File.guardedContent: ByteArray
     get() = inputStream().use { stream ->
@@ -65,7 +65,7 @@ internal var File.guardedContent: ByteArray
 /**
  * Reads file content with shared lock. The function returns null if read lock cannot be acquired.
  *
- * The caller must guarantee that the file is exist.
+ * The caller must guarantee that the file is existed.
  */
 internal val File.guardedContentNullable: ByteArray?
     get() = inputStream().use { stream ->

@@ -101,8 +101,8 @@ internal abstract class RawPatchManager {
      *
      * Depends on implementation of manager, the request may be ignored or be used for counting.
      *
-     * Once the function is called, the caller should not use anything returned by [acquire] any
-     * more.
+     * Once the function is called, the caller should not use anything returned by [acquire]
+     * anymore.
      */
     @NonDeployProcessOnly
     abstract fun requestUnavailable(version: String)

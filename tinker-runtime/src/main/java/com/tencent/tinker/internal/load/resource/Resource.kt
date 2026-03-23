@@ -130,7 +130,7 @@ private class ResourceManagerUpdater(
 /**
  * Tries resolving issues caused by WebView on Android N.
  *
- * On Android N, if an activity contains a webview, our resource patch may lost effects if screen
+ * On Android N, if an activity contains a webview, our resource patch may lose effects if screen
  * rotates.
  */
 @RequiresApi(Build.VERSION_CODES.N)

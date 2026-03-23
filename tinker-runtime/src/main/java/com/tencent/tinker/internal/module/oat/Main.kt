@@ -49,7 +49,7 @@ internal abstract class OatManager {
     ): File?
 
     /**
-     * Releases OAT files using lock to mark OAT files is not used any more in current process.
+     * Releases OAT files using lock to mark OAT files is not used anymore in current process.
      */
     @NonDeployProcessOnly
     abstract fun release()

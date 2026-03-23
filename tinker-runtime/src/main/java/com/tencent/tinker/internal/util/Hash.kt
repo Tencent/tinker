@@ -39,25 +39,6 @@ internal val String.asMd5HashNullable: ByteArray?
         return asMd5Hash
     }
 
-/**
- * Gets the MD5 hash of this file.
- */
-internal val File.md5: ByteArray
-    get() {
-        val calculator = MessageDigest.getInstance("MD5")
-        inputStream().use { stream ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val read = stream.read(buffer)
-                if (read == -1) {
-                    break
-                }
-                calculator.update(buffer, 0, read)
-            }
-        }
-        return calculator.digest()
-    }
-
 
 /**
  * Gets the CRC32 checksum of this byte array.

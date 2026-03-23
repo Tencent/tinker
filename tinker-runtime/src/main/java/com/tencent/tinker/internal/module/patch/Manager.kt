@@ -63,15 +63,15 @@ internal class RawPatchManagerImpl(
      * The content of this file may be empty or corrupted because of any I/O error. The caller
      * should check its content is valid before using.
      */
-    private val Context.latestVersionFile: File
+    private val latestVersionFile: File
         get() = baseDirectory.resolve("latest_version")
 
     @VisibleForTesting
     fun latestVersionFileForTesting(): File =
-        context.latestVersionFile
+        latestVersionFile
 
     @set:DeployProcessOnly
-    private var Context.latestVersion: String?
+    private var latestVersion: String?
         get() = latestVersionFile
             .takeIf { it.exists() }
             ?.guardedContent
@@ -107,7 +107,7 @@ internal class RawPatchManagerImpl(
      * process acquires the shared lock successfully, if the content is [GUARD_CLEANING_CONTENT],
      * the patch version is still invalid.
      */
-    private fun Context.guardFile(version: String): File {
+    private fun guardFile(version: String): File {
         return baseDirectory
             .resolve("guards")
             .resolve(version)
@@ -117,7 +117,7 @@ internal class RawPatchManagerImpl(
      * Acquires patch of [version] is used by current process. The function returns null if patch
      * process is holding patch to clean up.
      */
-    private fun Context.acquireGuardAsUsing(version: String): EscapedGuardedContent? {
+    private fun acquireGuardAsUsing(version: String): EscapedGuardedContent? {
         val file = guardFile(version)
             .apply {
                 if (!exists()) {
@@ -139,7 +139,7 @@ internal class RawPatchManagerImpl(
      * null if patch is now used by any process.
      */
     @DeployProcessOnly
-    private fun Context.acquireGuardAsCleaning(version: String): EscapedGuardedContent? {
+    private fun acquireGuardAsCleaning(version: String): EscapedGuardedContent? {
         val file = guardFile(version).ensureParentIsExistingDirectory()
         return file.escapedGuardedContentExclusiveNullable(
             ByteArray(1) { GUARD_CLEANING_CONTENT }
@@ -150,7 +150,7 @@ internal class RawPatchManagerImpl(
      * Drop guard file after patch of [version] is cleaned.
      */
     @DeployProcessOnly
-    private fun Context.dropGuard(version: String) {
+    private fun dropGuard(version: String) {
         guardFile(version).delete()
     }
 
@@ -161,7 +161,7 @@ internal class RawPatchManagerImpl(
      * Its content is only available when exclusive lock of [mainAliveFile] is held. Which means
      * the main process is still alive.
      */
-    private val Context.mainVersionFile: File
+    private val mainVersionFile: File
         get() = baseDirectory.resolve("main_version")
 
     /**
@@ -169,7 +169,7 @@ internal class RawPatchManagerImpl(
      *
      * The main process should hold an exclusive lock of this file to represent that it is alive.
      */
-    private val Context.mainAliveFile: File
+    private val mainAliveFile: File
         get() = baseDirectory.resolve("main_alive")
 
     /**
@@ -181,7 +181,7 @@ internal class RawPatchManagerImpl(
      * and it returns true. The returned value is meaningless if main process is not alive.
      */
     @set:MainProcessOnly
-    private var Context.mainVersion: String?
+    private var mainVersion: String?
         get() = mainVersionFile.takeIf { it.exists() }
             ?.guardedContentNullable
             ?.toString(Charsets.UTF_8)
@@ -202,7 +202,7 @@ internal class RawPatchManagerImpl(
 
     @MainProcessOnly
     @GuardedBy("this")
-    private fun Context.markMainAlive() {
+    private fun markMainAlive() {
         val file = mainAliveFile.ensureParentIsExistingDirectory()
         file.escapedGuardedContentExclusive(ByteArray(0))
             .also {
@@ -231,7 +231,7 @@ internal class RawPatchManagerImpl(
     /**
      * Checks if main process is alive in non-main processes.
      */
-    private val Context.isMainAlive: Boolean
+    private val isMainAlive: Boolean
         get() = mainAliveFile.takeIf { it.exists() }?.guardedContentNullable == null
 
 
@@ -244,10 +244,10 @@ internal class RawPatchManagerImpl(
      * While deploy processes are cleaning up obsolete patch versions, non-remained patch versions
      * will be removed from this file.
      */
-    private val Context.unavailableFile: File
+    private val unavailableFile: File
         get() = baseDirectory.resolve("unavailable")
 
-    private val Context.unavailable: Set<String>
+    private val unavailable: Set<String>
         get() = unavailableFile.takeIf { it.exists() }
             ?.guardedContent
             ?.toString(Charsets.UTF_8)
@@ -255,7 +255,7 @@ internal class RawPatchManagerImpl(
             ?.toSet()
             ?: emptySet()
 
-    private fun Context.updateUnavailable(action: (Set<String>) -> Set<String>) {
+    private fun updateUnavailable(action: (Set<String>) -> Set<String>) {
         unavailableFile.guardedReadOrWriteContent { file ->
             file.seek(0)
             val content = ByteArray(file.length().toInt())
@@ -351,18 +351,18 @@ internal class RawPatchManagerImpl(
      * after it is created and until it is cleaned up. Other processes can only read or execute
      * files in these directories.
      */
-    private val Context.patchesDirectory: File
+    private val patchesDirectory: File
         get() = baseDirectory.resolve("patches")
 
-    private fun Context.patchDirectory(version: String): File =
+    private fun patchDirectory(version: String): File =
         patchesDirectory.resolve(version)
 
     @VisibleForTesting
     fun patchDirectoryForTesting(version: String): File =
-        context.patchDirectory(version)
+        patchDirectory(version)
 
     @DeployProcessOnly
-    private fun Context.cleanPatches(keep: (String) -> Boolean): List<CleanedRawPatch> {
+    private fun cleanPatches(keep: (String) -> Boolean): List<CleanedRawPatch> {
         val patchDirectories = patchesDirectory
             .takeIf { it.exists() }
             ?.listFiles()
@@ -395,7 +395,7 @@ internal class RawPatchManagerImpl(
                 )
             }
             if (guardedContent != null) {
-                try {
+                guardedContent.use {
                     try {
                         dir.walk(direction = FileWalkDirection.TOP_DOWN).forEach {
                             it.setWritable(true)
@@ -416,8 +416,6 @@ internal class RawPatchManagerImpl(
                             throwable,
                         )
                     }
-                } finally {
-                    guardedContent.close()
                 }
                 debugLog(TAG) {
                     "Raw patch directory \"${dir.absolutePath}\" is cleaned."
@@ -478,7 +476,7 @@ internal class RawPatchManagerImpl(
             val version = run {
                 if (!context.isInMainProcess) {
                     val alive = try {
-                        context.isMainAlive
+                        isMainAlive
                     } catch (throwable: Throwable) {
                         throw Tinker.Error(
                             Tinker.Error.RawPatch.CHECK_MAIN_ALIVE,
@@ -488,7 +486,7 @@ internal class RawPatchManagerImpl(
                     }
                     if (alive) {
                         try {
-                            context.mainVersion?.let {
+                            mainVersion?.let {
                                 debugLog(TAG) {
                                     "Use \"${it}\" which is used by running main process."
                                 }
@@ -504,7 +502,7 @@ internal class RawPatchManagerImpl(
                     }
                 }
                 val latest = try {
-                    context.latestVersion ?: return@run null
+                    latestVersion ?: return@run null
                 } catch (throwable: Throwable) {
                     throw Tinker.Error(
                         Tinker.Error.RawPatch.READ_LATEST_VERSION,
@@ -516,7 +514,7 @@ internal class RawPatchManagerImpl(
                     "Found latest version \"${latest}\" for acquiring."
                 }
                 val unavailable = try {
-                    context.unavailable
+                    unavailable
                 } catch (throwable: Throwable) {
                     throw Tinker.Error(
                         Tinker.Error.RawPatch.READ_UNAVAILABLE,
@@ -541,7 +539,7 @@ internal class RawPatchManagerImpl(
                 return@run latest
             } ?: return null
             val acquired = try {
-                context.acquireGuardAsUsing(version) ?: run {
+                acquireGuardAsUsing(version) ?: run {
                     warnLog(TAG) {
                         "Acquired failed because raw patch directory of target version \"${version}\" is cleaning."
                     }
@@ -560,7 +558,7 @@ internal class RawPatchManagerImpl(
             )
             if (context.isInMainProcess) {
                 try {
-                    context.mainVersion = version
+                    mainVersion = version
                 } catch (throwable: Throwable) {
                     releaseVersion()
                     throw Tinker.Error(
@@ -570,7 +568,7 @@ internal class RawPatchManagerImpl(
                     )
                 }
                 try {
-                    context.markMainAlive()
+                    markMainAlive()
                 } catch (throwable: Throwable) {
                     releaseVersion()
                     unmarkMainAlive()
@@ -583,7 +581,7 @@ internal class RawPatchManagerImpl(
             }
             return RawPatch(
                 version,
-                context.patchDirectory(version)
+                patchDirectory(version)
             )
         }
     }
@@ -600,7 +598,7 @@ internal class RawPatchManagerImpl(
             }
             releaseVersion()
             try {
-                context.updateUnavailable {
+                updateUnavailable {
                     it + version
                 }
             } catch (throwable: Throwable) {
@@ -635,7 +633,7 @@ internal class RawPatchManagerImpl(
             "Only available for deploy process"
         }
         expected<Tinker.Error.RawPatch>("create patch") {
-            val patchDirectory = context.patchDirectory(version)
+            val patchDirectory = patchDirectory(version)
             if (patchDirectory.exists()) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.CREATE_EXIST_PATCH,
@@ -656,7 +654,7 @@ internal class RawPatchManagerImpl(
                 )
             }
             try {
-                context.latestVersion = version
+                latestVersion = version
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.WRITE_LATEST_VERSION,
@@ -676,7 +674,7 @@ internal class RawPatchManagerImpl(
         }
         expected<Tinker.Error.RawPatch>("get latest version") {
             return try {
-                context.latestVersion
+                latestVersion
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.READ_LATEST_VERSION,
@@ -694,7 +692,7 @@ internal class RawPatchManagerImpl(
             "Only available for deploy process"
         }
         expected<Tinker.Error.RawPatch>("get patch by version") {
-            val patchDirectory = context.patchDirectory(version)
+            val patchDirectory = patchDirectory(version)
             if (!patchDirectory.exists()) {
                 return null
             }
@@ -710,7 +708,7 @@ internal class RawPatchManagerImpl(
         }
         expected<Tinker.Error.RawPatch>("clean all patches") {
             try {
-                context.latestVersion = null
+                latestVersion = null
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.WRITE_LATEST_VERSION,
@@ -718,7 +716,7 @@ internal class RawPatchManagerImpl(
                     throwable,
                 )
             }
-            return context.cleanPatches { false }
+            return cleanPatches { false }
         }
     }
 
@@ -734,7 +732,7 @@ internal class RawPatchManagerImpl(
             //   - not marked as latest version, or if marked as latest version, also marked as
             //     unavailable
             val latest = try {
-                context.latestVersion
+                latestVersion
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.READ_LATEST_VERSION,
@@ -743,7 +741,7 @@ internal class RawPatchManagerImpl(
                 )
             }
             val removeLatest = try {
-                context.unavailable.contains(latest)
+                unavailable.contains(latest)
             } catch (throwable: Throwable) {
                 throw Tinker.Error(
                     Tinker.Error.RawPatch.READ_UNAVAILABLE,
@@ -756,7 +754,7 @@ internal class RawPatchManagerImpl(
                     "Latest version \"${latest}\" is cleanable because it is already marked as unavailable."
                 }
                 try {
-                    context.latestVersion = null
+                    latestVersion = null
                 } catch (throwable: Throwable) {
                     throw Tinker.Error(
                         Tinker.Error.RawPatch.WRITE_LATEST_VERSION,
@@ -765,7 +763,7 @@ internal class RawPatchManagerImpl(
                     )
                 }
             }
-            return context.cleanPatches {
+            return cleanPatches {
                 if (removeLatest) false else (it == latest)
             }
         }

@@ -358,12 +358,12 @@ internal class LoadedApkDelegate(override val original: Any) : HiddenClass() {
         }
 
         val resDirGetter: LoadedApkDelegate.() -> String
-            get() = GetterWithInstanceDelegate<LoadedApkDelegate, String>(
+            get() = GetterWithInstanceDelegate(
                 field = resDirField,
             )
 
         val resDirSetter: LoadedApkDelegate.(String) -> Unit
-            get() = SetterWithInstanceDelegate<LoadedApkDelegate, String>(
+            get() = SetterWithInstanceDelegate(
                 field = resDirField,
             )
     }
@@ -1123,12 +1123,12 @@ internal class ResourceKeyDelegate(override val original: Any) : HiddenClass() {
         }
 
         val resourceDirectoryGetter: ResourceKeyDelegate.() -> String
-            get() = GetterWithInstanceDelegate<ResourceKeyDelegate, String>(
+            get() = GetterWithInstanceDelegate(
                 field = resDirField,
             )
 
         val resourceDirectorySetter: ResourceKeyDelegate.(String) -> Unit
-            get() = SetterWithInstanceDelegate<ResourceKeyDelegate, String>(
+            get() = SetterWithInstanceDelegate(
                 field = resDirField,
             )
     }
@@ -1150,7 +1150,7 @@ internal class ResourceImplementationDelegate(override val original: Any) : Hidd
         }
 
         internal val assetsSetter: ResourceImplementationDelegate.(AssetManagerDelegate) -> Unit
-            get() = DelegateSetterWithInstanceDelegate<ResourceImplementationDelegate, AssetManagerDelegate>(assetsField)
+            get() = DelegateSetterWithInstanceDelegate(assetsField)
     }
 }
 
