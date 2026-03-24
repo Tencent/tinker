@@ -16,6 +16,7 @@ import com.tencent.tinker.internal.util.TraceKt;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.List;
 
 @SuppressWarnings({"unused", "NullableProblems", "JavadocReference"})
@@ -704,7 +705,7 @@ public final class Tinker {
     /**
      * Event of the traced task procedure.
      */
-    public static final class TraceEvent {
+    public static final class TraceEvent implements Serializable {
         private final String mName;
 
         /**
@@ -771,7 +772,7 @@ public final class Tinker {
     /**
      * Summary of the task.
      */
-    public static abstract class TaskSummary {
+    public static abstract class TaskSummary implements Serializable {
 
         private final Error mError;
 
