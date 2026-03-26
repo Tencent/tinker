@@ -2,8 +2,11 @@ package com.tencent.tinker.internal
 
 import android.content.Context
 import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
 import com.tencent.tinker.Tinker
 import java.io.File
+import java.util.concurrent.Executors
 
 internal const val TEST_ASSETS_DIRECTORY_NAME = "tinker"
 
@@ -108,3 +111,9 @@ internal val Context.defaultBaseDirectory: File
             }
         return applicationInfo.dataDir.let(::File).resolve(name)
     }
+
+internal val deployProcessWorkerExecutor by lazy {
+    Executors.newSingleThreadExecutor {
+        Thread(it, "tinker-deploy-worker")
+    }
+}

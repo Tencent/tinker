@@ -7,6 +7,7 @@ import android.os.Build
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.JobId
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
+import com.tencent.tinker.internal.deployProcessWorkerExecutor
 import com.tencent.tinker.internal.errorTypeShouldBeThrown
 import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.CleanedRawPatch
@@ -19,7 +20,6 @@ import com.tencent.tinker.internal.util.scheduleJob
 import com.tencent.tinker.internal.util.traceE
 import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.traceTask
-import kotlin.concurrent.thread
 
 private const val TAG = "Tinker.Clean"
 
@@ -86,7 +86,7 @@ private enum class Strategy(val key: String) {
 class TinkerCleanService : JobService() {
 
     private fun runTask(params: JobParameters) {
-        thread(name = "tinker-clean") {
+        deployProcessWorkerExecutor.execute {
             infoLog(TAG) {
                 "Cleaning request received. Start cleaning."
             }

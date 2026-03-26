@@ -8,6 +8,7 @@ import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.JobId
 import com.tencent.tinker.internal.annotation.DeployProcessOnly
 import com.tencent.tinker.internal.deploy.legacy.LegacyDeployer
+import com.tencent.tinker.internal.deployProcessWorkerExecutor
 import com.tencent.tinker.internal.errorTypeShouldBeThrown
 import com.tencent.tinker.internal.module.oat.OatManager
 import com.tencent.tinker.internal.module.patch.RawPatchManager
@@ -23,7 +24,6 @@ import com.tencent.tinker.internal.util.traceS
 import com.tencent.tinker.internal.util.traceTask
 import com.tencent.tinker.internal.util.withTemporaryDirectory
 import java.io.File
-import kotlin.concurrent.thread
 
 private const val TAG = "Tinker.Deploy"
 
@@ -174,7 +174,7 @@ private const val DEPLOY_IPC_KEY_SKIP_CHECKING_SIGNATURE = "c"
 class TinkerDeployService : JobService() {
 
     private fun runTask(params: JobParameters) {
-        thread(name = "tinker-deploy") {
+        deployProcessWorkerExecutor.execute {
             infoLog(TAG) {
                 "Deploying request received. Start deploying."
             }
