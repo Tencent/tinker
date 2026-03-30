@@ -175,11 +175,19 @@ private fun String.descriptorTransform(targets: Set<String>): String =
         }
     }
 
+private fun String.reflectionTransform(targets: Set<String>): String =
+    if (replace(".", "/") in targets) {
+        "com.tencent.tinker.internal.${this}"
+    } else {
+        this
+    }
+
 private fun Any.constantTransform(targets: Set<String>): Any =
     when (this) {
         is Type -> transform(targets)
         is Handle -> transform(targets)
         is ConstantDynamic -> transform(targets)
+        is String -> reflectionTransform(targets)
         else -> this
     }
 
@@ -763,6 +771,9 @@ abstract class PackageTransformTask : DefaultTask() {
                 }
             }
         }
+        // Workaround, transform reference "kotlin.reflect.jvm.internal.ReflectionFactoryImpl" even though it is not in
+        // our classes.
+        collector.add("kotlin/reflect/jvm/internal/ReflectionFactoryImpl")
         val targets = collector
             .filter {
                 if (it.startsWith("com/tencent/tinker/internal/")) {
