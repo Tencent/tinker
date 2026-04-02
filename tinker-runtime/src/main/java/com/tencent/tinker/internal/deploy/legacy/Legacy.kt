@@ -145,52 +145,54 @@ internal object LegacyDeployer : Deployer() {
         if (baseApkSignature != null) {
             checkSignature(baseApkSignature, diffPackageFile)
         }
-        val baseApk = ZipFile(baseApkFile)
-        val diffPackage = ZipFile(diffPackageFile)
-        val packageMetadata = traceE("deploy.legacy.read_metadata") {
-            diffPackage.getEntry("assets/package_meta.txt")
-                ?.let(diffPackage::getInputStream)
-                ?.use { it.readBytes() }
-                ?.parsePackageMetadata
-                ?: throw Tinker.Error(
-                    Tinker.Error.Deploy.Legacy.MISSING_METADATA,
-                    "Cannot find package metadata in patch ${diffPackage.name}."
-                )
-        }
-        debugLog(TAG) {
-            buildList {
-                add("Read package metadata from \"${diffPackage.name}\":")
-                add(packageMetadata)
-            }.joinToString("\n")
-        }
-        async {
-            launch {
-                traceS("deploy.legacy.dex") {
-                    dexDeployToApk(
-                        baseApk = baseApk,
-                        diffPackage = diffPackage,
-                        apk = deployedDirectory.patchDexApkFile,
-                    )
+        ZipFile(baseApkFile).use { baseApk ->
+            ZipFile(diffPackageFile).use { diffPackage ->
+                val packageMetadata = traceE("deploy.legacy.read_metadata") {
+                    diffPackage.getEntry("assets/package_meta.txt")
+                        ?.let(diffPackage::getInputStream)
+                        ?.use { it.readBytes() }
+                        ?.parsePackageMetadata
+                        ?: throw Tinker.Error(
+                            Tinker.Error.Deploy.Legacy.MISSING_METADATA,
+                            "Cannot find package metadata in patch ${diffPackage.name}."
+                        )
                 }
-            }
-            launch {
-                traceS("deploy.legacy.library") {
-                    libraryDeploy(
-                        packageMetadata = packageMetadata,
-                        baseApk = baseApk,
-                        diffPackage = diffPackage,
-                        directory = deployedDirectory.patchLibraryDirectory,
-                    )
+                debugLog(TAG) {
+                    buildList {
+                        add("Read package metadata from \"${diffPackage.name}\":")
+                        add(packageMetadata)
+                    }.joinToString("\n")
                 }
-            }
-            launch {
-                traceS("deploy.legacy.resource") {
-                    resourceDeploy(
-                        packageMetadata = packageMetadata,
-                        baseApk = baseApk,
-                        diffPackage = diffPackage,
-                        apk = deployedDirectory.patchResourceApkFile,
-                    )
+                async {
+                    launch {
+                        traceS("deploy.legacy.dex") {
+                            dexDeployToApk(
+                                baseApk = baseApk,
+                                diffPackage = diffPackage,
+                                apk = deployedDirectory.patchDexApkFile,
+                            )
+                        }
+                    }
+                    launch {
+                        traceS("deploy.legacy.library") {
+                            libraryDeploy(
+                                packageMetadata = packageMetadata,
+                                baseApk = baseApk,
+                                diffPackage = diffPackage,
+                                directory = deployedDirectory.patchLibraryDirectory,
+                            )
+                        }
+                    }
+                    launch {
+                        traceS("deploy.legacy.resource") {
+                            resourceDeploy(
+                                packageMetadata = packageMetadata,
+                                baseApk = baseApk,
+                                diffPackage = diffPackage,
+                                apk = deployedDirectory.patchResourceApkFile,
+                            )
+                        }
+                    }
                 }
             }
         }
