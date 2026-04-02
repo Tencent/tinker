@@ -100,6 +100,48 @@ internal fun InputStream.copyAndGenerateHash(out: OutputStream): ByteArray {
 }
 
 /**
+ * An [OutputStream] wrapper to calculate the CRC32 checksum of written bytes.
+ */
+internal class Crc32OutputStream(
+    private val output: OutputStream,
+) : OutputStream() {
+
+    private val calculator = CRC32()
+
+    private val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
+    private var cursor = 0
+
+    override fun write(byte: Int) {
+        output.write(byte)
+        if (cursor >= buffer.size) {
+            calculator.update(buffer)
+            cursor = 0
+        }
+        buffer[cursor] = byte.toByte()
+        cursor++
+    }
+
+    override fun write(bytes: ByteArray, offset: Int, length: Int) {
+        output.write(bytes, offset, length)
+        if (cursor > 0) {
+            calculator.update(buffer, 0, cursor)
+            cursor = 0
+        }
+        calculator.update(bytes, offset, length)
+    }
+
+    val checksum: Long
+        get() {
+            if (cursor > 0) {
+                calculator.update(buffer, 0, cursor)
+                cursor = 0
+            }
+            return calculator.value
+        }
+}
+
+/**
  * An [OutputStream] wrapper to calculate the MD5 hash of written bytes.
  */
 internal class HashOutputStream(
@@ -120,6 +162,15 @@ internal class HashOutputStream(
         }
         buffer[cursor] = byte.toByte()
         cursor++
+    }
+
+    override fun write(bytes: ByteArray, offset: Int, length: Int) {
+        output.write(bytes, offset, length)
+        if (cursor > 0) {
+            calculator.update(buffer, 0, cursor)
+            cursor = 0
+        }
+        calculator.update(bytes, offset, length)
     }
 
     val digest: ByteArray

@@ -6,6 +6,7 @@ import com.tencent.tinker.internal.TEST_ASSETS_DIRECTORY_NAME
 import com.tencent.tinker.internal.TEST_MODIFIED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.TEST_REMOVED_ASSET_FILE_NAME
 import com.tencent.tinker.internal.deploy.legacy.PackageMetadata
+import com.tencent.tinker.internal.util.Crc32OutputStream
 import com.tencent.tinker.internal.util.HashOutputStream
 import com.tencent.tinker.internal.util.asMd5Hash
 import com.tencent.tinker.internal.util.asMd5String
@@ -362,29 +363,16 @@ private fun ZipOutputStream.createResourceByMerging(
     )
     withTemporaryFile { file ->
         // Writes merged content into temporary file, for calculating size and checksum.
-        file.outputStream().buffered().use { temporaryOutput ->
+        val (crc32, hash) = file.outputStream().buffered().use { temporaryOutput ->
+            val crc32OutputStream = Crc32OutputStream(temporaryOutput)
+            val hashOutputStream = HashOutputStream(crc32OutputStream)
             baseApk.getInputStream(baseEntry).use { baseInput ->
                 diffPackage.getInputStream(diffEntry).use { diffInput ->
-                    packageMetadata.merger.merge(baseInput, diffInput, temporaryOutput)
+                    packageMetadata.merger.merge(baseInput, diffInput, hashOutputStream)
                 }
             }
+            crc32OutputStream.checksum to hashOutputStream.digest
         }
-        // Copies merged content into output.
-        ZipEntry(entryName)
-            .apply {
-                this.method = ZipEntry.STORED
-                this.size = file.length()
-                this.crc = file.crc32
-            }
-            .let(this::putNextEntry)
-        val hash = file.inputStream().buffered().use { temporaryInput ->
-            HashOutputStream(this)
-                .also { wrapped ->
-                    temporaryInput.copyAndGenerateHash(wrapped)
-                }
-                .digest
-        }
-        closeEntry()
         if (!hash.contentEquals(expectedPatchedHash)) {
             throw Tinker.Error(
                 Tinker.Error.Deploy.Legacy.Resource.INVALID_DEPLOY_RESULT,
@@ -392,6 +380,18 @@ private fun ZipOutputStream.createResourceByMerging(
                         + "\"${diffPackage.name}\" is not match \"${expectedPatchedHash.asMd5String}\" in metadata.",
             )
         }
+        // Copies merged content into output.
+        ZipEntry(entryName)
+            .apply {
+                this.method = ZipEntry.STORED
+                this.size = file.length()
+                this.crc = crc32
+            }
+            .let(this::putNextEntry)
+        file.inputStream().buffered().use { temporaryInput ->
+            temporaryInput.copyTo(this)
+        }
+        closeEntry()
     }
 }
 
