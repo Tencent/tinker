@@ -165,7 +165,7 @@ private fun Application.loadWith(
                 " with manager <${oatManager.javaClass.name}>."
     }
     val oatDirectory = traceE("load.oat.acquire") {
-        oatManager.acquire(rawPatch.directory)
+        oatManager.acquire(rawPatch.directory, skipGenerateIfMissing = true)
     }
     debugLog(TAG) {
         "Constructing layout with constructor <${patchLayoutConstructor.javaClass.name}>."
