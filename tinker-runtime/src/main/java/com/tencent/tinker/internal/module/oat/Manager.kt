@@ -27,6 +27,7 @@ import com.tencent.tinker.internal.util.warnLog
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.RandomAccessFile
+import java.nio.ByteBuffer
 import java.util.Properties
 import java.util.zip.CRC32
 import kotlin.concurrent.thread
@@ -280,16 +281,14 @@ internal class OatManagerImpl(
                 .forEachIndexed { index, input ->
                     calculator.update(index)
                     calculator.update(input.name.toByteArray())
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    input.inputStream().use { stream ->
-                        while (true) {
-                            val read = stream.read(buffer)
-                            if (read == -1) {
-                                break
+                    calculator.update(
+                        ByteBuffer
+                            .allocate(Long.SIZE_BYTES)
+                            .apply {
+                                putLong(input.lastModified())
                             }
-                            calculator.update(buffer, 0, read)
-                        }
-                    }
+                            .array()
+                    )
                 }
             calculator.value
         }
