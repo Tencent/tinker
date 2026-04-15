@@ -1,5 +1,6 @@
 package com.tencent.tinker.internal.module.oat
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
@@ -30,14 +31,17 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.Properties
 import java.util.zip.CRC32
+import kotlin.collections.sortedBy
 import kotlin.concurrent.thread
 import kotlin.random.Random
 
 /**
  * On Android 8 and above, interpreting dex files is unnecessary.
  */
+@get:SuppressLint("NewApi")
 private val defaultInterpreter
     get() = when {
+        currentSdk >= Build.VERSION_CODES.O_MR1 -> ClassLoaderPreloadGenerator
         currentSdk >= Build.VERSION_CODES.O -> EmptyGenerator
         else -> Interpreter
     }
@@ -45,11 +49,62 @@ private val defaultInterpreter
 /**
  * On Android 8 and above, compiling dex files is unnecessary.
  */
+@get:SuppressLint("NewApi")
 private val defaultCompiler
     get() = when {
+        currentSdk >= Build.VERSION_CODES.O_MR1 -> ClassLoaderPreloadGenerator
         currentSdk >= Build.VERSION_CODES.O -> EmptyGenerator
         else -> Compiler
     }
+
+internal sealed class OatInput {
+
+    abstract val hash: Long
+
+    abstract val files: List<File>
+
+    class Apk(val apk: File) : OatInput() {
+        override val hash by lazy {
+            CRC32().let { calculator ->
+                calculator.update(apk.name.toByteArray())
+                calculator.update(
+                    ByteBuffer
+                        .allocate(Long.SIZE_BYTES)
+                        .apply {
+                            putLong(apk.lastModified())
+                        }
+                        .array()
+                )
+                calculator.value
+            }
+        }
+
+        override val files = listOf(apk)
+    }
+
+    class DexList(val dexList: List<File>) : OatInput() {
+        override val hash by lazy {
+            CRC32().let { calculator ->
+                dexList.sortedBy { it.name }
+                    .forEachIndexed { index, input ->
+                        calculator.update(index)
+                        calculator.update(input.name.toByteArray())
+                        calculator.update(
+                            ByteBuffer
+                                .allocate(Long.SIZE_BYTES)
+                                .apply {
+                                    putLong(input.lastModified())
+                                }
+                                .array()
+                        )
+                    }
+                calculator.value
+            }
+        }
+
+        override val files = dexList
+    }
+}
 
 internal class OatManagerImpl(
     private val context: Context,
@@ -262,39 +317,22 @@ internal class OatManagerImpl(
         releaseGuard()
     }
 
-    private val File.oatInputs: List<File>
+    private val File.oatInput: OatInput?
         get() {
             if (patchDexApkFile.isFile) {
-                return listOf(patchDexApkFile)
+                return OatInput.Apk(patchDexApkFile)
             }
             if (patchDexDirectory.isDirectory) {
                 return patchDexDirectory.listFiles()
                     ?.filter { it.extension == "dex" }
-                    ?: emptyList()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let(OatInput::DexList)
             }
-            return emptyList()
-        }
-
-    private val Collection<File>.inputsHash: Long
-        get() = CRC32().let { calculator ->
-            sortedBy { it.name }
-                .forEachIndexed { index, input ->
-                    calculator.update(index)
-                    calculator.update(input.name.toByteArray())
-                    calculator.update(
-                        ByteBuffer
-                            .allocate(Long.SIZE_BYTES)
-                            .apply {
-                                putLong(input.lastModified())
-                            }
-                            .array()
-                    )
-                }
-            calculator.value
+            return null
         }
 
     private fun shouldGenerate(
-        inputs: List<File>,
+        input: OatInput,
         stored: Pair<Metadata, File>?,
     ): Boolean {
         if (stored == null) {
@@ -323,7 +361,7 @@ internal class OatManagerImpl(
             }
             return true
         }
-        val expectedHash = inputs.inputsHash
+        val expectedHash = input.hash
         if (metadata.inputsHash != expectedHash) {
             warnLog(TAG) {
                 "Generating is required while inputs are changed, hash \"${metadata.inputsHash}\" not equals to expected \"${expectedHash}\"."
@@ -376,15 +414,14 @@ internal class OatManagerImpl(
     ): Pair<EscapedGuardedContent, File>? {
         val directoryPathHash = directory.pathHash
         val metadataFile = metadataFile(directoryPathHash)
-        val inputs = directory.oatInputs
-            .takeIf { it.isNotEmpty() }
+        val inputs = directory.oatInput
             ?: run {
                 infoLog(TAG) {
                     "Skip getting OAT files for directory \"${directory.absolutePath}\" due to empty inputs."
                 }
                 return null
             }
-        val inputsHash = inputs.inputsHash
+        val inputsHash = inputs.hash
         while (true) {
             // Always check metadata file is exist in the loop. The metadata file may be cleaned by cleaner.
             metadataFile.ensureIsExistingFile()

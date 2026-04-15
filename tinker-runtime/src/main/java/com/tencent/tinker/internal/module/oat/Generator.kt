@@ -2,14 +2,21 @@ package com.tencent.tinker.internal.module.oat
 
 import android.content.Context
 import android.os.Build
+import androidx.annotation.RequiresApi
+import com.tencent.tinker.internal.patchDexDirectory
+import com.tencent.tinker.internal.patchOatDirectory
 import com.tencent.tinker.internal.util.arkHotRunning
 import com.tencent.tinker.internal.util.currentInstructionSet
 import com.tencent.tinker.internal.util.currentSdk
 import com.tencent.tinker.internal.util.debugLog
+import com.tencent.tinker.internal.util.ensureIsExistingDirectory
 import com.tencent.tinker.internal.util.ensureParentIsExistingDirectory
 import com.tencent.tinker.internal.util.errorLog
 import com.tencent.tinker.internal.util.isReadableNonEmptyFile
+import com.tencent.tinker.internal.util.symlinkTo
 import com.tencent.tinker.internal.util.warnLog
+import com.tencent.tinker.internal.util.withTemporaryDirectory
+import dalvik.system.DelegateLastClassLoader
 import dalvik.system.DexFile
 import java.io.File
 import java.util.concurrent.Callable
@@ -24,16 +31,63 @@ private fun File.odexOutputOf(input: File): File =
     }
 
 internal abstract class Generator {
-    abstract fun generate(context: Context, inputs: List<File>, outputDirectory: File): Boolean
+    abstract fun generate(context: Context, input: OatInput, outputDirectory: File): Boolean
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 internal object EmptyGenerator : Generator() {
     override fun generate(
         context: Context,
-        inputs: List<File>,
-        outputDirectory: File
+        input: OatInput,
+        outputDirectory: File,
     ): Boolean {
         outputDirectory.mkdirs()
+        return true
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O_MR1)
+internal object ClassLoaderPreloadGenerator : Generator() {
+
+    override fun generate(
+        context: Context,
+        input: OatInput,
+        outputDirectory: File,
+    ): Boolean {
+        outputDirectory.mkdirs()
+        withTemporaryDirectory { tempDirectory ->
+            val loadFiles = mutableListOf<File>()
+            when (input) {
+                is OatInput.Apk -> {
+                    tempDirectory.resolve(input.apk.name)
+                        .also {
+                            input.apk.symlinkTo(it)
+                            loadFiles.add(it)
+                        }
+                }
+
+                is OatInput.DexList -> {
+                    input.dexList.forEach { dex ->
+                        val dexDirectory = tempDirectory.patchDexDirectory
+                            .ensureIsExistingDirectory()
+                        dexDirectory.resolve(dex.name)
+                            .also {
+                                dex.symlinkTo(it)
+                                loadFiles.add(it)
+                            }
+                    }
+                }
+            }
+            val linkedOutputDirectory = tempDirectory.patchOatDirectory
+                .also(outputDirectory::symlinkTo)
+            DelegateLastClassLoader(
+                loadFiles.joinToString(File.pathSeparator) { it.absolutePath },
+                context.classLoader,
+            )
+
+            loadFiles.forEach { it.delete() }
+            linkedOutputDirectory.delete()
+        }
         return true
     }
 }
@@ -92,13 +146,13 @@ internal sealed class DefaultGenerator : Generator() {
 
     override fun generate(
         context: Context,
-        inputs: List<File>,
+        input: OatInput,
         outputDirectory: File
     ): Boolean {
         val executor = Executors.newCachedThreadPool {
             Thread(it, "tinker-oat-generate")
         }
-        val futures = inputs.sortedByDescending { it.length() }
+        val futures = input.files.sortedByDescending { it.length() }
             .map { input ->
                 return@map executor.submit(
                     Callable {

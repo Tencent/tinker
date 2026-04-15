@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ServiceTestRule
 import com.tencent.tinker.Tinker
 import com.tencent.tinker.internal.module.oat.Generator
+import com.tencent.tinker.internal.module.oat.OatInput
 import com.tencent.tinker.internal.module.oat.OatManagerImpl
 import com.tencent.tinker.internal.patchDexApkFile
 import com.tencent.tinker.internal.patchDexDirectory
@@ -50,9 +51,9 @@ internal class OatManagerDelegate(
             object : Generator() {
                 override fun generate(
                     context: Context,
-                    inputs: List<File>,
+                    input: OatInput,
                     outputDirectory: File
-                ): Boolean = interpreter.generate(context, inputs, outputDirectory)
+                ): Boolean = interpreter.generate(context, input, outputDirectory)
             }
         },
         compiler = if (!context.isInDeployProcess) {
@@ -61,9 +62,9 @@ internal class OatManagerDelegate(
             object : Generator() {
                 override fun generate(
                     context: Context,
-                    inputs: List<File>,
+                    input: OatInput,
                     outputDirectory: File
-                ): Boolean = compiler.generate(context, inputs, outputDirectory)
+                ): Boolean = compiler.generate(context, input, outputDirectory)
             }
         }
     )
@@ -167,12 +168,12 @@ private object SuccessGenerator : Generator() {
 
     override fun generate(
         context: Context,
-        inputs: List<File>,
+        input: OatInput,
         outputDirectory: File
     ): Boolean {
         generated = true
-        inputs.forEach { input ->
-            input.copyTo(outputDirectory.resolve("${input.name}.oat"))
+        input.files.forEach {
+            it.copyTo(outputDirectory.resolve("${it.name}.oat"))
         }
         return true
     }
@@ -184,7 +185,7 @@ private class IllegalGenerator(
 ) : Generator() {
     override fun generate(
         context: Context,
-        inputs: List<File>,
+        input: OatInput,
         outputDirectory: File
     ): Boolean {
         throw AssertionError("$process process should never use $type")
@@ -194,7 +195,7 @@ private class IllegalGenerator(
 private object FailureGenerator : Generator() {
     override fun generate(
         context: Context,
-        inputs: List<File>,
+        input: OatInput,
         outputDirectory: File
     ): Boolean = false
 }
@@ -203,7 +204,7 @@ private object ExceptionGenerator : Generator() {
 
     override fun generate(
         context: Context,
-        inputs: List<File>,
+        input: OatInput,
         outputDirectory: File
     ): Boolean {
         throw IllegalStateException("Throws as expected")
