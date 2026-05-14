@@ -30,35 +30,38 @@ import tinker.net.dongliu.apk.parser.struct.resource.Type;
 
 /**
  * Before building a patch package, verifies that resource ids are not misaligned between APKs:
- * each resource key from the old APK must keep the same id (0xPPTTEEEE) in the new APK when that
- * key still exists there (rebuild without stable id mapping often shifts ids for existing names).
+ * every resource id (0xPPTTEEEE) from the old APK must map to the same resource name
+ * (packageName/resTypeName/entryName) in the new APK whenever that id still exists there.
  *
- * <p>Keys are {@code packageName/resTypeName/entryName}; ids are synthesized from resources.arsc
- * using package id, type id, and entry index.
+ * <p>Typical misalignment cause: rebuilding the APK without a stable-id mapping file, so the same
+ * numeric id ends up assigned to a different resource, causing incorrect lookups at runtime.
+ *
+ * <p>Resource ids are synthesized from resources.arsc using package id, type id, and entry index.
  */
 public final class MisalignedResourceIdChecker {
 
     private MisalignedResourceIdChecker() {}
 
     /**
-     * Runs the full check and throws only after scanning all keys, if any problem was found.
+     * Scans all resource ids and throws a single exception after the full scan, listing every violation.
      *
      * @throws IOException          if an APK cannot be read
-     * @throws TinkerPatchException if one or more resource id problems were found (message lists all)
+     * @throws TinkerPatchException if one or more resource id misalignments are found (message lists all)
      */
     public static void check(File oldApk, File newApk) throws IOException {
         final List<String> violations = new ArrayList<>();
-        final Map<String, Integer> oldIds = buildResourceKeyToIdMap(oldApk, violations);
-        final Map<String, Integer> newIds = buildResourceKeyToIdMap(newApk, violations);
+        final Map<Integer, String> oldIdToKey = buildResourceIdToKeyMap(oldApk, violations);
+        final Map<Integer, String> newIdToKey = buildResourceIdToKeyMap(newApk, violations);
 
-        for (Map.Entry<String, Integer> e : oldIds.entrySet()) {
-            final String key = e.getKey();
-            final Integer oldId = e.getValue();
-            final Integer newId = newIds.get(key);
-            if (newId != null && !Objects.equals(oldId, newId)) {
+        for (Map.Entry<Integer, String> e : oldIdToKey.entrySet()) {
+            final int id = e.getKey();
+            final String oldKey = e.getValue();
+            final String newKey = newIdToKey.get(id);
+            // id absent in newApk means the resource was removed, which is allowed
+            if (newKey != null && !Objects.equals(oldKey, newKey)) {
                 violations.add(String.format(
-                    "id mismatch for existing resource [%s]: old=0x%08x new=0x%08x",
-                    key, oldId, newId));
+                    "resource name mismatch for id 0x%08x: old=[%s] new=[%s]",
+                    id, oldKey, newKey));
             }
         }
 
@@ -73,7 +76,7 @@ public final class MisalignedResourceIdChecker {
         }
     }
 
-    private static Map<String, Integer> buildResourceKeyToIdMap(File apk, List<String> violations) throws IOException {
+    private static Map<Integer, String> buildResourceIdToKeyMap(File apk, List<String> violations) throws IOException {
         ApkParser parser = null;
         try {
             parser = new ApkParser(apk);
@@ -83,7 +86,7 @@ public final class MisalignedResourceIdChecker {
                 violations.add("missing resource table in " + apk.getAbsolutePath());
                 return new HashMap<>();
             }
-            final Map<String, Integer> map = new HashMap<>();
+            final Map<Integer, String> map = new HashMap<>();
             final Map<String, ResourcePackage> pkgNameMap = table.getPackageNameMap();
             if (pkgNameMap == null) {
                 return map;
@@ -120,8 +123,8 @@ public final class MisalignedResourceIdChecker {
                             }
                             final int resourceId =
                                 ((pkgId & 0xff) << 24) | ((typeId & 0xff) << 16) | (i & 0xffff);
-                            String fullKey = packageName + "/" + resTypeName + "/" + entryKey;
-                            putConsistent(map, fullKey, resourceId, apkLabel, violations);
+                            final String fullKey = packageName + "/" + resTypeName + "/" + entryKey;
+                            putConsistentIdToKey(map, resourceId, fullKey, apkLabel, violations);
                         }
                     }
                 }
@@ -133,24 +136,25 @@ public final class MisalignedResourceIdChecker {
     }
 
     /**
-     * Keeps the first id for a key; further conflicting ids for the same key are recorded in {@code violations}.
+     * Records the id → resource-name mapping; conflicting names for the same id within one APK are
+     * added to {@code violations}.
      */
-    private static void putConsistent(
-        Map<String, Integer> map,
-        String key,
+    private static void putConsistentIdToKey(
+        Map<Integer, String> map,
         int resourceId,
+        String key,
         String apkPath,
         List<String> violations
     ) {
-        if (map.containsKey(key)) {
-            Integer existing = map.get(key);
-            if (!existing.equals(resourceId)) {
+        if (map.containsKey(resourceId)) {
+            final String existing = map.get(resourceId);
+            if (!existing.equals(key)) {
                 violations.add(String.format(
-                    "inconsistent resource id for [%s] inside apk %s: 0x%08x vs 0x%08x",
-                    key, apkPath, existing, resourceId));
+                    "inconsistent resource name for id 0x%08x inside apk %s: [%s] vs [%s]",
+                    resourceId, apkPath, existing, key));
             }
             return;
         }
-        map.put(key, resourceId);
+        map.put(resourceId, key);
     }
 }
