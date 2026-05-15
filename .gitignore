@@ -40,4 +40,6 @@ proguard/
 
 /buildSdk
 
+# jenv marker file
+.java-version
 
