@@ -50,6 +50,18 @@ task buildTinkerSdk(type: Copy, dependsOn: [build]) {
 
 apply from: rootProject.file('gradle/PublishArtifact.gradle')
 
+afterEvaluate {
+    if (tasks.findByName('uploadArchives')) {
+        uploadArchives.repositories.mavenDeployer.pom.whenConfigured { pom ->
+            pom.dependencies.findAll {
+                it.artifactId == 'tinker-android-loader' || it.artifactId == 'tinker-commons'
+            }.each { dep ->
+                dep.scope = 'compile'
+            }
+        }
+    }
+}
+
 
 
 
