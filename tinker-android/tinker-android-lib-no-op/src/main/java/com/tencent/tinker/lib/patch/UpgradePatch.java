@@ -19,8 +19,12 @@ package com.tencent.tinker.lib.patch;
 import android.content.Context;
 
 import com.tencent.tinker.lib.service.PatchResult;
+import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.util.TinkerLog;
+import com.tencent.tinker.loader.shareutil.ShareSecurityCheck;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
+
+import java.io.File;
 
 
 /**
@@ -32,6 +36,30 @@ public class UpgradePatch extends AbstractPatch {
 
     @Override
     public boolean tryPatch(Context context, String tempPatchPath, boolean useEmergencyMode, PatchResult patchResult) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        return false;
+    }
+
+    public boolean tryRecoverDexFiles(Tinker manager, ShareSecurityCheck checker, Context context,
+                                      String patchVersionDirectory, File patchFile) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        return false;
+    }
+
+    public boolean tryRecoverLibraryFiles(Tinker manager, ShareSecurityCheck checker, Context context,
+                                          String patchVersionDirectory, File patchFile) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        return false;
+    }
+
+    public boolean tryRecoverResourceFiles(Tinker manager, ShareSecurityCheck checker, Context context,
+                                           String patchVersionDirectory, File patchFile) {
+        ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
+        return false;
+    }
+
+    public boolean tryRecoverArkHotLibrary(Tinker manager, ShareSecurityCheck checker, Context context,
+                                           String patchVersionDirectory, File patchFile) {
         ShareTinkerLog.e(TAG, "[-] Ignore this invocation since I'm no-op version.");
         return false;
     }
