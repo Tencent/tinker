@@ -21,6 +21,8 @@ import static com.tencent.tinker.lib.util.TinkerServiceInternals.getTinkerPatchS
 import android.app.ActivityManager;
 import android.app.IntentService;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -53,6 +55,15 @@ public class TinkerPatchService extends IntentService {
     private static AbstractPatch upgradePatchProcessor = null;
     private static int notificationId = ShareConstants.TINKER_PATCH_SERVICE_NOTIFICATION;
     private static Class<? extends AbstractResultService> resultServiceClass = null;
+    private static ForegroundNotificationFactory foregroundNotificationFactory = null;
+
+    public interface ForegroundNotificationFactory {
+        Notification create(Service service);
+    }
+
+    public static void setForegroundNotificationFactory(ForegroundNotificationFactory factory) {
+        foregroundNotificationFactory = factory;
+    }
 
     public TinkerPatchService() {
         super("TinkerPatchService");
@@ -70,7 +81,11 @@ public class TinkerPatchService extends IntentService {
         intent.putExtra(PATCH_USE_EMERGENCY_MODE, useEmergencyMode);
         intent.putExtra(RESULT_CLASS_EXTRA, resultServiceClass.getName());
         try {
-            context.startService(intent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent);
+            } else {
+                context.startService(intent);
+            }
         } catch (Throwable thr) {
             ShareTinkerLog.e(TAG, "run patch service fail, exception:" + thr);
         }
@@ -106,6 +121,47 @@ public class TinkerPatchService extends IntentService {
             throw new TinkerRuntimeException("getPatchResultExtra, but intent is null");
         }
         return ShareIntentUtil.getStringExtra(intent, RESULT_CLASS_EXTRA);
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        ensureForeground();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        ensureForeground();
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    private void ensureForeground() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return;
+        }
+        try {
+            startForeground(notificationId, createForegroundNotification());
+        } catch (Throwable thr) {
+            ShareTinkerLog.e(TAG, "startForeground fail, exception:" + thr);
+        }
+    }
+
+    private Notification createForegroundNotification() {
+        if (foregroundNotificationFactory != null) {
+            return foregroundNotificationFactory.create(this);
+        }
+        final String channelId = "tinker_patch_service";
+        final NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null && nm.getNotificationChannel(channelId) == null) {
+            final NotificationChannel channel = new NotificationChannel(channelId, "TinkerPatchService", NotificationManager.IMPORTANCE_LOW);
+            nm.createNotificationChannel(channel);
+        }
+        return new Notification.Builder(this, channelId)
+                .setSmallIcon(getApplicationInfo().icon)
+                .setContentTitle("Tinker")
+                .setContentText("Applying patch")
+                .setOngoing(true)
+                .build();
     }
 
     @Override
