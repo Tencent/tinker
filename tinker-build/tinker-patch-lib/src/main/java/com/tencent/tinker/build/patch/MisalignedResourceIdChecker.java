@@ -14,8 +14,10 @@ package com.tencent.tinker.build.patch;
 import com.tencent.tinker.build.util.TinkerPatchException;
 import com.tencent.tinker.commons.util.IOHelper;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,11 +28,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.TreeMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import tinker.net.dongliu.apk.parser.ApkParser;
 import tinker.net.dongliu.apk.parser.parser.BinaryXmlParser;
 import tinker.net.dongliu.apk.parser.parser.XmlStreamer;
+import tinker.net.dongliu.apk.parser.struct.AndroidConstants;
 import tinker.net.dongliu.apk.parser.struct.ResValue;
 import tinker.net.dongliu.apk.parser.struct.ResourceValue;
 import tinker.net.dongliu.apk.parser.struct.resource.ResourceEntry;
@@ -46,13 +52,15 @@ import tinker.net.dongliu.apk.parser.struct.xml.XmlNamespaceEndTag;
 import tinker.net.dongliu.apk.parser.struct.xml.XmlNamespaceStartTag;
 import tinker.net.dongliu.apk.parser.struct.xml.XmlNodeEndTag;
 import tinker.net.dongliu.apk.parser.struct.xml.XmlNodeStartTag;
+import tinker.net.dongliu.apk.parser.utils.Utils;
 
 /**
- * 在生成补丁包前，验证新旧 APK 的资源 id 之间没有错位（misalignment）。
+ * 在生成补丁包前，验证旧 APK 的 AndroidManifest.xml 实际引用到的资源 id
+ * 在新 APK 中没有发生错位（misalignment）。
  *
- * <p>错位是指同一个数字 id（0xPPTTEEEE）在新 APK 中被重新分配给了不同的资源——
- * 通常由于重新打包时没有使用稳定的 id 映射文件导致。运行时代码按数字查找 id，
- * 因此重新分配的 id 会静默地使用错误的资源。
+ * <p>Tinker patch 流程不会替换最终安装包中的 {@code AndroidManifest.xml}，因此这里仅收敛到
+ * framework 会继续通过旧 manifest 中写死的 int resource id 访问的那部分资源。
+ * 普通应用内部资源即便 id 变化，只要不被 manifest 持久化引用，就不在此检查范围内。
  *
  * <p>普通的内容变更（字符串更新、布局修改）是预期行为，不会触发报错。具体规则如下：
  * <ol>
@@ -98,8 +106,8 @@ public final class MisalignedResourceIdChecker {
     ));
 
     /**
-     * 扫描 {@code oldApk} 中所有资源 id，验证每个在 {@code newApk} 中仍存在的 id
-     * 没有被重新分配给不同的资源。
+     * 扫描 {@code oldApk} 的 {@code AndroidManifest.xml} 中实际引用到的资源 id，验证它们在
+     * {@code newApk} 中仍存在且没有被重新分配给不同的资源。
      *
      * @throws IOException          任一 APK 无法读取时抛出
      * @throws TinkerPatchException 检测到一处或多处资源 id 错位时抛出
@@ -118,13 +126,23 @@ public final class MisalignedResourceIdChecker {
                 buildResourceIdentityMap(oldParser, oldApk.getAbsolutePath(), violations);
             final Map<Integer, ResourceIdentity> newMap =
                 buildResourceIdentityMap(newParser, newApk.getAbsolutePath(), violations);
+            final Set<Integer> manifestReferencedIds =
+                collectManifestReferencedResourceIds(oldApk, oldParser.getResourceTable(), violations);
 
-            for (Map.Entry<Integer, ResourceIdentity> e : oldMap.entrySet()) {
-                final int id = e.getKey();
-                final ResourceIdentity oldId = e.getValue();
+            for (int id : manifestReferencedIds) {
+                final ResourceIdentity oldId = oldMap.get(id);
+                if (oldId == null) {
+                    violations.add(String.format(
+                        "AndroidManifest.xml references missing old resource id 0x%08x",
+                        id));
+                    continue;
+                }
                 final ResourceIdentity newId = newMap.get(id);
-                // id 在新 APK 中不存在表示资源被删除 — 允许
+                // 旧 manifest 会继续持有该 id，因此这里不允许资源删除
                 if (newId == null) {
+                    violations.add(String.format(
+                        "AndroidManifest.xml references id 0x%08x [%s/%s], but it does not exist in new APK",
+                        id, oldId.typeName, oldId.entryKey));
                     continue;
                 }
                 // Rule 1：类型改变始终是违规
@@ -173,6 +191,49 @@ public final class MisalignedResourceIdChecker {
         } finally {
             IOHelper.closeQuietly(oldParser);
             IOHelper.closeQuietly(newParser);
+        }
+    }
+
+    /**
+     * 收集旧 APK 的 {@code AndroidManifest.xml} 中直接引用到的应用资源 id。
+     *
+     * <p>仅记录 app package 资源（过滤系统包 {@code 0x01} 和空包 {@code 0x00}），因为
+     * misalignment 只针对应用自身资源表中的 id 复用问题。
+     */
+    private static Set<Integer> collectManifestReferencedResourceIds(
+        File apkFile, ResourceTable table, List<String> violations
+    ) throws IOException {
+        final byte[] manifestData = readZipEntryData(apkFile, AndroidConstants.MANIFEST_FILE);
+        if (manifestData == null) {
+            violations.add("missing AndroidManifest.xml in " + apkFile.getAbsolutePath());
+            return new TreeSet<>();
+        }
+        final Set<Integer> result = new TreeSet<>();
+        final BinaryXmlParser xmlParser = new BinaryXmlParser(ByteBuffer.wrap(manifestData), table);
+        xmlParser.setXmlStreamer(new ManifestResourceIdCollector(result));
+        try {
+            xmlParser.parse();
+        } catch (Exception e) {
+            violations.add("failed to parse AndroidManifest.xml in "
+                + apkFile.getAbsolutePath() + ": " + e.getMessage());
+        }
+        return result;
+    }
+
+    private static byte[] readZipEntryData(File apkFile, String entryPath) throws IOException {
+        ZipFile zipFile = null;
+        InputStream inputStream = null;
+        try {
+            zipFile = new ZipFile(apkFile);
+            final ZipEntry entry = zipFile.getEntry(entryPath);
+            if (entry == null) {
+                return null;
+            }
+            inputStream = new BufferedInputStream(zipFile.getInputStream(entry));
+            return Utils.toByteArray(inputStream);
+        } finally {
+            IOHelper.closeQuietly(inputStream);
+            IOHelper.closeQuietly(zipFile);
         }
     }
 
@@ -609,6 +670,73 @@ public final class MisalignedResourceIdChecker {
                 }
             }
             return attr.toStringValue();
+        }
+    }
+
+    /** 收集 manifest 中以 int id 持久化引用的 app 资源。 */
+    private static final class ManifestResourceIdCollector implements XmlStreamer {
+        private final Set<Integer> mReferencedIds;
+
+        ManifestResourceIdCollector(Set<Integer> referencedIds) {
+            mReferencedIds = referencedIds;
+        }
+
+        @Override
+        public void onStartTag(XmlNodeStartTag tag) {
+            final Attributes attributes = tag.getAttributes();
+            if (attributes == null) {
+                return;
+            }
+            for (Attribute attr : attributes.value()) {
+                if (attr != null) {
+                    collectReferencedId(attr.getTypedValue());
+                }
+            }
+        }
+
+        @Override
+        public void onEndTag(XmlNodeEndTag tag) {
+            // 无操作
+        }
+
+        @Override
+        public void onCData(XmlCData cdata) {
+            if (cdata != null) {
+                collectReferencedId(cdata.getTypedData());
+            }
+        }
+
+        @Override
+        public void onNamespaceStart(XmlNamespaceStartTag tag) {
+            // 无操作
+        }
+
+        @Override
+        public void onNamespaceEnd(XmlNamespaceEndTag tag) {
+            // 无操作
+        }
+
+        @Override
+        public void onAttribute(Attribute attribute) {
+            // BinaryXmlParser 不通过此回调分发属性（属性随 onStartTag 一起到达）— 无操作
+        }
+
+        private void collectReferencedId(ResourceValue value) {
+            if (!(value instanceof ResourceValue.ReferenceResourceValue)) {
+                return;
+            }
+            final short dataType = value.getDataType();
+            if (dataType != ResValue.ResType.REFERENCE
+                && dataType != ResValue.ResType.ATTRIBUTE) {
+                return;
+            }
+            final int refId = (int) ((ResourceValue.ReferenceResourceValue) value)
+                .getReferenceResourceId();
+            final int pkgId = (refId >>> 24) & 0xff;
+            if (refId == 0 || pkgId == 0x00 || pkgId == 0x01) {
+                return;
+            }
+            mReferencedIds.add(refId);
         }
     }
 
