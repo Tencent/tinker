@@ -76,6 +76,8 @@ public class Configuration {
     protected static final String ATTR_IGNORE_CHANGE             = "ignoreChange";
     protected static final String ATTR_IGNORE_CHANGE_WARNING     = "ignoreChangeWarning";
     protected static final String ATTR_RES_LARGE_MOD             = "largeModSize";
+    protected static final String ATTR_RES_CASE_SENSITIVE        = "caseInsensitiveCompat";
+
 
     protected static final String ATTR_ARKHOT_PATH = "path";
     protected static final String ATTR_ARKHOT_NAME = "name";
@@ -120,6 +122,7 @@ public class Configuration {
     public HashSet<Pattern> mResIgnoreChangeWarningPattern;
     public HashSet<String>  mResRawPattern;
     public int              mLargeModSize;
+    public boolean          mCaseInsensitiveCompat;
     /**
      * only gradle have the param
      */
@@ -237,6 +240,7 @@ public class Configuration {
         mLargeModSize = param.largeModSize;
         //only gradle have the param
         mUseApplyResource = param.useApplyResource;
+        mCaseInsensitiveCompat = param.caseInsensitiveCompat;
 
         mDexLoaderPattern.addAll(param.dexLoaderPattern);
         mDexIgnoreWarningLoaderPattern.addAll(param.dexIgnoreWarningLoaderPattern);
@@ -267,6 +271,7 @@ public class Configuration {
         mPackageFields = param.configFields;
 
         mUseSignAPk = param.useSign;
+
         mCustomDiffPath = param.customDiffPath;
         mCustomDiffPathArgs = param.customDiffPathArgs;
         setSignData(param.signFile, param.keypass, param.storealias, param.storepass);
@@ -642,6 +647,8 @@ public class Configuration {
                         }
                     } else if (tagName.equals(ATTR_RES_LARGE_MOD)) {
                         mLargeModSize = Integer.valueOf(value);
+                    } else if (tagName.equals(ATTR_RES_CASE_SENSITIVE)) {
+                        mCaseInsensitiveCompat = Boolean.valueOf(value);
                     } else {
                         System.err.println("unknown dex tag " + tagName);
                     }

@@ -155,6 +155,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                     .setConfigFields(packageConfigFields)
                     .setSevenZipPath(configuration.sevenZip.path)
                     .setUseSign(configuration.useSign)
+                    .setCaseInsensitiveCompat(configuration.res.caseInsensitiveCompat)
                     .setArkHotPath(configuration.arkHot.path)
                     .setArkHotName(configuration.arkHot.name)
 
