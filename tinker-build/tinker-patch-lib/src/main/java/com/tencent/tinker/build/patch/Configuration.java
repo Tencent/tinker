@@ -37,6 +37,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -98,6 +100,66 @@ public class Configuration {
     public boolean mIgnoreWarning;
     public boolean mAllowLoaderInAnyDex;
     public boolean mIsProtectedApp;
+
+    private static boolean detectProtectedApk(File apkFile) throws IOException {
+        if (apkFile == null || !apkFile.exists()) {
+            return false;
+        }
+        ZipFile zipFile = null;
+        try {
+            zipFile = new ZipFile(apkFile);
+            final String[] protectedMarkers = new String[] {
+                "assets/0OO00l111l1l",
+                "assets/sec",
+                "assets/secdata20.jar",
+                "assets/secdata20.dex",
+                "libshellx-super.2019.so",
+                "libshella-super.2019.so",
+                "libshellx.so",
+                "libshella.so"
+            };
+            for (String marker : protectedMarkers) {
+                ZipEntry entry = zipFile.getEntry(marker);
+                if (entry != null) {
+                    return true;
+                }
+                entry = zipFile.getEntry("lib/armeabi/" + marker);
+                if (entry != null) {
+                    return true;
+                }
+                entry = zipFile.getEntry("lib/armeabi-v7a/" + marker);
+                if (entry != null) {
+                    return true;
+                }
+                entry = zipFile.getEntry("lib/arm64-v8a/" + marker);
+                if (entry != null) {
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            IOHelper.closeQuietly(zipFile);
+        }
+    }
+
+    private void checkIsProtectedAppFlag() throws IOException {
+        if (mOldApkFile == null) {
+            return;
+        }
+        final boolean actuallyProtected = detectProtectedApk(mOldApkFile);
+        if (mIsProtectedApp && !actuallyProtected) {
+            throw new TinkerPatchException(
+                "isProtectedApp is set to true, but the base apk " + mOldApkFile.getAbsolutePath()
+                    + " does not appear to be hardened/protected. Set isProtectedApp to false or use a hardened base apk."
+            );
+        }
+        if (!mIsProtectedApp && actuallyProtected) {
+            throw new TinkerPatchException(
+                "isProtectedApp is set to false, but the base apk " + mOldApkFile.getAbsolutePath()
+                    + " appears to be hardened/protected. Set isProtectedApp to true."
+            );
+        }
+    }
     public boolean mRemoveLoaderForAllDex;
     public boolean mSupportHotplugComponent;
     /**
