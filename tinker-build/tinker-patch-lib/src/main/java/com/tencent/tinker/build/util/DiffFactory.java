@@ -27,7 +27,7 @@ public class DiffFactory {
 
     private static void makeSurePermission(String path) throws IOException {
         try {
-            Process process = new ProcessBuilder("chmod", "777", path.split(" ")[0]).start();
+            Process process = new ProcessBuilder("chmod", "755", path.split(" ")[0]).start();
             BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = br.readLine()) != null) {
