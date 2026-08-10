@@ -70,7 +70,9 @@ public class ClassDataSectionDiffAlgorithm extends DexSectionDiffAlgorithm<Class
     @Override
     public int getPatchedSectionSize() {
         // assume each uleb128 field's length may be inflate by 2 bytes.
-        return super.getPatchedSectionSize() + newDex.getTableOfContents().classDatas.size * SizeOf.USHORT;
+        // a class_data_item has 4 uleb128 size headers (static_fields_size,
+        // instance_fields_size, direct_methods_size, virtual_methods_size).
+        return super.getPatchedSectionSize() + newDex.getTableOfContents().classDatas.size * SizeOf.USHORT * 4;
     }
 
     @Override
