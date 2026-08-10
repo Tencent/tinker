@@ -17,6 +17,27 @@
 package com.tencent.tinker.build.decoder;
 
 
+import com.android.tools.smali.dexlib2.AccessFlags;
+import com.android.tools.smali.dexlib2.DexFileFactory;
+import com.android.tools.smali.dexlib2.Opcodes;
+import com.android.tools.smali.dexlib2.ReferenceType;
+import com.android.tools.smali.dexlib2.builder.BuilderMutableMethodImplementation;
+import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile;
+import com.android.tools.smali.dexlib2.iface.DexFile;
+import com.android.tools.smali.dexlib2.iface.Field;
+import com.android.tools.smali.dexlib2.iface.Method;
+import com.android.tools.smali.dexlib2.iface.MethodImplementation;
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction;
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction;
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference;
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference;
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference;
+import com.android.tools.smali.dexlib2.util.MethodUtil;
+import com.android.tools.smali.dexlib2.util.TypeUtils;
+import com.android.tools.smali.dexlib2.writer.builder.BuilderField;
+import com.android.tools.smali.dexlib2.writer.builder.BuilderMethod;
+import com.android.tools.smali.dexlib2.writer.builder.DexBuilder;
+import com.android.tools.smali.dexlib2.writer.io.FileDataStore;
 import com.tencent.tinker.android.dex.ClassDef;
 import com.tencent.tinker.android.dex.Dex;
 import com.tencent.tinker.android.dex.DexFormat;
@@ -37,28 +58,6 @@ import com.tencent.tinker.build.util.TypedValue;
 import com.tencent.tinker.build.util.Utils;
 import com.tencent.tinker.commons.dexpatcher.DexPatchApplier;
 import com.tencent.tinker.commons.dexpatcher.DexPatcherLogger.IDexPatcherLogger;
-
-import org.jf.dexlib2.AccessFlags;
-import org.jf.dexlib2.DexFileFactory;
-import org.jf.dexlib2.Opcodes;
-import org.jf.dexlib2.ReferenceType;
-import org.jf.dexlib2.builder.BuilderMutableMethodImplementation;
-import org.jf.dexlib2.dexbacked.DexBackedDexFile;
-import org.jf.dexlib2.iface.DexFile;
-import org.jf.dexlib2.iface.Field;
-import org.jf.dexlib2.iface.Method;
-import org.jf.dexlib2.iface.MethodImplementation;
-import org.jf.dexlib2.iface.instruction.Instruction;
-import org.jf.dexlib2.iface.instruction.ReferenceInstruction;
-import org.jf.dexlib2.iface.reference.FieldReference;
-import org.jf.dexlib2.iface.reference.MethodReference;
-import org.jf.dexlib2.iface.reference.TypeReference;
-import org.jf.dexlib2.util.MethodUtil;
-import org.jf.dexlib2.util.TypeUtils;
-import org.jf.dexlib2.writer.builder.BuilderField;
-import org.jf.dexlib2.writer.builder.BuilderMethod;
-import org.jf.dexlib2.writer.builder.DexBuilder;
-import org.jf.dexlib2.writer.io.FileDataStore;
 
 import java.io.File;
 import java.io.IOException;
@@ -164,7 +163,7 @@ public class DexDiffDecoder extends BaseDecoder {
     private void collectClassesInDex(File dexFile) throws IOException {
         Logger.d("Collect class descriptors in " + dexFile.getName());
         final DexFile dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(29));
-        for (org.jf.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
+        for (com.android.tools.smali.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
             descOfClassesInApk.add(classDef.getType());
             if (AccessFlags.SYNTHETIC.isSet(classDef.getAccessFlags())) {
                 descOfSyntheticClassesInApk.add(classDef.getType());
@@ -277,7 +276,7 @@ public class DexDiffDecoder extends BaseDecoder {
             Logger.d("Check if loader classes in " + dexFile.getName()
                     + " refer to any classes that is not in loader class patterns.");
             final DexFile dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(29));
-            for (org.jf.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
+            for (com.android.tools.smali.dexlib2.iface.ClassDef classDef : dex.getClasses()) {
                 final String currClassDesc = classDef.getType();
                 if (!Utils.isStringMatchesPatterns(currClassDesc, loaderClassPatterns)) {
                     continue;
@@ -431,9 +430,9 @@ public class DexDiffDecoder extends BaseDecoder {
         int changedDexId = 1;
         for (Dex dex : owners) {
             Set<String> descOfChangedClassesInCurrDex = ownerToDescOfChangedClassesMap.get(dex);
-            DexFile dexFile = new DexBackedDexFile(org.jf.dexlib2.Opcodes.forApi(20), dex.getBytes());
+            DexFile dexFile = new DexBackedDexFile(Opcodes.forApi(20), dex.getBytes());
             boolean isCurrentDexHasChangedClass = false;
-            for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
+            for (com.android.tools.smali.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
                 if (descOfChangedClassesInCurrDex.contains(classDef.getType())) {
                     isCurrentDexHasChangedClass = true;
                     break;
@@ -443,7 +442,7 @@ public class DexDiffDecoder extends BaseDecoder {
                 continue;
             }
             DexBuilder dexBuilder = new DexBuilder(Opcodes.forApi(23));
-            for (org.jf.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
+            for (com.android.tools.smali.dexlib2.iface.ClassDef classDef : dexFile.getClasses()) {
                 if (!descOfChangedClassesInCurrDex.contains(classDef.getType())) {
                     continue;
                 }
@@ -458,7 +457,8 @@ public class DexDiffDecoder extends BaseDecoder {
                             field.getType(),
                             field.getAccessFlags(),
                             field.getInitialValue(),
-                            field.getAnnotations()
+                            field.getAnnotations(),
+                            field.getHiddenApiRestrictions()
                     );
                     builderFields.add(builderField);
                 }
@@ -476,6 +476,7 @@ public class DexDiffDecoder extends BaseDecoder {
                             method.getReturnType(),
                             method.getAccessFlags(),
                             method.getAnnotations(),
+                            method.getHiddenApiRestrictions(),
                             methodImpl
                     );
                     builderMethods.add(builderMethod);
