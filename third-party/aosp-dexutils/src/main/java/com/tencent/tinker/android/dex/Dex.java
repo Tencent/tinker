@@ -87,6 +87,34 @@ public final class Dex {
     private int nextSectionStart = 0;
     private byte[] signature = null;
 
+    public void validateLayout() {
+        TableOfContents.Section[] sortedSections = tableOfContents.sections.clone();
+        java.util.Arrays.sort(sortedSections, new java.util.Comparator<TableOfContents.Section>() {
+            @Override
+            public int compare(TableOfContents.Section a, TableOfContents.Section b) {
+                return a.off - b.off;
+            }
+        });
+        int prevEnd = 0;
+        short prevType = 0;
+        for (TableOfContents.Section section : sortedSections) {
+            if (section.size == 0 || section.off <= 0) {
+                continue;
+            }
+            if ((section.off & 3) != 0) {
+                throw new DexException("Section type 0x" + Hex.u2(section.type)
+                        + " is not 4-byte aligned: off=" + section.off);
+            }
+            if (section.off < prevEnd) {
+                throw new DexException("Section type 0x" + Hex.u2(section.type)
+                        + " overlaps previous section (type=0x" + Hex.u2(prevType)
+                        + "): off=" + section.off + ", prevEnd=" + prevEnd);
+            }
+            prevEnd = section.off + section.byteCount;
+            prevType = section.type;
+        }
+    }
+
     /**
      * Creates a new dex that reads from {@code data}. It is an error to modify
      * {@code data} after using it to create a dex buffer.
