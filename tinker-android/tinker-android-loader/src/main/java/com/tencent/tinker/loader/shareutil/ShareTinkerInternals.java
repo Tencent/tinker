@@ -752,6 +752,17 @@ public class ShareTinkerInternals {
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());
         final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
         if (patchInfo != null) {
+            // Clear every version so that no later process loads this patch again: version stays blank,
+            // and TinkerLoader reports ERROR_LOAD_PATCH_INFO_BLANK instead of loading oldVersion.
+            // Clearing only newVersion leaves {old: <md5>, new: ""} behind, which sends the main process
+            // and secondary processes to different versions, because the main process reads newVersion
+            // while secondary processes read oldVersion.
+            //
+            // Processes that already loaded the patch keep running it: a patch is installed through the
+            // class loader and cannot be unloaded. Converging them requires restarting those processes,
+            // which this method deliberately does not do, since its secondary process caller continues
+            // running with the patch it just marked for deletion.
+            patchInfo.oldVersion = "";
             patchInfo.newVersion = "";
             patchInfo.versionToRemove = "";
             SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);

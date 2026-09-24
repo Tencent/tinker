@@ -153,9 +153,12 @@ public class SharePatchInfo {
             if (oldVer == null || newVer == null) {
                 continue;
             }
-            //oldVer may be "" or 32 md5
+            // An empty version means "this slot holds no version", so only a non-empty value that is
+            // not a 32-char md5 is corrupted. Rejecting an empty newVer here makes
+            // rewritePatchInfoFile treat a legitimately cleared newVer as a failed write and delete
+            // the whole patch info file.
             if ((!oldVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(oldVer))
-                || !SharePatchFileUtil.checkIfMd5Valid(newVer)) {
+                || (!newVer.equals("") && !SharePatchFileUtil.checkIfMd5Valid(newVer))) {
                 ShareTinkerLog.w(TAG, "path info file  corrupted:" + pathInfoFile.getAbsolutePath());
                 continue;
             } else {
