@@ -341,9 +341,13 @@ public class SampleTinkerReport {
             return;
         }
         boolean isCheckFail = false;
+        String message = throwable.getMessage();
+        if (message == null) {
+            message = "";
+        }
         switch (errorCode) {
             case ShareConstants.ERROR_LOAD_EXCEPTION_DEX:
-                if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
+                if (message.contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
                     reporter.onReport(KEY_LOADED_EXCEPTION_DEX_CHECK);
                     isCheckFail = true;
                     TinkerLog.e(TAG, "tinker dex check fail:" + throwable.getMessage());
@@ -353,7 +357,7 @@ public class SampleTinkerReport {
                 }
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE:
-                if (throwable.getMessage().contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
+                if (message.contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
                     reporter.onReport(KEY_LOADED_EXCEPTION_RESOURCE_CHECK);
                     isCheckFail = true;
                     TinkerLog.e(TAG, "tinker res check fail:" + throwable.getMessage());
@@ -386,9 +390,13 @@ public class SampleTinkerReport {
         if (reporter == null) {
             return;
         }
-        if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)) {
+        String message = throwable.getMessage();
+        if (message == null) {
+            message = "";
+        }
+        if (message.contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)) {
             reporter.onReport(KEY_APPLIED_DEXOPT_EXIST);
-        } else if (throwable.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
+        } else if (message.contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
             reporter.onReport(KEY_APPLIED_DEXOPT_FORMAT);
         } else {
             reporter.onReport(KEY_APPLIED_DEXOPT_OTHER);

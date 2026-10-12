@@ -142,8 +142,13 @@ public class DefaultPatchReporter implements PatchReporter {
 
         // some phone such as VIVO/OPPO like to change dex2oat to interpreted may go here
         // check oat file if it is elf format
-        if (t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)
-            || t.getMessage().contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
+        // Normalize a null message so that the marker checks below can never throw.
+        String message = t.getMessage();
+        if (message == null) {
+            message = "";
+        }
+        if (message.contains(ShareConstants.CHECK_DEX_OAT_EXIST_FAIL)
+            || message.contains(ShareConstants.CHECK_DEX_OAT_FORMAT_FAIL)) {
             shouldRetry = true;
             deleteOptFiles(dexFiles);
         } else {

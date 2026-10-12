@@ -222,10 +222,17 @@ public class DefaultLoadReporter implements LoadReporter {
      */
     @Override
     public void onLoadException(Throwable e, int errorCode) {
+        // A throwable is not guaranteed to carry a message, e.g. a NullPointerException raised by
+        // reflection code often has none. Normalize it once so that the marker checks below can never
+        // throw and the original failure is still handled by the following disabling and cleaning steps.
+        String message = e.getMessage();
+        if (message == null) {
+            message = "";
+        }
         //for unCaught or dex exception, disable tinker all the time with sp
         switch (errorCode) {
             case ShareConstants.ERROR_LOAD_EXCEPTION_DEX:
-                if (e.getMessage().contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
+                if (message.contains(ShareConstants.CHECK_DEX_INSTALL_FAIL)) {
                     ShareTinkerLog.e(TAG, "patch loadReporter onLoadException: tinker dex check fail:" + e.getMessage());
                 } else {
                     ShareTinkerLog.i(TAG, "patch loadReporter onLoadException: patch load dex exception: %s", e);
@@ -234,7 +241,7 @@ public class DefaultLoadReporter implements LoadReporter {
                 ShareTinkerLog.i(TAG, "dex exception disable tinker forever with sp");
                 break;
             case ShareConstants.ERROR_LOAD_EXCEPTION_RESOURCE:
-                if (e.getMessage().contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
+                if (message.contains(ShareConstants.CHECK_RES_INSTALL_FAIL)) {
                     ShareTinkerLog.e(TAG, "patch loadReporter onLoadException: tinker res check fail:" + e.getMessage());
                 } else {
                     ShareTinkerLog.i(TAG, "patch loadReporter onLoadException: patch load resource exception: %s", e);
