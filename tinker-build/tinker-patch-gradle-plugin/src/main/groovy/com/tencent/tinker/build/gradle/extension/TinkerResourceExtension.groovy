@@ -49,6 +49,20 @@ public class TinkerResourceExtension {
      */
     int largeModSize
 
+    /**
+     * On case insensitive os like macOS, when unzip apk, if res filename in apk is minified,
+     * minified res filenames may be conflict, eg: aBc.xml and Abc.xml. but they represent the same file
+     * on macOS
+     * In this case, you cannot generate the correct patch file because some res files are overwritten
+     *
+     * default false
+     * false: has no effect on the final patch. print log if conflict files are detected
+     * true:  detect conflict files and rename them to temp unique filename (except the first one).
+     *        the temp unique filenames will remain in some files ( old/new unzip dir, tinker_result,
+     *        res_log.txt, log.txt), but will not remain in the final patch file.
+     */
+    boolean caseInsensitiveCompat
+
     public TinkerResourceExtension() {
         pattern = []
         ignoreChange = []

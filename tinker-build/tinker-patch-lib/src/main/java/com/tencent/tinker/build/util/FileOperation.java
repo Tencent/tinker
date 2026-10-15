@@ -197,6 +197,8 @@ public class FileOperation {
 
                 File file = new File(filePath + File.separator + entry.getName());
 
+                file = CaseSensitive.wrap(file);
+
                 File parentFile = file.getParentFile();
                 if (parentFile != null && (!parentFile.exists())) {
                     parentFile.mkdirs();
@@ -250,7 +252,11 @@ public class FileOperation {
     }
 
     private static void zipFile(File resFile, ZipOutputStream zipout, String rootpath) throws IOException {
-        rootpath = rootpath + (rootpath.trim().length() == 0 ? "" : File.separator) + resFile.getName();
+        String resName = resFile.getName();
+        if (resFile.isFile()) {
+            resName = CaseSensitive.getOriginalFileName(resName);
+        }
+        rootpath = rootpath + (rootpath.trim().length() == 0 ? "" : File.separator) + resName;
         if (resFile.isDirectory()) {
             File[] fileList = resFile.listFiles();
             for (File file : fileList) {
