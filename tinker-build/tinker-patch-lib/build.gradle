@@ -14,10 +14,8 @@ dependencies {
     api group: 'com.tencent.mm', name: 'apk-parser-lib', version: '1.2.3'
     implementation group: 'com.google.guava', name: 'guava', version: '14.0.1'
     implementation group: 'org.ow2.asm', name: 'asm', version: '6.0'
-    implementation (group: 'org.smali', name: 'dexlib2', version: '2.3.1') {
-        exclude group: 'com.google.guava'
-    }
     implementation group: 'dom4j', name: 'dom4j', version: '1.6.1'
+    implementation group: 'com.android.tools.smali', name: 'smali-dexlib2', version: '3.0.9'
 }
 
 sourceSets {
