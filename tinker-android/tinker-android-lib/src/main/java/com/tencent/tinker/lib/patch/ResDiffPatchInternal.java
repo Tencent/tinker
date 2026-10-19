@@ -52,6 +52,37 @@ public class ResDiffPatchInternal extends BasePatchInternal {
 
     protected static final String TAG = "Tinker.ResDiffPatchInternal";
 
+    private static boolean checkPatchZipEntriesSafe(File patchFile, File parentDir) {
+        TinkerZipFile zipFile = null;
+        try {
+            zipFile = new TinkerZipFile(patchFile);
+            final String parentCanonical = parentDir.getCanonicalFile().getCanonicalPath() + File.separator;
+            Enumeration<? extends TinkerZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                TinkerZipEntry entry = entries.nextElement();
+                if (entry == null) {
+                    continue;
+                }
+                String name = entry.getName();
+                if (!isLegalEntryName(name)) {
+                    ShareTinkerLog.e(TAG, "illegal entry name in patch zip: %s", name);
+                    return false;
+                }
+                File extractedFile = new File(parentDir, name);
+                if (!extractedFile.getCanonicalPath().startsWith(parentCanonical)) {
+                    ShareTinkerLog.e(TAG, "zip slip detected for entry: %s", name);
+                    return false;
+                }
+            }
+            return true;
+        } catch (Throwable e) {
+            ShareTinkerLog.e(TAG, "checkPatchZipEntriesSafe failed: %s", e.getMessage());
+            return false;
+        } finally {
+            IOHelper.closeQuietly(zipFile);
+        }
+    }
+
     protected static boolean tryRecoverResourceFiles(Tinker manager, ShareSecurityCheck checker, Context context,
                                                      String patchVersionDirectory, File patchFile, boolean useCustomPatcher, PatchResult patchResult) {
 
@@ -124,6 +155,11 @@ public class ResDiffPatchInternal extends BasePatchInternal {
             }
             String apkPath = applicationInfo.sourceDir;
 
+            if (!checkPatchZipEntriesSafe(patchFile, directory)) {
+                ShareTinkerLog.e(TAG, "patch recover, illegal zip entry detected in patch file: %s", patchFile.getAbsolutePath());
+                manager.getPatchReporter().onPatchPackageCheckFail(patchFile, BasePatchInternal.getMetaCorruptedCode(type));
+                return false;
+            }
 
             if (!checkAndExtractResourceLargeFile(context, apkPath, directory, tempResFileDirectory, patchFile, resPatchInfo, type, useCustomPatcher)) {
                 return false;
