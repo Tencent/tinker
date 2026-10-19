@@ -54,19 +54,19 @@ import tinker.net.dongliu.apk.parser.bean.UseFeature;
  */
 
 public class ManifestDecoder extends BaseDecoder {
-    private static final String XML_NODENAME_APPLICATION        = "application";
-    private static final String XML_NODENAME_USES_SDK           = "uses-sdk";
-    private static final String XML_NODEATTR_MIN_SDK_VERSION    = "minSdkVersion";
+    private static final String XML_NODENAME_APPLICATION = "application";
+    private static final String XML_NODENAME_USES_SDK = "uses-sdk";
+    private static final String XML_NODEATTR_MIN_SDK_VERSION = "minSdkVersion";
     private static final String XML_NODEATTR_TARGET_SDK_VERSION = "targetSdkVersion";
-    private static final String XML_NODEATTR_PACKAGE            = "package";
-    private static final String XML_NODENAME_ACTIVITY           = "activity";
-    private static final String XML_NODENAME_SERVICE            = "service";
-    private static final String XML_NODENAME_RECEIVER           = "receiver";
-    private static final String XML_NODENAME_PROVIDER           = "provider";
-    private static final String XML_NODEATTR_NAME               = "name";
-    private static final String XML_NODEATTR_EXPORTED           = "exported";
-    private static final String XML_NODEATTR_PROCESS            = "process";
-    private static final String XML_NODENAME_INTENTFILTER       = "intent-filter";
+    private static final String XML_NODEATTR_PACKAGE = "package";
+    private static final String XML_NODENAME_ACTIVITY = "activity";
+    private static final String XML_NODENAME_SERVICE = "service";
+    private static final String XML_NODENAME_RECEIVER = "receiver";
+    private static final String XML_NODENAME_PROVIDER = "provider";
+    private static final String XML_NODEATTR_NAME = "name";
+    private static final String XML_NODEATTR_EXPORTED = "exported";
+    private static final String XML_NODEATTR_PROCESS = "process";
+    private static final String XML_NODENAME_INTENTFILTER = "intent-filter";
 
     public ManifestDecoder(Configuration config) throws IOException {
         super(config);
@@ -85,9 +85,9 @@ public class ManifestDecoder extends BaseDecoder {
                 if (config.mDexRaw) {
                     final StringBuilder sb = new StringBuilder();
                     sb.append("your old apk's minSdkVersion ")
-                      .append(minSdkVersion)
-                      .append(" is below 14, you should set the dexMode to 'jar', ")
-                      .append("otherwise, it will crash at some time");
+                            .append(minSdkVersion)
+                            .append(" is below 14, you should set the dexMode to 'jar', ")
+                            .append("otherwise, it will crash at some time");
                     announceWarningOrException(sb.toString());
                 }
             }
@@ -188,7 +188,7 @@ public class ManifestDecoder extends BaseDecoder {
 
             if (isManifestChanged && !hasIncComponent) {
                 Logger.d("\nManifest was changed, while there's no any new components added."
-                       + " Make sure if such changes were all you expected.\n");
+                        + " Make sure if such changes were all you expected.\n");
             }
 
         } catch (ParseException e) {
@@ -275,7 +275,7 @@ public class ManifestDecoder extends BaseDecoder {
                 announceWarningOrException("Value of isLargeScreens changed, old: " + oldMeta.isLargeScreens()
                         + ", new: " + newMeta.isLargeScreens());
             }
-            if (!nullSafeEqualsIgnoreOrder(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions(), null)) {
+            if (!nullSafeEqualsIgnoreOrderAndRepeat(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions(), null)) {
                 announceWarningOrException("Uses permissions changed, related uses-permissions: "
                         + describeChanges(oldMeta.getUsesPermissions(), newMeta.getUsesPermissions()));
             }
@@ -315,6 +315,51 @@ public class ManifestDecoder extends BaseDecoder {
         }
         if (lhs != null && rhs != null) {
             return (equalsChecker != null ? equalsChecker.isEquals(lhs, rhs) : lhs.equals(rhs));
+        }
+        return false;
+    }
+
+    private static <T> boolean nullSafeEqualsIgnoreOrderAndRepeat(Collection<T> lhs, Collection<T> rhs, ObjectDescriber<T> describer) {
+        if (lhs == null && rhs == null) {
+            return true;
+        }
+        if (lhs != null) {
+            lhs = new HashSet<>(lhs);
+        }
+        if (rhs != null) {
+            rhs = new HashSet<>(rhs);
+        }
+        if (lhs != null && rhs != null) {
+            final Set<String> lhsDescs = new HashSet<>();
+            int lhsNotNullElemCount = 0;
+            int rhsNotNullElemCount = 0;
+            for (T lhsElem : lhs) {
+                if (lhsElem == null) {
+                    continue;
+                }
+                lhsDescs.add(describer != null ? describer.describe(lhsElem) : lhsElem.toString());
+                ++lhsNotNullElemCount;
+            }
+            boolean hasAddedElemDesc = false;
+            for (T rhsElem : rhs) {
+                if (rhsElem == null) {
+                    continue;
+                }
+                final String rhsElemDesc = describer != null ? describer.describe(rhsElem) : rhsElem.toString();
+                if (!lhsDescs.remove(rhsElemDesc)) {
+                    hasAddedElemDesc = true;
+                    break;
+                }
+                ++rhsNotNullElemCount;
+            }
+            if (hasAddedElemDesc) {
+                return false;
+            }
+            if (lhsDescs.size() > 0) {
+                // Has removed items.
+                return false;
+            }
+            return lhsNotNullElemCount == rhsNotNullElemCount;
         }
         return false;
     }
@@ -369,10 +414,10 @@ public class ManifestDecoder extends BaseDecoder {
         public String describe(GlEsVersion obj) {
             final StringBuilder sb = new StringBuilder();
             sb.append("{")
-              .append("majar:").append(obj.getMajor())
-              .append("minor:").append(obj.getMinor())
-              .append(",required:").append(obj.isRequired())
-              .append("}");
+                    .append("majar:").append(obj.getMajor())
+                    .append("minor:").append(obj.getMinor())
+                    .append(",required:").append(obj.isRequired())
+                    .append("}");
             return sb.toString();
         }
     };
@@ -382,9 +427,9 @@ public class ManifestDecoder extends BaseDecoder {
         public String describe(UseFeature obj) {
             final StringBuilder sb = new StringBuilder();
             sb.append("{")
-              .append("name:").append(obj.getName())
-              .append(",required:").append(obj.isRequired())
-              .append("}");
+                    .append("name:").append(obj.getName())
+                    .append(",required:").append(obj.isRequired())
+                    .append("}");
             return sb.toString();
         }
     };
@@ -394,13 +439,13 @@ public class ManifestDecoder extends BaseDecoder {
         public String describe(Permission obj) {
             final StringBuilder sb = new StringBuilder();
             sb.append("{")
-              .append("name:").append(obj.getName())
-              .append(",label:").append(obj.getLabel())
-              .append(",icon:").append(obj.getIcon())
-              .append(",description:").append(obj.getDescription())
-              .append(",group:").append(obj.getGroup())
-              .append(",protectionLevel:").append(obj.getProtectionLevel())
-              .append("}");
+                    .append("name:").append(obj.getName())
+                    .append(",label:").append(obj.getLabel())
+                    .append(",icon:").append(obj.getIcon())
+                    .append(",description:").append(obj.getDescription())
+                    .append(",group:").append(obj.getGroup())
+                    .append(",protectionLevel:").append(obj.getProtectionLevel())
+                    .append("}");
             return sb.toString();
         }
     };
@@ -424,8 +469,8 @@ public class ManifestDecoder extends BaseDecoder {
         final List<String> removedDescs = new ArrayList<>(oldDescs);
         final StringBuilder sb = new StringBuilder();
         sb.append("{added:").append(addedDescs)
-          .append(",removed:").append(removedDescs)
-          .append("}");
+                .append(",removed:").append(removedDescs)
+                .append("}");
         return sb.toString();
     }
 
