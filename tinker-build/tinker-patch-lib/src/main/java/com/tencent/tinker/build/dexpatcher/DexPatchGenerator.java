@@ -101,6 +101,34 @@ public class DexPatchGenerator {
     private DexSectionDiffAlgorithm<EncodedValue> encodedArraySectionDiffAlg;
     private DexSectionDiffAlgorithm<AnnotationsDirectory> annotationsDirectorySectionDiffAlg;
     private Set<String> additionalRemovingClassPatternSet;
+    private Set<String> additionalKeepingClassPatternSet;
+
+    private static Set<String> collectInnerClassPatternsOfChangedClasses(Dex newDex, Collection<String> changedClassDescs) {
+        Set<String> result = new HashSet<>();
+        if (newDex == null || changedClassDescs == null || changedClassDescs.isEmpty()) {
+            return result;
+        }
+        Set<String> outerPrefixes = new HashSet<>();
+        for (String desc : changedClassDescs) {
+            if (desc == null || !desc.startsWith("L") || !desc.endsWith(";")) {
+                continue;
+            }
+            outerPrefixes.add(desc.substring(0, desc.length() - 1) + "$");
+        }
+        if (outerPrefixes.isEmpty()) {
+            return result;
+        }
+        for (ClassDef classDef : newDex.classDefs()) {
+            String typeName = newDex.typeNames().get(classDef.typeIndex);
+            for (String prefix : outerPrefixes) {
+                if (typeName.startsWith(prefix)) {
+                    result.add(typeName);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
     private int patchedHeaderOffset = 0;
     private int patchedStringIdsOffset = 0;
     private int patchedTypeIdsOffset = 0;
