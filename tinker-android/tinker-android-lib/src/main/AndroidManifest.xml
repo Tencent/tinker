@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.tencent.tinker.lib">
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
     <application>
         <service
             android:name=".service.TinkerPatchForeService"
@@ -18,7 +20,6 @@
         <service
             android:name=".service.TinkerPatchService"
             android:exported="false"
-            android:permission="android.permission.BIND_JOB_SERVICE"
             android:process=":patch" />
         <service
             android:name=".service.TinkerPatchService$InnerService"

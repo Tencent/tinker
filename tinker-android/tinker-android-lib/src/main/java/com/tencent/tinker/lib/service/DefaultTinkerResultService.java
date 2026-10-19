@@ -17,6 +17,12 @@
 package com.tencent.tinker.lib.service;
 
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.os.Build;
+
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerLoadResult;
 import com.tencent.tinker.loader.shareutil.ShareTinkerLog;
@@ -102,5 +108,28 @@ public class DefaultTinkerResultService extends AbstractResultService {
         return true;
     }
 
+    public static class DefaultNotificationProvider {
+        public static final int NOTIFICATION_ID = 0x1;
+        private static final String CHANNEL_ID = "tinker_patch";
+        private static final String CHANNEL_NAME = "Tinker Patch";
+
+        public static Notification createNotification(Context context) {
+            final Notification.Builder builder;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                final NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (manager != null) {
+                    manager.createNotificationChannel(new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW));
+                }
+                builder = new Notification.Builder(context, CHANNEL_ID);
+            } else {
+                builder = new Notification.Builder(context);
+            }
+            return builder.setContentTitle("Tinker")
+                .setContentText("Applying patch")
+                .setOngoing(true)
+                .setSmallIcon(context.getApplicationInfo().icon)
+                .build();
+        }
+    }
 
 }
