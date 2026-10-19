@@ -17,6 +17,7 @@
 package com.tencent.tinker.build.gradle
 
 import com.android.build.gradle.api.ApkVariant
+import com.android.builder.Version
 import com.tencent.tinker.build.gradle.extension.*
 import com.tencent.tinker.build.gradle.task.*
 import com.tencent.tinker.build.util.FileOperation
@@ -41,6 +42,23 @@ class TinkerPatchPlugin implements Plugin<Project> {
     public static final String ISSUE_URL = "https://github.com/Tencent/tinker/issues"
 
     private Project mProject = null
+
+    private static boolean isAgpAbove3() {
+        try {
+            String version = Version.ANDROID_GRADLE_PLUGIN_VERSION
+            if (version == null || version.isEmpty()) {
+                return false
+            }
+            int dotIdx = version.indexOf('.')
+            if (dotIdx <= 0) {
+                return false
+            }
+            int major = Integer.parseInt(version.substring(0, dotIdx))
+            return major >= 3
+        } catch (Throwable ignored) {
+            return false
+        }
+    }
 
     @Override
     public void apply(Project project) {
