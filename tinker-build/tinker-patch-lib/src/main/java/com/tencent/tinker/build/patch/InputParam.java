@@ -42,6 +42,7 @@ public class InputParam {
     public final boolean isProtectedApp;
     public final boolean supportHotplugComponent;
     public final boolean useSign;
+    public final boolean caseInsensitiveCompat;
 
     /**
      * tinkerPatch.dex
@@ -106,6 +107,7 @@ public class InputParam {
             boolean isProtectedApp,
             boolean supportHotplugComponent,
             boolean useSign,
+            boolean caseInsensitiveCompat,
 
             ArrayList<String> dexFilePattern,
             ArrayList<String> dexLoaderPattern,
@@ -139,6 +141,7 @@ public class InputParam {
         this.isProtectedApp = isProtectedApp;
         this.supportHotplugComponent = supportHotplugComponent;
         this.useSign = useSign;
+        this.caseInsensitiveCompat = caseInsensitiveCompat;
 
         this.dexFilePattern = dexFilePattern;
         this.dexLoaderPattern = dexLoaderPattern;
@@ -178,6 +181,7 @@ public class InputParam {
         private boolean isProtectedApp;
         private boolean isComponentHotplugSupported;
         private boolean useSign;
+        private boolean caseInsensitiveCompat;
 
         /**
          * tinkerPatch.dex
@@ -365,6 +369,11 @@ public class InputParam {
             return this;
         }
 
+        public Builder setCaseInsensitiveCompat(boolean caseInsensitiveCompat) {
+            this.caseInsensitiveCompat = caseInsensitiveCompat;
+            return this;
+        }
+
         public Builder setArkHotPath(String path) {
             this.arkHotPatchPath = path;
             return this;
@@ -392,6 +401,7 @@ public class InputParam {
                     isProtectedApp,
                     isComponentHotplugSupported,
                     useSign,
+                    caseInsensitiveCompat,
                     dexFilePattern,
                     dexLoaderPattern,
                     dexIgnoreWarningLoaderPattern,
