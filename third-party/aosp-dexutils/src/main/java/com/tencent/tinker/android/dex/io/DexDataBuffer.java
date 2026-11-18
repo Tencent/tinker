@@ -91,6 +91,17 @@ public class DexDataBuffer implements ByteInput, ByteOutput {
         data.position(pos);
     }
 
+    public void alignToFourBytesWithZeroFill() {
+        int alignedPos = (data.position() + 3) & ~3;
+        while (data.position() < alignedPos) {
+            ensureBufferSize(SizeOf.UBYTE);
+            data.put((byte) 0);
+            if (data.position() > dataBound) {
+                dataBound = data.position();
+            }
+        }
+    }
+
     public int available() {
         return dataBound - data.position();
     }
