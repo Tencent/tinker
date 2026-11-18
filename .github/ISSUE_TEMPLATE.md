@@ -14,6 +14,12 @@ gradle版本：如:2.10
 
 是否使用热更新SDK： 如 TinkerPatch SDK 或者 Bugly SDK
 
+是否使用了APK加固工具(如 360加固/腾讯乐固/爱加密/梆梆)：是/否，若是请注明具体厂商与版本
+
+是否使用了自定义MultiDex方案或修改了tinkerId生成逻辑：是/否
+
+是否已附加LoadReporter回调日志(Tinker.with(context).getLoadReporter())及patch进程日志：是/否
+
 系统：如:Mac
 
 堆栈/日志：
