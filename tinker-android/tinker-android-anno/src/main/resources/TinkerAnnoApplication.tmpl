@@ -1,5 +1,10 @@
 package %PACKAGE%;
 
+import android.content.Context;
+import android.content.res.AssetManager;
+import android.content.res.Resources;
+
+import com.tencent.tinker.loader.app.ApplicationLike;
 import com.tencent.tinker.loader.app.TinkerApplication;
 
 /**
@@ -11,6 +16,34 @@ public class %APPLICATION% extends TinkerApplication {
 
     public %APPLICATION%() {
         super(%TINKER_FLAGS%, "%APPLICATION_LIFE_CYCLE%", "%TINKER_LOADER_CLASS%", %TINKER_LOAD_VERIFY_FLAG%, %TINKER_USE_DLC%, %TINKER_USE_INTERPRET_MODE_ON_SUPPORTED_32BIT_SYSTEM%);
+    }
+
+    @Override
+    public Resources getResources() {
+        final Resources resources = super.getResources();
+        final ApplicationLike applicationLike = getApplicationLike();
+        return (applicationLike == null) ? resources : applicationLike.getResources(resources);
+    }
+
+    @Override
+    public AssetManager getAssets() {
+        final AssetManager assets = super.getAssets();
+        final ApplicationLike applicationLike = getApplicationLike();
+        return (applicationLike == null) ? assets : applicationLike.getAssets(assets);
+    }
+
+    @Override
+    public Context getBaseContext() {
+        final Context base = super.getBaseContext();
+        final ApplicationLike applicationLike = getApplicationLike();
+        return (applicationLike == null) ? base : applicationLike.getBaseContext(base);
+    }
+
+    @Override
+    public ClassLoader getClassLoader() {
+        final ClassLoader classLoader = super.getClassLoader();
+        final ApplicationLike applicationLike = getApplicationLike();
+        return (applicationLike == null) ? classLoader : applicationLike.getClassLoader(classLoader);
     }
 
 }
