@@ -52,6 +52,7 @@ public class TinkerPatchService extends IntentService {
 
     private static AbstractPatch upgradePatchProcessor = null;
     private static int notificationId = ShareConstants.TINKER_PATCH_SERVICE_NOTIFICATION;
+    private static int jobSchedulerJobId = -1119860829;
     private static Class<? extends AbstractResultService> resultServiceClass = null;
 
     public TinkerPatchService() {
@@ -120,6 +121,18 @@ public class TinkerPatchService extends IntentService {
      */
     public static void setTinkerNotificationId(int id) {
         notificationId = id;
+    }
+
+    /**
+     * set the tinker patch service job id you want
+     * @param id
+     */
+    public static void setTinkerPatchServiceJobId(int id) {
+        jobSchedulerJobId = id;
+    }
+
+    public static int getTinkerPatchServiceJobId() {
+        return jobSchedulerJobId;
     }
 
     private static final String RUNNING_MARKER_FILE_RELPATH_PREFIX = "patch_service_status/running_";
