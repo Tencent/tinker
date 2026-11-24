@@ -43,6 +43,8 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +54,7 @@ import java.util.Map;
  * Created by zhangshaowen on 16/9/21.
  * Thanks for Android Fragmentation
  */
-class TinkerResourcePatcher {
+final class TinkerResourcePatcher {
     private static final String TAG = "Tinker.ResourcePatcher";
     private static final String TEST_ASSETS_VALUE = "only_use_to_test_tinker_resource.txt";
 
@@ -60,6 +62,7 @@ class TinkerResourcePatcher {
     private static Collection<WeakReference<Resources>> references = null;
 
     private static Map<Object, WeakReference<Object>> resourceImpls = null;
+    private static Object sResourcesManagerLock = null;
     private static Object currentActivityThread = null;
     private static AssetManager newAssetManager = null;
 
@@ -85,7 +88,9 @@ class TinkerResourcePatcher {
     private static Context packageResContext = null;
 
     @SuppressWarnings("unchecked")
-    public static void isResourceCanPatch(Context context) throws Throwable {
+    public static void isResourceCanPatch(
+            final Context context
+    ) throws Throwable {
         //   - Replace mResDir to point to the external resource file instead of the .apk. This is
         //     used as the asset path for new Resources objects.
         //   - Set Application#mLoadedApk to the found LoadedApk instance
@@ -139,6 +144,21 @@ class TinkerResourcePatcher {
             final Class<?> resourcesManagerClass = Class.forName("android.app.ResourcesManager");
             final Method mGetInstance = findMethod(resourcesManagerClass, "getInstance");
             final Object resourcesManager = mGetInstance.invoke(null);
+            // Android 12 moved resource collection synchronization to a dedicated lock.
+            // Falling back to the manager monitor there would not exclude framework writers.
+            if (SDK_INT >= 31) {
+                try {
+                    sResourcesManagerLock = findField(resourcesManagerClass, "mLock").get(resourcesManager);
+                    if (sResourcesManagerLock == null) {
+                        throw new IllegalStateException("ResourcesManager.mLock is null");
+                    }
+                } catch (Throwable throwable) {
+                    sResourcesManagerLock = null;
+                    ShareTinkerLog.w(TAG, "Cannot access ResourcesManager.mLock; capture resource snapshots without locking: %s", throwable);
+                }
+            } else {
+                sResourcesManagerLock = resourcesManager;
+            }
             try {
                 Field fMActiveResources = findField(resourcesManagerClass, "mActiveResources");
                 final ArrayMap<?, WeakReference<Resources>> activeResources19 =
@@ -195,7 +215,11 @@ class TinkerResourcePatcher {
      * @param externalResourceFile
      * @throws Throwable
      */
-    public static void monkeyPatchExistingResources(Context context, String externalResourceFile, boolean isReInject) throws Throwable {
+    public static void monkeyPatchExistingResources(
+            final Context context,
+            final String externalResourceFile,
+            final boolean isReInject
+    ) throws Throwable {
         if (externalResourceFile == null) {
             return;
         }
@@ -260,11 +284,21 @@ class TinkerResourcePatcher {
             ensureStringBlocksMethod.invoke(newAssetManager);
         }
 
-        for (WeakReference<Resources> wr : references) {
-            final Resources resources = wr.get();
-            if (resources == null) {
-                continue;
+        // Capture after context and asset preparation, which can create more Resources.
+        // Keep resource updates outside the framework lock: they can re-enter ResourcesManager.
+        final ResourceSnapshot resourceSnapshot;
+        final Object resourcesManagerLock = sResourcesManagerLock;
+        if (resourcesManagerLock != null) {
+            synchronized (resourcesManagerLock) {
+                resourceSnapshot = new ResourceSnapshot(references, resourceImpls);
             }
+        } else {
+            // Preserve loading when the framework lock is inaccessible, and on legacy Android.
+            // Collection changes during capture can still fail; do not retry partial injection.
+            resourceSnapshot = new ResourceSnapshot(references, resourceImpls);
+        }
+
+        for (final Resources resources : resourceSnapshot.mResources) {
             // Set the AssetManager of the Resources instance to our brand new one
             try {
                 //pre-N
@@ -282,35 +316,34 @@ class TinkerResourcePatcher {
             resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
         }
 
-        if (resourceImpls != null) {
+        if (!resourceSnapshot.mResourceImplementations.isEmpty()) {
             try {
-                Field implAssetsField = null;
-                Field mResDirField = null;
-                for (Map.Entry<Object, WeakReference<Object>> pair : resourceImpls.entrySet()) {
-                    final Object resKey = pair.getKey();
-                    if (mResDirField == null) {
-                        mResDirField = findField(resKey.getClass(), "mResDir");
+                Field implementationAssetsField = null;
+                Field resourceDirectoryField = null;
+                for (final Map.Entry<Object, Object> resourceEntry : resourceSnapshot.mResourceImplementations) {
+                    final Object resourceKey = resourceEntry.getKey();
+                    if (resourceDirectoryField == null) {
+                        resourceDirectoryField = findField(resourceKey.getClass(), "mResDir");
                     }
-                    String origResDir = (String) mResDirField.get(resKey);
-                    if (!appInfo.sourceDir.equals(origResDir)) {
+                    final String originalResourceDirectory = (String) resourceDirectoryField.get(resourceKey);
+                    if (!appInfo.sourceDir.equals(originalResourceDirectory)) {
                         continue;
                     }
 
                     if (Build.VERSION.SDK_INT >= 35) {
-                        mResDirField.set(resKey, externalResourceFile);
+                        resourceDirectoryField.set(resourceKey, externalResourceFile);
                     }
 
-                    final WeakReference<Object> resValueRef = pair.getValue();
-                    final Object resourceImpl = resValueRef.get();
+                    final Object resourceImpl = resourceEntry.getValue();
                     if (resourceImpl != null) {
-                        if (implAssetsField == null) {
-                            implAssetsField = findField(resourceImpl, "mAssets");
+                        if (implementationAssetsField == null) {
+                            implementationAssetsField = findField(resourceImpl, "mAssets");
                         }
-                        implAssetsField.set(resourceImpl, newAssetManager);
+                        implementationAssetsField.set(resourceImpl, newAssetManager);
                     }
                 }
-            } catch (Throwable thr) {
-                throw new TinkerRuntimeException("Fail to hack resourceImpls field.");
+            } catch (Throwable throwable) {
+                throw new TinkerRuntimeException("Fail to update ResourcesManager.mResourceImpls for " + externalResourceFile, throwable);
             }
         }
 
@@ -333,6 +366,33 @@ class TinkerResourcePatcher {
         }
 
         installResourceInsuranceHacks(context, externalResourceFile);
+    }
+
+    /**
+     * Pins existing resources for injection without retaining live framework collection entries.
+     * The caller holds the framework resource lock when accessible; otherwise capture is best-effort.
+     */
+    private static final class ResourceSnapshot {
+        private final List<Resources> mResources = new ArrayList<>();
+        private final List<Map.Entry<Object, Object>> mResourceImplementations = new ArrayList<>();
+
+        private ResourceSnapshot(
+                final Collection<WeakReference<Resources>> resourceReferences,
+                final Map<Object, WeakReference<Object>> resourceImplementations
+        ) {
+            for (final WeakReference<Resources> resourceReference : resourceReferences) {
+                final Resources resource = resourceReference.get();
+                if (resource != null) {
+                    mResources.add(resource);
+                }
+            }
+            if (resourceImplementations != null) {
+                for (final Map.Entry<Object, WeakReference<Object>> resourceEntry : resourceImplementations.entrySet()) {
+                    // Retain keys even when their implementation was collected: path updates still apply.
+                    mResourceImplementations.add(new AbstractMap.SimpleImmutableEntry<>(resourceEntry.getKey(), resourceEntry.getValue().get()));
+                }
+            }
+        }
     }
 
     private static void installResourceInsuranceHacks(Context context, String patchedResApkPath) {
