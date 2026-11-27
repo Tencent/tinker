@@ -25,6 +25,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Process;
 import android.os.Build.VERSION;
 import android.text.TextUtils;
 
@@ -750,26 +751,70 @@ public class ShareTinkerInternals {
             return;
         }
         final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(tinkerDir.getAbsolutePath());
-        final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
-        if (patchInfo != null) {
-            // Clear every version so that no later process loads this patch again: version stays blank,
-            // and TinkerLoader reports ERROR_LOAD_PATCH_INFO_BLANK instead of loading oldVersion.
-            // Clearing only newVersion leaves {old: <md5>, new: ""} behind, which sends the main process
-            // and secondary processes to different versions, because the main process reads newVersion
-            // while secondary processes read oldVersion.
-            //
-            // Processes that already loaded the patch keep running it: a patch is installed through the
-            // class loader and cannot be unloaded. Converging them requires restarting those processes,
-            // which this method deliberately does not do, since its secondary process caller continues
-            // running with the patch it just marked for deletion.
-            patchInfo.oldVersion = "";
-            patchInfo.newVersion = "";
-            patchInfo.versionToRemove = "";
-            SharePatchInfo.rewritePatchInfoFileWithLock(patchInfoFile, patchInfo, patchInfoLockFile);
-        } else {
-            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "fail to get patchInfo.");
+        // Revoke only the next main-process selection. Secondary processes must keep using
+        // oldVersion until main-process startup stops them and commits the switch to Base.
+        if (!SharePatchInfo.revokePatchInfoWithLock(patchInfoFile, patchInfoLockFile)) {
+            ShareTinkerLog.printErrStackTrace(TAG, new Throwable(), "fail to revoke patchInfo.");
+            return;
         }
         cleanPatchDirectoryWithGuard(tinkerDir, null);
+    }
+
+    /**
+     * Complete a pending revocation in a failed main-process load, or stop a failed secondary
+     * process rather than letting it run Base alongside an already patched main process.
+     */
+    public static void reconcilePatchVersionAfterLoadFailure(
+            final Context context
+    ) {
+        final File patchDirectory = SharePatchFileUtil.getPatchDirectory(context);
+        if (patchDirectory == null) {
+            return;
+        }
+        final File patchInfoFile = SharePatchFileUtil.getPatchInfoFile(patchDirectory.getAbsolutePath());
+        final File patchInfoLockFile = SharePatchFileUtil.getPatchInfoLockFile(patchDirectory.getAbsolutePath());
+        if (!patchInfoFile.exists()) {
+            return;
+        }
+        if (isInMainProcess(context)) {
+            SharePatchInfo.readAndCommitBaseVersionWithLock(
+                    patchInfoFile,
+                    patchInfoLockFile,
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            killOtherProcessesBeforeBaseSwitch(context);
+                        }
+                    }
+            );
+        } else {
+            final SharePatchInfo patchInfo = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+            if (patchInfo != null && !isNullOrNil(patchInfo.oldVersion)) {
+                ShareTinkerLog.w(TAG, "Stop failed secondary process %s: main-process patch version is still %s", getProcessName(context), patchInfo.oldVersion);
+                Process.killProcess(Process.myPid());
+                // Do not continue Application startup if process termination was delayed.
+                throw new TinkerRuntimeException("Secondary process cannot load active patch " + patchInfo.oldVersion);
+            }
+        }
+    }
+
+    /** Stop peer processes, refusing to commit Base if process enumeration is unavailable. */
+    public static void killOtherProcessesBeforeBaseSwitch(
+            final Context context
+    ) {
+        final ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (activityManager == null) {
+            throw new TinkerRuntimeException("Cannot enumerate processes before switching " + context.getPackageName() + " to Base");
+        }
+        final List<ActivityManager.RunningAppProcessInfo> processes = activityManager.getRunningAppProcesses();
+        if (processes == null) {
+            throw new TinkerRuntimeException("Cannot enumerate processes before switching " + context.getPackageName() + " to Base");
+        }
+        for (final ActivityManager.RunningAppProcessInfo process : processes) {
+            if (process.uid == Process.myUid() && process.pid != Process.myPid()) {
+                Process.killProcess(process.pid);
+            }
+        }
     }
 
     /**

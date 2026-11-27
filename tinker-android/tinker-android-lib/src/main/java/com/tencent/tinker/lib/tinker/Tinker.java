@@ -159,6 +159,9 @@ public class Tinker {
 
         if (!loaded) {
             ShareTinkerLog.w(TAG, "tinker load fail!");
+            if (!isPatchProcess) {
+                ShareTinkerInternals.reconcilePatchVersionAfterLoadFailure(context);
+            }
         }
     }
 

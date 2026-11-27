@@ -74,11 +74,27 @@ public class SharePatchInfo {
         this.isRemoveInterpretOATDir = isRemoveInterpretOATDir;
     }
 
-    public static SharePatchInfo readAndCheckPropertyWithLock(File pathInfoFile, File lockFile) {
+    public static SharePatchInfo readAndCheckPropertyWithLock(
+            final File pathInfoFile,
+            final File lockFile
+    ) {
+        return readAndCommitBaseVersionWithLock(pathInfoFile, lockFile, null);
+    }
+
+    /**
+     * Read patch selection and, for main-process startup, commit a pending switch to Base.
+     * The callback stops other processes before the current version is cleared, while the
+     * metadata lock prevents new readers from selecting the retired patch during the switch.
+     */
+    public static SharePatchInfo readAndCommitBaseVersionWithLock(
+            final File pathInfoFile,
+            final File lockFile,
+            final Runnable beforeBaseSwitch
+    ) {
         if (pathInfoFile == null || lockFile == null) {
             return null;
         }
-        File lockParentFile = lockFile.getParentFile();
+        final File lockParentFile = lockFile.getParentFile();
         if (!lockParentFile.exists()) {
             lockParentFile.mkdirs();
         }
@@ -88,8 +104,17 @@ public class SharePatchInfo {
         try {
             fileLock = ShareFileLockHelper.getFileLock(lockFile);
             patchInfo = readAndCheckProperty(pathInfoFile);
+            if (patchInfo != null && beforeBaseSwitch != null
+                    && !"".equals(patchInfo.oldVersion) && "".equals(patchInfo.newVersion)) {
+                beforeBaseSwitch.run();
+                patchInfo.oldVersion = "";
+                patchInfo.versionToRemove = "";
+                if (!rewritePatchInfoFile(pathInfoFile, patchInfo)) {
+                    throw new TinkerRuntimeException("Fail to commit Base version to " + pathInfoFile);
+                }
+            }
         } catch (Exception e) {
-            throw new TinkerRuntimeException("readAndCheckPropertyWithLock fail", e);
+            throw new TinkerRuntimeException("Fail to read or finalize patch selection from " + pathInfoFile, e);
         } finally {
             try {
                 if (fileLock != null) {
@@ -101,6 +126,33 @@ public class SharePatchInfo {
         }
 
         return patchInfo;
+    }
+
+    /**
+     * Revoke the next main-process version without changing what secondary processes load.
+     */
+    public static boolean revokePatchInfoWithLock(
+            final File pathInfoFile,
+            final File lockFile
+    ) {
+        if (pathInfoFile == null || lockFile == null) {
+            return false;
+        }
+        final File lockParentFile = lockFile.getParentFile();
+        if (!lockParentFile.exists()) {
+            lockParentFile.mkdirs();
+        }
+        try (final ShareFileLockHelper fileLock = ShareFileLockHelper.getFileLock(lockFile)) {
+            final SharePatchInfo patchInfo = readAndCheckProperty(pathInfoFile);
+            if (patchInfo == null) {
+                return false;
+            }
+            patchInfo.newVersion = "";
+            patchInfo.versionToRemove = "";
+            return rewritePatchInfoFile(pathInfoFile, patchInfo);
+        } catch (Exception exception) {
+            throw new TinkerRuntimeException("Fail to revoke patch selection in " + pathInfoFile, exception);
+        }
     }
 
     public static boolean rewritePatchInfoFileWithLock(File pathInfoFile, SharePatchInfo info, File lockFile) {

@@ -72,7 +72,11 @@ public class TinkerLoader extends AbstractTinkerLoader {
         return resultIntent;
     }
 
-    private void tryLoadPatchFilesInternal(TinkerApplication app, Intent resultIntent, Guard[] resultGuard) {
+    private void tryLoadPatchFilesInternal(
+            final TinkerApplication app,
+            final Intent resultIntent,
+            final Guard[] resultGuard
+    ) {
         final int tinkerFlag = app.getTinkerFlags();
 
         if (!ShareTinkerInternals.isTinkerEnabled(tinkerFlag)) {
@@ -126,7 +130,21 @@ public class TinkerLoader extends AbstractTinkerLoader {
         do {
             //old = 641e634c5b8f1649c75caf73794acbdf
             //new = 2c150d8560334966952678930ba67fa8
-            final SharePatchInfo acquired = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+            final SharePatchInfo acquired;
+            if (mainProcess) {
+                acquired = SharePatchInfo.readAndCommitBaseVersionWithLock(
+                        patchInfoFile,
+                        patchInfoLockFile,
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                ShareTinkerInternals.killOtherProcessesBeforeBaseSwitch(app);
+                            }
+                        }
+                );
+            } else {
+                acquired = SharePatchInfo.readAndCheckPropertyWithLock(patchInfoFile, patchInfoLockFile);
+            }
             if (acquired == null) {
                 ShareIntentUtil.setIntentReturnCode(resultIntent, ShareConstants.ERROR_LOAD_PATCH_INFO_CORRUPTED);
                 return;

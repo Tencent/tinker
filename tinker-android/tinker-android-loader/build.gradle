@@ -10,12 +10,18 @@ android {
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        testInstrumentationRunner 'com.tencent.tinker.loader.shareutil.PatchConsistencyTestRunner'
 
         buildConfigField "String", "TINKER_VERSION", "\"${rootProject.ext.VERSION_NAME}\""
 
         manifestPlaceholders = [TINKER_VERSION: "${rootProject.ext.VERSION_NAME}"]
 
         consumerProguardFiles file('../consumer-proguard.txt')
+    }
+
+    sourceSets {
+        // The generated placeholder uses android.test APIs absent from the compile SDK.
+        androidTest.java.exclude '**/ApplicationTest.java'
     }
 
     lintOptions {
@@ -32,6 +38,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly fileTree(dir: 'stubs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'junit:junit:4.12'
     implementation project(':tinker-android:tinker-android-anno-support')
 }
 
